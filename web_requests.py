@@ -6,7 +6,7 @@ RequestToDB = RequestToDB('items.db')
 
 class WebRequest:
     """Класс для работы с запросами"""
-    async def parse_balances(self, telegram_id: str) -> list:
+    async def parse_balances(self, telegram_id: int) -> list:
         """
         Функция:
         1)Отправляет запросы к API

@@ -57,8 +57,26 @@ class AdminMessage(StatesGroup):
     # Класс нужен для получения состояний админских сообщений в админ панели
     admin_message = State()
     restocking = State()
-    category_to_delete = State()
+    # category_to_delete = State()
     subcategory_to_delete = State()
+
+
+async def new_top_up(new_balances, telegram_id):
+    for key, value in new_balances.items():
+        if value > 0:
+            username = RequestToDB.get_username(telegram_id)
+            if username:
+                user_button = types.InlineKeyboardButton(f'{username}', url=f't.me/{username}')
+                top_up_markup = types.InlineKeyboardMarkup()
+                top_up_markup.add(user_button)
+                await bot.send_message(admin_id,
+                                       f"<b>Новое пополнение баланса пользователем @{username} на"
+                                       f" {value} {key}</b>",
+                                       parse_mode='html', reply_markup=top_up_markup)
+            else:
+                await bot.send_message(admin_id,
+                                       f"<b>Новое пополнение баланса пользователем с ID {telegram_id} на"
+                                       f" {value} {key}</b>", parse_mode='html')
 
 
 @dp.message_handler(commands='admin')
@@ -92,24 +110,27 @@ async def get_admin_message(message: types.message, state: FSMContext):
         admin_message = message.text
         await state.finish()
         users = RequestToDB.get_all_users()
+        send_count = int()
         for user_id in users:
             try:
                 await bot.send_message(user_id[0], admin_message)
+                send_count += 1
             except:
                 pass
-        await message.answer(f'Разослано\n<code>{admin_message}</code>', parse_mode='html')
+        await message.answer(f'<b>Разослано {send_count} пользователям из {len(users)}</b>\n'
+                             f'<code>{admin_message}</code>', parse_mode='html')
 
 
-@dp.message_handler(content_types=['text'], state=AdminMessage.category_to_delete)
-async def delete_category(message: types.message, state: FSMContext):
-    """
-    Функция для удаления категории товара из БД
-    """
-    async with state.proxy():
-        data_to_delete = message.text
-        RequestToDB.delete_category(data_to_delete)
-        await state.finish()
-        await message.answer(f'<b>Успешно!</b>', parse_mode='html')
+# @dp.message_handler(content_types=['text'], state=AdminMessage.category_to_delete)
+# async def delete_category(message: types.message, state: FSMContext):
+#     """
+#     Функция для удаления категории товара из БД
+#     """
+#     async with state.proxy():
+#         data_to_delete = message.text
+#         RequestToDB.delete_category(data_to_delete)
+#         await state.finish()
+#         await message.answer(f'<b>Успешно!</b>', parse_mode='html')
 
 
 @dp.message_handler(content_types=['text'], state=AdminMessage.subcategory_to_delete)
@@ -124,45 +145,44 @@ async def delete_subcategory(message: types.message, state: FSMContext):
         await message.answer(f'<b>Успешно!</b>', parse_mode='html')
 
 
-async def send_restocking_message(quantity, category, subcategory):
+async def send_restocking_message():
     """
     Функция для отправления сообщения о новом поступлении товара
     """
+    new_items = RequestToDB.get_new_items()
     users = RequestToDB.get_all_users()
     update_data = date.today()
+    message = f'<b>📅 Update {update_data}\n'
+    output_dict = dict()
+    send_count = int()
+    for item in new_items:
+        category = item[0]
+        subcategory = item[1]
+        quantity = item[2]
+        if output_dict.get(category) is None:
+            output_dict[category] = [[subcategory, quantity]]
+        else:
+            temp_list = output_dict.get(category)
+            temp_list.append([subcategory, quantity])
+            output_dict[category] = temp_list
+    for category, items in output_dict.items():
+        message += f'\n📁 Category {category}\n\n'
+        for item in items:
+            subcategory = item[0]
+            quantity = item[1]
+            message += f'📄 Subcategory {subcategory} {quantity} pcs\n'
     for user_id in users:
         try:
-            await bot.send_message(user_id[0], f"<b>Update {update_data}\n"
-                                               f"Category {category}\n"
-                                               f"Subcategory {subcategory}, {quantity} pcs</b>", parse_mode='html')
+            message += '</b>'
+            await bot.send_message(user_id[0], message, parse_mode='html')
+            send_count += 1
         except:
             pass
-
-
-@dp.message_handler(content_types=['document'], state=AdminMessage.restocking)
-async def get_restocking(message: types.message, state: FSMContext):
-    """
-    Функция для добавления нового товара включает:
-    1) Подфункцию для получения файла с товаром из диалога с админом
-    2) Распарсинг .json файла с списком товара, категорией, подкатегорией, прайсом, описанием
-    3) Подфункцию для отправки сообщения по пользователям о новом поступлении
-    """
-    async with state.proxy():
-        document_id = message.document.file_id
-        file_info = await bot.get_file(document_id)
-        filename = file_info.file_path.split('/')[1]
-        url = f'https://api.telegram.org/file/bot{token}/{file_info.file_path}'
-        await WebRequest.get_admin_file(url, filename)
-        try:
-            restocking_list, category, subcategory, price, description = FileRequests.get_new_items(filename)
-            RequestToDB.insert_restocking(restocking_list, category, subcategory, price, description)
-            await state.finish()
-            await send_restocking_message(len(restocking_list), category, subcategory)
-            await message.answer('Done')
-        except Exception:
-            remove(filename)
-            await state.finish()
-            await message.answer('Error')
+    RequestToDB.unset_new_items()
+    await bot.send_message(
+        admin_id,
+        f'<b>Сообщение о пополнениях товаров отправлено {send_count} пользователям из {len(users)}</b>',
+        parse_mode='html')
 
 
 async def consume_and_send_data(telegram_id, total_price, quantity, subcategory):
@@ -178,10 +198,10 @@ async def consume_and_send_data(telegram_id, total_price, quantity, subcategory)
     """
     if RequestToDB.get_balance_in_usd_from_db(telegram_id) - int(total_price) >= 0 \
             and RequestToDB.get_quantity_in_stock(subcategory) >= int(quantity):
-        balances = await WebRequest.parse_balances(telegram_id)
-        await WebRequest.refresh_balance_in_usd(balances, telegram_id)
+        # balances = await WebRequest.parse_balances(telegram_id)
+        # await WebRequest.refresh_balance_in_usd(balances, telegram_id)
         RequestToDB.update_consume_records(telegram_id=telegram_id, total_price=total_price)
-        private_data_list = ''
+        private_data_list = str()
         for i in range(int(quantity)):
             try:
                 data = RequestToDB.get_unsold_data(subcategory)
@@ -197,6 +217,44 @@ async def consume_and_send_data(telegram_id, total_price, quantity, subcategory)
         await bot.send_message(telegram_id, 'Out of stock!')
     else:
         await bot.send_message(telegram_id, 'Insufficient funds!')
+
+
+@dp.message_handler(content_types=[types.ContentType.DOCUMENT, types.ContentType.TEXT], state=AdminMessage.restocking)
+async def get_restocking(message: types.message, state: FSMContext):
+    """
+    Функция для добавления нового товара включает:
+    1) Подфункцию для получения файла с товаром из диалога с админом
+    2) Распарсинг .json файла с списком товара, категорией, подкатегорией, прайсом, описанием
+    3) Подфункцию для отправки сообщения по пользователям о новом поступлении
+    """
+    async with state.proxy():
+        if message.document:
+            document_id = message.document.file_id
+            file_info = await bot.get_file(document_id)
+            filename = file_info.file_path.split('/')[1]
+            url = f'https://api.telegram.org/file/bot{token}/{file_info.file_path}'
+            await WebRequest.get_admin_file(url, filename)
+            try:
+                restocking_dict = FileRequests.get_new_items(filename)
+                for i in range(len(restocking_dict)):
+                    position = restocking_dict[i]
+                    restocking_list = position[0]
+                    category = position[1]
+                    subcategory = position[2]
+                    price = position[3]
+                    description = position[4]
+                    RequestToDB.insert_restocking(restocking_list, category, subcategory, price, description)
+                await state.finish()
+                await send_restocking_message()
+                await message.answer('Done')
+            except Exception as ex:
+                print(ex)
+                remove(filename)
+                await state.finish()
+                await message.answer('Error')
+        else:
+            await state.finish()
+            await message.answer('Error')
 
 
 @dp.message_handler(commands=['start', 'help'])
@@ -222,7 +280,9 @@ async def start(message: types.message):
 
 @dp.message_handler(text='🔍 All categories')
 async def all_categories(message: types.message):
-    """Функция получает все категории из БД, и создаёт инлайн кнопки с категориями, если их нет то пишет 'Empty'"""
+    """
+    Функция получает все категории из БД, и создаёт инлайн кнопки с категориями,если их нет то пишет 'No categories'
+    """
     categories = RequestToDB.get_categories()
     if categories:
         all_categories_markup = types.InlineKeyboardMarkup(row_width=2)
@@ -231,7 +291,7 @@ async def all_categories(message: types.message):
             all_categories_markup.insert(category_button)
         await message.answer('🔍 <b>All categories</b>', parse_mode='html', reply_markup=all_categories_markup)
     else:
-        await message.answer('Empty')
+        await message.answer('<b>No categories</b>', parse_mode='html')
 
 
 @dp.message_handler(text='🤝 FAQ')
@@ -268,7 +328,7 @@ async def my_profile(message: types.message):
     """
     Функция отправляет сообщение пользователю с данными его профиля, балансы выгружаются из БД
     """
-    balances = await RequestToDB.get_wallets_balances_from_db(message.chat.id)
+    balances = RequestToDB.get_wallets_balances_from_db(message.chat.id)
     top_up_button = types.InlineKeyboardButton('Top Up balance', callback_data='top_up_balance')
     purchase_history = types.InlineKeyboardButton('Purchase history', callback_data='purchase_history')
     update_balance = types.InlineKeyboardButton('Refresh balance', callback_data='refresh_balance')
@@ -368,9 +428,16 @@ async def buy_buttons_inline(callback: types.callback_query):
         """Функционал обновления балансов в коинах и USD, имеет КД в 30 секунд"""
         telegram_id = callback.message.chat.id
         if RequestToDB.can_be_refreshed(telegram_id):
+            old_balances = RequestToDB.get_wallets_balances_from_db(telegram_id)
             RequestToDB.create_refresh_data(telegram_id)
             balances = await WebRequest.parse_balances(telegram_id)
-            await WebRequest.refresh_balance_in_usd(balances, telegram_id)
+            if (sum(balances) - sum(old_balances)) > 0:
+                new_balances = dict()
+                coin_list = ['btc', 'usdt', 'ltc']
+                for i in range(len(balances)):
+                    new_balances[coin_list[i]] = (balances[i] - old_balances[i])
+                await new_top_up(new_balances, telegram_id)
+                await WebRequest.refresh_balance_in_usd(list(new_balances.values()), telegram_id)
             top_up_button = types.InlineKeyboardButton('Top Up balance', callback_data='top_up_balance')
             purchase_history = types.InlineKeyboardButton('Purchase history', callback_data='purchase_history')
             update_balance = types.InlineKeyboardButton('Refresh balance', callback_data='refresh_balance')
@@ -385,8 +452,9 @@ async def buy_buttons_inline(callback: types.callback_query):
                                                  f"<b>Your balance in USD:</b>\n{format(balance_usd, '.2f')}$",
                                                  parse_mode="HTML", reply_markup=my_profile_markup)
                 await callback.answer()
-            except Exception:
-                await callback.message.edit_text('<b>Please wait and try again later</b>', parse_mode='HTML')
+            except Exception as e:
+                print(e)
+                await callback.answer()
 
         else:
             await callback.message.edit_text('<b>Please wait and try again later</b>', parse_mode='HTML')
@@ -448,7 +516,7 @@ async def buy_buttons_inline(callback: types.callback_query):
     elif callback.data == 'back_to_my_profile':
         """Возвращает к профилю пользователя"""
         telegram_id = callback.message.chat.id
-        balances = await RequestToDB.get_wallets_balances_from_db(telegram_id)
+        balances = RequestToDB.get_wallets_balances_from_db(telegram_id)
         top_up_button = types.InlineKeyboardButton('Top Up balance', callback_data='top_up_balance')
         purchase_history = types.InlineKeyboardButton('Purchase history', callback_data='purchase_history')
         update_balance = types.InlineKeyboardButton('Refresh balance', callback_data='refresh_balance')
@@ -468,7 +536,7 @@ async def buy_buttons_inline(callback: types.callback_query):
         await AdminMessage.admin_message.set()
     elif callback.data == 'admin_restocking':
         """Получает сообщение админа с новым товаром, запускает подфункции добавления товара"""
-        await callback.message.edit_text('Отправьте .json файл для добавления товаров')
+        await callback.message.edit_text('<b>Отправьте .json файл для добавления товаров</b>', parse_mode='html')
         await AdminMessage.restocking.set()
     elif callback.data == 'admin_get_new_users':
         """Функционал получения новых пользователей бота"""
@@ -485,11 +553,71 @@ async def buy_buttons_inline(callback: types.callback_query):
     elif 'delete' in callback.data:
         """Функционал для удаления категорий и подкатегорий"""
         column = split("_", callback.data)[1]
-        await callback.message.edit_text('Введите столбец для удаления')
         if column == 'category':
-            await AdminMessage.category_to_delete.set()
-        else:
-            await AdminMessage.subcategory_to_delete.set()
+            categories = RequestToDB.get_categories()
+            categories_markup = types.InlineKeyboardMarkup()
+            for i in range(len(categories)):
+                category_button = types.InlineKeyboardButton(categories[i][0],
+                                                             callback_data=f'del_this_{column}_{categories[i][0]}')
+                categories_markup.add(category_button)
+            back_button = types.InlineKeyboardButton('Back', callback_data='back_to_admin_menu')
+            categories_markup.add(back_button)
+            if len(categories) == 0:
+                await callback.message.edit_text('Нет категорий', reply_markup=categories_markup)
+            else:
+                await callback.message.edit_text('Выберите категорию для удаления', reply_markup=categories_markup)
+            # await AdminMessage.category_to_delete.set()
+        elif column == 'subcategory':
+            subcategories = RequestToDB.get_subcategories()
+            subcategories_markup = types.InlineKeyboardMarkup()
+            for i in range(len(subcategories)):
+                subcategory_button = types.InlineKeyboardButton(
+                    subcategories[i][0], callback_data=f'del_this_{column}_{subcategories[i][0]}')
+                subcategories_markup.add(subcategory_button)
+            back_button = types.InlineKeyboardButton('Back', callback_data='back_to_admin_menu')
+            subcategories_markup.add(back_button)
+            if len(subcategories) == 0:
+                await callback.message.edit_text('Нет подкатегорий', reply_markup=subcategories_markup)
+            else:
+                await callback.message.edit_text('Выберите подкатегорию для удаления', reply_markup=subcategories_markup)
+
+            # await AdminMessage.subcategory_to_delete.set()
+    elif callback.data == 'back_to_admin_menu':
+        """
+        Функционал возврата в админское меню
+        """
+        admin_markup = types.InlineKeyboardMarkup(row_width=2)
+        send_to_all_users_button = types.InlineKeyboardButton('Разослать всем',
+                                                              callback_data='admin_send_to_all')
+        restocking_button = types.InlineKeyboardButton('Пополнение товара',
+                                                       callback_data='admin_restocking')
+        get_new_users_button = types.InlineKeyboardButton('Получить новых пользователей',
+                                                          callback_data='admin_get_new_users')
+        delete_category_button = types.InlineKeyboardButton('Удалить категорию',
+                                                            callback_data='delete_category')
+        delete_subcategory_button = types.InlineKeyboardButton('Удалить подкатегорию',
+                                                               callback_data='delete_subcategory')
+        admin_markup.add(send_to_all_users_button, restocking_button, get_new_users_button,
+                         delete_category_button, delete_subcategory_button)
+        await callback.message.edit_text('Admin menu', reply_markup=admin_markup)
+    elif 'del_this' in callback.data:
+        """
+        Функционал удаления подкатегорий и категорий с помощью инлайн кнопок
+        """
+        item = split("_", callback.data)[2]
+        item_name = split("_", callback.data)[3]
+        if item == 'category':
+            try:
+                RequestToDB.delete_category(item_name)
+                await callback.message.edit_text('<b>Готово</b>', parse_mode='html')
+            except Exception as e:
+                await callback.message.edit_text(f'<b>Ошибка</b>\n<code>{e}</code>', parse_mode='html')
+        elif item == 'subcategory':
+            try:
+                RequestToDB.delete_subcategory(item_name)
+                await callback.message.edit_text('<b>Готово</b>', parse_mode='html')
+            except Exception as e:
+                await callback.message.edit_text(f'<b>Ошибка</b>\n<code>{e}</code>', parse_mode='html')
 
 
 if __name__ == '__main__':
