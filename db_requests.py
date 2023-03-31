@@ -43,7 +43,7 @@ class RequestToDB:
         balance = top_up_amount - consume_records
         return balance
 
-    async def get_wallets_balances_from_db(self, telegram_id: int):
+    def get_wallets_balances_from_db(self, telegram_id: int):
         """Получает балансы крипты из БД"""
         wallets = \
             self.cursor.execute(
@@ -103,7 +103,7 @@ class RequestToDB:
             # return True
             return timedelta > 30
 
-    def update_balances(self, balances: list, telegram_id: str) -> None:
+    def update_balances(self, balances: list, telegram_id: int) -> None:
         """Обновляет балансы крипты для пользователя"""
         self.cursor.execute(
             'update `users` set (`btc_balance`, `usdt_balance`, `ltc_balance`) = (?, ?, ?) Where `telegram_id` = ?',
@@ -150,7 +150,9 @@ class RequestToDB:
 
     def update_balance_usd(self, balance_list: list, telegram_id) -> None:
         """Обновляет баланс в долларах"""
-        usd_balance = sum(balance_list)
+        old_balance = self.cursor.execute('SELECT `top_up_amount` from `users` WHERE `telegram_id` = ?',
+                                          (telegram_id, )).fetchall()[0][0]
+        usd_balance = sum(balance_list) + old_balance
         self.cursor.execute("UPDATE `users` SET `top_up_amount` = ? where `telegram_id` = ?",
                             (format(usd_balance, '.2f'), telegram_id))
         self.connect.commit()
@@ -173,8 +175,9 @@ class RequestToDB:
                                 '`private_data`,'
                                 '`price`,'
                                 '`is_sold`,'
-                                '`description`) VALUES (?, ?, ?, ?, ?, ?) ',
-                                (category, subcategory, str(item), price, 0, description))
+                                '`is_new`,'
+                                '`description`) VALUES (?, ?, ?, ?, ?, ?, ?) ',
+                                (category, subcategory, str(item), price, 0, 1, description))
             self.connect.commit()
 
     def get_new_users(self):
@@ -204,6 +207,11 @@ class RequestToDB:
         categories = self.cursor.execute('SELECT DISTINCT `category` FROM `items`').fetchall()
         return categories
 
+    def get_subcategories(self):
+        """Получает подкатегории из БД без повторений"""
+        categories = self.cursor.execute('SELECT DISTINCT `subcategory` FROM `items`').fetchall()
+        return categories
+
     def delete_category(self, data_to_delete):
         """Удаляет категорию в БД"""
         self.cursor.execute(f'DELETE FROM `items` WHERE `category` = ?', (data_to_delete, ))
@@ -219,6 +227,30 @@ class RequestToDB:
         description = self.cursor.execute(f'SELECT `description` FROM `items` WHERE `subcategory` = ?',
                                           (subcategory,)).fetchone()[0]
         return description
+
+    def get_username(self, telegram_id):
+        """Функция получения telegram username из БД"""
+        username = self.cursor.execute('SELECT `telegram_username` FROM `users` WHERE `telegram_id` = ?',
+                                       (telegram_id,)).fetchone()
+        return username[0]
+
+    def get_new_items(self):
+        """
+        Функция возвращает категории, подкатегории, количество подкатегорий новых товаров. Функция нужна для рассылки
+        сообщения о новом пополнении
+        """
+        new_items = self.cursor.execute(
+            'SELECT `category`,'
+            '`subcategory`,'
+            'COUNT(*) AS count FROM `items` WHERE `is_new` = 1 GROUP BY category, subcategory ORDER BY category;').fetchall()
+        return new_items
+
+    def unset_new_items(self):
+        """
+        Функция помечает новые предметы как не новые после рассылки сообщения о новом пополнении товаров
+        """
+        self.cursor.execute('UPDATE `items` SET `is_new` = 0 WHERE `is_new` = 1')
+        self.connect.commit()
 
     def close(self):
         """Закрывает соедининие с БД"""
