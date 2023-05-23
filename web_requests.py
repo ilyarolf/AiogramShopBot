@@ -1,5 +1,5 @@
 import grequests
-from requests import get
+import requests
 from db_requests import RequestToDB
 RequestToDB = RequestToDB('items.db')
 
@@ -59,7 +59,7 @@ class WebRequest:
             data = datas[i].json()
             price = float(data['data']['amount'])
             if i != 1:
-                usd_balance_list.append(balances[i] * price * 0.9)
+                usd_balance_list.append(balances[i] * price * 0.95)
             else:
                 usd_balance_list.append(balances[i] * price)
         RequestToDB.update_balance_usd(usd_balance_list, telegram_id)
@@ -68,6 +68,6 @@ class WebRequest:
         """
         Подфункция принимает url и filename и создаёт файл, который отправил админ в бота для добавления нового товара
         """
-        r = get(url)
+        r = requests.get(url)
         with open(filename, 'wb') as file:
             file.write(r.content)
