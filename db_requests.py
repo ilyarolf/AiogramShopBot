@@ -75,6 +75,57 @@ class RequestToDB:
         data = self.cursor.execute(f'SELECT `subcategory` from `items` where `category` = ?', (category,)).fetchall()
         return data
 
+    # def get_freebies(self) -> list:
+    #     """Возвращает имена халявы из БД"""
+    #     freebies_name = self.cursor.execute('SELECT `freebie_name` FROM `freebies`').fetchall()
+    #     return freebies_name
+
+    def get_freebie_data(self, freebie_name) -> str:
+        """Возвращает данные халявы из БД"""
+        freebie_data = self.cursor.execute('SELECT `freebie_data` FROM `freebies` WHERE `freebie_name` = ?',
+                                           (freebie_name, )).fetchone()[0]
+        return freebie_data
+
+    def set_freebie_received(self, freebie_name, telegram_id, telegram_username) -> None:
+        """Проверяет, если пользователь ещё не получал халяву,
+         то добавляет его в таблицу получателей халявы, если получал то ничего не делает"""
+        is_exist = self.cursor.execute("SELECT EXISTS(SELECT * FROM `received_freebies`"
+                                       " WHERE `telegram_id` = ? AND `freebie_name` = ?)",
+                                       (telegram_id, freebie_name)).fetchone()[0]
+        if is_exist != 1:
+            self.cursor.execute("INSERT OR IGNORE INTO `received_freebies` "
+                                "(`telegram_id`, `freebie_name`, `telegram_username`) VALUES (?, ?, ?)",
+                                (telegram_id, freebie_name, telegram_username))
+            self.connect.commit()
+
+    def insert_new_freebie(self, freebies_dict):
+        """Функция добавляет халяву в БД"""
+        for freebie_name, freebie_data in freebies_dict.items():
+            self.cursor.execute("INSERT INTO `freebies` (`freebie_name`, `freebie_data`) VALUES (?, ?)",
+                                (freebie_name, freebie_data))
+        self.connect.commit()
+
+    def delete_freebie(self, freebie_name):
+        """Функция удаляет халяву из БД"""
+        self.cursor.execute(f'DELETE FROM `freebies` WHERE `freebie_name` = ?', (freebie_name, ))
+        self.connect.commit()
+
+    def get_received_freebies(self):
+        """Подфункция для получения пользователей которые получили халяву"""
+        new_users = self.cursor.execute('SELECT `telegram_username`, `freebie_name` FROM `received_freebies` WHERE `is_new` = 1 AND'
+                                        ' `telegram_username` not NULL').fetchall()
+        user_freebie_dict = {}
+        for key, value in new_users:
+            if key not in user_freebie_dict:
+                user_freebie_dict[key] = [value]
+            else:
+                user_freebie_dict[key].append(value)
+        new_users_quantity = self.cursor.execute('SELECT count (DISTINCT `telegram_id`) FROM `received_freebies` WHERE `is_new` == 1').fetchone()[0]
+        received_freebies_quantity = self.cursor.execute('SELECT count (*) FROM `received_freebies` WHERE `is_new` == 1').fetchone()[0]
+        self.cursor.execute('UPDATE `received_freebies` SET `is_new` = 0 WHERE `is_new` = 1')
+        self.connect.commit()
+        return user_freebie_dict, new_users_quantity, received_freebies_quantity
+
     def get_price(self, subcategory: str):
         """Возвращает цену подкатегории"""
         price = self.cursor.execute(f'SELECT `price` from `items` where `subcategory` = ?', (subcategory,)).fetchone()[
@@ -202,15 +253,27 @@ class RequestToDB:
                             (username, telegram_id))
         self.connect.commit()
 
-    def get_categories(self):
-        """Получает категории из БД без повторений"""
-        categories = self.cursor.execute('SELECT DISTINCT `category` FROM `items`').fetchall()
-        return categories
+    # def get_categories(self):
+    #     """Получает категории из БД без повторений"""
+    #     categories = self.cursor.execute('SELECT DISTINCT `category` FROM `items`').fetchall()
+    #     return categories
+    #
+    # def get_subcategories(self):
+    #     """Получает подкатегории из БД без повторений"""
+    #     categories = self.cursor.execute('SELECT DISTINCT `subcategory` FROM `items`').fetchall()
+    #     return categories
 
-    def get_subcategories(self):
-        """Получает подкатегории из БД без повторений"""
-        categories = self.cursor.execute('SELECT DISTINCT `subcategory` FROM `items`').fetchall()
-        return categories
+    def get_from_all_categories(self, categories: bool = False, subcategories: bool = False, freebies: bool = False):
+        if categories:
+            categories = self.cursor.execute('SELECT DISTINCT `category` FROM `items`').fetchall()
+            return categories
+        elif subcategories:
+            categories = self.cursor.execute('SELECT DISTINCT `subcategory` FROM `items`').fetchall()
+            return categories
+        elif freebies:
+            freebies_name = self.cursor.execute('SELECT `freebie_name` FROM `freebies`').fetchall()
+            return freebies_name
+
 
     def delete_category(self, data_to_delete):
         """Удаляет категорию в БД"""

@@ -41,7 +41,7 @@ class FileRequests:
     #             item_list.append(item)
     #     remove(filename)
     #     return item_list, category, subcategory, price, description
-    def get_new_items(self, filename: str):
+    def get_new_items(self, filename: str) -> dict:
         """Функция для распарсинга json файла с новыми товарами"""
         with open(filename, 'r') as file:
             output_dict = dict()
@@ -61,4 +61,14 @@ class FileRequests:
                 output_dict[i] = (item_list, category, subcategory, price, description)
         remove(filename)
         # return item_list, category, subcategory, price, description
+        return output_dict
+
+    def get_new_freebies(self, filename: str) -> dict:
+        """Функция для распарсинга json файла с халявой"""
+        with open(filename, 'r', encoding='utf-8') as file:
+            output_dict = dict()
+            freebies = load(file)['freebies']
+            for item in freebies:
+                output_dict.update(item)
+        remove(filename)
         return output_dict
