@@ -1,4 +1,4 @@
-import sqlite3
+from pysqlcipher3 import dbapi2 as sqlite3
 import datetime
 from dateutil.parser import parse
 from file_requests import FileRequests
@@ -10,6 +10,7 @@ class RequestToDB:
         """Инициализация класса, подключение к БД"""
         self.connect = sqlite3.connect(db_file)
         self.cursor = self.connect.cursor()
+        self.cursor.execute("PRAGMA key='Key'")
 
     def get_user_wallets(self, telegram_id: int) -> list:
         """Получает адреса криптокошельков пользователя из БД"""

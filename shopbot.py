@@ -63,8 +63,6 @@ class AdminMessage(StatesGroup):
     admin_message = State()
     restocking = State()
     new_freebies = State()
-    # category_to_delete = State()
-    # subcategory_to_delete = State()
 
 
 async def new_top_up(new_balances, telegram_id):
@@ -165,31 +163,6 @@ async def get_admin_message(message: types.message, state: FSMContext):
             await state.finish()
             await bot.send_message(message.chat.id, f'<b>Cancelled!</b>', parse_mode='html')
 
-
-# @dp.message_handler(content_types=['text'], state=AdminMessage.category_to_delete)
-# async def delete_category(message: types.message, state: FSMContext):
-#     """
-#     Функция для удаления категории товара из БД
-#     """
-#     async with state.proxy():
-#         data_to_delete = message.text
-#         RequestToDB.delete_category(data_to_delete)
-#         await state.finish()
-#         await message.answer(f'<b>Успешно!</b>', parse_mode='html')
-
-
-# @dp.message_handler(content_types=['text'], state=AdminMessage.subcategory_to_delete)
-# async def delete_subcategory(message: types.message, state: FSMContext):
-#     """
-#     Функция для удаления подкатегории товара из БД
-#     """
-#     async with state.proxy():
-#         data_to_delete = message.text
-#         RequestToDB.delete_subcategory(data_to_delete)
-#         await state.finish()
-#         await message.answer(f'<b>Deleted!</b>', parse_mode='html')
-
-
 async def send_restocking_message():
     """
     Функция для отправления сообщения о новом поступлении товара
@@ -248,8 +221,6 @@ async def consume_and_send_data(telegram_id, total_price, quantity, subcategory)
     """
     if RequestToDB.get_balance_in_usd_from_db(telegram_id) - int(total_price) >= 0 \
             and RequestToDB.get_quantity_in_stock(subcategory) >= int(quantity):
-        # balances = await WebRequest.parse_balances(telegram_id)
-        # await WebRequest.refresh_balance_in_usd(balances, telegram_id)
         RequestToDB.update_consume_records(telegram_id=telegram_id, total_price=total_price)
         private_data_list = str()
         for i in range(int(quantity)):
@@ -357,7 +328,6 @@ async def all_categories(message: types.message):
     """
     Функция получает все категории из БД, и создаёт инлайн кнопки с категориями,если их нет то пишет 'No categories'
     """
-    # categories = RequestToDB.get_categories()
     categories = RequestToDB.get_from_all_categories(categories=True)
     if categories:
         all_categories_markup = types.InlineKeyboardMarkup(row_width=2)
@@ -599,7 +569,6 @@ async def buy_buttons_inline(callback: types.callback_query):
         await callback.answer()
     elif callback.data == 'back_to_all_categories':
         """Возвращает ко всем категориям"""
-        # categories = RequestToDB.get_categories()
         categories = RequestToDB.get_from_all_categories(categories=True)
         all_categories_markup = types.InlineKeyboardMarkup(row_width=2)
         for category in categories:
@@ -688,7 +657,6 @@ async def buy_buttons_inline(callback: types.callback_query):
         column = split("_", callback.data)[1]
         back_button = types.InlineKeyboardButton('Back', callback_data='back_to_admin_menu')
         if column == 'category':
-            # categories = RequestToDB.get_categories()
             categories = RequestToDB.get_from_all_categories(categories=True)
             categories_markup = types.InlineKeyboardMarkup()
             if len(categories) == 0:
@@ -701,9 +669,7 @@ async def buy_buttons_inline(callback: types.callback_query):
                     categories_markup.add(category_button)
                     categories_markup.add(back_button)
                 await callback.message.edit_text('Choose category to delete', reply_markup=categories_markup)
-            # await AdminMessage.category_to_delete.set()
         elif column == 'subcategory':
-            # subcategories = RequestToDB.get_subcategories()
             subcategories = RequestToDB.get_from_all_categories(subcategories=True)
             subcategories_markup = types.InlineKeyboardMarkup()
             if len(subcategories) == 0:
@@ -717,7 +683,6 @@ async def buy_buttons_inline(callback: types.callback_query):
                 subcategories_markup.add(back_button)
                 await callback.message.edit_text('Choose subcategory to delete', reply_markup=subcategories_markup)
         elif column == 'freebie':
-            # freebies = RequestToDB.get_freebies()
             freebies = RequestToDB.get_from_all_categories(freebies=True)
             freebies_markup = types.InlineKeyboardMarkup()
             if len(freebies) == 0:
@@ -730,7 +695,6 @@ async def buy_buttons_inline(callback: types.callback_query):
                     freebies_markup.add(freebie_button)
                 freebies_markup.add(back_button)
                 await callback.message.edit_text('Choose freebie to delete', reply_markup=freebies_markup)
-            # await AdminMessage.subcategory_to_delete.set()
     elif callback.data == 'back_to_admin_menu':
         """
         Функционал возврата в админское меню
