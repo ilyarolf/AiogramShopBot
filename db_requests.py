@@ -84,7 +84,7 @@ class RequestToDB:
     def get_freebie_data(self, freebie_name) -> str:
         """Возвращает данные халявы из БД"""
         freebie_data = self.cursor.execute('SELECT `freebie_data` FROM `freebies` WHERE `freebie_name` = ?',
-                                           (freebie_name, )).fetchone()[0]
+                                           (freebie_name,)).fetchone()[0]
         return freebie_data
 
     def set_freebie_received(self, freebie_name, telegram_id, telegram_username) -> None:
@@ -108,21 +108,24 @@ class RequestToDB:
 
     def delete_freebie(self, freebie_name):
         """Функция удаляет халяву из БД"""
-        self.cursor.execute(f'DELETE FROM `freebies` WHERE `freebie_name` = ?', (freebie_name, ))
+        self.cursor.execute(f'DELETE FROM `freebies` WHERE `freebie_name` = ?', (freebie_name,))
         self.connect.commit()
 
     def get_received_freebies(self):
         """Подфункция для получения пользователей которые получили халяву"""
-        new_users = self.cursor.execute('SELECT `telegram_username`, `freebie_name` FROM `received_freebies` WHERE `is_new` = 1 AND'
-                                        ' `telegram_username` not NULL').fetchall()
+        new_users = self.cursor.execute(
+            'SELECT `telegram_username`, `freebie_name` FROM `received_freebies` WHERE `is_new` = 1 AND'
+            ' `telegram_username` not NULL').fetchall()
         user_freebie_dict = {}
         for key, value in new_users:
             if key not in user_freebie_dict:
                 user_freebie_dict[key] = [value]
             else:
                 user_freebie_dict[key].append(value)
-        new_users_quantity = self.cursor.execute('SELECT count (DISTINCT `telegram_id`) FROM `received_freebies` WHERE `is_new` == 1').fetchone()[0]
-        received_freebies_quantity = self.cursor.execute('SELECT count (*) FROM `received_freebies` WHERE `is_new` == 1').fetchone()[0]
+        new_users_quantity = self.cursor.execute(
+            'SELECT count (DISTINCT `telegram_id`) FROM `received_freebies` WHERE `is_new` == 1').fetchone()[0]
+        received_freebies_quantity = \
+            self.cursor.execute('SELECT count (*) FROM `received_freebies` WHERE `is_new` == 1').fetchone()[0]
         self.cursor.execute('UPDATE `received_freebies` SET `is_new` = 0 WHERE `is_new` = 1')
         self.connect.commit()
         return user_freebie_dict, new_users_quantity, received_freebies_quantity
@@ -203,7 +206,7 @@ class RequestToDB:
     def update_balance_usd(self, balance_list: list, telegram_id) -> None:
         """Обновляет баланс в долларах"""
         old_balance = self.cursor.execute('SELECT `top_up_amount` from `users` WHERE `telegram_id` = ?',
-                                          (telegram_id, )).fetchall()[0][0]
+                                          (telegram_id,)).fetchall()[0][0]
         usd_balance = sum(balance_list) + old_balance
         self.cursor.execute("UPDATE `users` SET `top_up_amount` = ? where `telegram_id` = ?",
                             (format(usd_balance, '.2f'), telegram_id))
@@ -254,16 +257,6 @@ class RequestToDB:
                             (username, telegram_id))
         self.connect.commit()
 
-    # def get_categories(self):
-    #     """Получает категории из БД без повторений"""
-    #     categories = self.cursor.execute('SELECT DISTINCT `category` FROM `items`').fetchall()
-    #     return categories
-    #
-    # def get_subcategories(self):
-    #     """Получает подкатегории из БД без повторений"""
-    #     categories = self.cursor.execute('SELECT DISTINCT `subcategory` FROM `items`').fetchall()
-    #     return categories
-
     def get_from_all_categories(self, categories: bool = False, subcategories: bool = False, freebies: bool = False):
         if categories:
             categories = self.cursor.execute('SELECT DISTINCT `category` FROM `items`').fetchall()
@@ -275,15 +268,14 @@ class RequestToDB:
             freebies_name = self.cursor.execute('SELECT `freebie_name` FROM `freebies`').fetchall()
             return freebies_name
 
-
     def delete_category(self, data_to_delete):
         """Удаляет категорию в БД"""
-        self.cursor.execute(f'DELETE FROM `items` WHERE `category` = ?', (data_to_delete, ))
+        self.cursor.execute(f'DELETE FROM `items` WHERE `category` = ?', (data_to_delete,))
         self.connect.commit()
 
     def delete_subcategory(self, data_to_delete):
         """Удаляет подкатегорию в БД"""
-        self.cursor.execute(f'DELETE FROM `items` WHERE `subcategory` = ?', (data_to_delete, ))
+        self.cursor.execute(f'DELETE FROM `items` WHERE `subcategory` = ?', (data_to_delete,))
         self.connect.commit()
 
     def get_description(self, subcategory):
@@ -308,6 +300,39 @@ class RequestToDB:
             '`subcategory`,'
             'COUNT(*) AS count FROM `items` WHERE `is_new` = 1 GROUP BY category, subcategory ORDER BY category;').fetchall()
         return new_items
+
+    def get_not_refunded_buys(self):
+        not_refunded_buys = self.cursor.execute(
+            "SELECT `subcategory`, `telegram_id`, `price_total`, `buys_id` FROM `buys` WHERE `is_refunded` = 0").fetchall()
+        return not_refunded_buys
+
+    # def __get_refund_data(self, buy_id):
+    #     data = self.cursor.execute("SELECT `telegram_id`, `price_total` FROM `buys` WHERE `buys_id` = ?",
+    #                                (buy_id,)).fetchall()[0]
+    #     return data
+
+    def make_refund(self, buy_id):
+        refund_data = self.get_buy_data(buy_id)
+        telegram_id = refund_data['telegram_id']
+        sum_of_refund = refund_data['price_total']
+        consume_records = \
+        self.cursor.execute('SELECT `consume_records` FROM `users` WHERE `telegram_id` = ?', (telegram_id,)).fetchone()[
+            0]
+        new_consume_records = int(consume_records) - int(sum_of_refund)
+        self.cursor.execute('UPDATE `users` SET `consume_records` = ? WHERE `telegram_id` = ?',
+                            (new_consume_records, telegram_id))
+        self.cursor.execute('UPDATE `buys` SET `is_refunded` = 1 WHERE `buys_id` = ?', (buy_id, ))
+        self.connect.commit()
+        return telegram_id
+
+    def get_buy_data(self, buy_id):
+        data = self.cursor.execute("SELECT * FROM `buys` WHERE `buys_id` = ?", (buy_id,)).fetchall()[0]
+        column_names = [column[0] for column in self.cursor.description]
+        data_dict = {}
+        for i, column_name in enumerate(column_names):
+            data_dict[column_name] = data[i]
+
+        return data_dict
 
     def unset_new_items(self):
         """
