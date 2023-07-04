@@ -3,6 +3,9 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.dispatcher import FSMContext
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from re import split
+
+from aiogram.utils import executor
+
 from db_requests import RequestToDB
 from web_requests import WebRequest
 from file_requests import FileRequests
@@ -63,6 +66,8 @@ class AdminMessage(StatesGroup):
     admin_message = State()
     restocking = State()
     new_freebies = State()
+    # category_to_delete = State()
+    # subcategory_to_delete = State()
 
 
 async def new_top_up(new_balances, telegram_id):
@@ -134,9 +139,11 @@ async def admin_menu(message: types.message):
                                                             callback_data='delete_freebie')
         get_received_freebies = types.InlineKeyboardButton('Get received freebies',
                                                            callback_data='admin_get_received_freebies')
+        make_refund_button = types.InlineKeyboardButton('Make refund', callback_data='admin_make_refund')
         admin_markup.add(send_to_all_users_button, restocking_button, get_new_users_button,
                          delete_category_button, delete_subcategory_button,
-                         send_message_restocking, new_freebies_button, delete_freebies_button, get_received_freebies)
+                         send_message_restocking, new_freebies_button, delete_freebies_button, get_received_freebies,
+                         make_refund_button)
         await message.answer('Admin menu', reply_markup=admin_markup)
 
 
@@ -162,6 +169,7 @@ async def get_admin_message(message: types.message, state: FSMContext):
         else:
             await state.finish()
             await bot.send_message(message.chat.id, f'<b>Cancelled!</b>', parse_mode='html')
+
 
 async def send_restocking_message():
     """
@@ -334,8 +342,8 @@ async def all_categories(message: types.message):
         for category in categories:
             category_button = types.InlineKeyboardButton(category[0], callback_data=f'show_{category[0]}')
             all_categories_markup.insert(category_button)
-        freebies_button = types.InlineKeyboardButton('Free', callback_data='show_freebies')
-        all_categories_markup.insert(freebies_button)
+        free_manuals_button = types.InlineKeyboardButton('Free', callback_data='show_freebies')
+        all_categories_markup.insert(free_manuals_button)
         await message.answer('🔍 <b>All categories</b>', parse_mode='html', reply_markup=all_categories_markup)
     else:
         await message.answer('<b>No categories</b>', parse_mode='html')
@@ -392,6 +400,7 @@ async def my_profile(message: types.message):
 
 @dp.callback_query_handler()
 async def buy_buttons_inline(callback: types.callback_query):
+    back_button = types.InlineKeyboardButton('Back', callback_data='back_to_admin_menu')
     """Обрабатывает нажатия инлайн кнопок"""
     if 'show_' in callback.data:
         """
@@ -401,7 +410,6 @@ async def buy_buttons_inline(callback: types.callback_query):
         back_button = types.InlineKeyboardButton('🔙 Back', callback_data='back_to_all_categories')
         freebies_markup = types.InlineKeyboardMarkup()
         if item == 'freebies':
-            # freebies = RequestToDB.get_freebies()
             freebies = RequestToDB.get_from_all_categories(freebies=True)
             if freebies:
                 freebies = [freebie[0] for freebie in freebies]
@@ -410,11 +418,11 @@ async def buy_buttons_inline(callback: types.callback_query):
                     freebies_markup.add(freebie_button)
                 freebies_markup.add(back_button)
                 await callback.answer()
-                await callback.message.edit_text('<b>Freebies</b>', parse_mode='html', reply_markup=freebies_markup)
+                await callback.message.edit_text('<b>Manuals</b>', parse_mode='html', reply_markup=freebies_markup)
             else:
                 await callback.answer()
                 freebies_markup.add(back_button)
-                await callback.message.edit_text('<b>No Freebies</b>', parse_mode='html', reply_markup=freebies_markup)
+                await callback.message.edit_text('<b>No Manuals</b>', parse_mode='html', reply_markup=freebies_markup)
         else:
             subcategory = RequestToDB.get_data(item)
             subcategory = list(dict.fromkeys(subcategory))
@@ -574,8 +582,8 @@ async def buy_buttons_inline(callback: types.callback_query):
         for category in categories:
             category_button = types.InlineKeyboardButton(category[0], callback_data=f'show_{category[0]}')
             all_categories_markup.insert(category_button)
-        freebies_button = types.InlineKeyboardButton('Free', callback_data='show_freebies')
-        all_categories_markup.insert(freebies_button)
+        free_manuals_button = types.InlineKeyboardButton('Free', callback_data='show_freebies')
+        all_categories_markup.insert(free_manuals_button)
         await callback.message.edit_text('🔍 <b>All categories</b>', parse_mode='html',
                                          reply_markup=all_categories_markup)
         await callback.answer()
@@ -617,25 +625,19 @@ async def buy_buttons_inline(callback: types.callback_query):
             for user in new_users:
                 user_button = types.InlineKeyboardButton(user[0], url=f't.me/{user[0]}')
                 users_markup.add(user_button)
-            back_button = types.InlineKeyboardButton('Back', callback_data='back_to_admin_menu')
             users_markup.add(back_button)
             await callback.message.edit_text(string_to_send, reply_markup=users_markup)
         elif new_users_quantity[0] > 0:
             string_to_send = f'{new_users_quantity[0]} new users:\n'
-            back_button = types.InlineKeyboardButton('Back', callback_data='back_to_admin_menu')
             users_markup.add(back_button)
             await callback.message.edit_text(string_to_send, reply_markup=users_markup)
         else:
-            back_button = types.InlineKeyboardButton('Back', callback_data='back_to_admin_menu')
             users_markup.add(back_button)
             await callback.message.edit_text('No new users', reply_markup=users_markup)
     elif callback.data == 'admin_get_received_freebies':
         """Функционал получения новых пользователей, которые получили халяву"""
         new_users, new_users_quantity, received_freebies_quantity = RequestToDB.get_received_freebies()
-        print(new_users_quantity)
-        print(received_freebies_quantity)
         users_markup = types.InlineKeyboardMarkup()
-        back_button = types.InlineKeyboardButton('Back', callback_data='back_to_admin_menu')
         if new_users.keys():
             string_to_send = f'{new_users_quantity} users get freebie:\n'
             for user, freebies in new_users.items():
@@ -655,7 +657,6 @@ async def buy_buttons_inline(callback: types.callback_query):
     elif 'delete' in callback.data:
         """Функционал для удаления категорий и подкатегорий"""
         column = split("_", callback.data)[1]
-        back_button = types.InlineKeyboardButton('Back', callback_data='back_to_admin_menu')
         if column == 'category':
             categories = RequestToDB.get_from_all_categories(categories=True)
             categories_markup = types.InlineKeyboardMarkup()
@@ -718,9 +719,11 @@ async def buy_buttons_inline(callback: types.callback_query):
                                                             callback_data='delete_freebie')
         get_received_freebies = types.InlineKeyboardButton('Get received freebies',
                                                            callback_data='admin_get_received_freebies')
+        make_refund_button = types.InlineKeyboardButton('Make refund', callback_data='admin_make_refund')
         admin_markup.add(send_to_all_users_button, restocking_button, get_new_users_button,
                          delete_category_button, delete_subcategory_button,
-                         send_message_restocking, new_freebies_button, delete_freebies_button, get_received_freebies)
+                         send_message_restocking, new_freebies_button, delete_freebies_button, get_received_freebies,
+                         make_refund_button)
         await callback.message.edit_text('Admin menu', reply_markup=admin_markup)
     elif 'del_this' in callback.data:
         """
@@ -757,6 +760,41 @@ async def buy_buttons_inline(callback: types.callback_query):
         freebie_markup.add(freebie_button)
         await callback.message.edit_text('<b>Your freebie</b>', parse_mode='html', reply_markup=freebie_markup)
         RequestToDB.set_freebie_received(freebie, callback.from_user.id, callback.from_user.username)
+    elif callback.data == 'admin_make_refund':
+        buys = RequestToDB.get_not_refunded_buys()
+        refund_markup = types.InlineKeyboardMarkup()
+        for buy in buys:
+            username = RequestToDB.get_username(buy[1])
+            if username is None:
+                refund_button = types.InlineKeyboardButton(f'{buy[0]}|ID:{buy[1]}|{buy[2]}$',
+                                                           callback_data=f'refund_order_with_id_{buy[3]}')
+                refund_markup.add(refund_button)
+            else:
+                refund_button = types.InlineKeyboardButton(f'{buy[0]}|{username}|{buy[2]}$',
+                                                           callback_data=f'refund_order_with_id_{buy[3]}')
+                refund_markup.add(refund_button)
+        refund_markup.add(back_button)
+        await callback.message.edit_text("<b>Refund menu</b>", parse_mode="html", reply_markup=refund_markup)
+    elif 'refund_order_with_id_' in callback.data:
+        buy_id = callback.data.split('refund_order_with_id_')[1]
+        user_id = RequestToDB.make_refund(buy_id)
+        await callback.message.edit_text("<b>Done!</b>", parse_mode="html")
+        refund_data = RequestToDB.get_buy_data(buy_id)
+        refund_sum = refund_data['price_total']
+        refund_subcategory = refund_data['subcategory']
+        try:
+            await bot.send_message(user_id,
+                                   f"<b>Refunded {refund_sum}$ for the purchase of {refund_subcategory}</b>",
+                                   parse_mode='html')
+        except:
+            for admin in admin_id:
+                username = RequestToDB.get_username(refund_data['telegram_id'])
+                if username is not None:
+                    await bot.send_message(admin,
+                                           f"Failed to send a message to user @{username} about a ${refund_sum} refund on {refund_subcategory}")
+                else:
+                    await bot.send_message(admin,
+                                           f"Failed to send a message to user with ID:{refund_data['telegram_id']} about a ${refund_sum} refund on {refund_subcategory}")
 
 
 if __name__ == '__main__':
