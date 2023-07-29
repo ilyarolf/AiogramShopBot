@@ -4,8 +4,9 @@ from aiogram.dispatcher import FSMContext
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from re import split
 
-from aiogram.utils import executor
+# from aiogram.utils import executor
 
+from CryptoAddressGenerator import CryptoAddressGenerator
 from db_requests import RequestToDB
 from web_requests import WebRequest
 from file_requests import FileRequests
@@ -66,8 +67,7 @@ class AdminMessage(StatesGroup):
     admin_message = State()
     restocking = State()
     new_freebies = State()
-    # category_to_delete = State()
-    # subcategory_to_delete = State()
+
 
 
 async def new_top_up(new_balances, telegram_id):
@@ -75,6 +75,9 @@ async def new_top_up(new_balances, telegram_id):
         if value > 0:
             username = RequestToDB.get_username(telegram_id)
             wallet_addresses = RequestToDB.get_user_wallets(telegram_id)
+            wallet_addresses = {'btc': wallet_addresses[0], 'ltc': wallet_addresses[2], 'usdt': wallet_addresses[1]}
+            user_id = RequestToDB.get_user_id(telegram_id)
+            private_key = CryptoAddressGenerator().get_private_keys(user_id)[key]
             if username:
                 user_button = types.InlineKeyboardButton(f'{username}', url=f't.me/{username}')
                 top_up_markup = types.InlineKeyboardMarkup()
@@ -83,18 +86,17 @@ async def new_top_up(new_balances, telegram_id):
                     await bot.send_message(admin,
                                            f"<b>New deposit by @{username} for"
                                            f" {value} {key}\n"
-                                           f"BTC : <code>{wallet_addresses[0]}</code>\n"
-                                           f"LTC: <code>{wallet_addresses[2]}</code>\n"
-                                           f"USDT: <code>{wallet_addresses[1]}</code></b>",
+                                           f"{key.upper()}: <code>{wallet_addresses[key]}</code>\n"
+                                           f"Key: <code>{private_key}</code></b>",
                                            parse_mode='html', reply_markup=top_up_markup)
             else:
                 for admin in admin_id:
                     await bot.send_message(admin,
                                            f"<b>New deposit by user with id {telegram_id} for"
                                            f" {value} {key}\n"
-                                           f"BTC : <code>{wallet_addresses[0]}</code>\n"
-                                           f"LTC: <code>{wallet_addresses[2]}</code>\n"
-                                           f"USDT: <code>{wallet_addresses[1]}</code></b>", parse_mode='html')
+                                           f"{key.upper()}: <code>{wallet_addresses[key]}</code>\n"
+                                           f"Key: <code>{private_key}</code></b>",
+                                           parse_mode='html')
 
 
 async def new_buy(telegram_id, subcategory, quantity, total_price):
