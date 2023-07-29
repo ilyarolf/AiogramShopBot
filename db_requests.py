@@ -1,11 +1,13 @@
 from pysqlcipher3 import dbapi2 as sqlite3
 import datetime
 from dateutil.parser import parse
+from CryptoAddressGenerator import CryptoAddressGenerator
 from file_requests import FileRequests
 
 
 class RequestToDB:
     """Класс для запросов в БД"""
+
     def __init__(self, db_file: str) -> None:
         """Инициализация класса, подключение к БД"""
         self.connect = sqlite3.connect(db_file)
@@ -54,10 +56,10 @@ class RequestToDB:
 
     def insert_new_user(self, telegram_id: int, username: str) -> None:
         """Создаёт запись в БД о новом пользователе"""
-        wallets = FileRequests.get_wallets(self=FileRequests())
-        btc_wallet = wallets[0]
-        ltc_wallet = wallets[1]
-        trx_wallet = wallets[2]
+        wallets = CryptoAddressGenerator().get_addresses(self.get_next_user_id())
+        btc_wallet = wallets['btc']
+        ltc_wallet = wallets['ltc']
+        trx_wallet = wallets['trx']
         if username:
             self.cursor.execute(
                 "INSERT OR IGNORE INTO `users` (`telegram_username`,`telegram_id`,`btc_address`,`ltc_address`,"
@@ -316,12 +318,13 @@ class RequestToDB:
         telegram_id = refund_data['telegram_id']
         sum_of_refund = refund_data['price_total']
         consume_records = \
-        self.cursor.execute('SELECT `consume_records` FROM `users` WHERE `telegram_id` = ?', (telegram_id,)).fetchone()[
-            0]
+            self.cursor.execute('SELECT `consume_records` FROM `users` WHERE `telegram_id` = ?',
+                                (telegram_id,)).fetchone()[
+                0]
         new_consume_records = int(consume_records) - int(sum_of_refund)
         self.cursor.execute('UPDATE `users` SET `consume_records` = ? WHERE `telegram_id` = ?',
                             (new_consume_records, telegram_id))
-        self.cursor.execute('UPDATE `buys` SET `is_refunded` = 1 WHERE `buys_id` = ?', (buy_id, ))
+        self.cursor.execute('UPDATE `buys` SET `is_refunded` = 1 WHERE `buys_id` = ?', (buy_id,))
         self.connect.commit()
         return telegram_id
 
@@ -340,6 +343,17 @@ class RequestToDB:
         """
         self.cursor.execute('UPDATE `items` SET `is_new` = 0 WHERE `is_new` = 1')
         self.connect.commit()
+
+    def get_next_user_id(self) -> int:
+        last_id = self.cursor.execute("SELECT MAX(user_id) FROM `users`").fetchone()[0]
+        if last_id is not None:
+            return last_id + 1
+        else:
+            return 0
+
+    def get_user_id(self, telegram_id: int) -> int:
+        user_id = self.cursor.execute("SELECT `user_id` FROM `users` WHERE `telegram_id` = ?",(telegram_id, )).fetchone()[0]
+        return user_id
 
     def close(self):
         """Закрывает соедининие с БД"""
