@@ -44,8 +44,4 @@ class CryptoAddressGenerator:
             i = i + int(additive_number)
         return {'btc': self.__generate_btc_pair(i)['private_key'],
                 'ltc': self.__generate_ltc_pair(i)['private_key'],
-                'trx': self.__generate_trx_pair(i)['private_key']}
-
-
-if __name__ == "__main__":
-    print(CryptoAddressGenerator().get_addresses(0))
+                'usdt': self.__generate_trx_pair(i)['private_key']}
