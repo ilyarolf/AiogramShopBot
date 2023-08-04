@@ -3,7 +3,7 @@ from os import getenv
 
 class CryptoAddressGenerator:
     def __init__(self,
-                 seed: str = 'cloud broom leaf moment apple advance vocal fence envelope word arm ten hen struggle giant'):
+                 seed: str = ''):
         self.seed_bytes = Bip39SeedGenerator(seed).Generate()
 
     def __generate_btc_pair(self, i: int):
