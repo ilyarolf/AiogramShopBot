@@ -2,7 +2,6 @@ from pysqlcipher3 import dbapi2 as sqlite3
 import datetime
 from dateutil.parser import parse
 from CryptoAddressGenerator import CryptoAddressGenerator
-from file_requests import FileRequests
 
 
 class RequestToDB:
