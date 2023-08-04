@@ -245,7 +245,7 @@ async def consume_and_send_data(telegram_id, total_price, quantity, subcategory)
                 await bot.send_message(chat_id=telegram_id, text='Error')
         RequestToDB.insert_new_buy(telegram_id, subcategory, quantity, total_price, private_data_list)
         await new_buy(telegram_id, subcategory, quantity, total_price)
-    elif RequestToDB.get_quantity_in_stock(subcategory) <= int(quantity):
+    elif RequestToDB.get_quantity_in_stock(subcategory) < int(quantity):
         await bot.send_message(telegram_id, 'Out of stock!')
     else:
         await bot.send_message(telegram_id, 'Insufficient funds!')
