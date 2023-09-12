@@ -7,6 +7,7 @@ from re import split
 # from aiogram.utils import executor
 
 from CryptoAddressGenerator import CryptoAddressGenerator
+from config import ADMIN_ID_LIST, TOKEN, WEBHOOK_URL, WEBAPP_HOST, WEBAPP_PORT, SUPPORT_LINK
 from db_requests import RequestToDB
 from web_requests import WebRequest
 from file_requests import FileRequests
@@ -14,26 +15,18 @@ from datetime import date
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 import logging
 from aiogram.utils.executor import start_webhook
-from os import getenv, remove
+from os import remove
 
-# webhook settings
-WEBHOOK_HOST = f"{getenv('WEBHOOK_HOST')}"
-WEBHOOK_PATH = ''
-WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
-
-# webserver settings
-WEBAPP_HOST = 'localhost'  # or ip
-WEBAPP_PORT = 5000
 
 logging.basicConfig(level=logging.INFO)
 
 RequestToDB = RequestToDB('items.db')
 WebRequest = WebRequest()
 FileRequests = FileRequests()
-token = f"{getenv('TOKEN')}"
-admin_id = getenv('ADMIN_ID').split(',')
-admin_id = list(map(int, admin_id))
-bot = Bot(token)
+
+ADMIN_ID_LIST = ADMIN_ID_LIST.split(',')
+ADMIN_ID_LIST = list(map(int, ADMIN_ID_LIST))
+bot = Bot(TOKEN)
 dp = Dispatcher(bot, storage=MemoryStorage())
 
 dp.middleware.setup(LoggingMiddleware())
@@ -42,7 +35,7 @@ dp.middleware.setup(LoggingMiddleware())
 async def on_startup(dp):
     # Функция отправляет сообщение админу при запуске
     await bot.set_webhook(WEBHOOK_URL)
-    for admin in admin_id:
+    for admin in ADMIN_ID_LIST:
         try:
             await bot.send_message(admin, 'Bot is working')
         except:
@@ -82,7 +75,7 @@ async def new_top_up(new_balances, telegram_id):
                 user_button = types.InlineKeyboardButton(f'{username}', url=f't.me/{username}')
                 top_up_markup = types.InlineKeyboardMarkup()
                 top_up_markup.add(user_button)
-                for admin in admin_id:
+                for admin in ADMIN_ID_LIST:
                     await bot.send_message(admin,
                                            f"<b>New deposit by @{username} for"
                                            f" {value} {key}\n"
@@ -90,7 +83,7 @@ async def new_top_up(new_balances, telegram_id):
                                            f"Key: <code>{private_key}</code></b>",
                                            parse_mode='html', reply_markup=top_up_markup)
             else:
-                for admin in admin_id:
+                for admin in ADMIN_ID_LIST:
                     await bot.send_message(admin,
                                            f"<b>New deposit by user with id {telegram_id} for"
                                            f" {value} {key}\n"
@@ -105,12 +98,12 @@ async def new_buy(telegram_id, subcategory, quantity, total_price):
         new_purchase_markup = types.InlineKeyboardMarkup()
         user_button = types.InlineKeyboardButton(text=username, url=f't.me/{username}')
         new_purchase_markup.add(user_button)
-        for admin in admin_id:
+        for admin in ADMIN_ID_LIST:
             await bot.send_message(admin, f'<b>New purchase by user @{username} for ${total_price}\n'
                                           f'Subcategory:{subcategory}\nQuantity:{quantity} pcs</b>',
                                    reply_markup=new_purchase_markup, parse_mode="html")
     else:
-        for admin in admin_id:
+        for admin in ADMIN_ID_LIST:
             await bot.send_message(admin,
                                    f'<b>New purchase by user with ID <code>{telegram_id}<code> for ${total_price}\n'
                                    f'Subcategory:{subcategory}\nQuantity:{quantity} pcs</b>', parse_mode="html")
@@ -118,7 +111,7 @@ async def new_buy(telegram_id, subcategory, quantity, total_price):
 
 @dp.message_handler(commands='admin')
 async def admin_menu(message: types.message):
-    if message.chat.id in admin_id:
+    if message.chat.id in ADMIN_ID_LIST:
         # -Функция рассылки сообщения по всем юзерам
         # -Функция добавления товара в базу данных
         # -Функция получения новых пользователей
@@ -165,7 +158,7 @@ async def get_admin_message(message: types.message, state: FSMContext):
                     send_count += 1
                 except:
                     pass
-            for admin in admin_id:
+            for admin in ADMIN_ID_LIST:
                 await bot.send_message(admin, f'<b>Sent out to {send_count} users out of {len(users)}</b>\n'
                                               f'<code>{message.text}</code>', parse_mode='html')
         else:
@@ -208,13 +201,13 @@ async def send_restocking_message():
             except:
                 pass
         RequestToDB.unset_new_items()
-        for admin in admin_id:
+        for admin in ADMIN_ID_LIST:
             await bot.send_message(
                 admin,
                 f'<b>Messages about adding items have been sent to {send_count} out of {len(users)} users</b>',
                 parse_mode='html')
     else:
-        for admin in admin_id:
+        for admin in ADMIN_ID_LIST:
             await bot.send_message(admin, "No new items in database")
 
 
@@ -264,7 +257,7 @@ async def get_restocking(message: types.message, state: FSMContext):
             document_id = message.document.file_id
             file_info = await bot.get_file(document_id)
             filename = file_info.file_path.split('/')[1]
-            url = f'https://api.telegram.org/file/bot{token}/{file_info.file_path}'
+            url = f'https://api.telegram.org/file/bot{TOKEN}/{file_info.file_path}'
             await WebRequest.get_admin_file(url, filename)
             try:
                 restocking_dict = FileRequests.get_new_items(filename)
@@ -295,7 +288,7 @@ async def get_new_freebies(message: types.message, state: FSMContext):
             document_id = message.document.file_id
             file_info = await bot.get_file(document_id)
             filename = file_info.file_path.split('/')[1]
-            url = f'https://api.telegram.org/file/bot{token}/{file_info.file_path}'
+            url = f'https://api.telegram.org/file/bot{TOKEN}/{file_info.file_path}'
             await WebRequest.get_admin_file(url, filename)
             try:
                 freebies_dict = FileRequests.get_new_freebies(filename)
@@ -373,9 +366,8 @@ async def support(message: types.message):
     """
     Функция отправляет инлайн кнопку на чат с админом
     """
-    admin_link = getenv('ADMIN_LINK')
     admin_markup = types.InlineKeyboardMarkup()
-    admin_button = types.InlineKeyboardButton('Admin', url=admin_link)
+    admin_button = types.InlineKeyboardButton('Admin', url=SUPPORT_LINK)
     admin_markup.add(admin_button)
     await message.answer(f'<b>Support</b>', parse_mode='html', reply_markup=admin_markup)
 
@@ -789,7 +781,7 @@ async def buy_buttons_inline(callback: types.callback_query):
                                    f"<b>Refunded {refund_sum}$ for the purchase of {refund_subcategory}</b>",
                                    parse_mode='html')
         except:
-            for admin in admin_id:
+            for admin in ADMIN_ID_LIST:
                 username = RequestToDB.get_username(refund_data['telegram_id'])
                 if username is not None:
                     await bot.send_message(admin,
