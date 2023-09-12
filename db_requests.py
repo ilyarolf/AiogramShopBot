@@ -2,6 +2,7 @@ from pysqlcipher3 import dbapi2 as sqlite3
 import datetime
 from dateutil.parser import parse
 from CryptoAddressGenerator import CryptoAddressGenerator
+from config import DB_PASS
 
 
 class RequestToDB:
@@ -11,7 +12,7 @@ class RequestToDB:
         """Инициализация класса, подключение к БД"""
         self.connect = sqlite3.connect(db_file)
         self.cursor = self.connect.cursor()
-        self.cursor.execute("PRAGMA key='Key'")
+        self.cursor.execute(f"PRAGMA key={DB_PASS}")
 
     def get_user_wallets(self, telegram_id: int) -> list:
         """Получает адреса криптокошельков пользователя из БД"""
