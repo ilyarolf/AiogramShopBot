@@ -6,23 +6,16 @@ from re import split
 
 # from aiogram.utils import executor
 
-from CryptoAddressGenerator import CryptoAddressGenerator
 from config import ADMIN_ID_LIST, TOKEN, WEBHOOK_URL, WEBAPP_HOST, WEBAPP_PORT, SUPPORT_LINK
-from models.models import db, User
-# from db_requests import RequestToDB
-# from web_requests import WebRequest
+from models.item import Item
+from models.user import db, User
 from file_requests import FileRequests
-from datetime import date
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 import logging
 from aiogram.utils.executor import start_webhook
-from os import remove
 
 
 logging.basicConfig(level=logging.INFO)
-
-# RequestToDB = RequestToDB('items.db')
-# WebRequest = WebRequest()
 FileRequests = FileRequests()
 
 ADMIN_ID_LIST = ADMIN_ID_LIST.split(',')
@@ -330,22 +323,23 @@ async def start(message: types.message):
     await message.answer('Hi', reply_markup=start_markup)
 
 
-# @dp.message_handler(text='🔍 All categories')
-# async def all_categories(message: types.message):
-#     """
-#     Функция получает все категории из БД, и создаёт инлайн кнопки с категориями,если их нет то пишет 'No categories'
-#     """
-#     categories = RequestToDB.get_from_all_categories(categories=True)
-#     if categories:
-#         all_categories_markup = types.InlineKeyboardMarkup(row_width=2)
-#         for category in categories:
-#             category_button = types.InlineKeyboardButton(category[0], callback_data=f'show_{category[0]}')
-#             all_categories_markup.insert(category_button)
-#         free_manuals_button = types.InlineKeyboardButton('Free', callback_data='show_freebies')
-#         all_categories_markup.insert(free_manuals_button)
-#         await message.answer('🔍 <b>All categories</b>', parse_mode='html', reply_markup=all_categories_markup)
-#     else:
-#         await message.answer('<b>No categories</b>', parse_mode='html')
+@dp.message_handler(text='🔍 All categories')
+async def all_categories(message: types.message):
+    """
+    Функция получает все категории из БД, и создаёт инлайн кнопки с категориями,если их нет то пишет 'No categories'
+    """
+    categories = Item.get_categories()
+    if categories:
+        all_categories_markup = types.InlineKeyboardMarkup(row_width=2)
+        for category in categories:
+            category_name = category["category"]
+            category_button = types.InlineKeyboardButton(category_name, callback_data=f'show_{category_name}')
+            all_categories_markup.insert(category_button)
+        free_manuals_button = types.InlineKeyboardButton('Free', callback_data='show_freebies')
+        all_categories_markup.insert(free_manuals_button)
+        await message.answer('🔍 <b>All categories</b>', parse_mode='html', reply_markup=all_categories_markup)
+    else:
+        await message.answer('<b>No categories</b>', parse_mode='html')
 
 
 @dp.message_handler(text='🤝 FAQ')
@@ -376,24 +370,28 @@ async def support(message: types.message):
     await message.answer(f'<b>Support</b>', parse_mode='html', reply_markup=admin_markup)
 
 
-# @dp.message_handler(text='🎓 My profile')
-# async def my_profile(message: types.message):
-#     """
-#     Функция отправляет сообщение пользователю с данными его профиля, балансы выгружаются из БД
-#     """
-#     balances = RequestToDB.get_wallets_balances_from_db(message.chat.id)
-#     top_up_button = types.InlineKeyboardButton('Top Up balance', callback_data='top_up_balance')
-#     purchase_history = types.InlineKeyboardButton('Purchase history', callback_data='purchase_history')
-#     update_balance = types.InlineKeyboardButton('Refresh balance', callback_data='refresh_balance')
-#     my_profile_markup = types.InlineKeyboardMarkup(row_width=2)
-#     my_profile_markup.add(top_up_button, purchase_history, update_balance)
-#     balance_usd = RequestToDB.get_balance_in_usd_from_db(message.chat.id)
-#     await message.answer(f'<b>Your profile\nID:</b> <code>{message.chat.id}</code>\n\n'
-#                          f'<b>Your BTC balance:</b>\n<code>{balances[0]}</code>\n'
-#                          f'<b>Your USDT balance:</b>\n<code>{balances[1]}</code>\n'
-#                          f'<b>Your LTC balance:</b>\n<code>{balances[2]}</code>\n'
-#                          f"<b>Your balance in USD:</b>\n{format(balance_usd, '.2f')}$",
-#                          parse_mode="HTML", reply_markup=my_profile_markup)
+@dp.message_handler(text='🎓 My profile')
+async def my_profile(message: types.message):
+    """
+    Функция отправляет сообщение пользователю с данными его профиля, балансы выгружаются из БД
+    """
+    telegram_id = message.chat.id
+    user = User.get(telegram_id)
+    btc_balance = user["btc_balance"]
+    usdt_balance = user["usdt_balance"]
+    ltc_balance = user["ltc_balance"]
+    usd_balance = format(user["top_up_amount"] - user["consume_records"], '.2f')
+    top_up_button = types.InlineKeyboardButton('Top Up balance', callback_data='top_up_balance')
+    purchase_history = types.InlineKeyboardButton('Purchase history', callback_data='purchase_history')
+    update_balance = types.InlineKeyboardButton('Refresh balance', callback_data='refresh_balance')
+    my_profile_markup = types.InlineKeyboardMarkup(row_width=2)
+    my_profile_markup.add(top_up_button, purchase_history, update_balance)
+    await message.answer(f'<b>Your profile\nID:</b> <code>{telegram_id}</code>\n\n'
+                         f'<b>Your BTC balance:</b>\n<code>{btc_balance}</code>\n'
+                         f'<b>Your USDT balance:</b>\n<code>{usdt_balance}</code>\n'
+                         f'<b>Your LTC balance:</b>\n<code>{ltc_balance}</code>\n'
+                         f"<b>Your balance in USD:</b>\n{usd_balance}$",
+                         parse_mode="HTML", reply_markup=my_profile_markup)
 
 
 # @dp.callback_query_handler()

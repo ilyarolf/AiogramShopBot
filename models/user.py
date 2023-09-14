@@ -1,7 +1,7 @@
 from CryptoAddressGenerator import CryptoAddressGenerator
-from db import Database
+from db import db
 
-db = Database()
+
 class User:
     def __init__(self, telegram_id: int, telegram_username: str):
         next_user_id = self.__get_next_user_id()
@@ -47,5 +47,8 @@ class User:
         db.cursor.execute('UPDATE `users` SET `telegram_username`= ? where `telegram_id` = ?',
                                     (telegram_username, telegram_id))
         db.connect.commit()
-
+    @staticmethod
+    def get(telegram_id:int):
+        user = db.cursor.execute('SELECT * FROM `users` WHERE `telegram_id` = ?', (telegram_id, )).fetchall()[0]
+        return user
 
