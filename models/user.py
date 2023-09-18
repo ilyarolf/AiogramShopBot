@@ -17,7 +17,7 @@ class User:
 
 
     def __get_next_user_id(self)->int:
-        last_id = db.cursor.execute("SELECT MAX(user_id) FROM `users`").fetchone()[0]
+        last_id = db.cursor.execute("SELECT MAX(user_id) FROM `users`").fetchone()["MAX(user_id)"]
         if last_id is not None:
             return last_id + 1
         else:
@@ -40,7 +40,7 @@ class User:
     @staticmethod
     def is_exist(telegram_id:int) ->bool:
         is_exist = db.cursor.execute('SELECT EXISTS (SELECT * from `users` where `telegram_id` = ?)',
-                                        (telegram_id,)).fetchone()[0]
+                                        (telegram_id,)).fetchone()["EXISTS (SELECT * from `users` where `telegram_id` = ?)"]
         return bool(is_exist)
     @staticmethod
     def update_username(telegram_id:int, telegram_username:str):
