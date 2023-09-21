@@ -1,34 +1,39 @@
+import itertools
 from typing import Union
 
 from aiogram import types
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.callback_data import CallbackData
 
+from crypto_api.CryptoApiManager import CryptoApiManager
 from db import db
 from models.user import User
 
 my_profile_cb = CallbackData("profile", "level", "action", "args_for_action")
 
-def create_callback_profile(level:int, action:str = "", args_for_action = ""):
+
+def create_callback_profile(level: int, action: str = "", args_for_action=""):
     return my_profile_cb.new(level=level,
                              action=action,
                              args_for_action=args_for_action)
 
-async def my_profile_text_message(message:types.message):
+
+async def my_profile_text_message(message: types.message):
     await my_profile(message)
 
 
-def get_my_profile_message(telegram_id:int):
+def get_my_profile_message(telegram_id: int):
     user = User.get(telegram_id)
     btc_balance = user["btc_balance"]
     usdt_balance = user["usdt_balance"]
     ltc_balance = user["ltc_balance"]
     usd_balance = format(user["top_up_amount"] - user["consume_records"], '.2f')
     return (f'<b>Your profile\nID:</b> <code>{telegram_id}</code>\n\n'
-                             f'<b>Your BTC balance:</b>\n<code>{btc_balance}</code>\n'
-                             f'<b>Your USDT balance:</b>\n<code>{usdt_balance}</code>\n'
-                             f'<b>Your LTC balance:</b>\n<code>{ltc_balance}</code>\n'
-                             f"<b>Your balance in USD:</b>\n{usd_balance}$")
+            f'<b>Your BTC balance:</b>\n<code>{btc_balance}</code>\n'
+            f'<b>Your USDT balance:</b>\n<code>{usdt_balance}</code>\n'
+            f'<b>Your LTC balance:</b>\n<code>{ltc_balance}</code>\n'
+            f"<b>Your balance in USD:</b>\n{usd_balance}$")
+
 
 async def my_profile(message: Union[Message, CallbackQuery]):
     current_level = 0
@@ -54,15 +59,15 @@ async def my_profile(message: Union[Message, CallbackQuery]):
         await callback.message.edit_text(message, parse_mode="HTML", reply_markup=my_profile_markup)
 
 
-
-async def top_up_balance(callback:CallbackQuery):
+async def top_up_balance(callback: CallbackQuery):
     telegram_id = callback.message.chat.id
     user = User.get(telegram_id)
     current_level = 1
     btc_address = user["btc_address"]
     trx_address = user["trx_address"]
     ltc_address = user["ltc_address"]
-    back_to_profile_button = types.InlineKeyboardButton('Back', callback_data=create_callback_profile(current_level-1))
+    back_to_profile_button = types.InlineKeyboardButton('Back',
+                                                        callback_data=create_callback_profile(current_level - 1))
     back_button_markup = types.InlineKeyboardMarkup()
     back_button_markup.add(back_to_profile_button)
     await callback.message.edit_text(
@@ -75,12 +80,14 @@ async def top_up_balance(callback:CallbackQuery):
         reply_markup=back_button_markup)
     await callback.answer()
 
-async def purchase_history(callback:CallbackQuery):
+
+async def purchase_history(callback: CallbackQuery):
     telegram_id = callback.message.chat.id
     current_level = 2
     orders = db.cursor.execute('SELECT * FROM `buys` where `telegram_id` = ?', (telegram_id,)).fetchall()
     orders_markup = types.InlineKeyboardMarkup()
-    back_to_profile_button = types.InlineKeyboardButton('Back', callback_data=create_callback_profile(current_level-2))
+    back_to_profile_button = types.InlineKeyboardButton('Back',
+                                                        callback_data=create_callback_profile(current_level - 2))
     for i in range(len(orders)):
         order_inline = types.InlineKeyboardButton(
             f'{orders[i][2]} | Total Price: {orders[i][4]}$ | Quantity: {orders[i][3]} pcs',
@@ -94,13 +101,27 @@ async def purchase_history(callback:CallbackQuery):
         await callback.message.edit_text('<b>Your orders</b>', reply_markup=orders_markup, parse_mode='html')
     await callback.answer()
 
-async def refresh_balance(callback:CallbackQuery):
-    #TODO("implement function")
-    pass
+
+async def refresh_balance(callback: CallbackQuery):
+    telegram_id = callback.from_user.id
+    current_level = 3
+    if User.can_refresh_balance(telegram_id):
+        old_balances = User.get_balances(telegram_id)
+        User.create_last_balance_refresh_data(telegram_id)
+        addresses = User.get_addresses(telegram_id)
+        new_crypto_balances = await CryptoApiManager(**addresses).get_top_ups()
+        crypto_prices = await CryptoApiManager.get_crypto_prices()
+        new_usd_balance = 0.0
+        if sum(new_crypto_balances.values()) > sum(old_balances.values()):
+            for (balance_key, balance), (crypto_key, crypto_price) in itertools.product(new_crypto_balances.items(),
+                                                                                        crypto_prices.items()):
+                new_value = balance * crypto_price
+                new_usd_balance += new_value
+            User.update_crypto_balances(telegram_id, new_crypto_balances)
+            User.update_usd_balance(telegram_id, new_usd_balance)
 
 
-
-async def navigate(call:CallbackQuery, callback_data:dict):
+async def navigate(call: CallbackQuery, callback_data: dict):
     current_level = callback_data.get("level")
 
     levels = {
