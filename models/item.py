@@ -15,7 +15,11 @@ class Item:
     @staticmethod
     def get_categories() -> list:
         categories = db.cursor.execute('SELECT DISTINCT `category` FROM `items`').fetchall()
-        print(categories)
+        return categories
+
+    @staticmethod
+    def get_subcategories() -> list:
+        categories = db.cursor.execute('SELECT DISTINCT `subcategory`, `price` FROM `items`').fetchall()
         return categories
 
 
