@@ -104,7 +104,6 @@ async def purchase_history(callback: CallbackQuery):
 
 async def refresh_balance(callback: CallbackQuery):
     telegram_id = callback.from_user.id
-    current_level = 3
     if User.can_refresh_balance(telegram_id):
         old_balances = User.get_balances(telegram_id)
         User.create_last_balance_refresh_data(telegram_id)
@@ -119,6 +118,7 @@ async def refresh_balance(callback: CallbackQuery):
                 new_usd_balance += new_value
             User.update_crypto_balances(telegram_id, new_crypto_balances)
             User.update_usd_balance(telegram_id, new_usd_balance)
+    await callback.answer()
 
 
 async def navigate(call: CallbackQuery, callback_data: dict):
