@@ -1,9 +1,12 @@
 from bip_utils import Bip44Changes, Bip44Coins, Bip44, Bip39SeedGenerator, Bip84, Bip84Coins
 from os import getenv
 
+from config import MNEMONIC
+
+
 class CryptoAddressGenerator:
     def __init__(self,
-                 seed: str = ''):
+                 seed: str = MNEMONIC):
         self.seed_bytes = Bip39SeedGenerator(seed).Generate()
 
     def __generate_btc_pair(self, i: int):
