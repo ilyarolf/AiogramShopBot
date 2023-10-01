@@ -12,3 +12,4 @@ WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
 TOKEN = os.environ.get("TOKEN")
 ADMIN_ID_LIST = os.environ.get("ADMIN_ID_LIST")
 SUPPORT_LINK = os.environ.get("SUPPORT_LINK")
+DB_NAME = os.environ.get("DB_NAME")
