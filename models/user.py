@@ -101,10 +101,26 @@ class User:
         db.connect.commit()
 
     @staticmethod
-    def update_usd_balance(telegram_id: int, usd_balance: float):
+    def update_top_up_amount(telegram_id: int, usd_balance: float):
         old_usd_balance = db.cursor.execute('SELECT `top_up_amount` from `users` WHERE `telegram_id` = ?',
                                             (telegram_id,)).fetchone()[0]
         new_usd_balance = old_usd_balance + usd_balance
         db.cursor.execute("UPDATE `users` SET `top_up_amount` = ? where `telegram_id` = ?",
                           (format(new_usd_balance, '.2f'), telegram_id))
         db.connect.commit()
+
+    @staticmethod
+    def update_consume_records(telegram_id: int, total_price: float) -> None:
+        consume_records = \
+            db.cursor.execute('SELECT `consume_records` from `users` where `telegram_id` = ?',
+                              (telegram_id,)).fetchone()['consume_records']
+        consume_records += float(total_price)
+        db.cursor.execute("UPDATE `users` SET `consume_records` = ? where `telegram_id` = ?",
+                          (consume_records, telegram_id))
+        db.connect.commit()
+
+    @staticmethod
+    def is_buy_possible(telegram_id: int, total_price: float) -> bool:
+        user = User.get(telegram_id)
+        user_balance = user['top_up_amount'] - user['consume_records']
+        return user_balance >= total_price

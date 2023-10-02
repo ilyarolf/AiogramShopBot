@@ -117,7 +117,7 @@ async def refresh_balance(callback: CallbackQuery):
                 new_value = balance * crypto_price
                 new_usd_balance += new_value
             User.update_crypto_balances(telegram_id, new_crypto_balances)
-            User.update_usd_balance(telegram_id, new_usd_balance)
+            User.update_top_up_amount(telegram_id, new_usd_balance)
     await callback.answer()
 
 
