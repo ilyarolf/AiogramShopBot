@@ -4,12 +4,13 @@ from aiogram import types
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.callback_data import CallbackData
 
+from models.buy import Buy
+from models.buyItem import BuyItem
 from models.item import Item
 from models.user import User
 
 all_categories_cb = CallbackData("all_categories", "level", "category", "subcategory", "price", "quantity",
-                                 "total_price", "action",
-                                 "confirmation")
+                                 "total_price", "confirmation")
 
 
 def create_callback_all_categories(level: int,
@@ -18,11 +19,10 @@ def create_callback_all_categories(level: int,
                                    price: float = 0.0,
                                    total_price: float = 0.0,
                                    quantity: int = 0,
-                                   action: str = "",
                                    confirmation: bool = False):
     return all_categories_cb.new(level, category=category, subcategory=subcategory, price=price,
                                  total_price=total_price,
-                                 quantity=quantity, action=action, confirmation=confirmation)
+                                 quantity=quantity, confirmation=confirmation)
 
 
 async def all_categories_text_message(message: types.message):
@@ -36,8 +36,7 @@ async def create_category_buttons():
         categories_markup = types.InlineKeyboardMarkup(row_width=2)
         for category in categories:
             category_name = category['category']
-            category_button_callback = create_callback_all_categories(level=current_level + 1, category=category_name,
-                                                                      action="show_category")
+            category_button_callback = create_callback_all_categories(level=current_level + 1, category=category_name)
             category_button = types.InlineKeyboardButton(category_name, callback_data=category_button_callback)
             categories_markup.insert(category_button)
         return categories_markup
@@ -45,7 +44,7 @@ async def create_category_buttons():
 
 async def create_subcategory_buttons(category: str):
     current_level = 1
-    subcategories = Item.get_subcategories()
+    subcategories = Item.get_subcategories(category)
     subcategories_markup = types.InlineKeyboardMarkup(row_width=1)
     for subcategory in subcategories:
         subcategory_name = subcategory['subcategory']
@@ -98,8 +97,7 @@ async def select_quantity(callback: CallbackQuery):
     for i in range(1, 11):
         count_button_callback = create_callback_all_categories(level=current_level + 1, category=category,
                                                                subcategory=subcategory, price=price,
-                                                               quantity=i, action="select_quantity",
-                                                               total_price=price * i)
+                                                               quantity=i, total_price=price * i)
         count_button_inline = types.InlineKeyboardButton(text=str(i), callback_data=count_button_callback)
         count_markup.insert(count_button_inline)
     back_button = types.InlineKeyboardButton("Back",
@@ -126,7 +124,6 @@ async def buy_confirmation(callback: CallbackQuery):
                                                              price=price,
                                                              total_price=total_price,
                                                              quantity=quantity,
-                                                             action="buy_confirmation",
                                                              confirmation=True)
     decline_button_callback = create_callback_all_categories(level=current_level + 1,
                                                              category=category,
@@ -134,7 +131,6 @@ async def buy_confirmation(callback: CallbackQuery):
                                                              price=price,
                                                              total_price=total_price,
                                                              quantity=quantity,
-                                                             action="buy_confirmation",
                                                              confirmation=False)
     confirmation_button = types.InlineKeyboardButton(text="Confirm", callback_data=confirm_button_callback)
     decline_button = types.InlineKeyboardButton(text="Decline", callback_data=decline_button_callback)
@@ -142,8 +138,7 @@ async def buy_confirmation(callback: CallbackQuery):
                                              callback_data=create_callback_all_categories(level=current_level - 1,
                                                                                           category=category,
                                                                                           subcategory=subcategory,
-                                                                                          price=price,
-                                                                                          action='select_quantity'))
+                                                                                          price=price))
     confirmation_markup.add(confirmation_button, decline_button, back_button)
     await callback.message.edit_text(text=f'<b>You choose:{subcategory}\n'
                                           f'Price:${price}\n'
@@ -170,6 +165,11 @@ async def buy_processing(callback: CallbackQuery):
         User.update_consume_records(callback.from_user.id, total_price)
         sold_data = Item.get_bought_items(subcategory, quantity)
         message = await create_message_with_bought_items(sold_data)
+        user_id = User.get(telegram_id)['user_id']
+        buy = Buy(user_id, quantity, total_price)
+        buy.insert_new()
+        BuyItem.insert_many(sold_data, buy.buy_id)
+        Item.set_items_sold(sold_data)
         await callback.message.edit_text(text=message, parse_mode='html')
     elif is_in_stock is False:
         await callback.message.edit_text(text='<b>Out of stock!</b>', parse_mode='html',
