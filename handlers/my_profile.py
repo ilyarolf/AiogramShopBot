@@ -7,6 +7,9 @@ from aiogram.utils.callback_data import CallbackData
 
 from crypto_api.CryptoApiManager import CryptoApiManager
 from db import db
+from handlers.all_categories import create_message_with_bought_items
+from models.buyItem import BuyItem
+from models.item import Item
 from models.user import User
 
 my_profile_cb = CallbackData("profile", "level", "action", "args_for_action")
@@ -83,15 +86,23 @@ async def top_up_balance(callback: CallbackQuery):
 
 async def purchase_history(callback: CallbackQuery):
     telegram_id = callback.message.chat.id
+    user_id = User.get(telegram_id)['user_id']
     current_level = 2
-    orders = db.cursor.execute('SELECT * FROM `buys` where `telegram_id` = ?', (telegram_id,)).fetchall()
+    orders = db.cursor.execute('SELECT * FROM `buys` where `user_id` = ?', (user_id,)).fetchall()
     orders_markup = types.InlineKeyboardMarkup()
     back_to_profile_button = types.InlineKeyboardButton('Back',
                                                         callback_data=create_callback_profile(current_level - 2))
-    for i in range(len(orders)):
+    for order in orders:
+        quantity = order['quantity']
+        total_price = order['total_price']
+        buy_id = order['buy_id']
+        item_subcategory = Item.get(BuyItem.get_items_by_buy_id(buy_id)[0]['item_id']).subcategory
+        item_from_history_callback = create_callback_profile(current_level+2, action="get_order",
+                                                             args_for_action=str(buy_id))
         order_inline = types.InlineKeyboardButton(
-            f'{orders[i][2]} | Total Price: {orders[i][4]}$ | Quantity: {orders[i][3]} pcs',
-            callback_data=f'order_history_{orders[i][0]}')
+            f"{item_subcategory} | Total Price: {total_price}$ | Quantity: {quantity} pcs",
+            callback_data=item_from_history_callback
+        )
         orders_markup.add(order_inline)
     orders_markup.add(back_to_profile_button)
     if not orders:
@@ -121,6 +132,21 @@ async def refresh_balance(callback: CallbackQuery):
     await callback.answer()
 
 
+async def get_order_from_history(callback: CallbackQuery):
+    current_level = 4
+    buy_id = int(my_profile_cb.parse(callback.data)['args_for_action'])
+    items = BuyItem.get_items_by_buy_id(buy_id)
+    items_as_objects = list()
+    for item in items:
+        item_id = item['item_id']
+        items_as_objects.append(Item.get(item_id).__dict__)
+    message = await create_message_with_bought_items(items_as_objects)
+    back_markup = types.InlineKeyboardMarkup()
+    back_button = types.InlineKeyboardButton("Back", callback_data=create_callback_profile(level=current_level-2))
+    back_markup.add(back_button)
+    await callback.message.edit_text(text=message, parse_mode='html', reply_markup=back_markup)
+
+
 async def navigate(call: CallbackQuery, callback_data: dict):
     current_level = callback_data.get("level")
 
@@ -129,6 +155,7 @@ async def navigate(call: CallbackQuery, callback_data: dict):
         "1": top_up_balance,
         "2": purchase_history,
         "3": refresh_balance,
+        "4": get_order_from_history
     }
 
     current_level_function = levels[current_level]

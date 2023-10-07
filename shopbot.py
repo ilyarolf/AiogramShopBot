@@ -67,28 +67,6 @@ async def start(message: types.message):
         User.update_username(user_telegram_id, user_telegram_username)
     await message.answer('Hi', reply_markup=start_markup)
 
-
-# @dp.message_handler(text='🔍 All categories')
-# async def all_categories(message: types.message):
-#     """
-#     Функция получает все категории из БД, и создаёт инлайн кнопки с категориями,если их нет то пишет 'No categories'
-#     """
-#     categories = Item.get_categories()
-#     if categories:
-#         all_categories_markup = types.InlineKeyboardMarkup(row_width=2)
-#         for category in categories:
-#             category_name = category["category"]
-#             category_button = types.InlineKeyboardButton(category_name, callback_data=f'show_{category_name}')
-#             all_categories_markup.insert(category_button)
-#         back = types.InlineKeyboardButton('back', callback_data='back')
-#         free_manuals_button = types.InlineKeyboardButton('Free', callback_data='show_freebies')
-#         all_categories_markup.insert(free_manuals_button)
-#         all_categories_markup.insert(back)
-#         await message.answer('🔍 <b>All categories</b>', parse_mode='html', reply_markup=all_categories_markup)
-#     else:
-#         await message.answer('<b>No categories</b>', parse_mode='html')
-#
-
 @dp.message_handler(text='🤝 FAQ')
 async def faq(message: types.message):
     """Функция с правилами, отправляет сообщение с правилами"""
