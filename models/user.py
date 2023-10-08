@@ -124,3 +124,8 @@ class User:
         user = User.get(telegram_id)
         user_balance = user['top_up_amount'] - user['consume_records']
         return user_balance >= total_price
+
+    @staticmethod
+    def get_users_tg_ids():
+        telegram_ids = db.cursor.execute("SELECT `telegram_id` FROM `users`").fetchall()
+        return telegram_ids

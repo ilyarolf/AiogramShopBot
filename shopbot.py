@@ -2,6 +2,8 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 from config import ADMIN_ID_LIST, TOKEN, WEBHOOK_URL, WEBAPP_HOST, WEBAPP_PORT, SUPPORT_LINK
+from handlers.admin import admin_command_handler, admin_menu_navigation, admin_callback, AdminStates, \
+    get_message_to_sending, receive_new_items_file
 from handlers.all_categories import navigate_categories, all_categories_cb, all_categories_text_message
 from handlers.my_profile import navigate, my_profile_cb, my_profile_text_message
 from models.user import db, User
@@ -101,8 +103,16 @@ dp.register_message_handler(my_profile_text_message, text="🎓 My profile")
 dp.register_callback_query_handler(navigate_categories, all_categories_cb.filter())
 dp.register_message_handler(all_categories_text_message, text="🔍 All categories")
 
+dp.register_callback_query_handler(admin_menu_navigation, admin_callback.filter())
+dp.register_message_handler(admin_command_handler, commands=["admin"])
+
+dp.register_message_handler(get_message_to_sending, state=AdminStates.message_to_send,
+                            content_types=types.ContentTypes.all())
+
+dp.register_message_handler(receive_new_items_file, state=AdminStates.new_items_file,
+                            content_types=types.ContentTypes.DOCUMENT | types.ContentTypes.TEXT)
+
 if __name__ == '__main__':
-    # executor.start_polling(dp, skip_updates=True)
     start_webhook(
         dispatcher=dp,
         webhook_path="",

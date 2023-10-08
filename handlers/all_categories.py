@@ -101,7 +101,8 @@ async def select_quantity(callback: CallbackQuery):
         count_button_inline = types.InlineKeyboardButton(text=str(i), callback_data=count_button_callback)
         count_markup.insert(count_button_inline)
     back_button = types.InlineKeyboardButton("Back",
-                                             callback_data=create_callback_all_categories(level=current_level - 1))
+                                             callback_data=create_callback_all_categories(level=current_level - 1,
+                                                                                          category=category))
     count_markup.add(back_button)
     await callback.message.edit_text(f'<b>You choose:{subcategory}\n'
                                      f'Price:${price}\n'
