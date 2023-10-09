@@ -9,6 +9,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.callback_data import CallbackData
 
 from models.user import User
+from utils.new_items_manager import NewItemsManager
 
 admin_callback = CallbackData("admin", "level", "action", "args_to_action")
 
@@ -84,15 +85,27 @@ async def decline_sending(callback: CallbackQuery):
 
 
 async def add_items(callback: CallbackQuery):
-    await callback.message.edit_text(text="<b>Send .json file with new items</b>", parse_mode="html")
+    await callback.message.edit_text(text="<b>Send .json file with new items or type \"cancel\" for cancel.</b>",
+                                     parse_mode="html")
     await AdminStates.new_items_file.set()
 
 
 async def receive_new_items_file(message: types.message, state: FSMContext):
     if message.document:
-        await message.document.download(destination_file="new_items.json")
         await state.finish()
-        #TODO("Finalize the functionality of adding new products to the bot")
+        file_name = "new_items.json"
+        await message.document.download(destination_file=file_name)
+        adding_result = NewItemsManager.add(file_name)
+        if isinstance(adding_result, BaseException):
+            await message.answer(text=f"<b>Exception:</b>\n<code>{adding_result}</code>", parse_mode='html')
+        elif type(adding_result) is int:
+            await message.answer(text=f"<b>Successfully added {adding_result} items!</b>", parse_mode='html')
+    elif message.text and message.text.lower() == "cancel":
+        await state.finish()
+        await message.answer("<b>Adding items successfully cancelled!</b>", parse_mode='html')
+    else:
+        await message.answer(text="<b>Send .json file with new items or type \"cancel\" for cancel.</b>",
+                       parse_mode="html")
 
 
 async def admin_menu_navigation(callback: CallbackQuery, callback_data: dict):
