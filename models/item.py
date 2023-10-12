@@ -55,5 +55,7 @@ class Item:
         item.pop("item_id")
         return Item(**item)
 
-if __name__ == '__main__':
-    Item.get_categories()
+    @staticmethod
+    def get_new_items():
+        items = db.cursor.execute("SELECT * FROM `items` WHERE `is_new` = ?", (True, )).fetchall()
+        return items

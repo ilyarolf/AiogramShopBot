@@ -24,14 +24,18 @@ async def admin_command_handler(message: types.message):
 
 async def admin(message: Union[Message, CallbackQuery]):
     current_level = 0
-    admin_menu_buttons = types.InlineKeyboardMarkup()
+    admin_menu_buttons = types.InlineKeyboardMarkup(row_width=2)
     admin_send_to_everyone = types.InlineKeyboardButton("Send to everyone",
                                                         callback_data=create_admin_callback(level=current_level + 1,
                                                                                             action="send_to_everyone"))
     add_items_button = types.InlineKeyboardButton("Add items",
                                                   callback_data=create_admin_callback(level=current_level + 4,
                                                                                       action="add_items"))
-    admin_menu_buttons.add(admin_send_to_everyone, add_items_button)
+    send_restocking_message_button = types.InlineKeyboardButton("Send restocking message",
+                                                                callback_data=create_admin_callback(
+                                                                    level=current_level + 5,
+                                                                    action="send_to_everyone"))
+    admin_menu_buttons.add(admin_send_to_everyone, add_items_button, send_restocking_message_button)
     if isinstance(message, Message):
         await message.answer("<b>Admin Menu:</b>", parse_mode='html',
                              reply_markup=admin_menu_buttons)
@@ -43,6 +47,7 @@ async def admin(message: Union[Message, CallbackQuery]):
 class AdminStates(StatesGroup):
     message_to_send = State()
     new_items_file = State()
+    send_restocking_message = State()
 
 
 async def send_to_everyone(callback: CallbackQuery):
@@ -105,7 +110,12 @@ async def receive_new_items_file(message: types.message, state: FSMContext):
         await message.answer("<b>Adding items successfully cancelled!</b>", parse_mode='html')
     else:
         await message.answer(text="<b>Send .json file with new items or type \"cancel\" for cancel.</b>",
-                       parse_mode="html")
+                             parse_mode="html")
+
+
+async def send_restocking_message(callback: CallbackQuery):
+    message = NewItemsManager.generate_restocking_message()
+    await callback.message.answer(message, parse_mode='html')
 
 
 async def admin_menu_navigation(callback: CallbackQuery, callback_data: dict):
@@ -117,6 +127,7 @@ async def admin_menu_navigation(callback: CallbackQuery, callback_data: dict):
         "2": confirm_and_send,
         "3": decline_sending,
         "4": add_items,
+        "5": send_restocking_message,
     }
 
     current_level_function = levels[current_level]
