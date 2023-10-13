@@ -7,7 +7,7 @@ from aiogram.utils.callback_data import CallbackData
 
 from crypto_api.CryptoApiManager import CryptoApiManager
 from db import db
-from handlers.all_categories import create_message_with_bought_items
+from handlers.user.all_categories import create_message_with_bought_items
 from models.buyItem import BuyItem
 from models.item import Item
 from models.user import User

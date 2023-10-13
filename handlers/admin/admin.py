@@ -18,6 +18,15 @@ def create_admin_callback(level: int, action: str = "", args_to_action: str = ""
     return admin_callback.new(level=level, action=action, args_to_action=args_to_action)
 
 
+class AdminConstants:
+    confirmation_markup = types.InlineKeyboardMarkup()
+    confirm_button = types.InlineKeyboardButton(text="Confirm", callback_data=create_admin_callback(level=2,
+                                                                                                    action="confirm"))
+    decline_button = types.InlineKeyboardButton(text="Decline", callback_data=create_admin_callback(level=3,
+                                                                                                    action="decline"))
+    confirmation_markup.add(confirm_button, decline_button)
+
+
 async def admin_command_handler(message: types.message):
     await admin(message)
 
@@ -47,7 +56,6 @@ async def admin(message: Union[Message, CallbackQuery]):
 class AdminStates(StatesGroup):
     message_to_send = State()
     new_items_file = State()
-    send_restocking_message = State()
 
 
 async def send_to_everyone(callback: CallbackQuery):
@@ -56,13 +64,7 @@ async def send_to_everyone(callback: CallbackQuery):
 
 
 async def get_message_to_sending(message: types.message, state: FSMContext):
-    confirmation_markup = types.InlineKeyboardMarkup()
-    confirm_button = types.InlineKeyboardButton(text="Confirm", callback_data=create_admin_callback(level=2,
-                                                                                                    action="confirm"))
-    decline_button = types.InlineKeyboardButton(text="Decline", callback_data=create_admin_callback(level=3,
-                                                                                                    action="decline"))
-    confirmation_markup.add(confirm_button, decline_button)
-    await message.send_copy(message.chat.id, reply_markup=confirmation_markup)
+    await message.send_copy(message.chat.id, reply_markup=AdminConstants.confirmation_markup)
     await state.finish()
 
 
@@ -80,8 +82,9 @@ async def confirm_and_send(callback: CallbackQuery):
                 await asyncio.sleep(5)
             except Exception as e:
                 logging.error(e)
-        await callback.message.answer(text=f"<b>Message sent to {counter} out of {len(telegram_ids)} people</b>",
-                                      parse_mode='html')
+        await callback.message.edit_text(
+            text=f"<b>Message sent to {counter} out of {len(telegram_ids)} people</b>",
+            parse_mode='html')
 
 
 async def decline_sending(callback: CallbackQuery):
@@ -115,7 +118,7 @@ async def receive_new_items_file(message: types.message, state: FSMContext):
 
 async def send_restocking_message(callback: CallbackQuery):
     message = NewItemsManager.generate_restocking_message()
-    await callback.message.answer(message, parse_mode='html')
+    await callback.message.answer(message, parse_mode='html', reply_markup=AdminConstants.confirmation_markup)
 
 
 async def admin_menu_navigation(callback: CallbackQuery, callback_data: dict):
