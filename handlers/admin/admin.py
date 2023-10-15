@@ -44,7 +44,13 @@ async def admin(message: Union[Message, CallbackQuery]):
                                                                 callback_data=create_admin_callback(
                                                                     level=current_level + 5,
                                                                     action="send_to_everyone"))
-    admin_menu_buttons.add(admin_send_to_everyone, add_items_button, send_restocking_message_button)
+    get_new_users_button = types.InlineKeyboardButton("Get new users",
+                                                      callback_data=create_admin_callback(
+                                                          level=current_level + 6,
+                                                          action="get_new_users"
+                                                      ))
+    admin_menu_buttons.add(admin_send_to_everyone, add_items_button, send_restocking_message_button,
+                           get_new_users_button)
     if isinstance(message, Message):
         await message.answer("<b>Admin Menu:</b>", parse_mode='html',
                              reply_markup=admin_menu_buttons)
@@ -121,6 +127,19 @@ async def send_restocking_message(callback: CallbackQuery):
     await callback.message.answer(message, parse_mode='html', reply_markup=AdminConstants.confirmation_markup)
 
 
+async def get_new_users(callback: CallbackQuery):
+    current_level = int(admin_callback.parse(callback.data)['level'])
+    users_markup = types.InlineKeyboardMarkup()
+    new_users = User.get_new_users()
+    for user in new_users:
+        if user.telegram_username:
+            user_button = types.InlineKeyboardButton(user.telegram_username, url=f"t.me/{user.telegram_username}")
+            users_markup.add(user_button)
+    back_button = types.InlineKeyboardButton(text="Back", callback_data=create_admin_callback(current_level - 6))
+    users_markup.add(back_button)
+    await callback.message.edit_text(text=f"{len(new_users)} new users:", reply_markup=users_markup)
+
+
 async def admin_menu_navigation(callback: CallbackQuery, callback_data: dict):
     current_level = callback_data.get("level")
 
@@ -131,6 +150,7 @@ async def admin_menu_navigation(callback: CallbackQuery, callback_data: dict):
         "3": decline_sending,
         "4": add_items,
         "5": send_restocking_message,
+        "6": get_new_users
     }
 
     current_level_function = levels[current_level]
