@@ -24,7 +24,6 @@ dp.middleware.setup(LoggingMiddleware())
 
 
 async def on_startup(dp):
-    # Функция отправляет сообщение админу при запуске
     await bot.set_webhook(WEBHOOK_URL)
     for admin in ADMIN_ID_LIST:
         try:
@@ -34,7 +33,6 @@ async def on_startup(dp):
 
 
 async def on_shutdown(dp):
-    # Функция закрывает бд, удаляет вебхук
     logging.warning('Shutting down..')
     db.close()
     # insert code here to run it before shutdown
@@ -48,12 +46,6 @@ async def on_shutdown(dp):
 
 @dp.message_handler(commands=['start', 'help'])
 async def start(message: types.message):
-    """
-    Функция создаёт кнопки для взаимодействия с ботом
-    1) Если пользователя нет в базе данных то,
-    вызывает функцию добавления нового пользователя с добавлением btc,ltc,trx адресов.
-    2) Если у пользователя есть username, то добавляет его в поле с его id. (Username- опциональное поле)
-    """
     all_categories_button = types.KeyboardButton('🔍 All categories')
     my_profile_button = types.KeyboardButton('🎓 My profile')
     faq_button = types.KeyboardButton('🤝 FAQ')
@@ -73,7 +65,6 @@ async def start(message: types.message):
 
 @dp.message_handler(text='🤝 FAQ')
 async def faq(message: types.message):
-    """Функция с правилами, отправляет сообщение с правилами"""
     faq_string = """<b>In our store ignorance of the rules does not exempt you from responsibility. Buying at least 
 one product in the store you automatically agree with all the rules of the store!\n
 Rules of the store</b>\n
@@ -90,9 +81,6 @@ store.
 
 @dp.message_handler(text='🚀 Help')
 async def support(message: types.message):
-    """
-    Функция отправляет инлайн кнопку на чат с админом
-    """
     admin_markup = types.InlineKeyboardMarkup()
     admin_button = types.InlineKeyboardButton('Admin', url=SUPPORT_LINK)
     admin_markup.add(admin_button)

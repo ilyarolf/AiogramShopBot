@@ -8,6 +8,7 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.callback_data import CallbackData
 
+from models.item import Item
 from models.user import User
 from utils.new_items_manager import NewItemsManager
 
@@ -25,6 +26,8 @@ class AdminConstants:
     decline_button = types.InlineKeyboardButton(text="Decline", callback_data=create_admin_callback(level=3,
                                                                                                     action="decline"))
     confirmation_markup.add(confirm_button, decline_button)
+    back_to_main_button = types.InlineKeyboardButton(text="Back to admin menu",
+                                                     callback_data=create_admin_callback(level=0))
 
 
 async def admin_command_handler(message: types.message):
@@ -49,8 +52,16 @@ async def admin(message: Union[Message, CallbackQuery]):
                                                           level=current_level + 6,
                                                           action="get_new_users"
                                                       ))
+    delete_category_button = types.InlineKeyboardButton("Delete category",
+                                                        callback_data=create_admin_callback(
+                                                            level=current_level+7
+                                                        ))
+    delete_subcategory_button = types.InlineKeyboardButton("Delete subcategory",
+                                                           callback_data=create_admin_callback(
+                                                               level=current_level+8
+                                                           ))
     admin_menu_buttons.add(admin_send_to_everyone, add_items_button, send_restocking_message_button,
-                           get_new_users_button)
+                           get_new_users_button, delete_category_button, delete_subcategory_button)
     if isinstance(message, Message):
         await message.answer("<b>Admin Menu:</b>", parse_mode='html',
                              reply_markup=admin_menu_buttons)
@@ -93,7 +104,7 @@ async def confirm_and_send(callback: CallbackQuery):
             parse_mode='html')
 
 
-async def decline_sending(callback: CallbackQuery):
+async def decline_action(callback: CallbackQuery):
     await callback.message.delete()
     await callback.message.answer(text="<b>Declined!</b>", parse_mode='html')
 
@@ -125,19 +136,89 @@ async def receive_new_items_file(message: types.message, state: FSMContext):
 async def send_restocking_message(callback: CallbackQuery):
     message = NewItemsManager.generate_restocking_message()
     await callback.message.answer(message, parse_mode='html', reply_markup=AdminConstants.confirmation_markup)
+    #TODO("Mark items as not new after newsletter")
 
 
 async def get_new_users(callback: CallbackQuery):
-    current_level = int(admin_callback.parse(callback.data)['level'])
     users_markup = types.InlineKeyboardMarkup()
     new_users = User.get_new_users()
     for user in new_users:
         if user.telegram_username:
             user_button = types.InlineKeyboardButton(user.telegram_username, url=f"t.me/{user.telegram_username}")
             users_markup.add(user_button)
-    back_button = types.InlineKeyboardButton(text="Back", callback_data=create_admin_callback(current_level - 6))
-    users_markup.add(back_button)
+    users_markup.add(AdminConstants.back_to_main_button)
     await callback.message.edit_text(text=f"{len(new_users)} new users:", reply_markup=users_markup)
+
+
+async def delete_category(callback: CallbackQuery):
+    current_level = int(admin_callback.parse(callback.data)['level'])
+    categories = Item.get_categories()
+    delete_category_markup = types.InlineKeyboardMarkup()
+    for category in categories:
+        category_name = category['category']
+        delete_category_callback = create_admin_callback(level=current_level + 2, action="delete_category",
+                                                         args_to_action=category_name)
+        delete_category_button = types.InlineKeyboardButton(text=category_name, callback_data=delete_category_callback)
+        delete_category_markup.add(delete_category_button)
+    delete_category_markup.add(AdminConstants.back_to_main_button)
+    await callback.message.edit_text(text="<b>Categories:</b>", parse_mode='html', reply_markup=delete_category_markup)
+
+
+async def delete_subcategory(callback: CallbackQuery):
+    current_level = int(admin_callback.parse(callback.data)['level'])
+    subcategories = Item.get_all_subcategories()
+    delete_subcategory_markup = types.InlineKeyboardMarkup()
+    for subcategory in subcategories:
+        subcategory_name = subcategory['subcategory']
+        delete_category_callback = create_admin_callback(level=current_level + 1, action="delete_subcategory",
+                                                         args_to_action=subcategory_name)
+        delete_category_button = types.InlineKeyboardButton(text=subcategory_name,
+                                                            callback_data=delete_category_callback)
+        delete_subcategory_markup.add(delete_category_button)
+    delete_subcategory_markup.add(AdminConstants.back_to_main_button)
+    await callback.message.edit_text(text="<b>Subcategories:</b>", parse_mode='html',
+                                     reply_markup=delete_subcategory_markup)
+
+
+async def delete_confirmation(callback: CallbackQuery):
+    current_level = int(admin_callback.parse(callback.data)['level'])
+    action = admin_callback.parse(callback.data)['action']
+    args_to_action = admin_callback.parse(callback.data)['args_to_action']
+    delete_markup = types.InlineKeyboardMarkup()
+    confirm_callback = create_admin_callback(level=current_level + 1,
+                                             action=f"confirmed_{action}",
+                                             args_to_action=args_to_action)
+    confirm_button = types.InlineKeyboardButton(text="Confirm", callback_data=confirm_callback)
+    decline_callback = create_admin_callback(level=current_level - 6)
+    decline_button = types.InlineKeyboardButton(text="Decline", callback_data=decline_callback)
+    delete_markup.add(confirm_button, decline_button)
+    entity_to_delete = action.split('_')[-1]
+    if entity_to_delete == "category":
+        category_name = args_to_action
+        await callback.message.edit_text(text=f"<b>Do you really want to delete the category {category_name}?</b>",
+                                         parse_mode='html',
+                                         reply_markup=delete_markup)
+    elif entity_to_delete == "subcategory":
+        subcategory_name = args_to_action
+        await callback.message.edit_text(text=f"<b>Do you really want to delete the subcategory {subcategory_name}?</b>",
+                                         parse_mode='html',
+                                         reply_markup=delete_markup)
+
+
+async def confirm_and_delete(callback: CallbackQuery):
+    args_to_action = admin_callback.parse(callback.data)['args_to_action']
+    entity_to_delete = admin_callback.parse(callback.data)['action'].split('_')[-1]
+    back_to_main_markup = types.InlineKeyboardMarkup()
+    back_to_main_markup.add(AdminConstants.back_to_main_button)
+    message_text = f"<b>Successfully deleted {args_to_action} {entity_to_delete}!</b>"
+    if entity_to_delete == "category":
+        Item.delete_category(args_to_action)
+        await callback.message.edit_text(text=message_text,
+                                         parse_mode='html', reply_markup=back_to_main_markup)
+    elif entity_to_delete == "subcategory":
+        Item.delete_subcategory(args_to_action)
+        await callback.message.edit_text(text=message_text,
+                                         parse_mode='html', reply_markup=back_to_main_markup)
 
 
 async def admin_menu_navigation(callback: CallbackQuery, callback_data: dict):
@@ -147,10 +228,14 @@ async def admin_menu_navigation(callback: CallbackQuery, callback_data: dict):
         "0": admin,
         "1": send_to_everyone,
         "2": confirm_and_send,
-        "3": decline_sending,
+        "3": decline_action,
         "4": add_items,
         "5": send_restocking_message,
-        "6": get_new_users
+        "6": get_new_users,
+        "7": delete_category,
+        "8": delete_subcategory,
+        "9": delete_confirmation,
+        "10": confirm_and_delete
     }
 
     current_level_function = levels[current_level]
