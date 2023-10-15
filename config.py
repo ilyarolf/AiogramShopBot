@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+
 load_dotenv()
 
 WEBHOOK_HOST = os.environ.get("WEBHOOK_HOST")
@@ -14,3 +15,4 @@ ADMIN_ID_LIST = os.environ.get("ADMIN_ID_LIST").split(',')
 ADMIN_ID_LIST = [int(admin_id) for admin_id in ADMIN_ID_LIST]
 SUPPORT_LINK = os.environ.get("SUPPORT_LINK")
 DB_NAME = os.environ.get("DB_NAME")
+DB_ENCRYPTION = os.environ.get("DB_ENCRYPTION") == "True"
