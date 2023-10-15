@@ -5,12 +5,8 @@ from db import db
 
 
 class User:
-    def __init__(self, telegram_id: int, telegram_username: str):
-        next_user_id = self.__get_next_user_id()
-        crypto_wallets = CryptoAddressGenerator().get_addresses(next_user_id)
-        btc_address = crypto_wallets['btc']
-        ltc_address = crypto_wallets['ltc']
-        trx_address = crypto_wallets['trx']
+    def __init__(self, telegram_id: int, telegram_username: str = None, btc_address=None, ltc_address=None,
+                 trx_address=None):
         self.telegram_id = telegram_id
         self.btc_address = btc_address
         self.ltc_address = ltc_address
@@ -24,19 +20,32 @@ class User:
         else:
             return 0
 
+    @staticmethod
+    def user_dict_to_user_model(users_dict: list[dict]):
+        for user_dict in users_dict:
+            user_dict.pop("user_id")
+            user_dict.pop("top_up_amount")
+            user_dict.pop("consume_records")
+            user_dict.pop("last_refresh")
+            user_dict.pop("btc_balance")
+            user_dict.pop("ltc_balance")
+            user_dict.pop("usdt_balance")
+            user_dict.pop("is_new")
+            user_dict.pop("join_date")
+        list_of_users = [User(**user) for user in users_dict]
+        return list_of_users
+
     def create(self):
-        if self.telegram_username:
-            db.cursor.execute(
-                "INSERT OR IGNORE INTO `users` (`telegram_username`,`telegram_id`,`btc_address`,`ltc_address`,"
-                " `trx_address`) VALUES (?, ?, ?, ?, ?)",
-                (self.telegram_username, self.telegram_id, self.btc_address, self.ltc_address, self.trx_address))
-            db.connect.commit()
-        else:
-            db.cursor.execute(
-                "INSERT OR IGNORE INTO `users` (`telegram_id`,`btc_address`,`ltc_address`,"
-                " `trx_address`) VALUES (?, ?, ?, ?)",
-                (self.telegram_id, self.btc_address, self.ltc_address, self.trx_address))
-            db.connect.commit()
+        next_user_id = self.__get_next_user_id()
+        crypto_wallets = CryptoAddressGenerator().get_addresses(next_user_id)
+        self.btc_address = crypto_wallets['btc']
+        self.ltc_address = crypto_wallets['ltc']
+        self.trx_address = crypto_wallets['trx']
+        db.cursor.execute(
+            "INSERT OR IGNORE INTO `users` (`telegram_username`,`telegram_id`,`btc_address`,`ltc_address`,"
+            " `trx_address`) VALUES (?, ?, ?, ?, ?)",
+            (self.telegram_username, self.telegram_id, self.btc_address, self.ltc_address, self.trx_address))
+        db.connect.commit()
 
     @staticmethod
     def is_exist(telegram_id: int) -> bool:
@@ -129,3 +138,11 @@ class User:
     def get_users_tg_ids():
         telegram_ids = db.cursor.execute("SELECT `telegram_id` FROM `users`").fetchall()
         return telegram_ids
+
+    @staticmethod
+    def get_new_users():
+        new_users = db.cursor.execute("SELECT * FROM `users` WHERE `is_new` = ?", (True,)).fetchall()
+        db.cursor.execute("UPDATE `users` SET `is_new` = ? WHERE `is_new` = ?", (False, True))
+        db.connect.commit()
+        list_of_users = User.user_dict_to_user_model(new_users)
+        return list_of_users

@@ -63,10 +63,12 @@ async def start(message: types.message):
     user_telegram_id = message.chat.id
     user_telegram_username = message.from_user.username
     user = User(user_telegram_id, user_telegram_username)
-    if User.is_exist(message.chat.id) == 0:
+    if User.is_exist(message.chat.id) is False:
         user.create()
-    if message.from_user.username:
-        User.update_username(user_telegram_id, user_telegram_username)
+    else:
+        telegram_username = User.get(user_telegram_id)["telegram_username"]
+        if telegram_username != user_telegram_username:
+            User.update_username(user_telegram_id, user_telegram_username)
     await message.answer('Hi', reply_markup=start_markup)
 
 @dp.message_handler(text='🤝 FAQ')

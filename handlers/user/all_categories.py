@@ -29,8 +29,7 @@ async def all_categories_text_message(message: types.message):
     await all_categories(message)
 
 
-async def create_category_buttons():
-    current_level = 0
+async def create_category_buttons(current_level: int):
     categories = Item.get_categories()
     if categories:
         categories_markup = types.InlineKeyboardMarkup(row_width=2)
@@ -66,7 +65,7 @@ async def create_subcategory_buttons(category: str):
 
 async def all_categories(message: Union[Message, CallbackQuery]):
     current_level = 0
-    category_inline_buttons = await create_category_buttons()
+    category_inline_buttons = await create_category_buttons(current_level)
     if isinstance(message, Message):
         if category_inline_buttons:
             await message.answer('🔍 <b>All categories</b>', parse_mode='html', reply_markup=category_inline_buttons)
