@@ -2,7 +2,7 @@ import datetime
 from dateutil.parser import parse
 from CryptoAddressGenerator import CryptoAddressGenerator
 from db import db
-
+from typing import Union
 
 class User:
     def __init__(self, telegram_id: int, telegram_username: str = None, btc_address=None, ltc_address=None,
@@ -21,19 +21,31 @@ class User:
             return 0
 
     @staticmethod
-    def user_dict_to_user_model(users_dict: list[dict]):
-        for user_dict in users_dict:
-            user_dict.pop("user_id")
-            user_dict.pop("top_up_amount")
-            user_dict.pop("consume_records")
-            user_dict.pop("last_refresh")
-            user_dict.pop("btc_balance")
-            user_dict.pop("ltc_balance")
-            user_dict.pop("usdt_balance")
-            user_dict.pop("is_new")
-            user_dict.pop("join_date")
-        list_of_users = [User(**user) for user in users_dict]
-        return list_of_users
+    def user_dict_to_user_model(users_dict: Union[list[dict], dict]):
+        if isinstance(users_dict, list):
+            for user_dict in users_dict:
+                user_dict.pop("user_id")
+                user_dict.pop("top_up_amount")
+                user_dict.pop("consume_records")
+                user_dict.pop("last_refresh")
+                user_dict.pop("btc_balance")
+                user_dict.pop("ltc_balance")
+                user_dict.pop("usdt_balance")
+                user_dict.pop("is_new")
+                user_dict.pop("join_date")
+            list_of_users = [User(**user) for user in users_dict]
+            return list_of_users
+        elif isinstance(users_dict, dict):
+            users_dict.pop("user_id")
+            users_dict.pop("top_up_amount")
+            users_dict.pop("consume_records")
+            users_dict.pop("last_refresh")
+            users_dict.pop("btc_balance")
+            users_dict.pop("ltc_balance")
+            users_dict.pop("usdt_balance")
+            users_dict.pop("is_new")
+            users_dict.pop("join_date")
+            return User(**users_dict)
 
     def create(self):
         next_user_id = self.__get_next_user_id()
@@ -61,9 +73,15 @@ class User:
         db.connect.commit()
 
     @staticmethod
-    def get(telegram_id: int):
+    def get_by_tgid(telegram_id: int):
         user = db.cursor.execute('SELECT * FROM `users` WHERE `telegram_id` = ?', (telegram_id,)).fetchall()[0]
         return user
+
+    @staticmethod
+    def get_by_primary_key(primary_key: int):
+        user = db.cursor.execute("SELECT * FROM `users` WHERE `user_id` = ?", (primary_key,)).fetchone()[0]
+        return User.user_dict_to_user_model(user)
+
 
     @staticmethod
     def can_refresh_balance(telegram_id: int):
@@ -130,7 +148,7 @@ class User:
 
     @staticmethod
     def is_buy_possible(telegram_id: int, total_price: float) -> bool:
-        user = User.get(telegram_id)
+        user = User.get_by_tgid(telegram_id)
         user_balance = user['top_up_amount'] - user['consume_records']
         return user_balance >= total_price
 

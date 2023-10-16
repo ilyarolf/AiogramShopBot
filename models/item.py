@@ -74,3 +74,8 @@ class Item:
     def get_new_items():
         items = db.cursor.execute("SELECT * FROM `items` WHERE `is_new` = ?", (True,)).fetchall()
         return items
+
+    @staticmethod
+    def set_items_not_new():
+        db.cursor.execute("UPDATE `items` SET `is_new` = ? WHERE `is_new` = ?", (False, True))
+        db.cursor.commit()

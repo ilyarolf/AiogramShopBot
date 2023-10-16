@@ -2,8 +2,11 @@ from db import db
 
 
 class Buy:
-    def __init__(self, user_id, quantity, total_price):
-        self.buy_id = self.__get_next_buy_id()
+    def __init__(self, user_id, quantity, total_price, buy_id=None):
+        if buy_id is None:
+            self.buy_id = self.__get_next_buy_id()
+        else:
+            self.buy_id = buy_id
         self.user_id = user_id
         self.quantity = quantity
         self.total_price = total_price
@@ -19,3 +22,16 @@ class Buy:
         db.cursor.execute("INSERT INTO `buys` (`user_id`, `quantity`, `total_price`) VALUES (?, ?, ?)",
                           (self.user_id, self.quantity, self.total_price))
         db.connect.commit()
+
+    @staticmethod
+    def get_not_refunded_buy_ids():
+        not_refunded_buys = db.cursor.execute("SELECT `buy_id` FROM `buys` WHERE `is_refunded` = ?",
+                                              (False,)).fetchall()
+        return not_refunded_buys
+
+    @staticmethod
+    def get_buy_by_primary_key(buy_id: int):
+        buy = db.cursor.execute("SELECT * FROM `buys` WHERE `buy_id` = ?", (buy_id,)).fetchone()
+        buy.pop("buy_datetime")
+        buy.pop("is_refunded")
+        return Buy(**buy)

@@ -165,10 +165,10 @@ async def buy_processing(callback: CallbackQuery):
         User.update_consume_records(callback.from_user.id, total_price)
         sold_data = Item.get_bought_items(subcategory, quantity)
         message = await create_message_with_bought_items(sold_data)
-        user_id = User.get(telegram_id)['user_id']
+        user_id = User.get_by_tgid(telegram_id)['user_id']
         buy = Buy(user_id, quantity, total_price)
         buy.insert_new()
-        BuyItem.insert_many(sold_data, buy.buy_id)
+        BuyItem.insert_many(sold_data, buy.id)
         Item.set_items_sold(sold_data)
         await callback.message.edit_text(text=message, parse_mode='html')
     elif is_in_stock is False:
