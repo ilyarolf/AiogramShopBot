@@ -8,9 +8,11 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.callback_data import CallbackData
 
+from models.buy import Buy
 from models.item import Item
 from models.user import User
 from utils.new_items_manager import NewItemsManager
+from utils.other_sql import OtherSQLQuery
 
 admin_callback = CallbackData("admin", "level", "action", "args_to_action")
 
@@ -29,6 +31,10 @@ class AdminConstants:
     back_to_main_button = types.InlineKeyboardButton(text="Back to admin menu",
                                                      callback_data=create_admin_callback(level=0))
 
+    @staticmethod
+    async def get_back_button(current_level: int) -> types.InlineKeyboardButton:
+        return types.InlineKeyboardButton("Back", callback_data=create_admin_callback(level=current_level-1))
+
 
 async def admin_command_handler(message: types.message):
     await admin(message)
@@ -38,30 +44,35 @@ async def admin(message: Union[Message, CallbackQuery]):
     current_level = 0
     admin_menu_buttons = types.InlineKeyboardMarkup(row_width=2)
     admin_send_to_everyone = types.InlineKeyboardButton("Send to everyone",
-                                                        callback_data=create_admin_callback(level=current_level + 1,
+                                                        callback_data=create_admin_callback(level=1,
                                                                                             action="send_to_everyone"))
     add_items_button = types.InlineKeyboardButton("Add items",
-                                                  callback_data=create_admin_callback(level=current_level + 4,
+                                                  callback_data=create_admin_callback(level=4,
                                                                                       action="add_items"))
     send_restocking_message_button = types.InlineKeyboardButton("Send restocking message",
                                                                 callback_data=create_admin_callback(
-                                                                    level=current_level + 5,
+                                                                    level=5,
                                                                     action="send_to_everyone"))
     get_new_users_button = types.InlineKeyboardButton("Get new users",
                                                       callback_data=create_admin_callback(
-                                                          level=current_level + 6,
+                                                          level=6,
                                                           action="get_new_users"
                                                       ))
     delete_category_button = types.InlineKeyboardButton("Delete category",
                                                         callback_data=create_admin_callback(
-                                                            level=current_level+7
+                                                            level=7
                                                         ))
     delete_subcategory_button = types.InlineKeyboardButton("Delete subcategory",
                                                            callback_data=create_admin_callback(
-                                                               level=current_level+8
+                                                               level=8
                                                            ))
+    refund_button = types.InlineKeyboardButton("Make refund",
+                                               callback_data=create_admin_callback(
+                                                   level=11
+                                               ))
     admin_menu_buttons.add(admin_send_to_everyone, add_items_button, send_restocking_message_button,
-                           get_new_users_button, delete_category_button, delete_subcategory_button)
+                           get_new_users_button, delete_category_button, delete_subcategory_button,
+                           refund_button)
     if isinstance(message, Message):
         await message.answer("<b>Admin Menu:</b>", parse_mode='html',
                              reply_markup=admin_menu_buttons)
@@ -88,6 +99,7 @@ async def get_message_to_sending(message: types.message, state: FSMContext):
 async def confirm_and_send(callback: CallbackQuery):
     confirmed = admin_callback.parse(callback.data)['action'] == 'confirm'
     await callback.message.edit_reply_markup(None)
+    is_restocking = callback.message.text.__contains__("📅 Update")
     if confirmed:
         counter = 0
         telegram_ids = User.get_users_tg_ids()
@@ -102,6 +114,8 @@ async def confirm_and_send(callback: CallbackQuery):
         await callback.message.edit_text(
             text=f"<b>Message sent to {counter} out of {len(telegram_ids)} people</b>",
             parse_mode='html')
+    if is_restocking:
+        Item.set_items_not_new()
 
 
 async def decline_action(callback: CallbackQuery):
@@ -136,7 +150,6 @@ async def receive_new_items_file(message: types.message, state: FSMContext):
 async def send_restocking_message(callback: CallbackQuery):
     message = NewItemsManager.generate_restocking_message()
     await callback.message.answer(message, parse_mode='html', reply_markup=AdminConstants.confirmation_markup)
-    #TODO("Mark items as not new after newsletter")
 
 
 async def get_new_users(callback: CallbackQuery):
@@ -200,9 +213,10 @@ async def delete_confirmation(callback: CallbackQuery):
                                          reply_markup=delete_markup)
     elif entity_to_delete == "subcategory":
         subcategory_name = args_to_action
-        await callback.message.edit_text(text=f"<b>Do you really want to delete the subcategory {subcategory_name}?</b>",
-                                         parse_mode='html',
-                                         reply_markup=delete_markup)
+        await callback.message.edit_text(
+            text=f"<b>Do you really want to delete the subcategory {subcategory_name}?</b>",
+            parse_mode='html',
+            reply_markup=delete_markup)
 
 
 async def confirm_and_delete(callback: CallbackQuery):
@@ -221,6 +235,34 @@ async def confirm_and_delete(callback: CallbackQuery):
                                          parse_mode='html', reply_markup=back_to_main_markup)
 
 
+async def make_refund_markup():
+    refund_markup = types.InlineKeyboardMarkup()
+    not_refunded_buy_ids = Buy.get_not_refunded_buy_ids()
+    refund_data = OtherSQLQuery.get_refund_data(not_refunded_buy_ids)
+    for buy in refund_data:
+        refund_buy_button = types.InlineKeyboardButton(
+            text=f"{buy.telegram_username}|${buy.total_price}|{buy.subcategory}",
+            callback_data=create_admin_callback(level=12,
+                                                action="make_refund",
+                                                args_to_action=buy.buy_id))
+        refund_markup.add(refund_buy_button)
+    return refund_markup
+
+
+async def send_refund_menu(callback: CallbackQuery):
+    refund_markup = await make_refund_markup()
+    await callback.message.edit_text(text="<b>Refund menu:</b>", reply_markup=refund_markup, parse_mode='html')
+
+
+async def refund_confirmation(callback: CallbackQuery):
+    current_level = int(admin_callback.parse(callback.data)['level'])
+    buy_id = int(admin_callback.parse(callback.data)['args_to_action'])
+    buy = Buy.get_buy_by_primary_key(buy_id)
+    print(buy)
+    #TODO("Finalize refund functionality")
+
+
+
 async def admin_menu_navigation(callback: CallbackQuery, callback_data: dict):
     current_level = callback_data.get("level")
 
@@ -235,7 +277,10 @@ async def admin_menu_navigation(callback: CallbackQuery, callback_data: dict):
         "7": delete_category,
         "8": delete_subcategory,
         "9": delete_confirmation,
-        "10": confirm_and_delete
+        "10": confirm_and_delete,
+        "11": send_refund_menu,
+        "12": refund_confirmation,
+        # "13": make_refund,
     }
 
     current_level_function = levels[current_level]

@@ -58,7 +58,7 @@ async def start(message: types.message):
     if User.is_exist(message.chat.id) is False:
         user.create()
     else:
-        telegram_username = User.get(user_telegram_id)["telegram_username"]
+        telegram_username = User.get_by_tgid(user_telegram_id)["telegram_username"]
         if telegram_username != user_telegram_username:
             User.update_username(user_telegram_id, user_telegram_username)
     await message.answer('Hi', reply_markup=start_markup)

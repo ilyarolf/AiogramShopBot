@@ -26,7 +26,7 @@ async def my_profile_text_message(message: types.message):
 
 
 def get_my_profile_message(telegram_id: int):
-    user = User.get(telegram_id)
+    user = User.get_by_tgid(telegram_id)
     btc_balance = user["btc_balance"]
     usdt_balance = user["usdt_balance"]
     ltc_balance = user["ltc_balance"]
@@ -64,7 +64,7 @@ async def my_profile(message: Union[Message, CallbackQuery]):
 
 async def top_up_balance(callback: CallbackQuery):
     telegram_id = callback.message.chat.id
-    user = User.get(telegram_id)
+    user = User.get_by_tgid(telegram_id)
     current_level = 1
     btc_address = user["btc_address"]
     trx_address = user["trx_address"]
@@ -86,7 +86,7 @@ async def top_up_balance(callback: CallbackQuery):
 
 async def purchase_history(callback: CallbackQuery):
     telegram_id = callback.message.chat.id
-    user_id = User.get(telegram_id)['user_id']
+    user_id = User.get_by_tgid(telegram_id)['user_id']
     current_level = 2
     orders = db.cursor.execute('SELECT * FROM `buys` where `user_id` = ?', (user_id,)).fetchall()
     orders_markup = types.InlineKeyboardMarkup()
