@@ -1,4 +1,6 @@
 from db import db
+from models.user import User
+from utils.other_sql import RefundBuyDTO
 
 
 class Buy:
@@ -19,8 +21,8 @@ class Buy:
             return 0
 
     def insert_new(self):
-        db.cursor.execute("INSERT INTO `buys` (`user_id`, `quantity`, `total_price`) VALUES (?, ?, ?)",
-                          (self.user_id, self.quantity, self.total_price))
+        db.cursor.execute("INSERT INTO `buys` (`buy_id`, `user_id`, `quantity`, `total_price`) VALUES (?, ?, ?, ?)",
+                          (self.buy_id, self.user_id, self.quantity, self.total_price))
         db.connect.commit()
 
     @staticmethod
@@ -35,3 +37,9 @@ class Buy:
         buy.pop("buy_datetime")
         buy.pop("is_refunded")
         return Buy(**buy)
+
+    @staticmethod
+    def refund(buy_id: int, refund_data: RefundBuyDTO):
+        User.reduce_consume_records(refund_data.user_id, refund_data.total_price)
+        db.cursor.execute("UPDATE `buys` SET `is_refunded` = ? WHERE `buy_id` = ?", (True, buy_id))
+        db.connect.commit()

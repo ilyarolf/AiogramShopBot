@@ -78,4 +78,4 @@ class Item:
     @staticmethod
     def set_items_not_new():
         db.cursor.execute("UPDATE `items` SET `is_new` = ? WHERE `is_new` = ?", (False, True))
-        db.cursor.commit()
+        db.connect.commit()

@@ -12,6 +12,7 @@ from models.buy import Buy
 from models.item import Item
 from models.user import User
 from utils.new_items_manager import NewItemsManager
+from utils.notification_manager import NotificationManager
 from utils.other_sql import OtherSQLQuery
 
 admin_callback = CallbackData("admin", "level", "action", "args_to_action")
@@ -33,7 +34,7 @@ class AdminConstants:
 
     @staticmethod
     async def get_back_button(current_level: int) -> types.InlineKeyboardButton:
-        return types.InlineKeyboardButton("Back", callback_data=create_admin_callback(level=current_level-1))
+        return types.InlineKeyboardButton("Back", callback_data=create_admin_callback(level=current_level - 1))
 
 
 async def admin_command_handler(message: types.message):
@@ -97,8 +98,8 @@ async def get_message_to_sending(message: types.message, state: FSMContext):
 
 
 async def confirm_and_send(callback: CallbackQuery):
+    await callback.answer(text="Sending started")
     confirmed = admin_callback.parse(callback.data)['action'] == 'confirm'
-    await callback.message.edit_reply_markup(None)
     is_restocking = callback.message.text.__contains__("📅 Update")
     if confirmed:
         counter = 0
@@ -251,16 +252,53 @@ async def make_refund_markup():
 
 async def send_refund_menu(callback: CallbackQuery):
     refund_markup = await make_refund_markup()
+    refund_markup.add(AdminConstants.back_to_main_button)
     await callback.message.edit_text(text="<b>Refund menu:</b>", reply_markup=refund_markup, parse_mode='html')
 
 
 async def refund_confirmation(callback: CallbackQuery):
     current_level = int(admin_callback.parse(callback.data)['level'])
     buy_id = int(admin_callback.parse(callback.data)['args_to_action'])
-    buy = Buy.get_buy_by_primary_key(buy_id)
-    print(buy)
-    #TODO("Finalize refund functionality")
+    back_button = await AdminConstants.get_back_button(current_level)
+    confirm_button = types.InlineKeyboardButton(text="Confirm",
+                                                callback_data=create_admin_callback(level=current_level + 1,
+                                                                                    action="confirm_refund",
+                                                                                    args_to_action=str(buy_id)))
 
+    confirmation_markup = types.InlineKeyboardMarkup()
+    confirmation_markup.add(confirm_button, AdminConstants.decline_button, back_button)
+    refund_data = OtherSQLQuery.get_refund_data_single(buy_id)
+    if refund_data.telegram_username:
+        await callback.message.edit_text(
+            text=f"<b>Do you really want to refund user @{refund_data.telegram_username} "
+                 f"for purchasing {refund_data.quantity} {refund_data.subcategory} "
+                 f"in the amount of ${refund_data.total_price}</b>", parse_mode='html',
+            reply_markup=confirmation_markup)
+    else:
+        await callback.message.edit_text(
+            text=f"<b>Do you really want to refund user with ID:{refund_data.telegram_id} "
+                 f"for purchasing {refund_data.quantity} {refund_data.subcategory} "
+                 f"in the amount of ${refund_data.total_price}</b>", parse_mode='html',
+            reply_markup=confirmation_markup)
+
+
+async def make_refund(callback: CallbackQuery):
+    buy_id = int(admin_callback.parse(callback.data)['args_to_action'])
+    is_confirmed = admin_callback.parse(callback.data)['action'] == "confirm_refund"
+    if is_confirmed:
+        refund_data = OtherSQLQuery.get_refund_data_single(buy_id)
+        Buy.refund(buy_id, refund_data)
+        await NotificationManager.send_refund_message(refund_data)
+        if refund_data.telegram_username:
+            await callback.message.edit_text(text=f"<b>Successfully refunded ${refund_data.total_price} "
+                                                  f"to user {refund_data.telegram_username} "
+                                                  f"for purchasing {refund_data.quantity} "
+                                                  f"{refund_data.subcategory}</b>", parse_mode='html')
+        else:
+            await callback.message.edit_text(text=f"<b>Successfully refunded ${refund_data.total_price} "
+                                                  f"to user with ID{refund_data.telegram_id} "
+                                                  f"for purchasing {refund_data.quantity} "
+                                                  f"{refund_data.subcategory}</b>", parse_mode='html')
 
 
 async def admin_menu_navigation(callback: CallbackQuery, callback_data: dict):
@@ -280,7 +318,7 @@ async def admin_menu_navigation(callback: CallbackQuery, callback_data: dict):
         "10": confirm_and_delete,
         "11": send_refund_menu,
         "12": refund_confirmation,
-        # "13": make_refund,
+        "13": make_refund,
     }
 
     current_level_function = levels[current_level]
