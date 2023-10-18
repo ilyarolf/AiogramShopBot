@@ -82,7 +82,6 @@ class User:
         user = db.cursor.execute("SELECT * FROM `users` WHERE `user_id` = ?", (primary_key,)).fetchone()[0]
         return User.user_dict_to_user_model(user)
 
-
     @staticmethod
     def can_refresh_balance(telegram_id: int):
         now_time = datetime.datetime.now()
@@ -151,6 +150,14 @@ class User:
         user = User.get_by_tgid(telegram_id)
         user_balance = user['top_up_amount'] - user['consume_records']
         return user_balance >= total_price
+
+    @staticmethod
+    def reduce_consume_records(user_id: int, amount: float):
+        consume_records = db.cursor.execute("SELECT `consume_records` FROM `users` WHERE `user_id` = ?",
+                                            (user_id,)).fetchone()['consume_records']
+        db.cursor.execute("UPDATE `users` SET `consume_records` = ? WHERE `user_id` = ?", (consume_records - amount,
+                                                                                           user_id))
+        db.connect.commit()
 
     @staticmethod
     def get_users_tg_ids():

@@ -1,14 +1,13 @@
-from aiogram import Bot, Dispatcher, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram import types
 
-from config import ADMIN_ID_LIST, TOKEN, WEBHOOK_URL, WEBAPP_HOST, WEBAPP_PORT, SUPPORT_LINK
+from bot import dp, on_startup
+from config import WEBAPP_HOST, WEBAPP_PORT, SUPPORT_LINK
 from handlers.admin.admin import admin_command_handler, admin_menu_navigation, admin_callback, AdminStates, \
     get_message_to_sending, receive_new_items_file
 from handlers.user.all_categories import navigate_categories, all_categories_cb, all_categories_text_message
 from handlers.user.my_profile import navigate, my_profile_cb, my_profile_text_message
-from models.user import db, User
+from models.user import User
 from file_requests import FileRequests
-from aiogram.contrib.middlewares.logging import LoggingMiddleware
 import logging
 from aiogram.utils.executor import start_webhook
 
@@ -16,32 +15,6 @@ from utils.admin_filter import AdminIdFilter
 
 logging.basicConfig(level=logging.INFO)
 FileRequests = FileRequests()
-
-bot = Bot(TOKEN)
-dp = Dispatcher(bot, storage=MemoryStorage())
-
-dp.middleware.setup(LoggingMiddleware())
-
-
-async def on_startup(dp):
-    await bot.set_webhook(WEBHOOK_URL)
-    for admin in ADMIN_ID_LIST:
-        try:
-            await bot.send_message(admin, 'Bot is working')
-        except:
-            pass
-
-
-async def on_shutdown(dp):
-    logging.warning('Shutting down..')
-    db.close()
-    # insert code here to run it before shutdown
-
-    await bot.delete_webhook()
-    await dp.storage.close()
-    await dp.storage.wait_closed()
-
-    logging.warning('Bye!')
 
 
 @dp.message_handler(commands=['start', 'help'])
