@@ -11,6 +11,7 @@ from handlers.user.all_categories import create_message_with_bought_items
 from models.buyItem import BuyItem
 from models.item import Item
 from models.user import User
+from utils.notification_manager import NotificationManager
 
 my_profile_cb = CallbackData("profile", "level", "action", "args_for_action")
 
@@ -30,7 +31,7 @@ def get_my_profile_message(telegram_id: int):
     btc_balance = user["btc_balance"]
     usdt_balance = user["usdt_balance"]
     ltc_balance = user["ltc_balance"]
-    usd_balance = format(user["top_up_amount"] - user["consume_records"], '.2f')
+    usd_balance = round(user["top_up_amount"] - user["consume_records"], 2)
     return (f'<b>Your profile\nID:</b> <code>{telegram_id}</code>\n\n'
             f'<b>Your BTC balance:</b>\n<code>{btc_balance}</code>\n'
             f'<b>Your USDT balance:</b>\n<code>{usdt_balance}</code>\n'
@@ -116,19 +117,22 @@ async def purchase_history(callback: CallbackQuery):
 async def refresh_balance(callback: CallbackQuery):
     telegram_id = callback.from_user.id
     if User.can_refresh_balance(telegram_id):
-        old_balances = User.get_balances(telegram_id)
+        old_crypto_balances = User.get_balances(telegram_id)
         User.create_last_balance_refresh_data(telegram_id)
         addresses = User.get_addresses(telegram_id)
         new_crypto_balances = await CryptoApiManager(**addresses).get_top_ups()
         crypto_prices = await CryptoApiManager.get_crypto_prices()
-        new_usd_balance = 0.0
-        if sum(new_crypto_balances.values()) > sum(old_balances.values()):
+        deposit_usd_amount = 0.0
+        if sum(new_crypto_balances.values()) > sum(old_crypto_balances.values()):
+            #TODO("for goes 9 iteration instead of required 3")
             for (balance_key, balance), (crypto_key, crypto_price) in itertools.product(new_crypto_balances.items(),
                                                                                         crypto_prices.items()):
                 new_value = balance * crypto_price
-                new_usd_balance += new_value
+                deposit_usd_amount += new_value
             User.update_crypto_balances(telegram_id, new_crypto_balances)
-            User.update_top_up_amount(telegram_id, new_usd_balance)
+            User.update_top_up_amount(telegram_id, deposit_usd_amount*0.95)
+            await NotificationManager.new_deposit(old_crypto_balances, new_crypto_balances, deposit_usd_amount,
+                                                  telegram_id)
     await callback.answer()
 
 
