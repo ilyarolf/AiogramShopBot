@@ -129,7 +129,7 @@ class User:
     @staticmethod
     def update_top_up_amount(telegram_id: int, usd_balance: float):
         old_usd_balance = db.cursor.execute('SELECT `top_up_amount` from `users` WHERE `telegram_id` = ?',
-                                            (telegram_id,)).fetchone()[0]
+                                            (telegram_id,)).fetchone()["top_up_amount"]
         new_usd_balance = old_usd_balance + usd_balance
         db.cursor.execute("UPDATE `users` SET `top_up_amount` = ? where `telegram_id` = ?",
                           (format(new_usd_balance, '.2f'), telegram_id))
