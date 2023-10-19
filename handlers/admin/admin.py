@@ -100,7 +100,8 @@ async def get_message_to_sending(message: types.message, state: FSMContext):
 async def confirm_and_send(callback: CallbackQuery):
     await callback.answer(text="Sending started")
     confirmed = admin_callback.parse(callback.data)['action'] == 'confirm'
-    is_restocking = callback.message.text.__contains__("📅 Update")
+    is_caption = callback.message.caption
+    is_restocking = callback.message.text and callback.message.text.__contains__("📅 Update")
     if confirmed:
         counter = 0
         telegram_ids = User.get_users_tg_ids()
@@ -112,8 +113,13 @@ async def confirm_and_send(callback: CallbackQuery):
                 await asyncio.sleep(5)
             except Exception as e:
                 logging.error(e)
+        message_text = f"<b>Message sent to {counter} out of {len(telegram_ids)} people</b>"
+        if is_caption:
+            # TODO("Fix bug with messages with images")
+            await callback.message.delete()
+            await callback.message.answer(text=message_text, parse_mode='html')
         await callback.message.edit_text(
-            text=f"<b>Message sent to {counter} out of {len(telegram_ids)} people</b>",
+            text=message_text,
             parse_mode='html')
     if is_restocking:
         Item.set_items_not_new()
