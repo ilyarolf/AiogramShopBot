@@ -2,8 +2,8 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 from config import ADMIN_ID_LIST, TOKEN, WEBHOOK_URL, WEBAPP_HOST, WEBAPP_PORT, SUPPORT_LINK
+from handlers.all_categories import navigate_categories, all_categories_cb, all_categories_text_message
 from handlers.my_profile import navigate, my_profile_cb, my_profile_text_message
-from models.item import Item
 from models.user import db, User
 from file_requests import FileRequests
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
@@ -67,28 +67,6 @@ async def start(message: types.message):
         User.update_username(user_telegram_id, user_telegram_username)
     await message.answer('Hi', reply_markup=start_markup)
 
-
-@dp.message_handler(text='🔍 All categories')
-async def all_categories(message: types.message):
-    """
-    Функция получает все категории из БД, и создаёт инлайн кнопки с категориями,если их нет то пишет 'No categories'
-    """
-    categories = Item.get_categories()
-    if categories:
-        all_categories_markup = types.InlineKeyboardMarkup(row_width=2)
-        for category in categories:
-            category_name = category["category"]
-            category_button = types.InlineKeyboardButton(category_name, callback_data=f'show_{category_name}')
-            all_categories_markup.insert(category_button)
-        back = types.InlineKeyboardButton('back', callback_data='back')
-        free_manuals_button = types.InlineKeyboardButton('Free', callback_data='show_freebies')
-        all_categories_markup.insert(free_manuals_button)
-        all_categories_markup.insert(back)
-        await message.answer('🔍 <b>All categories</b>', parse_mode='html', reply_markup=all_categories_markup)
-    else:
-        await message.answer('<b>No categories</b>', parse_mode='html')
-
-
 @dp.message_handler(text='🤝 FAQ')
 async def faq(message: types.message):
     """Функция с правилами, отправляет сообщение с правилами"""
@@ -119,6 +97,9 @@ async def support(message: types.message):
 
 dp.register_callback_query_handler(navigate, my_profile_cb.filter())
 dp.register_message_handler(my_profile_text_message, text="🎓 My profile")
+
+dp.register_callback_query_handler(navigate_categories, all_categories_cb.filter())
+dp.register_message_handler(all_categories_text_message, text="🔍 All categories")
 
 if __name__ == '__main__':
     # executor.start_polling(dp, skip_updates=True)
