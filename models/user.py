@@ -1,16 +1,12 @@
 import datetime
 from dateutil.parser import parse
-from CryptoAddressGenerator import CryptoAddressGenerator
+from utils.CryptoAddressGenerator import CryptoAddressGenerator
 from db import db
-
+from typing import Union
 
 class User:
-    def __init__(self, telegram_id: int, telegram_username: str):
-        next_user_id = self.__get_next_user_id()
-        crypto_wallets = CryptoAddressGenerator().get_addresses(next_user_id)
-        btc_address = crypto_wallets['btc']
-        ltc_address = crypto_wallets['ltc']
-        trx_address = crypto_wallets['trx']
+    def __init__(self, telegram_id: int, telegram_username: str = None, btc_address=None, ltc_address=None,
+                 trx_address=None):
         self.telegram_id = telegram_id
         self.btc_address = btc_address
         self.ltc_address = ltc_address
@@ -24,19 +20,44 @@ class User:
         else:
             return 0
 
+    @staticmethod
+    def user_dict_to_user_model(users_dict: Union[list[dict], dict]):
+        if isinstance(users_dict, list):
+            for user_dict in users_dict:
+                user_dict.pop("user_id")
+                user_dict.pop("top_up_amount")
+                user_dict.pop("consume_records")
+                user_dict.pop("last_refresh")
+                user_dict.pop("btc_balance")
+                user_dict.pop("ltc_balance")
+                user_dict.pop("usdt_balance")
+                user_dict.pop("is_new")
+                user_dict.pop("join_date")
+            list_of_users = [User(**user) for user in users_dict]
+            return list_of_users
+        elif isinstance(users_dict, dict):
+            users_dict.pop("user_id")
+            users_dict.pop("top_up_amount")
+            users_dict.pop("consume_records")
+            users_dict.pop("last_refresh")
+            users_dict.pop("btc_balance")
+            users_dict.pop("ltc_balance")
+            users_dict.pop("usdt_balance")
+            users_dict.pop("is_new")
+            users_dict.pop("join_date")
+            return User(**users_dict)
+
     def create(self):
-        if self.telegram_username:
-            db.cursor.execute(
-                "INSERT OR IGNORE INTO `users` (`telegram_username`,`telegram_id`,`btc_address`,`ltc_address`,"
-                " `trx_address`) VALUES (?, ?, ?, ?, ?)",
-                (self.telegram_username, self.telegram_id, self.btc_address, self.ltc_address, self.trx_address))
-            db.connect.commit()
-        else:
-            db.cursor.execute(
-                "INSERT OR IGNORE INTO `users` (`telegram_id`,`btc_address`,`ltc_address`,"
-                " `trx_address`) VALUES (?, ?, ?, ?)",
-                (self.telegram_id, self.btc_address, self.ltc_address, self.trx_address))
-            db.connect.commit()
+        next_user_id = self.__get_next_user_id()
+        crypto_wallets = CryptoAddressGenerator().get_addresses(next_user_id)
+        self.btc_address = crypto_wallets['btc']
+        self.ltc_address = crypto_wallets['ltc']
+        self.trx_address = crypto_wallets['trx']
+        db.cursor.execute(
+            "INSERT OR IGNORE INTO `users` (`telegram_username`,`telegram_id`,`btc_address`,`ltc_address`,"
+            " `trx_address`) VALUES (?, ?, ?, ?, ?)",
+            (self.telegram_username, self.telegram_id, self.btc_address, self.ltc_address, self.trx_address))
+        db.connect.commit()
 
     @staticmethod
     def is_exist(telegram_id: int) -> bool:
@@ -52,9 +73,14 @@ class User:
         db.connect.commit()
 
     @staticmethod
-    def get(telegram_id: int):
+    def get_by_tgid(telegram_id: int):
         user = db.cursor.execute('SELECT * FROM `users` WHERE `telegram_id` = ?', (telegram_id,)).fetchall()[0]
         return user
+
+    @staticmethod
+    def get_by_primary_key(primary_key: int):
+        user = db.cursor.execute("SELECT * FROM `users` WHERE `user_id` = ?", (primary_key,)).fetchone()[0]
+        return User.user_dict_to_user_model(user)
 
     @staticmethod
     def can_refresh_balance(telegram_id: int):
@@ -103,7 +129,7 @@ class User:
     @staticmethod
     def update_top_up_amount(telegram_id: int, usd_balance: float):
         old_usd_balance = db.cursor.execute('SELECT `top_up_amount` from `users` WHERE `telegram_id` = ?',
-                                            (telegram_id,)).fetchone()[0]
+                                            (telegram_id,)).fetchone()["top_up_amount"]
         new_usd_balance = old_usd_balance + usd_balance
         db.cursor.execute("UPDATE `users` SET `top_up_amount` = ? where `telegram_id` = ?",
                           (format(new_usd_balance, '.2f'), telegram_id))
@@ -121,6 +147,27 @@ class User:
 
     @staticmethod
     def is_buy_possible(telegram_id: int, total_price: float) -> bool:
-        user = User.get(telegram_id)
+        user = User.get_by_tgid(telegram_id)
         user_balance = user['top_up_amount'] - user['consume_records']
         return user_balance >= total_price
+
+    @staticmethod
+    def reduce_consume_records(user_id: int, amount: float):
+        consume_records = db.cursor.execute("SELECT `consume_records` FROM `users` WHERE `user_id` = ?",
+                                            (user_id,)).fetchone()['consume_records']
+        db.cursor.execute("UPDATE `users` SET `consume_records` = ? WHERE `user_id` = ?", (consume_records - amount,
+                                                                                           user_id))
+        db.connect.commit()
+
+    @staticmethod
+    def get_users_tg_ids():
+        telegram_ids = db.cursor.execute("SELECT `telegram_id` FROM `users`").fetchall()
+        return telegram_ids
+
+    @staticmethod
+    def get_new_users():
+        new_users = db.cursor.execute("SELECT * FROM `users` WHERE `is_new` = ?", (True,)).fetchall()
+        db.cursor.execute("UPDATE `users` SET `is_new` = ? WHERE `is_new` = ?", (False, True))
+        db.connect.commit()
+        list_of_users = User.user_dict_to_user_model(new_users)
+        return list_of_users

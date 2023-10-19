@@ -24,6 +24,21 @@ class Item:
         return subcategories
 
     @staticmethod
+    def get_all_subcategories() -> list[dict]:
+        all_subcategories = db.cursor.execute("SELECT DISTINCT `subcategory` FROM `items`").fetchall()
+        return all_subcategories
+
+    @staticmethod
+    def delete_category(category_name: str):
+        db.cursor.execute("DELETE FROM `items` WHERE `category` = ?", (category_name,))
+        db.connect.commit()
+
+    @staticmethod
+    def delete_subcategory(subcategory_name: str):
+        db.cursor.execute("DELETE FROM `items` WHERE `subcategory` = ?", (subcategory_name,))
+        db.connect.commit()
+
+    @staticmethod
     def get_description(subcategory: str) -> str:
         description = db.cursor.execute('SELECT `description` FROM `items` WHERE `subcategory` = ?',
                                         (subcategory,)).fetchone()['description']
@@ -51,9 +66,16 @@ class Item:
 
     @staticmethod
     def get(item_id: int):
-        item = db.cursor.execute("SELECT * FROM `items` WHERE `item_id` = ?", (item_id, )).fetchone()
+        item = db.cursor.execute("SELECT * FROM `items` WHERE `item_id` = ?", (item_id,)).fetchone()
         item.pop("item_id")
         return Item(**item)
 
-if __name__ == '__main__':
-    Item.get_categories()
+    @staticmethod
+    def get_new_items():
+        items = db.cursor.execute("SELECT * FROM `items` WHERE `is_new` = ?", (True,)).fetchall()
+        return items
+
+    @staticmethod
+    def set_items_not_new():
+        db.cursor.execute("UPDATE `items` SET `is_new` = ? WHERE `is_new` = ?", (False, True))
+        db.connect.commit()
