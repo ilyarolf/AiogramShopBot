@@ -128,11 +128,10 @@ async def refresh_balance(callback: CallbackQuery):
         crypto_prices = await CryptoApiManager.get_crypto_prices()
         deposit_usd_amount = 0.0
         if sum(new_crypto_balances.values()) > sum(old_crypto_balances.values()):
-            #TODO("for goes 9 iteration instead of required 3")
-            for (balance_key, balance), (crypto_key, crypto_price) in itertools.product(new_crypto_balances.items(),
-                                                                                        crypto_prices.items()):
-                new_value = balance * crypto_price
-                deposit_usd_amount += new_value
+            for balance_key, balance in new_crypto_balances.items():
+                balance_key = balance_key.split('_')[0]
+                crypto_balance_in_usd = balance*crypto_prices[balance_key]
+                deposit_usd_amount += crypto_balance_in_usd
             User.update_crypto_balances(telegram_id, new_crypto_balances)
             User.update_top_up_amount(telegram_id, deposit_usd_amount*0.95)
             await NotificationManager.new_deposit(old_crypto_balances, new_crypto_balances, deposit_usd_amount,
