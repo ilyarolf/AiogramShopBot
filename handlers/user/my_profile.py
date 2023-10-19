@@ -1,6 +1,5 @@
 import itertools
 from typing import Union
-
 from aiogram import types
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.callback_data import CallbackData
@@ -12,6 +11,7 @@ from models.buyItem import BuyItem
 from models.item import Item
 from models.user import User
 from utils.notification_manager import NotificationManager
+from utils.tags_remover import HTMLTagsRemover
 
 my_profile_cb = CallbackData("profile", "level", "action", "args_for_action")
 
@@ -43,14 +43,14 @@ async def my_profile(message: Union[Message, CallbackQuery]):
     current_level = 0
     top_up_button = types.InlineKeyboardButton('Top Up balance',
                                                callback_data=create_callback_profile(current_level + 1, "top_up"))
-    purchase_history = types.InlineKeyboardButton('Purchase history',
+    purchase_history_button = types.InlineKeyboardButton('Purchase history',
                                                   callback_data=create_callback_profile(current_level + 2,
                                                                                         "purchase_history"))
     update_balance = types.InlineKeyboardButton('Refresh balance',
                                                 callback_data=create_callback_profile(current_level + 3,
                                                                                       "refresh_balance"))
     my_profile_markup = types.InlineKeyboardMarkup(row_width=2)
-    my_profile_markup.add(top_up_button, purchase_history, update_balance)
+    my_profile_markup.add(top_up_button, purchase_history_button, update_balance)
 
     if isinstance(message, Message):
         telegram_id = message.chat.id
@@ -60,7 +60,11 @@ async def my_profile(message: Union[Message, CallbackQuery]):
         callback = message
         telegram_id = callback.from_user.id
         message = get_my_profile_message(telegram_id)
-        await callback.message.edit_text(message, parse_mode="HTML", reply_markup=my_profile_markup)
+        raw_message_text = HTMLTagsRemover.remove_html_tags(message)
+        if raw_message_text != callback.message.text:
+            await callback.message.edit_text(message, parse_mode="HTML", reply_markup=my_profile_markup)
+        else:
+            await callback.answer()
 
 
 async def top_up_balance(callback: CallbackQuery):
@@ -133,7 +137,10 @@ async def refresh_balance(callback: CallbackQuery):
             User.update_top_up_amount(telegram_id, deposit_usd_amount*0.95)
             await NotificationManager.new_deposit(old_crypto_balances, new_crypto_balances, deposit_usd_amount,
                                                   telegram_id)
-    await callback.answer()
+        await callback.answer()
+        await my_profile(callback)
+    else:
+        await callback.answer("Please wait and try again later", show_alert=True)
 
 
 async def get_order_from_history(callback: CallbackQuery):
