@@ -8,6 +8,7 @@ from models.buy import Buy
 from models.buyItem import BuyItem
 from models.item import Item
 from models.user import User
+from utils.notification_manager import NotificationManager
 
 all_categories_cb = CallbackData("all_categories", "level", "category", "subcategory", "price", "quantity",
                                  "total_price", "confirmation")
@@ -165,12 +166,14 @@ async def buy_processing(callback: CallbackQuery):
         User.update_consume_records(callback.from_user.id, total_price)
         sold_data = Item.get_bought_items(subcategory, quantity)
         message = await create_message_with_bought_items(sold_data)
-        user_id = User.get_by_tgid(telegram_id)['user_id']
+        user = User.get_by_tgid(telegram_id)
+        user_id = user['user_id']
         buy = Buy(user_id, quantity, total_price)
         buy.insert_new()
         BuyItem.insert_many(sold_data, buy.buy_id)
         Item.set_items_sold(sold_data)
         await callback.message.edit_text(text=message, parse_mode='html')
+        await NotificationManager.new_buy(subcategory, quantity, total_price, user)
     elif is_in_stock is False:
         await callback.message.edit_text(text='<b>Out of stock!</b>', parse_mode='html',
                                          reply_markup=back_to_main_markup)
