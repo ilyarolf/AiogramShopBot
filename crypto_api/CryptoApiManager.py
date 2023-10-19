@@ -45,9 +45,9 @@ class CryptoApiManager:
     @staticmethod
     async def get_crypto_prices() -> dict[Any, float]:
         usd_crypto_prices = {}
-        urls = {"BTC": f'https://api.coinbase.com/v2/prices/BTC-USD/buy',
-                "USDT": 'https://api.coinbase.com/v2/prices/USDT-USD/buy',
-                "LTC": 'https://api.coinbase.com/v2/prices/LTC-USD/buy'}
+        urls = {"btc": f'https://api.coinbase.com/v2/prices/BTC-USD/buy',
+                "usdt": 'https://api.coinbase.com/v2/prices/USDT-USD/buy',
+                "ltc": 'https://api.coinbase.com/v2/prices/LTC-USD/buy'}
         responses = (grequests.get(url) for url in urls.values())
         datas = grequests.map(responses)
         for symbol, data in zip(urls.keys(), datas):
@@ -56,7 +56,3 @@ class CryptoApiManager:
             usd_crypto_prices[symbol] = price
         return usd_crypto_prices
 
-
-if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(CryptoApiManager.get_crypto_prices())

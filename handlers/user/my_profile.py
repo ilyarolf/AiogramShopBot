@@ -1,16 +1,17 @@
 import itertools
 from typing import Union
-
 from aiogram import types
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.callback_data import CallbackData
 
 from crypto_api.CryptoApiManager import CryptoApiManager
 from db import db
-from handlers.all_categories import create_message_with_bought_items
+from handlers.user.all_categories import create_message_with_bought_items
 from models.buyItem import BuyItem
 from models.item import Item
 from models.user import User
+from utils.notification_manager import NotificationManager
+from utils.tags_remover import HTMLTagsRemover
 
 my_profile_cb = CallbackData("profile", "level", "action", "args_for_action")
 
@@ -26,11 +27,11 @@ async def my_profile_text_message(message: types.message):
 
 
 def get_my_profile_message(telegram_id: int):
-    user = User.get(telegram_id)
+    user = User.get_by_tgid(telegram_id)
     btc_balance = user["btc_balance"]
     usdt_balance = user["usdt_balance"]
     ltc_balance = user["ltc_balance"]
-    usd_balance = format(user["top_up_amount"] - user["consume_records"], '.2f')
+    usd_balance = round(user["top_up_amount"] - user["consume_records"], 2)
     return (f'<b>Your profile\nID:</b> <code>{telegram_id}</code>\n\n'
             f'<b>Your BTC balance:</b>\n<code>{btc_balance}</code>\n'
             f'<b>Your USDT balance:</b>\n<code>{usdt_balance}</code>\n'
@@ -42,14 +43,14 @@ async def my_profile(message: Union[Message, CallbackQuery]):
     current_level = 0
     top_up_button = types.InlineKeyboardButton('Top Up balance',
                                                callback_data=create_callback_profile(current_level + 1, "top_up"))
-    purchase_history = types.InlineKeyboardButton('Purchase history',
+    purchase_history_button = types.InlineKeyboardButton('Purchase history',
                                                   callback_data=create_callback_profile(current_level + 2,
                                                                                         "purchase_history"))
     update_balance = types.InlineKeyboardButton('Refresh balance',
                                                 callback_data=create_callback_profile(current_level + 3,
                                                                                       "refresh_balance"))
     my_profile_markup = types.InlineKeyboardMarkup(row_width=2)
-    my_profile_markup.add(top_up_button, purchase_history, update_balance)
+    my_profile_markup.add(top_up_button, purchase_history_button, update_balance)
 
     if isinstance(message, Message):
         telegram_id = message.chat.id
@@ -59,12 +60,16 @@ async def my_profile(message: Union[Message, CallbackQuery]):
         callback = message
         telegram_id = callback.from_user.id
         message = get_my_profile_message(telegram_id)
-        await callback.message.edit_text(message, parse_mode="HTML", reply_markup=my_profile_markup)
+        raw_message_text = HTMLTagsRemover.remove_html_tags(message)
+        if raw_message_text != callback.message.text:
+            await callback.message.edit_text(message, parse_mode="HTML", reply_markup=my_profile_markup)
+        else:
+            await callback.answer()
 
 
 async def top_up_balance(callback: CallbackQuery):
     telegram_id = callback.message.chat.id
-    user = User.get(telegram_id)
+    user = User.get_by_tgid(telegram_id)
     current_level = 1
     btc_address = user["btc_address"]
     trx_address = user["trx_address"]
@@ -86,7 +91,7 @@ async def top_up_balance(callback: CallbackQuery):
 
 async def purchase_history(callback: CallbackQuery):
     telegram_id = callback.message.chat.id
-    user_id = User.get(telegram_id)['user_id']
+    user_id = User.get_by_tgid(telegram_id)['user_id']
     current_level = 2
     orders = db.cursor.execute('SELECT * FROM `buys` where `user_id` = ?', (user_id,)).fetchall()
     orders_markup = types.InlineKeyboardMarkup()
@@ -116,20 +121,25 @@ async def purchase_history(callback: CallbackQuery):
 async def refresh_balance(callback: CallbackQuery):
     telegram_id = callback.from_user.id
     if User.can_refresh_balance(telegram_id):
-        old_balances = User.get_balances(telegram_id)
+        old_crypto_balances = User.get_balances(telegram_id)
         User.create_last_balance_refresh_data(telegram_id)
         addresses = User.get_addresses(telegram_id)
         new_crypto_balances = await CryptoApiManager(**addresses).get_top_ups()
         crypto_prices = await CryptoApiManager.get_crypto_prices()
-        new_usd_balance = 0.0
-        if sum(new_crypto_balances.values()) > sum(old_balances.values()):
-            for (balance_key, balance), (crypto_key, crypto_price) in itertools.product(new_crypto_balances.items(),
-                                                                                        crypto_prices.items()):
-                new_value = balance * crypto_price
-                new_usd_balance += new_value
+        deposit_usd_amount = 0.0
+        if sum(new_crypto_balances.values()) > sum(old_crypto_balances.values()):
+            for balance_key, balance in new_crypto_balances.items():
+                balance_key = balance_key.split('_')[0]
+                crypto_balance_in_usd = balance*crypto_prices[balance_key]
+                deposit_usd_amount += crypto_balance_in_usd
             User.update_crypto_balances(telegram_id, new_crypto_balances)
-            User.update_top_up_amount(telegram_id, new_usd_balance)
-    await callback.answer()
+            User.update_top_up_amount(telegram_id, deposit_usd_amount*0.95)
+            await NotificationManager.new_deposit(old_crypto_balances, new_crypto_balances, deposit_usd_amount,
+                                                  telegram_id)
+        await callback.answer()
+        await my_profile(callback)
+    else:
+        await callback.answer("Please wait and try again later", show_alert=True)
 
 
 async def get_order_from_history(callback: CallbackQuery):

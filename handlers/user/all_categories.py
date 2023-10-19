@@ -8,6 +8,7 @@ from models.buy import Buy
 from models.buyItem import BuyItem
 from models.item import Item
 from models.user import User
+from utils.notification_manager import NotificationManager
 
 all_categories_cb = CallbackData("all_categories", "level", "category", "subcategory", "price", "quantity",
                                  "total_price", "confirmation")
@@ -29,8 +30,7 @@ async def all_categories_text_message(message: types.message):
     await all_categories(message)
 
 
-async def create_category_buttons():
-    current_level = 0
+async def create_category_buttons(current_level: int):
     categories = Item.get_categories()
     if categories:
         categories_markup = types.InlineKeyboardMarkup(row_width=2)
@@ -66,7 +66,7 @@ async def create_subcategory_buttons(category: str):
 
 async def all_categories(message: Union[Message, CallbackQuery]):
     current_level = 0
-    category_inline_buttons = await create_category_buttons()
+    category_inline_buttons = await create_category_buttons(current_level)
     if isinstance(message, Message):
         if category_inline_buttons:
             await message.answer('🔍 <b>All categories</b>', parse_mode='html', reply_markup=category_inline_buttons)
@@ -101,7 +101,8 @@ async def select_quantity(callback: CallbackQuery):
         count_button_inline = types.InlineKeyboardButton(text=str(i), callback_data=count_button_callback)
         count_markup.insert(count_button_inline)
     back_button = types.InlineKeyboardButton("Back",
-                                             callback_data=create_callback_all_categories(level=current_level - 1))
+                                             callback_data=create_callback_all_categories(level=current_level - 1,
+                                                                                          category=category))
     count_markup.add(back_button)
     await callback.message.edit_text(f'<b>You choose:{subcategory}\n'
                                      f'Price:${price}\n'
@@ -165,12 +166,14 @@ async def buy_processing(callback: CallbackQuery):
         User.update_consume_records(callback.from_user.id, total_price)
         sold_data = Item.get_bought_items(subcategory, quantity)
         message = await create_message_with_bought_items(sold_data)
-        user_id = User.get(telegram_id)['user_id']
+        user = User.get_by_tgid(telegram_id)
+        user_id = user['user_id']
         buy = Buy(user_id, quantity, total_price)
         buy.insert_new()
         BuyItem.insert_many(sold_data, buy.buy_id)
         Item.set_items_sold(sold_data)
         await callback.message.edit_text(text=message, parse_mode='html')
+        await NotificationManager.new_buy(subcategory, quantity, total_price, user)
     elif is_in_stock is False:
         await callback.message.edit_text(text='<b>Out of stock!</b>', parse_mode='html',
                                          reply_markup=back_to_main_markup)
