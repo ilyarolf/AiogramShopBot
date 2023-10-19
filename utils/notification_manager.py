@@ -3,7 +3,7 @@ from typing import Union
 
 from aiogram import types
 
-from CryptoAddressGenerator import CryptoAddressGenerator
+from utils.CryptoAddressGenerator import CryptoAddressGenerator
 from bot import bot
 from config import ADMIN_ID_LIST
 from models.user import User

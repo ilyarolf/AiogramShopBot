@@ -1,6 +1,6 @@
 import datetime
 from dateutil.parser import parse
-from CryptoAddressGenerator import CryptoAddressGenerator
+from utils.CryptoAddressGenerator import CryptoAddressGenerator
 from db import db
 from typing import Union
 

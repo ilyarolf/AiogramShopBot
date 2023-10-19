@@ -7,14 +7,12 @@ from handlers.admin.admin import admin_command_handler, admin_menu_navigation, a
 from handlers.user.all_categories import navigate_categories, all_categories_cb, all_categories_text_message
 from handlers.user.my_profile import navigate, my_profile_cb, my_profile_text_message
 from models.user import User
-from file_requests import FileRequests
 import logging
 from aiogram.utils.executor import start_webhook
 
 from utils.admin_filter import AdminIdFilter
 
 logging.basicConfig(level=logging.INFO)
-FileRequests = FileRequests()
 
 
 @dp.message_handler(commands=['start', 'help'])
@@ -35,6 +33,7 @@ async def start(message: types.message):
         if telegram_username != user_telegram_username:
             User.update_username(user_telegram_id, user_telegram_username)
     await message.answer('Hi', reply_markup=start_markup)
+
 
 @dp.message_handler(text='🤝 FAQ')
 async def faq(message: types.message):
