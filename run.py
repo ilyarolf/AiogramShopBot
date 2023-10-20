@@ -1,28 +1,29 @@
-from aiogram import types
+from aiogram import types, F, Router
+from aiogram.filters import CommandStart, Command
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from bot import dp, on_startup
-from config import WEBAPP_HOST, WEBAPP_PORT, SUPPORT_LINK
-from handlers.admin.admin import admin_command_handler, admin_menu_navigation, admin_callback, AdminStates, \
-    get_message_to_sending, receive_new_items_file
-from handlers.user.all_categories import navigate_categories, all_categories_cb, all_categories_text_message
-from handlers.user.my_profile import navigate, my_profile_cb, my_profile_text_message
+from bot import dp, main
+from config import SUPPORT_LINK
+from handlers.admin.admin import admin_command_handler, admin_menu_navigation, AdminStates, \
+    get_message_to_sending, receive_new_items_file, AdminCallback, admin_router
+# from handlers.user.all_categories import navigate_categories, all_categories_cb, all_categories_text_message
+# from handlers.user.my_profile import navigate, my_profile_cb, my_profile_text_message
 from models.user import User
 import logging
-from aiogram.utils.executor import start_webhook
-
 from utils.admin_filter import AdminIdFilter
 
 logging.basicConfig(level=logging.INFO)
 
 
-@dp.message_handler(commands=['start', 'help'])
+@dp.message(Command(commands=["start", "help"]))
 async def start(message: types.message):
-    all_categories_button = types.KeyboardButton('🔍 All categories')
-    my_profile_button = types.KeyboardButton('🎓 My profile')
-    faq_button = types.KeyboardButton('🤝 FAQ')
-    help_button = types.KeyboardButton('🚀 Help')
-    start_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    start_markup.add(all_categories_button, my_profile_button, faq_button, help_button)
+    all_categories_button = types.KeyboardButton(text='🔍 All categories')
+    my_profile_button = types.KeyboardButton(text='🎓 My profile')
+    faq_button = types.KeyboardButton(text='🤝 FAQ')
+    help_button = types.KeyboardButton(text='🚀 Help')
+    keyboard = [[all_categories_button], [my_profile_button], [faq_button], [help_button]]
+    start_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, keyboard=keyboard)
+    # start_markup.add(all_categories_button, my_profile_button, faq_button, help_button)
     user_telegram_id = message.chat.id
     user_telegram_username = message.from_user.username
     user = User(user_telegram_id, user_telegram_username)
@@ -35,7 +36,7 @@ async def start(message: types.message):
     await message.answer('Hi', reply_markup=start_markup)
 
 
-@dp.message_handler(text='🤝 FAQ')
+@dp.message(F.text == '🤝 FAQ')
 async def faq(message: types.message):
     faq_string = """<b>In our store ignorance of the rules does not exempt you from responsibility. Buying at least 
 one product in the store you automatically agree with all the rules of the store!\n
@@ -51,35 +52,31 @@ store.
     await message.answer(faq_string, parse_mode='html')
 
 
-@dp.message_handler(text='🚀 Help')
+@dp.message(F.text == '🚀 Help')
 async def support(message: types.message):
-    admin_markup = types.InlineKeyboardMarkup()
-    admin_button = types.InlineKeyboardButton('Admin', url=SUPPORT_LINK)
-    admin_markup.add(admin_button)
-    await message.answer(f'<b>Support</b>', parse_mode='html', reply_markup=admin_markup)
+    admin_keyboard_builder = InlineKeyboardBuilder()
+
+    admin_keyboard_builder.button(text='Admin', url=SUPPORT_LINK)
+    await message.answer(f'<b>Support</b>', reply_markup=admin_keyboard_builder.as_markup())
 
 
-dp.register_callback_query_handler(navigate, my_profile_cb.filter())
-dp.register_message_handler(my_profile_text_message, text="🎓 My profile")
+main_router = Router()
+main_router.include_router(admin_router)
+dp.include_router(main_router)
+# dp.register_callback_query_handler(navigate, my_profile_cb.filter())
+# dp.register_message_handler(my_profile_text_message, text="🎓 My profile")
 
-dp.register_callback_query_handler(navigate_categories, all_categories_cb.filter())
-dp.register_message_handler(all_categories_text_message, text="🔍 All categories")
+# dp.register_callback_query_handler(navigate_categories, all_categories_cb.filter())
+# dp.register_message_handler(all_categories_text_message, text="🔍 All categories")
 
-dp.register_callback_query_handler(admin_menu_navigation, admin_callback.filter())
-dp.register_message_handler(admin_command_handler, AdminIdFilter("/admin"))
+# dp.register_callback_query_handler(admin_menu_navigation, AdminCallback.filter())
+# dp.register_message_handler(admin_command_handler, AdminIdFilter("/admin"))
 
-dp.register_message_handler(get_message_to_sending, state=AdminStates.message_to_send,
-                            content_types=types.ContentTypes.all())
+# dp.register_message_handler(get_message_to_sending, state=AdminStates.message_to_send,
+#                             content_types=types.ContentTypes.all())
 
-dp.register_message_handler(receive_new_items_file, state=AdminStates.new_items_file,
-                            content_types=types.ContentTypes.DOCUMENT | types.ContentTypes.TEXT)
+# dp.register_message_handler(receive_new_items_file, state=AdminStates.new_items_file,
+#                             content_types=types.ContentTypes.DOCUMENT | types.ContentTypes.TEXT)
 
 if __name__ == '__main__':
-    start_webhook(
-        dispatcher=dp,
-        webhook_path="",
-        on_startup=on_startup,
-        skip_updates=True,
-        host=WEBAPP_HOST,
-        port=WEBAPP_PORT,
-    )
+    main()

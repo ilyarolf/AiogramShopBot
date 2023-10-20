@@ -1,9 +1,10 @@
 from aiogram import types
-from aiogram.dispatcher.filters import Command
+from aiogram.filters import BaseFilter
 
 from config import ADMIN_ID_LIST
 
 
-class AdminIdFilter(Command):
-    async def check(self, message: types.message):
-        return message.from_id in ADMIN_ID_LIST
+class AdminIdFilter(BaseFilter):
+
+    async def __call__(self, message: types.message):
+        return message.from_user.id in ADMIN_ID_LIST
