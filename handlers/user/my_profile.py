@@ -131,6 +131,7 @@ async def purchase_history(callback: CallbackQuery):
 async def refresh_balance(callback: CallbackQuery):
     telegram_id = callback.from_user.id
     if User.can_refresh_balance(telegram_id):
+        await callback.answer("Refreshing...")
         old_crypto_balances = User.get_balances(telegram_id)
         User.create_last_balance_refresh_data(telegram_id)
         addresses = User.get_addresses(telegram_id)
@@ -146,7 +147,7 @@ async def refresh_balance(callback: CallbackQuery):
             User.update_top_up_amount(telegram_id, deposit_usd_amount * 0.95)
             await NotificationManager.new_deposit(old_crypto_balances, new_crypto_balances, deposit_usd_amount,
                                                   telegram_id)
-        await callback.answer()
+        await callback.answer("Refreshed successfully!")
         await my_profile(callback)
     else:
         await callback.answer("Please wait and try again later", show_alert=True)
