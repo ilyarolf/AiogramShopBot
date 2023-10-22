@@ -1,17 +1,14 @@
 from aiogram import types, F, Router
-from aiogram.filters import CommandStart, Command
+from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot import dp, main
 from config import SUPPORT_LINK
-from handlers.admin.admin import admin_command_handler, admin_menu_navigation, AdminStates, \
-    get_message_to_sending, receive_new_items_file, AdminCallback, admin_router
+from handlers.admin.admin import admin_router
+from handlers.user.all_categories import all_categories_router
 from handlers.user.my_profile import my_profile_router
-# from handlers.user.all_categories import navigate_categories, all_categories_cb, all_categories_text_message
-# from handlers.user.my_profile import navigate, my_profile_cb, my_profile_text_message
 from models.user import User
 import logging
-from utils.admin_filter import AdminIdFilter
 
 logging.basicConfig(level=logging.INFO)
 
@@ -22,9 +19,8 @@ async def start(message: types.message):
     my_profile_button = types.KeyboardButton(text='🎓 My profile')
     faq_button = types.KeyboardButton(text='🤝 FAQ')
     help_button = types.KeyboardButton(text='🚀 Help')
-    keyboard = [[all_categories_button], [my_profile_button], [faq_button], [help_button]]
+    keyboard = [[all_categories_button, my_profile_button], [faq_button, help_button]]
     start_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, keyboard=keyboard)
-    # start_markup.add(all_categories_button, my_profile_button, faq_button, help_button)
     user_telegram_id = message.chat.id
     user_telegram_username = message.from_user.username
     user = User(user_telegram_id, user_telegram_username)
@@ -64,21 +60,8 @@ async def support(message: types.message):
 main_router = Router()
 main_router.include_router(admin_router)
 main_router.include_router(my_profile_router)
+main_router.include_router(all_categories_router)
 dp.include_router(main_router)
-# dp.register_callback_query_handler(navigate, my_profile_cb.filter())
-# dp.register_message_handler(my_profile_text_message, text="🎓 My profile")
-
-# dp.register_callback_query_handler(navigate_categories, all_categories_cb.filter())
-# dp.register_message_handler(all_categories_text_message, text="🔍 All categories")
-
-# dp.register_callback_query_handler(admin_menu_navigation, AdminCallback.filter())
-# dp.register_message_handler(admin_command_handler, AdminIdFilter("/admin"))
-
-# dp.register_message_handler(get_message_to_sending, state=AdminStates.message_to_send,
-#                             content_types=types.ContentTypes.all())
-
-# dp.register_message_handler(receive_new_items_file, state=AdminStates.new_items_file,
-#                             content_types=types.ContentTypes.DOCUMENT | types.ContentTypes.TEXT)
 
 if __name__ == '__main__':
     main()

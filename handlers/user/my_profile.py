@@ -1,4 +1,3 @@
-import itertools
 from typing import Union
 from aiogram import types, Router, F
 from aiogram.filters.callback_data import CallbackData
@@ -6,7 +5,7 @@ from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from crypto_api.CryptoApiManager import CryptoApiManager
 from db import db
-# from handlers.user.all_categories import create_message_with_bought_items
+from handlers.user.all_categories import create_message_with_bought_items
 from models.buyItem import BuyItem
 from models.item import Item
 from models.user import User
@@ -161,9 +160,7 @@ async def get_order_from_history(callback: CallbackQuery):
     for item in items:
         item_id = item['item_id']
         items_as_objects.append(Item.get(item_id).__dict__)
-    # message = await create_message_with_bought_items(items_as_objects)
-    message = "mock_message"
-    # TODO("Remove mock after all categories migration")
+    message = await create_message_with_bought_items(items_as_objects)
     back_builder = InlineKeyboardBuilder()
     back_button = types.InlineKeyboardButton(text="Back",
                                              callback_data=create_callback_profile(level=current_level - 2))
@@ -172,8 +169,8 @@ async def get_order_from_history(callback: CallbackQuery):
 
 
 @my_profile_router.callback_query(MyProfileCallback.filter())
-async def navigate(callback: CallbackQuery):
-    current_level = MyProfileCallback.unpack(callback.data).level
+async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback):
+    current_level = callback_data.level
 
     levels = {
         0: my_profile,
