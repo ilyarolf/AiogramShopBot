@@ -9,6 +9,7 @@ from handlers.user.all_categories import create_message_with_bought_items
 from models.buyItem import BuyItem
 from models.item import Item
 from models.user import User
+from utils.custom_filters import IsUserExistFilter
 from utils.notification_manager import NotificationManager
 from utils.tags_remover import HTMLTagsRemover
 
@@ -25,8 +26,7 @@ def create_callback_profile(level: int, action: str = "", args_for_action=""):
     return MyProfileCallback(level=level, action=action, args_for_action=args_for_action).pack()
 
 
-# TODO("Make filter for users only")
-@my_profile_router.message(F.text == "🎓 My profile")
+@my_profile_router.message(F.text == "🎓 My profile", IsUserExistFilter())
 async def my_profile_text_message(message: types.message):
     await my_profile(message)
 
@@ -168,7 +168,7 @@ async def get_order_from_history(callback: CallbackQuery):
     await callback.message.edit_text(text=message, parse_mode='html', reply_markup=back_builder.as_markup())
 
 
-@my_profile_router.callback_query(MyProfileCallback.filter())
+@my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())
 async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback):
     current_level = callback_data.level
 

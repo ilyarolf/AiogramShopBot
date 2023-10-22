@@ -16,7 +16,7 @@ from bot import bot
 from models.buy import Buy
 from models.item import Item
 from models.user import User
-from utils.admin_filter import AdminIdFilter
+from utils.custom_filters import AdminIdFilter
 from utils.new_items_manager import NewItemsManager
 from utils.notification_manager import NotificationManager
 from utils.other_sql import OtherSQLQuery

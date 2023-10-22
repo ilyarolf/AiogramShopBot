@@ -9,6 +9,7 @@ from models.buy import Buy
 from models.buyItem import BuyItem
 from models.item import Item
 from models.user import User
+from utils.custom_filters import IsUserExistFilter
 from utils.notification_manager import NotificationManager
 
 
@@ -37,7 +38,7 @@ def create_callback_all_categories(level: int,
 all_categories_router = Router()
 
 
-@all_categories_router.message(F.text == "🔍 All categories")
+@all_categories_router.message(F.text == "🔍 All categories", IsUserExistFilter())
 async def all_categories_text_message(message: types.message):
     await all_categories(message)
 
@@ -212,7 +213,7 @@ async def create_message_with_bought_items(bought_data: list):
     return message
 
 
-@all_categories_router.callback_query(AllCategoriesCallback.filter())
+@all_categories_router.callback_query(AllCategoriesCallback.filter(), IsUserExistFilter())
 async def navigate_categories(call: CallbackQuery, callback_data: AllCategoriesCallback):
     current_level = callback_data.level
 
