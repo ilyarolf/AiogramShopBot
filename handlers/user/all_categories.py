@@ -47,12 +47,12 @@ async def create_category_buttons(current_level: int):
     categories = Item.get_categories()
     if categories:
         categories_builder = InlineKeyboardBuilder()
-        categories_builder.adjust(2)
         for category in categories:
             category_name = category['category']
             category_button_callback = create_callback_all_categories(level=current_level + 1, category=category_name)
             category_button = types.InlineKeyboardButton(text=category_name, callback_data=category_button_callback)
             categories_builder.add(category_button)
+        categories_builder.adjust(2)
         return categories_builder.as_markup()
 
 
@@ -60,7 +60,6 @@ async def create_subcategory_buttons(category: str):
     current_level = 1
     subcategories = Item.get_subcategories(category)
     subcategories_builder = InlineKeyboardBuilder()
-    subcategories_builder.adjust(1)
     for subcategory in subcategories:
         subcategory_name = subcategory['subcategory']
         subcategory_price = subcategory['price']
@@ -76,6 +75,7 @@ async def create_subcategory_buttons(category: str):
     back_button = types.InlineKeyboardButton(text="Back",
                                              callback_data=create_callback_all_categories(level=current_level - 1))
     subcategories_builder.add(back_button)
+    subcategories_builder.adjust(1)
     return subcategories_builder.as_markup()
 
 
@@ -110,7 +110,6 @@ async def select_quantity(callback: CallbackQuery):
     current_level = unpacked_callback.level
     description = Item.get_description(subcategory)
     count_builder = InlineKeyboardBuilder()
-    count_builder.adjust(3)
     for i in range(1, 11):
         count_button_callback = create_callback_all_categories(level=current_level + 1, category=category,
                                                                subcategory=subcategory, price=price,
@@ -121,6 +120,7 @@ async def select_quantity(callback: CallbackQuery):
                                              callback_data=create_callback_all_categories(level=current_level - 1,
                                                                                           category=category))
     count_builder.add(back_button)
+    count_builder.adjust(3)
     await callback.message.edit_text(f'<b>You choose:{subcategory}\n'
                                      f'Price:${price}\n'
                                      f'Description:{description}\n'
@@ -159,6 +159,7 @@ async def buy_confirmation(callback: CallbackQuery):
                                                                                           subcategory=subcategory,
                                                                                           price=price))
     confirmation_builder.add(confirmation_button, decline_button, back_button)
+    confirmation_builder.adjust(2)
     await callback.message.edit_text(text=f'<b>You choose:{subcategory}\n'
                                           f'Price:${price}\n'
                                           f'Description:{description}\n'
