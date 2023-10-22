@@ -144,9 +144,12 @@ async def decline_action(callback: CallbackQuery):
 
 
 async def add_items(callback: CallbackQuery, state: FSMContext):
-    await callback.message.edit_text(text="<b>Send .json file with new items or type \"cancel\" for cancel.</b>",
-                                     parse_mode=ParseMode.HTML)
-    await state.set_state(AdminStates.new_items_file)
+    # TODO("Conflict here")
+    unpacked_callback = AdminCallback.unpack(callback.data)
+    if unpacked_callback.level == 4 and unpacked_callback.action == "add_items":
+        await callback.message.edit_text(text="<b>Send .json file with new items or type \"cancel\" for cancel.</b>",
+                                         parse_mode=ParseMode.HTML)
+        await state.set_state(AdminStates.new_items_file)
 
 
 @admin_router.message(AdminIdFilter(), F.document | F.text)
@@ -348,7 +351,7 @@ async def admin_menu_navigation(callback: CallbackQuery, state: FSMContext):
         1: send_to_everyone,
         2: confirm_and_send,
         3: decline_action,
-        4: add_items,
+        4: add_items,  # TODO ("Fix conflict with non admin buttons")
         5: send_restocking_message,
         6: get_new_users,
         7: delete_category,

@@ -2,6 +2,7 @@ import logging
 from typing import Union
 
 from aiogram import types
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from utils.CryptoAddressGenerator import CryptoAddressGenerator
 from bot import bot
@@ -30,11 +31,11 @@ class NotificationManager:
 
     @staticmethod
     async def make_user_button(username: Union[str, None]):
-        user_button_markup = types.InlineKeyboardMarkup()
+        user_button_builder = InlineKeyboardBuilder()
         if isinstance(username, str):
             user_button_inline = types.InlineKeyboardButton(text=username, url=f"https://t.me/{username}")
-            user_button_markup.add(user_button_inline)
-        return user_button_markup
+            user_button_builder.add(user_button_inline)
+        return user_button_builder.as_markup()
 
     @staticmethod
     async def new_deposit(old_crypto_balances: dict, new_crypto_balances: dict, deposit_amount_usd, telegram_id: int):
