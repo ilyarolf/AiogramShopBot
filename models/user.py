@@ -4,6 +4,7 @@ from utils.CryptoAddressGenerator import CryptoAddressGenerator
 from db import db
 from typing import Union
 
+
 class User:
     def __init__(self, telegram_id: int, telegram_username: str = None, btc_address=None, ltc_address=None,
                  trx_address=None):

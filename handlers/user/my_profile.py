@@ -1,27 +1,32 @@
-import itertools
 from typing import Union
-from aiogram import types
+from aiogram import types, Router, F
+from aiogram.filters.callback_data import CallbackData
 from aiogram.types import CallbackQuery, Message
-from aiogram.utils.callback_data import CallbackData
-
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from crypto_api.CryptoApiManager import CryptoApiManager
 from db import db
 from handlers.user.all_categories import create_message_with_bought_items
 from models.buyItem import BuyItem
 from models.item import Item
 from models.user import User
+from utils.custom_filters import IsUserExistFilter
 from utils.notification_manager import NotificationManager
 from utils.tags_remover import HTMLTagsRemover
 
-my_profile_cb = CallbackData("profile", "level", "action", "args_for_action")
+my_profile_router = Router()
+
+
+class MyProfileCallback(CallbackData, prefix="my_profile"):
+    level: int
+    action: str
+    args_for_action: Union[int, str]
 
 
 def create_callback_profile(level: int, action: str = "", args_for_action=""):
-    return my_profile_cb.new(level=level,
-                             action=action,
-                             args_for_action=args_for_action)
+    return MyProfileCallback(level=level, action=action, args_for_action=args_for_action).pack()
 
 
+@my_profile_router.message(F.text == "🎓 My profile", IsUserExistFilter())
 async def my_profile_text_message(message: types.message):
     await my_profile(message)
 
@@ -41,16 +46,18 @@ def get_my_profile_message(telegram_id: int):
 
 async def my_profile(message: Union[Message, CallbackQuery]):
     current_level = 0
-    top_up_button = types.InlineKeyboardButton('Top Up balance',
+    top_up_button = types.InlineKeyboardButton(text='Top Up balance',
                                                callback_data=create_callback_profile(current_level + 1, "top_up"))
-    purchase_history_button = types.InlineKeyboardButton('Purchase history',
-                                                  callback_data=create_callback_profile(current_level + 2,
-                                                                                        "purchase_history"))
-    update_balance = types.InlineKeyboardButton('Refresh balance',
+    purchase_history_button = types.InlineKeyboardButton(text='Purchase history',
+                                                         callback_data=create_callback_profile(current_level + 2,
+                                                                                               "purchase_history"))
+    update_balance = types.InlineKeyboardButton(text='Refresh balance',
                                                 callback_data=create_callback_profile(current_level + 3,
                                                                                       "refresh_balance"))
-    my_profile_markup = types.InlineKeyboardMarkup(row_width=2)
-    my_profile_markup.add(top_up_button, purchase_history_button, update_balance)
+    my_profile_builder = InlineKeyboardBuilder()
+    my_profile_builder.add(top_up_button, purchase_history_button, update_balance)
+    my_profile_builder.adjust(2)
+    my_profile_markup = my_profile_builder.as_markup()
 
     if isinstance(message, Message):
         telegram_id = message.chat.id
@@ -74,10 +81,11 @@ async def top_up_balance(callback: CallbackQuery):
     btc_address = user["btc_address"]
     trx_address = user["trx_address"]
     ltc_address = user["ltc_address"]
-    back_to_profile_button = types.InlineKeyboardButton('Back',
+    back_to_profile_button = types.InlineKeyboardButton(text='Back',
                                                         callback_data=create_callback_profile(current_level - 1))
-    back_button_markup = types.InlineKeyboardMarkup()
-    back_button_markup.add(back_to_profile_button)
+    back_button_builder = InlineKeyboardBuilder()
+    back_button_builder.add(back_to_profile_button)
+    back_button_markup = back_button_builder.as_markup()
     await callback.message.edit_text(
         f'<b>Deposit to the address the amount you want to top up the Shop Bot</b> \n\n'
         f'<b>Important</b>\n<i>A unique BTC/LTC/USDT addresses is given for each deposit\n'
@@ -94,22 +102,24 @@ async def purchase_history(callback: CallbackQuery):
     user_id = User.get_by_tgid(telegram_id)['user_id']
     current_level = 2
     orders = db.cursor.execute('SELECT * FROM `buys` where `user_id` = ?', (user_id,)).fetchall()
-    orders_markup = types.InlineKeyboardMarkup()
-    back_to_profile_button = types.InlineKeyboardButton('Back',
+    orders_markup_builder = InlineKeyboardBuilder()
+    back_to_profile_button = types.InlineKeyboardButton(text='Back',
                                                         callback_data=create_callback_profile(current_level - 2))
     for order in orders:
         quantity = order['quantity']
         total_price = order['total_price']
         buy_id = order['buy_id']
         item_subcategory = Item.get(BuyItem.get_items_by_buy_id(buy_id)[0]['item_id']).subcategory
-        item_from_history_callback = create_callback_profile(current_level+2, action="get_order",
+        item_from_history_callback = create_callback_profile(current_level + 2, action="get_order",
                                                              args_for_action=str(buy_id))
         order_inline = types.InlineKeyboardButton(
-            f"{item_subcategory} | Total Price: {total_price}$ | Quantity: {quantity} pcs",
+            text=f"{item_subcategory} | Total Price: {total_price}$ | Quantity: {quantity} pcs",
             callback_data=item_from_history_callback
         )
-        orders_markup.add(order_inline)
-    orders_markup.add(back_to_profile_button)
+        orders_markup_builder.add(order_inline)
+    orders_markup_builder.add(back_to_profile_button)
+    orders_markup_builder.adjust(1)
+    orders_markup = orders_markup_builder.as_markup()
     if not orders:
         await callback.message.edit_text("<b>You haven't had any orders yet</b>", reply_markup=orders_markup,
                                          parse_mode='html')
@@ -121,6 +131,7 @@ async def purchase_history(callback: CallbackQuery):
 async def refresh_balance(callback: CallbackQuery):
     telegram_id = callback.from_user.id
     if User.can_refresh_balance(telegram_id):
+        await callback.answer("Refreshing...")
         old_crypto_balances = User.get_balances(telegram_id)
         User.create_last_balance_refresh_data(telegram_id)
         addresses = User.get_addresses(telegram_id)
@@ -130,13 +141,13 @@ async def refresh_balance(callback: CallbackQuery):
         if sum(new_crypto_balances.values()) > sum(old_crypto_balances.values()):
             for balance_key, balance in new_crypto_balances.items():
                 balance_key = balance_key.split('_')[0]
-                crypto_balance_in_usd = balance*crypto_prices[balance_key]
+                crypto_balance_in_usd = balance * crypto_prices[balance_key]
                 deposit_usd_amount += crypto_balance_in_usd
             User.update_crypto_balances(telegram_id, new_crypto_balances)
-            User.update_top_up_amount(telegram_id, deposit_usd_amount*0.95)
+            User.update_top_up_amount(telegram_id, deposit_usd_amount * 0.95)
             await NotificationManager.new_deposit(old_crypto_balances, new_crypto_balances, deposit_usd_amount,
                                                   telegram_id)
-        await callback.answer()
+        await callback.answer("Refreshed successfully!")
         await my_profile(callback)
     else:
         await callback.answer("Please wait and try again later", show_alert=True)
@@ -144,30 +155,32 @@ async def refresh_balance(callback: CallbackQuery):
 
 async def get_order_from_history(callback: CallbackQuery):
     current_level = 4
-    buy_id = int(my_profile_cb.parse(callback.data)['args_for_action'])
+    buy_id = MyProfileCallback.unpack(callback.data).args_for_action
     items = BuyItem.get_items_by_buy_id(buy_id)
     items_as_objects = list()
     for item in items:
         item_id = item['item_id']
         items_as_objects.append(Item.get(item_id).__dict__)
     message = await create_message_with_bought_items(items_as_objects)
-    back_markup = types.InlineKeyboardMarkup()
-    back_button = types.InlineKeyboardButton("Back", callback_data=create_callback_profile(level=current_level-2))
-    back_markup.add(back_button)
-    await callback.message.edit_text(text=message, parse_mode='html', reply_markup=back_markup)
+    back_builder = InlineKeyboardBuilder()
+    back_button = types.InlineKeyboardButton(text="Back",
+                                             callback_data=create_callback_profile(level=current_level - 2))
+    back_builder.add(back_button)
+    await callback.message.edit_text(text=message, parse_mode='html', reply_markup=back_builder.as_markup())
 
 
-async def navigate(call: CallbackQuery, callback_data: dict):
-    current_level = callback_data.get("level")
+@my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())
+async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback):
+    current_level = callback_data.level
 
     levels = {
-        "0": my_profile,
-        "1": top_up_balance,
-        "2": purchase_history,
-        "3": refresh_balance,
-        "4": get_order_from_history
+        0: my_profile,
+        1: top_up_balance,
+        2: purchase_history,
+        3: refresh_balance,
+        4: get_order_from_history
     }
 
     current_level_function = levels[current_level]
 
-    await current_level_function(call)
+    await current_level_function(callback)
