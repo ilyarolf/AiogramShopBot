@@ -186,6 +186,7 @@ async def get_new_users(callback: CallbackQuery):
             user_button = types.InlineKeyboardButton(text=user.telegram_username, url=f"t.me/{user.telegram_username}")
             users_builder.add(user_button)
     users_builder.add(AdminConstants.back_to_main_button)
+    users_builder.adjust(1)
     await callback.message.edit_text(text=f"{len(new_users)} new users:", reply_markup=users_builder.as_markup())
 
 
