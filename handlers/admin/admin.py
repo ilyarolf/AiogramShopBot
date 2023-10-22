@@ -1,16 +1,18 @@
 import asyncio
+import inspect
 import logging
 from typing import Union
 
-from aiogram import types, Router
+from aiogram import types, Router, F
 from aiogram.enums import ParseMode
-from aiogram.filters import Command
+from aiogram.filters import Command, StateFilter
 from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from bot import bot
 from models.buy import Buy
 from models.item import Item
 from models.user import User
@@ -23,13 +25,10 @@ from utils.other_sql import OtherSQLQuery
 class AdminCallback(CallbackData, prefix="admin"):
     level: int
     action: str
-    args_to_action: str
+    args_to_action: Union[str, int]
 
 
 admin_router = Router()
-
-
-# admin_router.callback_query.register(AdminCallback.filter())
 
 
 def create_admin_callback(level: int, action: str = "", args_to_action: str = ""):
@@ -37,10 +36,12 @@ def create_admin_callback(level: int, action: str = "", args_to_action: str = ""
 
 
 class AdminConstants:
-    confirmation_markup = InlineKeyboardBuilder()
-    confirmation_markup.button(text="Confirm", callback_data=create_admin_callback(level=2, action="confirm"))
-    confirmation_markup.button(text="Decline", callback_data=create_admin_callback(level=3, action="decline"))
-    confirmation_markup.as_markup()
+    confirmation_builder = InlineKeyboardBuilder()
+    decline_button = types.InlineKeyboardButton(text="Confirm",
+                                                callback_data=create_admin_callback(level=2, action="confirm"))
+    confirmation_button = types.InlineKeyboardButton(text="Decline",
+                                                     callback_data=create_admin_callback(level=3, action="decline"))
+    confirmation_builder.add(decline_button, confirmation_button)
     back_to_main_button = types.InlineKeyboardButton(text="Back to admin menu",
                                                      callback_data=create_admin_callback(level=0))
 
@@ -54,13 +55,8 @@ async def admin_command_handler(message: types.message):
     await admin(message)
 
 
-admin_router.message.register(admin_command_handler, Command(commands=['/admin']), AdminIdFilter())
-
-
 async def admin(message: Union[Message, CallbackQuery]):
-    current_level = 0
     admin_menu_builder = InlineKeyboardBuilder()
-    admin_menu_builder.row(width=2)
     admin_menu_builder.button(text="Send to everyone",
                               callback_data=create_admin_callback(level=1,
                                                                   action="send_to_everyone"))
@@ -88,6 +84,7 @@ async def admin(message: Union[Message, CallbackQuery]):
                               callback_data=create_admin_callback(
                                   level=11
                               ))
+    admin_menu_builder.adjust(2)
     if isinstance(message, Message):
         await message.answer("<b>Admin Menu:</b>", parse_mode=ParseMode.HTML,
                              reply_markup=admin_menu_builder.as_markup())
@@ -107,9 +104,10 @@ async def send_to_everyone(callback: CallbackQuery, state: FSMContext):
     await state.set_state(AdminStates.message_to_send)
 
 
+@admin_router.message(AdminIdFilter(), StateFilter(AdminStates.message_to_send))
 async def get_message_to_sending(message: types.message, state: FSMContext):
-    await message.send_copy(message.chat.id, reply_markup=AdminConstants.confirmation_markup.as_markup())
-    # await state.clear()
+    await message.send_copy(message.chat.id, reply_markup=AdminConstants.confirmation_builder.as_markup())
+    await state.clear()
 
 
 async def confirm_and_send(callback: CallbackQuery):
@@ -148,15 +146,17 @@ async def decline_action(callback: CallbackQuery):
 async def add_items(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(text="<b>Send .json file with new items or type \"cancel\" for cancel.</b>",
                                      parse_mode=ParseMode.HTML)
-    # await AdminStates.new_items_file.set()
     await state.set_state(AdminStates.new_items_file)
 
 
+@admin_router.message(AdminIdFilter(), F.document | F.text)
 async def receive_new_items_file(message: types.message, state: FSMContext):
     if message.document:
         await state.clear()
         file_name = "new_items.json"
-        await message.document.download(destination_file=file_name)
+        file_id = message.document.file_id
+        file = await bot.get_file(file_id)
+        await bot.download_file(file.file_path, file_name)
         adding_result = NewItemsManager.add(file_name)
         if isinstance(adding_result, BaseException):
             await message.answer(text=f"<b>Exception:</b>\n<code>{adding_result}</code>", parse_mode=ParseMode.HTML)
@@ -172,49 +172,52 @@ async def receive_new_items_file(message: types.message, state: FSMContext):
 
 async def send_restocking_message(callback: CallbackQuery):
     message = NewItemsManager.generate_restocking_message()
-    await callback.message.answer(message, parse_mode=ParseMode.HTML, reply_markup=AdminConstants.confirmation_markup)
+    await callback.message.answer(message, parse_mode=ParseMode.HTML,
+                                  reply_markup=AdminConstants.confirmation_builder.as_markup())
 
 
 async def get_new_users(callback: CallbackQuery):
-    users_markup = types.InlineKeyboardMarkup()
+    users_builder = InlineKeyboardBuilder()
     new_users = User.get_new_users()
     for user in new_users:
         if user.telegram_username:
             user_button = types.InlineKeyboardButton(text=user.telegram_username, url=f"t.me/{user.telegram_username}")
-            users_markup.add(user_button)
-    users_markup.add(AdminConstants.back_to_main_button)
-    await callback.message.edit_text(text=f"{len(new_users)} new users:", reply_markup=users_markup)
+            users_builder.add(user_button)
+    users_builder.add(AdminConstants.back_to_main_button)
+    await callback.message.edit_text(text=f"{len(new_users)} new users:", reply_markup=users_builder.as_markup())
 
 
 async def delete_category(callback: CallbackQuery):
     current_level = AdminCallback.unpack(callback.data).level
     categories = Item.get_categories()
-    delete_category_markup = types.InlineKeyboardMarkup()
+    delete_category_builder = InlineKeyboardBuilder()
     for category in categories:
         category_name = category['category']
         delete_category_callback = create_admin_callback(level=current_level + 2, action="delete_category",
                                                          args_to_action=category_name)
         delete_category_button = types.InlineKeyboardButton(text=category_name, callback_data=delete_category_callback)
-        delete_category_markup.add(delete_category_button)
-    delete_category_markup.add(AdminConstants.back_to_main_button)
+        delete_category_builder.add(delete_category_button)
+    delete_category_builder.add(AdminConstants.back_to_main_button)
+    delete_category_builder.adjust(1)
     await callback.message.edit_text(text="<b>Categories:</b>", parse_mode=ParseMode.HTML,
-                                     reply_markup=delete_category_markup)
+                                     reply_markup=delete_category_builder.as_markup())
 
 
 async def delete_subcategory(callback: CallbackQuery):
     current_level = AdminCallback.unpack(callback.data).level
     subcategories = Item.get_all_subcategories()
-    delete_subcategory_markup = types.InlineKeyboardMarkup()
+    delete_subcategory_builder = InlineKeyboardBuilder()
     for subcategory in subcategories:
         subcategory_name = subcategory['subcategory']
         delete_category_callback = create_admin_callback(level=current_level + 1, action="delete_subcategory",
                                                          args_to_action=subcategory_name)
         delete_category_button = types.InlineKeyboardButton(text=subcategory_name,
                                                             callback_data=delete_category_callback)
-        delete_subcategory_markup.add(delete_category_button)
-    delete_subcategory_markup.add(AdminConstants.back_to_main_button)
+        delete_subcategory_builder.add(delete_category_button)
+    delete_subcategory_builder.add(AdminConstants.back_to_main_button)
+    delete_subcategory_builder.adjust(1)
     await callback.message.edit_text(text="<b>Subcategories:</b>", parse_mode=ParseMode.HTML,
-                                     reply_markup=delete_subcategory_markup)
+                                     reply_markup=delete_subcategory_builder.as_markup())
 
 
 async def delete_confirmation(callback: CallbackQuery):
@@ -222,7 +225,7 @@ async def delete_confirmation(callback: CallbackQuery):
     current_level = unpacked_callback.level
     action = unpacked_callback.action
     args_to_action = unpacked_callback.args_to_action
-    delete_markup = types.InlineKeyboardMarkup()
+    delete_markup = InlineKeyboardBuilder()
     confirm_callback = create_admin_callback(level=current_level + 1,
                                              action=f"confirmed_{action}",
                                              args_to_action=args_to_action)
@@ -235,49 +238,57 @@ async def delete_confirmation(callback: CallbackQuery):
         category_name = args_to_action
         await callback.message.edit_text(text=f"<b>Do you really want to delete the category {category_name}?</b>",
                                          parse_mode=ParseMode.HTML,
-                                         reply_markup=delete_markup)
+                                         reply_markup=delete_markup.as_markup())
     elif entity_to_delete == "subcategory":
         subcategory_name = args_to_action
         await callback.message.edit_text(
             text=f"<b>Do you really want to delete the subcategory {subcategory_name}?</b>",
             parse_mode=ParseMode.HTML,
-            reply_markup=delete_markup)
+            reply_markup=delete_markup.as_markup())
 
 
 async def confirm_and_delete(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
     args_to_action = unpacked_callback.args_to_action
     entity_to_delete = unpacked_callback.action.split('_')[-1]
-    back_to_main_markup = types.InlineKeyboardMarkup()
-    back_to_main_markup.add(AdminConstants.back_to_main_button)
+    back_to_main_builder = InlineKeyboardBuilder()
+    back_to_main_builder.add(AdminConstants.back_to_main_button)
     message_text = f"<b>Successfully deleted {args_to_action} {entity_to_delete}!</b>"
     if entity_to_delete == "category":
         Item.delete_category(args_to_action)
         await callback.message.edit_text(text=message_text,
-                                         parse_mode=ParseMode.HTML, reply_markup=back_to_main_markup)
+                                         parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
     elif entity_to_delete == "subcategory":
         Item.delete_subcategory(args_to_action)
         await callback.message.edit_text(text=message_text,
-                                         parse_mode=ParseMode.HTML, reply_markup=back_to_main_markup)
+                                         parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
 
 
 async def make_refund_markup():
-    refund_markup = types.InlineKeyboardMarkup()
+    refund_builder = InlineKeyboardBuilder()
     not_refunded_buy_ids = Buy.get_not_refunded_buy_ids()
     refund_data = OtherSQLQuery.get_refund_data(not_refunded_buy_ids)
     for buy in refund_data:
-        refund_buy_button = types.InlineKeyboardButton(
-            text=f"{buy.telegram_username}|${buy.total_price}|{buy.subcategory}",
-            callback_data=create_admin_callback(level=12,
-                                                action="make_refund",
-                                                args_to_action=buy.buy_id))
-        refund_markup.add(refund_buy_button)
-    return refund_markup
+        if buy.telegram_username:
+            refund_buy_button = types.InlineKeyboardButton(
+                text=f"@{buy.telegram_username}|${buy.total_price}|{buy.subcategory}",
+                callback_data=create_admin_callback(level=12,
+                                                    action="make_refund",
+                                                    args_to_action=buy.buy_id))
+        else:
+            refund_buy_button = types.InlineKeyboardButton(
+                text=f"ID:{buy.telegram_id}|${buy.total_price}|{buy.subcategory}",
+                callback_data=create_admin_callback(level=12,
+                                                    action="make_refund",
+                                                    args_to_action=buy.buy_id))
+        refund_builder.add(refund_buy_button)
+    refund_builder.add(AdminConstants.back_to_main_button)
+    refund_builder.adjust(1)
+    return refund_builder.as_markup()
 
 
 async def send_refund_menu(callback: CallbackQuery):
     refund_markup = await make_refund_markup()
-    refund_markup.add(AdminConstants.back_to_main_button)
     await callback.message.edit_text(text="<b>Refund menu:</b>", reply_markup=refund_markup, parse_mode=ParseMode.HTML)
 
 
@@ -291,21 +302,21 @@ async def refund_confirmation(callback: CallbackQuery):
                                                                                     action="confirm_refund",
                                                                                     args_to_action=str(buy_id)))
 
-    confirmation_markup = types.InlineKeyboardMarkup()
-    confirmation_markup.add(confirm_button, AdminConstants.decline_button, back_button)
+    confirmation_builder = InlineKeyboardBuilder()
+    confirmation_builder.add(confirm_button, AdminConstants.decline_button, back_button)
     refund_data = OtherSQLQuery.get_refund_data_single(buy_id)
     if refund_data.telegram_username:
         await callback.message.edit_text(
             text=f"<b>Do you really want to refund user @{refund_data.telegram_username} "
                  f"for purchasing {refund_data.quantity} {refund_data.subcategory} "
                  f"in the amount of ${refund_data.total_price}</b>", parse_mode=ParseMode.HTML,
-            reply_markup=confirmation_markup)
+            reply_markup=confirmation_builder.as_markup())
     else:
         await callback.message.edit_text(
             text=f"<b>Do you really want to refund user with ID:{refund_data.telegram_id} "
                  f"for purchasing {refund_data.quantity} {refund_data.subcategory} "
                  f"in the amount of ${refund_data.total_price}</b>", parse_mode=ParseMode.HTML,
-            reply_markup=confirmation_markup)
+            reply_markup=confirmation_builder.as_markup())
 
 
 async def make_refund(callback: CallbackQuery):
@@ -326,28 +337,31 @@ async def make_refund(callback: CallbackQuery):
                                                   f"to user with ID{refund_data.telegram_id} "
                                                   f"for purchasing {refund_data.quantity} "
                                                   f"{refund_data.subcategory}</b>", parse_mode=ParseMode.HTML)
-#TODO("Launch admin menu")
+
 
 @admin_router.callback_query(AdminIdFilter())
-async def admin_menu_navigation(callback: CallbackQuery):
-    current_level = str(AdminCallback.unpack(callback.data).level)
+async def admin_menu_navigation(callback: CallbackQuery, state: FSMContext):
+    current_level = AdminCallback.unpack(callback.data).level
 
     levels = {
-        "0": admin,
-        "1": send_to_everyone,
-        "2": confirm_and_send,
-        "3": decline_action,
-        "4": add_items,
-        "5": send_restocking_message,
-        "6": get_new_users,
-        "7": delete_category,
-        "8": delete_subcategory,
-        "9": delete_confirmation,
-        "10": confirm_and_delete,
-        "11": send_refund_menu,
-        "12": refund_confirmation,
-        "13": make_refund,
+        0: admin,
+        1: send_to_everyone,
+        2: confirm_and_send,
+        3: decline_action,
+        4: add_items,
+        5: send_restocking_message,
+        6: get_new_users,
+        7: delete_category,
+        8: delete_subcategory,
+        9: delete_confirmation,
+        10: confirm_and_delete,
+        11: send_refund_menu,
+        12: refund_confirmation,
+        13: make_refund,
     }
 
     current_level_function = levels[current_level]
-    await current_level_function(callback)
+    if inspect.getfullargspec(current_level_function).annotations.get("state") == FSMContext:
+        await current_level_function(callback, state)
+    else:
+        await current_level_function(callback)
