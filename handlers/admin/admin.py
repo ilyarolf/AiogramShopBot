@@ -144,7 +144,6 @@ async def decline_action(callback: CallbackQuery):
 
 
 async def add_items(callback: CallbackQuery, state: FSMContext):
-    # TODO("Conflict here")
     unpacked_callback = AdminCallback.unpack(callback.data)
     if unpacked_callback.level == 4 and unpacked_callback.action == "add_items":
         await callback.message.edit_text(text="<b>Send .json file with new items or type \"cancel\" for cancel.</b>",
@@ -152,7 +151,7 @@ async def add_items(callback: CallbackQuery, state: FSMContext):
         await state.set_state(AdminStates.new_items_file)
 
 
-@admin_router.message(AdminIdFilter(), F.document | F.text)
+@admin_router.message(AdminIdFilter(), F.document | F.text, StateFilter(AdminStates.new_items_file))
 async def receive_new_items_file(message: types.message, state: FSMContext):
     if message.document:
         await state.clear()
@@ -342,7 +341,7 @@ async def make_refund(callback: CallbackQuery):
                                                   f"{refund_data.subcategory}</b>", parse_mode=ParseMode.HTML)
 
 
-@admin_router.callback_query(AdminIdFilter())
+@admin_router.callback_query(AdminIdFilter(), AdminCallback.filter())
 async def admin_menu_navigation(callback: CallbackQuery, state: FSMContext):
     current_level = AdminCallback.unpack(callback.data).level
 
@@ -351,7 +350,7 @@ async def admin_menu_navigation(callback: CallbackQuery, state: FSMContext):
         1: send_to_everyone,
         2: confirm_and_send,
         3: decline_action,
-        4: add_items,  # TODO ("Fix conflict with non admin buttons")
+        4: add_items,
         5: send_restocking_message,
         6: get_new_users,
         7: delete_category,
