@@ -106,7 +106,7 @@ async def send_to_everyone(callback: CallbackQuery, state: FSMContext):
 
 @admin_router.message(AdminIdFilter(), StateFilter(AdminStates.message_to_send))
 async def get_message_to_sending(message: types.message, state: FSMContext):
-    await message.send_copy(message.chat.id, reply_markup=AdminConstants.confirmation_builder.as_markup())
+    await message.copy_to(message.chat.id, reply_markup=AdminConstants.confirmation_builder.as_markup())
     await state.clear()
 
 
@@ -128,12 +128,12 @@ async def confirm_and_send(callback: CallbackQuery):
                 logging.error(e)
         message_text = f"<b>Message sent to {counter} out of {len(telegram_ids)} people</b>"
         if is_caption:
-            # TODO("Fix bug with messages with images")
             await callback.message.delete()
             await callback.message.answer(text=message_text, parse_mode=ParseMode.HTML)
-        await callback.message.edit_text(
-            text=message_text,
-            parse_mode=ParseMode.HTML)
+        elif callback.message.text:
+            await callback.message.edit_text(
+                text=message_text,
+                parse_mode=ParseMode.HTML)
     if is_restocking:
         Item.set_items_not_new()
 
@@ -342,8 +342,8 @@ async def make_refund(callback: CallbackQuery):
 
 
 @admin_router.callback_query(AdminIdFilter(), AdminCallback.filter())
-async def admin_menu_navigation(callback: CallbackQuery, state: FSMContext):
-    current_level = AdminCallback.unpack(callback.data).level
+async def admin_menu_navigation(callback: CallbackQuery, state: FSMContext, callback_data: AdminCallback):
+    current_level = callback_data.level
 
     levels = {
         0: admin,
