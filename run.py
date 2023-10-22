@@ -6,6 +6,7 @@ from bot import dp, main
 from config import SUPPORT_LINK
 from handlers.admin.admin import admin_command_handler, admin_menu_navigation, AdminStates, \
     get_message_to_sending, receive_new_items_file, AdminCallback, admin_router
+from handlers.user.my_profile import my_profile_router
 # from handlers.user.all_categories import navigate_categories, all_categories_cb, all_categories_text_message
 # from handlers.user.my_profile import navigate, my_profile_cb, my_profile_text_message
 from models.user import User
@@ -62,6 +63,7 @@ async def support(message: types.message):
 
 main_router = Router()
 main_router.include_router(admin_router)
+main_router.include_router(my_profile_router)
 dp.include_router(main_router)
 # dp.register_callback_query_handler(navigate, my_profile_cb.filter())
 # dp.register_message_handler(my_profile_text_message, text="🎓 My profile")
