@@ -1,10 +1,12 @@
-from aiogram import types, F
+from aiogram import types, F, Router
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot import dp, main
 from config import SUPPORT_LINK
 import logging
+
+from handlers.user.my_profile import my_profile_router
 from services.user import UserService
 
 logging.basicConfig(level=logging.INFO)
@@ -23,17 +25,11 @@ async def start(message: types.message):
     is_exist = await UserService.is_exist(user_telegram_id)
     if is_exist is False:
         await UserService.create(user_telegram_id, user_telegram_username)
-        await message.answer("User created!")
-
-    # user = User(user_telegram_id, user_telegram_username)
-    # if User.is_exist(message.chat.id) is False:
-    #     user.create()
-    # else:
-    #     telegram_username = User.get_by_tgid(user_telegram_id)["telegram_username"]
-    #     if telegram_username != user_telegram_username:
-    #         User.update_username(user_telegram_id, user_telegram_username)
-    # await message.answer('Hi', reply_markup=start_markup)
-    await message.answer(f'Hi\n{is_exist}')
+    else:
+        await UserService.update_username(user_telegram_id, user_telegram_username)
+    balances = await UserService.get_balances(user_telegram_id)
+    print(balances.items())
+    await message.answer('Hi', reply_markup=start_markup)
 
 
 @dp.message(F.text == '🤝 FAQ')
@@ -60,11 +56,11 @@ async def support(message: types.message):
     await message.answer(f'<b>Support</b>', reply_markup=admin_keyboard_builder.as_markup())
 
 
-# main_router = Router()
+main_router = Router()
 # main_router.include_router(admin_router)
-# main_router.include_router(my_profile_router)
+main_router.include_router(my_profile_router)
 # main_router.include_router(all_categories_router)
-# dp.include_router(main_router)
+dp.include_router(main_router)
 
 if __name__ == '__main__':
     main()
