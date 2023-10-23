@@ -20,6 +20,11 @@ async def start(message: types.message):
     start_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, keyboard=keyboard)
     user_telegram_id = message.chat.id
     user_telegram_username = message.from_user.username
+    is_exist = await UserService.is_exist(user_telegram_id)
+    if is_exist is False:
+        await UserService.create(user_telegram_id, user_telegram_username)
+        await message.answer("User created!")
+
     # user = User(user_telegram_id, user_telegram_username)
     # if User.is_exist(message.chat.id) is False:
     #     user.create()
@@ -28,8 +33,7 @@ async def start(message: types.message):
     #     if telegram_username != user_telegram_username:
     #         User.update_username(user_telegram_id, user_telegram_username)
     # await message.answer('Hi', reply_markup=start_markup)
-    print(await UserService.is_exist(user_telegram_id))
-    await message.answer('Hi')
+    await message.answer(f'Hi\n{is_exist}')
 
 
 @dp.message(F.text == '🤝 FAQ')
