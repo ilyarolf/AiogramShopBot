@@ -5,10 +5,6 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from models.buy import Buy
-from models.buyItem import BuyItem
-from models.item import Item
-from models.user import User
 from services.buy import BuyService
 from services.buyItem import BuyItemService
 from services.item import ItemService
@@ -192,8 +188,8 @@ async def buy_processing(callback: CallbackQuery):
         sold_items = await ItemService.get_bought_items(subcategory, quantity)
         message = await create_message_with_bought_items(sold_items)
         user = await UserService.get_by_tgid(telegram_id)
-        new_buy = await BuyService.insert_new(user, quantity, total_price)
-        await BuyItemService.insert_many(sold_items, new_buy.id)
+        new_buy_id = await BuyService.insert_new(user, quantity, total_price)
+        await BuyItemService.insert_many(sold_items, new_buy_id)
         await ItemService.set_items_sold(sold_items)
         await callback.message.edit_text(text=message, parse_mode='html')
         await NotificationManager.new_buy(subcategory, quantity, total_price, user)

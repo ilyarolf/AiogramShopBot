@@ -49,8 +49,10 @@ class ItemService:
             return bought_items.scalars()
 
     @staticmethod
-    def set_items_sold(sold_items: list[Item]):
+    async def set_items_sold(sold_items: list[Item]):
+        #TODO("Doesn't work")
         async with async_session_maker() as session:
             for item in sold_items:
                 item.is_sold = True
             await session.commit()
+
