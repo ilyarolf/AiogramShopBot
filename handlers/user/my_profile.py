@@ -4,6 +4,9 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from crypto_api.CryptoApiManager import CryptoApiManager
+from services.buy import BuyService
+from services.buyItem import BuyItemService
+from services.item import ItemService
 # from handlers.user.all_categories import create_message_with_bought_items
 # from models.user import User
 from services.user import UserService
@@ -95,35 +98,35 @@ async def top_up_balance(callback: CallbackQuery):
     await callback.answer()
 
 
-# async def purchase_history(callback: CallbackQuery):
-#     telegram_id = callback.message.chat.id
-#     user_id = User.get_by_tgid(telegram_id)['user_id']
-#     current_level = 2
-#     orders = db.cursor.execute('SELECT * FROM `buys` where `user_id` = ?', (user_id,)).fetchall()
-#     orders_markup_builder = InlineKeyboardBuilder()
-#     back_to_profile_button = types.InlineKeyboardButton(text='Back',
-#                                                         callback_data=create_callback_profile(current_level - 2))
-#     for order in orders:
-#         quantity = order['quantity']
-#         total_price = order['total_price']
-#         buy_id = order['buy_id']
-#         item_subcategory = Item.get(BuyItem.get_items_by_buy_id(buy_id)[0]['item_id']).subcategory
-#         item_from_history_callback = create_callback_profile(current_level + 2, action="get_order",
-#                                                              args_for_action=str(buy_id))
-#         order_inline = types.InlineKeyboardButton(
-#             text=f"{item_subcategory} | Total Price: {total_price}$ | Quantity: {quantity} pcs",
-#             callback_data=item_from_history_callback
-#         )
-#         orders_markup_builder.add(order_inline)
-#     orders_markup_builder.add(back_to_profile_button)
-#     orders_markup_builder.adjust(1)
-#     orders_markup = orders_markup_builder.as_markup()
-#     if not orders:
-#         await callback.message.edit_text("<b>You haven't had any orders yet</b>", reply_markup=orders_markup,
-#                                          parse_mode='html')
-#     else:
-#         await callback.message.edit_text('<b>Your orders</b>', reply_markup=orders_markup, parse_mode='html')
-#     await callback.answer()
+async def purchase_history(callback: CallbackQuery):
+    telegram_id = callback.message.chat.id
+    user = await UserService.get_by_tgid(telegram_id)
+    current_level = 2
+    orders = await BuyService.get_buys_by_buyer_id(user.id)
+    orders_markup_builder = InlineKeyboardBuilder()
+    back_to_profile_button = types.InlineKeyboardButton(text='Back',
+                                                        callback_data=create_callback_profile(current_level - 2))
+    for order in orders:
+        quantity = order.quantity
+        total_price = order.total_price
+        buy_id = order.id
+        item_subcategory = ItemService.get_by_primary_key(BuyItemService.get_items_by_buy_id(buy_id)[0]['item_id']).subcategory
+        item_from_history_callback = create_callback_profile(current_level + 2, action="get_order",
+                                                             args_for_action=str(buy_id))
+        order_inline = types.InlineKeyboardButton(
+            text=f"{item_subcategory} | Total Price: {total_price}$ | Quantity: {quantity} pcs",
+            callback_data=item_from_history_callback
+        )
+        orders_markup_builder.add(order_inline)
+    orders_markup_builder.add(back_to_profile_button)
+    orders_markup_builder.adjust(1)
+    orders_markup = orders_markup_builder.as_markup()
+    if not orders:
+        await callback.message.edit_text("<b>You haven't had any orders yet</b>", reply_markup=orders_markup,
+                                         parse_mode='html')
+    else:
+        await callback.message.edit_text('<b>Your orders</b>', reply_markup=orders_markup, parse_mode='html')
+    await callback.answer()
 
 
 async def refresh_balance(callback: CallbackQuery):
@@ -151,20 +154,22 @@ async def refresh_balance(callback: CallbackQuery):
         await callback.answer("Please wait and try again later", show_alert=True)
 
 
-# async def get_order_from_history(callback: CallbackQuery):
-#     current_level = 4
-#     buy_id = MyProfileCallback.unpack(callback.data).args_for_action
-#     items = BuyItem.get_items_by_buy_id(buy_id)
-#     items_as_objects = list()
-#     for item in items:
-#         item_id = item['item_id']
-#         items_as_objects.append(Item.get(item_id).__dict__)
-#     message = await create_message_with_bought_items(items_as_objects)
-#     back_builder = InlineKeyboardBuilder()
-#     back_button = types.InlineKeyboardButton(text="Back",
-#                                              callback_data=create_callback_profile(level=current_level - 2))
-#     back_builder.add(back_button)
-#     await callback.message.edit_text(text=message, parse_mode='html', reply_markup=back_builder.as_markup())
+async def get_order_from_history(callback: CallbackQuery):
+    current_level = 4
+    buy_id = MyProfileCallback.unpack(callback.data).args_for_action
+    items = await BuyItemService.get_items_by_buy_id(buy_id)
+    print(items)
+    #TODO("Сделать этот сервис")
+    # items_as_objects = list()
+    # for item in items:
+    #     item_id = item['item_id']
+    #     items_as_objects.append(Item.get(item_id).__dict__)
+    # message = await create_message_with_bought_items(items_as_objects)
+    # back_builder = InlineKeyboardBuilder()
+    # back_button = types.InlineKeyboardButton(text="Back",
+    #                                          callback_data=create_callback_profile(level=current_level - 2))
+    # back_builder.add(back_button)
+    # await callback.message.edit_text(text=message, parse_mode='html', reply_markup=back_builder.as_markup())
 
 
 @my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())
@@ -174,7 +179,7 @@ async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback):
     levels = {
         0: my_profile,
         1: top_up_balance,
-        # 2: purchase_history,
+        2: purchase_history,
         3: refresh_balance,
         # 4: get_order_from_history
     }
