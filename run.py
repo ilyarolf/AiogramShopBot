@@ -6,6 +6,7 @@ from bot import dp, main
 from config import SUPPORT_LINK
 import logging
 
+from handlers.user.all_categories import all_categories_router
 from handlers.user.my_profile import my_profile_router
 from services.user import UserService
 
@@ -27,8 +28,6 @@ async def start(message: types.message):
         await UserService.create(user_telegram_id, user_telegram_username)
     else:
         await UserService.update_username(user_telegram_id, user_telegram_username)
-    balances = await UserService.get_balances(user_telegram_id)
-    print(balances.items())
     await message.answer('Hi', reply_markup=start_markup)
 
 
@@ -59,7 +58,7 @@ async def support(message: types.message):
 main_router = Router()
 # main_router.include_router(admin_router)
 main_router.include_router(my_profile_router)
-# main_router.include_router(all_categories_router)
+main_router.include_router(all_categories_router)
 dp.include_router(main_router)
 
 if __name__ == '__main__':

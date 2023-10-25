@@ -9,6 +9,10 @@ from models.buy import Buy
 from models.buyItem import BuyItem
 from models.item import Item
 from models.user import User
+from services.buy import BuyService
+from services.buyItem import BuyItemService
+from services.item import ItemService
+from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.notification_manager import NotificationManager
 
@@ -44,7 +48,7 @@ async def all_categories_text_message(message: types.message):
 
 
 async def create_category_buttons(current_level: int):
-    categories = Item.get_categories()
+    categories = await ItemService.get_categories()
     if categories:
         categories_builder = InlineKeyboardBuilder()
         for category in categories:
@@ -58,12 +62,13 @@ async def create_category_buttons(current_level: int):
 
 async def create_subcategory_buttons(category: str):
     current_level = 1
-    subcategories = Item.get_subcategories(category)
+    filtered_items = await ItemService.filter_by_category(category)
     subcategories_builder = InlineKeyboardBuilder()
-    for subcategory in subcategories:
-        subcategory_name = subcategory['subcategory']
-        subcategory_price = subcategory['price']
-        available_quantity = Item.get_available_quantity(subcategory_name)
+    for item in filtered_items:
+        item = item['Item']
+        subcategory_name = item.subcategory
+        subcategory_price = item.price
+        available_quantity = await ItemService.get_available_quantity(subcategory_name)
         subcategory_inline_button = create_callback_all_categories(level=current_level + 1,
                                                                    category=category,
                                                                    subcategory=subcategory_name,
@@ -108,7 +113,7 @@ async def select_quantity(callback: CallbackQuery):
     subcategory = unpacked_callback.subcategory
     category = unpacked_callback.category
     current_level = unpacked_callback.level
-    description = Item.get_description(subcategory)
+    description = await ItemService.get_description(subcategory)
     count_builder = InlineKeyboardBuilder()
     for i in range(1, 11):
         count_button_callback = create_callback_all_categories(level=current_level + 1, category=category,
@@ -135,7 +140,7 @@ async def buy_confirmation(callback: CallbackQuery):
     category = unpacked_callback.category
     current_level = unpacked_callback.level
     quantity = unpacked_callback.quantity
-    description = Item.get_description(subcategory)
+    description = await ItemService.get_description(subcategory)
     confirmation_builder = InlineKeyboardBuilder()
     confirm_button_callback = create_callback_all_categories(level=current_level + 1,
                                                              category=category,
@@ -176,22 +181,20 @@ async def buy_processing(callback: CallbackQuery):
     subcategory = unpacked_callback.subcategory
     quantity = unpacked_callback.quantity
     telegram_id = callback.from_user.id
-    is_in_stock = Item.get_available_quantity(subcategory) >= quantity
-    is_enough_money = User.is_buy_possible(telegram_id, total_price)
+    is_in_stock = await ItemService.get_available_quantity(subcategory) >= quantity
+    is_enough_money = await UserService.is_buy_possible(telegram_id, total_price)
     back_to_main_builder = InlineKeyboardBuilder()
     back_to_main_callback = create_callback_all_categories(level=0)
     back_to_main_button = types.InlineKeyboardButton(text="🔍 All categories", callback_data=back_to_main_callback)
     back_to_main_builder.add(back_to_main_button)
     if confirmation and is_in_stock and is_enough_money:
-        User.update_consume_records(callback.from_user.id, total_price)
-        sold_data = Item.get_bought_items(subcategory, quantity)
-        message = await create_message_with_bought_items(sold_data)
-        user = User.get_by_tgid(telegram_id)
-        user_id = user['user_id']
-        buy = Buy(user_id, quantity, total_price)
-        buy.insert_new()
-        BuyItem.insert_many(sold_data, buy.buy_id)
-        Item.set_items_sold(sold_data)
+        await UserService.update_consume_records(telegram_id, total_price)
+        sold_items = await ItemService.get_bought_items(subcategory, quantity)
+        message = await create_message_with_bought_items(sold_items)
+        user = await UserService.get_by_tgid(telegram_id)
+        new_buy = await BuyService.insert_new(user, quantity, total_price)
+        await BuyItemService.insert_many(sold_items, new_buy.id)
+        await ItemService.set_items_sold(sold_items)
         await callback.message.edit_text(text=message, parse_mode='html')
         await NotificationManager.new_buy(subcategory, quantity, total_price, user)
     elif is_in_stock is False:
@@ -208,7 +211,7 @@ async def buy_processing(callback: CallbackQuery):
 async def create_message_with_bought_items(bought_data: list):
     message = "<b>"
     for count, item in enumerate(bought_data, start=1):
-        private_data = item['private_data']
+        private_data = item.private_data
         message += f"Item#{count}\nData:<code>{private_data}</code>\n"
     message += "</b>"
     return message

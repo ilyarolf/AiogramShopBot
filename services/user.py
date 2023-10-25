@@ -93,7 +93,7 @@ class UserService:
         async with async_session_maker() as session:
             stmt = select(User.btc_address, User.ltc_address, User.trx_address).where(User.telegram_id == telegram_id)
             user_addresses = await session.execute(stmt)
-            user_addresses= user_addresses.fetchone()
+            user_addresses = user_addresses.fetchone()
             keys = ["btc_address", "ltc_address", "trx_address"]
             user_addresses = dict(zip(keys, user_addresses))
             return user_addresses
@@ -112,5 +112,18 @@ class UserService:
         async with async_session_maker() as session:
             user = await UserService.get_by_tgid(telegram_id)
             old_top_up_amount = user.top_up_amount
-            user.top_up_amount = old_top_up_amount+deposit_amount
+            user.top_up_amount = old_top_up_amount + deposit_amount
             session.commit()
+
+    @staticmethod
+    async def is_buy_possible(telegram_id, total_price):
+        user = await UserService.get_by_tgid(telegram_id)
+        balance = user.top_up_amount - user.consume_records
+        return balance >= total_price
+
+    @staticmethod
+    async def update_consume_records(telegram_id: int, total_price: float):
+        async with async_session_maker() as session:
+            user = await UserService.get_by_tgid(telegram_id)
+            user.consume_records = user.consume_records + total_price
+            await session.commit()

@@ -64,10 +64,10 @@ class NotificationManager:
         await NotificationManager.send_to_admins(message, user_button)
 
     @staticmethod
-    async def new_buy(subcategory: str, quantity: int, total_price: float, user: dict):
+    async def new_buy(subcategory: str, quantity: int, total_price: float, user: User):
         message = ""
-        username = user['telegram_username']
-        telegram_id = user['telegram_id']
+        username = user.telegram_username
+        telegram_id = user.telegram_id
         user_button = await NotificationManager.make_user_button(username)
         if username:
             message += f"A new purchase by user @{username} for the amount of ${total_price} for the " \
