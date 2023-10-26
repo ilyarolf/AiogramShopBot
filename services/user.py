@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from db import async_session_maker
 
 from models.user import User
@@ -109,6 +109,7 @@ class UserService:
 
     @staticmethod
     async def update_top_up_amount(telegram_id, deposit_amount):
+        #TODO("same like update consume_amount")
         async with async_session_maker() as session:
             user = await UserService.get_by_tgid(telegram_id)
             old_top_up_amount = user.top_up_amount
@@ -123,7 +124,12 @@ class UserService:
 
     @staticmethod
     async def update_consume_records(telegram_id: int, total_price: float):
+        #TODO("update consume records dosn't work")
         async with async_session_maker() as session:
-            user = await UserService.get_by_tgid(telegram_id)
-            user.consume_records = user.consume_records + total_price
+            get_old_consume_records_stmt = select(User.consume_records).where(User.telegram_id == telegram_id)
+            old_consume_records = await session.execute(get_old_consume_records_stmt)
+            old_consume_records = old_consume_records.scalar()
+            stmt = update(User).where(User.telegram_id == telegram_id).values(
+                consume_records=old_consume_records + total_price)
+            await session.execute(stmt)
             await session.commit()
