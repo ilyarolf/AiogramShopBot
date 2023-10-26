@@ -1,6 +1,7 @@
 from typing import Union
 
 from aiogram import types, Router, F
+from aiogram.enums import ParseMode
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -58,20 +59,18 @@ async def create_category_buttons(current_level: int):
 
 async def create_subcategory_buttons(category: str):
     current_level = 1
-    filtered_items = await ItemService.filter_by_category(category)
+    subcategories = await ItemService.get_unique_subcategories(category)
     subcategories_builder = InlineKeyboardBuilder()
-    for item in filtered_items:
-        item = item['Item']
-        subcategory_name = item.subcategory
-        subcategory_price = item.price
-        available_quantity = await ItemService.get_available_quantity(subcategory_name)
+    for subcategory in subcategories:
+        subcategory_price = await ItemService.get_price_by_subcategory(subcategory)
+        available_quantity = await ItemService.get_available_quantity(subcategory)
         subcategory_inline_button = create_callback_all_categories(level=current_level + 1,
                                                                    category=category,
-                                                                   subcategory=subcategory_name,
+                                                                   subcategory=subcategory,
                                                                    price=subcategory_price)
         subcategories_builder.add(
             types.InlineKeyboardButton(
-                text=f"{subcategory_name}| Price: ${subcategory_price} | Quantity: {available_quantity} pcs",
+                text=f"{subcategory}| Price: ${subcategory_price} | Quantity: {available_quantity} pcs",
                 callback_data=subcategory_inline_button))
     back_button = types.InlineKeyboardButton(text="Back",
                                              callback_data=create_callback_all_categories(level=current_level - 1))
@@ -85,22 +84,23 @@ async def all_categories(message: Union[Message, CallbackQuery]):
     category_inline_buttons = await create_category_buttons(current_level)
     if isinstance(message, Message):
         if category_inline_buttons:
-            await message.answer('🔍 <b>All categories</b>', parse_mode='html', reply_markup=category_inline_buttons)
+            await message.answer('🔍 <b>All categories</b>', parse_mode=ParseMode.HTML, reply_markup=category_inline_buttons)
         else:
-            await message.answer('<b>No categories</b>', parse_mode='html')
+            await message.answer('<b>No categories</b>', parse_mode=ParseMode.HTML)
     elif isinstance(message, CallbackQuery):
         callback = message
         if category_inline_buttons:
-            await callback.message.edit_text('🔍 <b>All categories</b>', parse_mode='html',
+            await callback.message.edit_text('🔍 <b>All categories</b>', parse_mode=ParseMode.HTML,
                                              reply_markup=category_inline_buttons)
         else:
-            await callback.message.edit_text('<b>No categories</b>', parse_mode='html')
+            await callback.message.edit_text('<b>No categories</b>', parse_mode=ParseMode.HTML)
 
 
 async def show_subcategories_in_category(callback: CallbackQuery):
     category = AllCategoriesCallback.unpack(callback.data).category
     subcategory_buttons = await create_subcategory_buttons(category)
-    await callback.message.edit_text("<b>Subcategories:</b>", reply_markup=subcategory_buttons, parse_mode="html")
+    await callback.message.edit_text("<b>Subcategories:</b>", reply_markup=subcategory_buttons,
+                                     parse_mode=ParseMode.HTML)
 
 
 async def select_quantity(callback: CallbackQuery):
@@ -125,7 +125,7 @@ async def select_quantity(callback: CallbackQuery):
     await callback.message.edit_text(f'<b>You choose:{subcategory}\n'
                                      f'Price:${price}\n'
                                      f'Description:{description}\n'
-                                     f'Quantity:</b>', reply_markup=count_builder.as_markup(), parse_mode='html')
+                                     f'Quantity:</b>', reply_markup=count_builder.as_markup(), parse_mode=ParseMode.HTML)
 
 
 async def buy_confirmation(callback: CallbackQuery):
@@ -167,7 +167,7 @@ async def buy_confirmation(callback: CallbackQuery):
                                           f'Quantity:{quantity}\n'
                                           f'Total price:${total_price}</b>',
                                      reply_markup=confirmation_builder.as_markup(),
-                                     parse_mode='html')
+                                     parse_mode=ParseMode.HTML)
 
 
 async def buy_processing(callback: CallbackQuery):
@@ -191,16 +191,16 @@ async def buy_processing(callback: CallbackQuery):
         new_buy_id = await BuyService.insert_new(user, quantity, total_price)
         await BuyItemService.insert_many(sold_items, new_buy_id)
         await ItemService.set_items_sold(sold_items)
-        await callback.message.edit_text(text=message, parse_mode='html')
+        await callback.message.edit_text(text=message, parse_mode=ParseMode.HTML)
         await NotificationManager.new_buy(subcategory, quantity, total_price, user)
     elif is_in_stock is False:
-        await callback.message.edit_text(text='<b>Out of stock!</b>', parse_mode='html',
+        await callback.message.edit_text(text='<b>Out of stock!</b>', parse_mode=ParseMode.HTML,
                                          reply_markup=back_to_main_builder.as_markup())
     elif is_enough_money is False:
-        await callback.message.edit_text(text='<b>Insufficient funds!</b>', parse_mode='html',
+        await callback.message.edit_text(text='<b>Insufficient funds!</b>', parse_mode=ParseMode.HTML,
                                          reply_markup=back_to_main_builder.as_markup())
     elif confirmation is False:
-        await callback.message.edit_text(text='<b>Declined!</b>', parse_mode='html',
+        await callback.message.edit_text(text='<b>Declined!</b>', parse_mode=ParseMode.HTML,
                                          reply_markup=back_to_main_builder.as_markup())
 
 

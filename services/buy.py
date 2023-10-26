@@ -11,8 +11,7 @@ class BuyService:
         async with async_session_maker() as session:
             stmt = select(Buy).where(Buy.buyer_id == buyer_id)
             buys = await session.execute(stmt)
-
-            return buys.all()
+            return buys.scalars()
 
     @staticmethod
     async def insert_new(user: User, quantity: int, total_price: float) -> int:

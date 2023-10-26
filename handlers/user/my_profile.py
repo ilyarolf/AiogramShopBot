@@ -1,14 +1,14 @@
 from typing import Union
 from aiogram import types, Router, F
+from aiogram.enums import ParseMode
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from crypto_api.CryptoApiManager import CryptoApiManager
+from handlers.user.all_categories import create_message_with_bought_items
 from services.buy import BuyService
 from services.buyItem import BuyItemService
 from services.item import ItemService
-# from handlers.user.all_categories import create_message_with_bought_items
-# from models.user import User
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.notification_manager import NotificationManager
@@ -63,14 +63,14 @@ async def my_profile(message: Union[Message, CallbackQuery]):
     if isinstance(message, Message):
         telegram_id = message.chat.id
         message_text = await get_my_profile_message(telegram_id)
-        await message.answer(message_text, parse_mode="HTML", reply_markup=my_profile_markup)
+        await message.answer(message_text, parse_mode=ParseMode.HTML, reply_markup=my_profile_markup)
     elif isinstance(message, CallbackQuery):
         callback = message
         telegram_id = callback.from_user.id
         message = await get_my_profile_message(telegram_id)
         raw_message_text = HTMLTagsRemover.remove_html_tags(message)
         if raw_message_text != callback.message.text:
-            await callback.message.edit_text(message, parse_mode="HTML", reply_markup=my_profile_markup)
+            await callback.message.edit_text(message, parse_mode=ParseMode.HTML, reply_markup=my_profile_markup)
         else:
             await callback.answer()
 
@@ -93,7 +93,7 @@ async def top_up_balance(callback: CallbackQuery):
         f'The top up takes place within 5 minutes after the transfer</i>\n\n'
         f'<b>Your BTC address\n</b><code>{btc_address}</code>\n'
         f'<b>Your USDT TRC-20 address\n</b><code>{trx_address}</code>\n'
-        f'<b>Your LTC address</b>\n<code>{ltc_address}</code>\n', parse_mode='html',
+        f'<b>Your LTC address</b>\n<code>{ltc_address}</code>\n', parse_mode=ParseMode.HTML,
         reply_markup=back_button_markup)
     await callback.answer()
 
@@ -110,11 +110,13 @@ async def purchase_history(callback: CallbackQuery):
         quantity = order.quantity
         total_price = order.total_price
         buy_id = order.id
-        item_subcategory = ItemService.get_by_primary_key(BuyItemService.get_items_by_buy_id(buy_id)[0]['item_id']).subcategory
+        #TODO("Fix bug AttributeError: 'NoneType' object has no attribute 'item_id'")
+        buy_item = await BuyItemService.get_buy_item_by_buy_id(buy_id)
+        item = await ItemService.get_by_primary_key(buy_item.item_id)
         item_from_history_callback = create_callback_profile(current_level + 2, action="get_order",
                                                              args_for_action=str(buy_id))
         order_inline = types.InlineKeyboardButton(
-            text=f"{item_subcategory} | Total Price: {total_price}$ | Quantity: {quantity} pcs",
+            text=f"{item.subcategory} | Total Price: {total_price}$ | Quantity: {quantity} pcs",
             callback_data=item_from_history_callback
         )
         orders_markup_builder.add(order_inline)
@@ -123,9 +125,9 @@ async def purchase_history(callback: CallbackQuery):
     orders_markup = orders_markup_builder.as_markup()
     if not orders:
         await callback.message.edit_text("<b>You haven't had any orders yet</b>", reply_markup=orders_markup,
-                                         parse_mode='html')
+                                         parse_mode=ParseMode.HTML)
     else:
-        await callback.message.edit_text('<b>Your orders</b>', reply_markup=orders_markup, parse_mode='html')
+        await callback.message.edit_text('<b>Your orders</b>', reply_markup=orders_markup, parse_mode=ParseMode.HTML)
     await callback.answer()
 
 
@@ -157,19 +159,13 @@ async def refresh_balance(callback: CallbackQuery):
 async def get_order_from_history(callback: CallbackQuery):
     current_level = 4
     buy_id = MyProfileCallback.unpack(callback.data).args_for_action
-    items = await BuyItemService.get_items_by_buy_id(buy_id)
-    print(items)
-    #TODO("Сделать этот сервис")
-    # items_as_objects = list()
-    # for item in items:
-    #     item_id = item['item_id']
-    #     items_as_objects.append(Item.get(item_id).__dict__)
-    # message = await create_message_with_bought_items(items_as_objects)
-    # back_builder = InlineKeyboardBuilder()
-    # back_button = types.InlineKeyboardButton(text="Back",
-    #                                          callback_data=create_callback_profile(level=current_level - 2))
-    # back_builder.add(back_button)
-    # await callback.message.edit_text(text=message, parse_mode='html', reply_markup=back_builder.as_markup())
+    items = await ItemService.get_items_by_buy_id(buy_id)
+    message = await create_message_with_bought_items(items)
+    back_builder = InlineKeyboardBuilder()
+    back_button = types.InlineKeyboardButton(text="Back",
+                                             callback_data=create_callback_profile(level=current_level - 2))
+    back_builder.add(back_button)
+    await callback.message.edit_text(text=message, parse_mode=ParseMode.HTML, reply_markup=back_builder.as_markup())
 
 
 @my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())
@@ -181,7 +177,7 @@ async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback):
         1: top_up_balance,
         2: purchase_history,
         3: refresh_balance,
-        # 4: get_order_from_history
+        4: get_order_from_history
     }
 
     current_level_function = levels[current_level]
