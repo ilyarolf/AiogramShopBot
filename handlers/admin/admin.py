@@ -13,7 +13,6 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot import bot
-from models.buy import Buy
 from services.buy import BuyService
 from services.item import ItemService
 from services.user import UserService
@@ -38,9 +37,9 @@ def create_admin_callback(level: int, action: str = "", args_to_action: str = ""
 
 class AdminConstants:
     confirmation_builder = InlineKeyboardBuilder()
-    decline_button = types.InlineKeyboardButton(text="Confirm",
+    confirmation_button = types.InlineKeyboardButton(text="Confirm",
                                                 callback_data=create_admin_callback(level=2, action="confirm"))
-    confirmation_button = types.InlineKeyboardButton(text="Decline",
+    decline_button = types.InlineKeyboardButton(text="Decline",
                                                      callback_data=create_admin_callback(level=3, action="decline"))
     confirmation_builder.add(decline_button, confirmation_button)
     back_to_main_button = types.InlineKeyboardButton(text="Back to admin menu",
@@ -267,10 +266,9 @@ async def confirm_and_delete(callback: CallbackQuery):
 
 
 async def make_refund_markup():
-    # TODO("Migrate refund functionality to SQLAlchemy")
     refund_builder = InlineKeyboardBuilder()
     not_refunded_buy_ids = await BuyService.get_not_refunded_buy_ids()
-    refund_data = OtherSQLQuery.get_refund_data(not_refunded_buy_ids)
+    refund_data = await OtherSQLQuery.get_refund_data(not_refunded_buy_ids)
     for buy in refund_data:
         if buy.telegram_username:
             refund_buy_button = types.InlineKeyboardButton(
@@ -307,7 +305,7 @@ async def refund_confirmation(callback: CallbackQuery):
 
     confirmation_builder = InlineKeyboardBuilder()
     confirmation_builder.add(confirm_button, AdminConstants.decline_button, back_button)
-    refund_data = OtherSQLQuery.get_refund_data_single(buy_id)
+    refund_data = await OtherSQLQuery.get_refund_data_single(buy_id)
     if refund_data.telegram_username:
         await callback.message.edit_text(
             text=f"<b>Do you really want to refund user @{refund_data.telegram_username} "
@@ -327,8 +325,8 @@ async def make_refund(callback: CallbackQuery):
     buy_id = int(unpacked_callback.args_to_action)
     is_confirmed = unpacked_callback.action == "confirm_refund"
     if is_confirmed:
-        refund_data = OtherSQLQuery.get_refund_data_single(buy_id)
-        Buy.refund(buy_id, refund_data)
+        refund_data = await OtherSQLQuery.get_refund_data_single(buy_id)
+        await BuyService.refund(buy_id, refund_data)
         await NotificationManager.send_refund_message(refund_data)
         if refund_data.telegram_username:
             await callback.message.edit_text(text=f"<b>Successfully refunded ${refund_data.total_price} "

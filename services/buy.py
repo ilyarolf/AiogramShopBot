@@ -1,8 +1,10 @@
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from db import async_session_maker
 from models.buy import Buy
 from models.user import User
+from services.user import UserService
+from utils.other_sql import RefundBuyDTO
 
 
 class BuyService:
@@ -28,3 +30,11 @@ class BuyService:
             stmt = select(Buy.id).where(Buy.is_refunded == 0)
             not_refunded_buys = await session.execute(stmt)
             return not_refunded_buys.scalars().all()
+
+    @staticmethod
+    async def refund(buy_id: int, refund_data: RefundBuyDTO):
+        await UserService.reduce_consume_records(refund_data.user_id, refund_data.total_price)
+        async with async_session_maker() as session:
+            stmt = update(Buy).where(Buy.id == buy_id).values(is_refunded=True)
+            await session.execute(stmt)
+            await session.commit()
