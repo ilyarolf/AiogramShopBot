@@ -74,8 +74,9 @@ class UserService:
     async def create_last_balance_refresh_data(telegram_id: int):
         time = datetime.datetime.now()
         async with async_session_maker() as session:
-            user_from_db = await UserService.get_by_tgid(telegram_id)
-            user_from_db.last_balance_refresh = time
+            stmt = update(User).where(User.telegram_id == telegram_id).values(
+                last_balance_refresh=time)
+            await session.execute(stmt)
             await session.commit()
 
     @staticmethod
@@ -83,7 +84,7 @@ class UserService:
         async with async_session_maker() as session:
             stmt = select(User.btc_balance, User.ltc_balance, User.usdt_balance).where(User.telegram_id == telegram_id)
             user_balances = await session.execute(stmt)
-            user_balances.fetchone()
+            user_balances = user_balances.fetchone()
             keys = ["btc_balance", "ltc_balance", "usdt_balance"]
             user_balances = dict(zip(keys, user_balances))
             return user_balances
@@ -101,20 +102,24 @@ class UserService:
     @staticmethod
     async def update_crypto_balances(telegram_id: int, new_crypto_balances: dict):
         async with async_session_maker() as session:
-            user = await UserService.get_by_tgid(telegram_id)
-            user.btc_balance = new_crypto_balances["btc_balance"]
-            user.ltc_balance = new_crypto_balances["ltc_balance"]
-            user.usdt_balance = new_crypto_balances["usdt_balance"]
-            session.commit()
+            stmt = update(User).where(User.telegram_id == telegram_id).values(
+                btc_balance=new_crypto_balances["btc_balance"],
+                ltc_balance=new_crypto_balances["ltc_balance"],
+                usdt_balance=new_crypto_balances["usdt_balance"],
+            )
+            await session.execute(stmt)
+            await session.commit()
 
     @staticmethod
     async def update_top_up_amount(telegram_id, deposit_amount):
-        #TODO("same like update consume_amount")
         async with async_session_maker() as session:
-            user = await UserService.get_by_tgid(telegram_id)
-            old_top_up_amount = user.top_up_amount
-            user.top_up_amount = old_top_up_amount + deposit_amount
-            session.commit()
+            get_old_top_up_amount_stmt = select(User.top_up_amount).where(User.telegram_id == telegram_id)
+            old_top_up_amount = await session.execute(get_old_top_up_amount_stmt)
+            old_top_up_amount = old_top_up_amount.scalar()
+            stmt = update(User).where(User.telegram_id == telegram_id).values(
+                top_up_amount=round(old_top_up_amount + deposit_amount, 2))
+            await session.execute(stmt)
+            await session.commit()
 
     @staticmethod
     async def is_buy_possible(telegram_id, total_price):
@@ -124,7 +129,6 @@ class UserService:
 
     @staticmethod
     async def update_consume_records(telegram_id: int, total_price: float):
-        #TODO("update consume records dosn't work")
         async with async_session_maker() as session:
             get_old_consume_records_stmt = select(User.consume_records).where(User.telegram_id == telegram_id)
             old_consume_records = await session.execute(get_old_consume_records_stmt)
@@ -133,3 +137,11 @@ class UserService:
                 consume_records=old_consume_records + total_price)
             await session.execute(stmt)
             await session.commit()
+
+    @staticmethod
+    async def get_users_tg_ids():
+        async with async_session_maker() as session:
+            stmt = select(User.telegram_id)
+            user_ids = await session.execute(stmt)
+            user_ids = user_ids.scalars()
+            return user_ids
