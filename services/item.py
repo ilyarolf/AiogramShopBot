@@ -1,4 +1,4 @@
-from sqlalchemy import select, func, distinct
+from sqlalchemy import select, func, update, delete
 
 from db import async_session_maker
 from models.buyItem import BuyItem
@@ -80,3 +80,32 @@ class ItemService:
             stmt = select(Item.price).where(Item.subcategory == subcategory).limit(1)
             price = await session.execute(stmt)
             return price.scalar()
+
+    @staticmethod
+    async def set_items_not_new():
+        async with async_session_maker() as session:
+            stmt = update(Item.is_new).where(Item.is_new == 1).values(is_new=0)
+            await session.execute(stmt)
+            await session.commit()
+
+    @staticmethod
+    async def get_all_subcategories():
+        async with async_session_maker() as session:
+            stmt = select(Item.subcategory).distinct()
+            subcategories = await session.execute(stmt)
+            subcategories = subcategories.scalars().all()
+            return subcategories
+
+    @staticmethod
+    async def delete_category(category: str):
+        async with async_session_maker() as session:
+            stmt = delete(Item).where(Item.category == category)
+            await session.execute(stmt)
+            await session.commit()
+
+    @staticmethod
+    async def delete_subcategory(subcategory: str):
+        async with async_session_maker() as session:
+            stmt = delete(Item).where(Item.subcategory == subcategory)
+            await session.execute(stmt)
+            await session.commit()

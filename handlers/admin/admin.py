@@ -16,8 +16,10 @@ from bot import bot
 from models.buy import Buy
 from models.item import Item
 from models.user import User
+from services.item import ItemService
+from services.user import UserService
 from utils.custom_filters import AdminIdFilter
-from utils.new_items_manager import NewItemsManager
+# from utils.new_items_manager import NewItemsManager
 from utils.notification_manager import NotificationManager
 from utils.other_sql import OtherSQLQuery
 
@@ -117,9 +119,8 @@ async def confirm_and_send(callback: CallbackQuery):
     is_restocking = callback.message.text and callback.message.text.__contains__("📅 Update")
     if confirmed:
         counter = 0
-        telegram_ids = User.get_users_tg_ids()
+        telegram_ids = await UserService.get_users_tg_ids()
         for telegram_id in telegram_ids:
-            telegram_id = telegram_id['telegram_id']
             try:
                 await callback.message.copy_to(telegram_id, reply_markup=None)
                 counter += 1
@@ -135,7 +136,7 @@ async def confirm_and_send(callback: CallbackQuery):
                 text=message_text,
                 parse_mode=ParseMode.HTML)
     if is_restocking:
-        Item.set_items_not_new()
+        await ItemService.set_items_not_new()
 
 
 async def decline_action(callback: CallbackQuery):
@@ -151,36 +152,36 @@ async def add_items(callback: CallbackQuery, state: FSMContext):
         await state.set_state(AdminStates.new_items_file)
 
 
-@admin_router.message(AdminIdFilter(), F.document | F.text, StateFilter(AdminStates.new_items_file))
-async def receive_new_items_file(message: types.message, state: FSMContext):
-    if message.document:
-        await state.clear()
-        file_name = "new_items.json"
-        file_id = message.document.file_id
-        file = await bot.get_file(file_id)
-        await bot.download_file(file.file_path, file_name)
-        adding_result = NewItemsManager.add(file_name)
-        if isinstance(adding_result, BaseException):
-            await message.answer(text=f"<b>Exception:</b>\n<code>{adding_result}</code>", parse_mode=ParseMode.HTML)
-        elif type(adding_result) is int:
-            await message.answer(text=f"<b>Successfully added {adding_result} items!</b>", parse_mode=ParseMode.HTML)
-    elif message.text and message.text.lower() == "cancel":
-        await state.clear()
-        await message.answer("<b>Adding items successfully cancelled!</b>", parse_mode=ParseMode.HTML)
-    else:
-        await message.answer(text="<b>Send .json file with new items or type \"cancel\" for cancel.</b>",
-                             parse_mode=ParseMode.HTML)
-
-
-async def send_restocking_message(callback: CallbackQuery):
-    message = NewItemsManager.generate_restocking_message()
-    await callback.message.answer(message, parse_mode=ParseMode.HTML,
-                                  reply_markup=AdminConstants.confirmation_builder.as_markup())
+# @admin_router.message(AdminIdFilter(), F.document | F.text, StateFilter(AdminStates.new_items_file))
+# async def receive_new_items_file(message: types.message, state: FSMContext):
+#     if message.document:
+#         await state.clear()
+#         file_name = "new_items.json"
+#         file_id = message.document.file_id
+#         file = await bot.get_file(file_id)
+#         await bot.download_file(file.file_path, file_name)
+#         adding_result = NewItemsManager.add(file_name)
+#         if isinstance(adding_result, BaseException):
+#             await message.answer(text=f"<b>Exception:</b>\n<code>{adding_result}</code>", parse_mode=ParseMode.HTML)
+#         elif type(adding_result) is int:
+#             await message.answer(text=f"<b>Successfully added {adding_result} items!</b>", parse_mode=ParseMode.HTML)
+#     elif message.text and message.text.lower() == "cancel":
+#         await state.clear()
+#         await message.answer("<b>Adding items successfully cancelled!</b>", parse_mode=ParseMode.HTML)
+#     else:
+#         await message.answer(text="<b>Send .json file with new items or type \"cancel\" for cancel.</b>",
+#                              parse_mode=ParseMode.HTML)
+#
+#
+# async def send_restocking_message(callback: CallbackQuery):
+#     message = NewItemsManager.generate_restocking_message()
+#     await callback.message.answer(message, parse_mode=ParseMode.HTML,
+#                                   reply_markup=AdminConstants.confirmation_builder.as_markup())
 
 
 async def get_new_users(callback: CallbackQuery):
     users_builder = InlineKeyboardBuilder()
-    new_users = User.get_new_users()
+    new_users = await UserService.get_new_users()
     for user in new_users:
         if user.telegram_username:
             user_button = types.InlineKeyboardButton(text=user.telegram_username, url=f"t.me/{user.telegram_username}")
@@ -192,7 +193,7 @@ async def get_new_users(callback: CallbackQuery):
 
 async def delete_category(callback: CallbackQuery):
     current_level = AdminCallback.unpack(callback.data).level
-    categories = Item.get_categories()
+    categories = await ItemService.get_categories()
     delete_category_builder = InlineKeyboardBuilder()
     for category in categories:
         category_name = category['category']
@@ -208,13 +209,12 @@ async def delete_category(callback: CallbackQuery):
 
 async def delete_subcategory(callback: CallbackQuery):
     current_level = AdminCallback.unpack(callback.data).level
-    subcategories = Item.get_all_subcategories()
+    subcategories = await ItemService.get_all_subcategories()
     delete_subcategory_builder = InlineKeyboardBuilder()
     for subcategory in subcategories:
-        subcategory_name = subcategory['subcategory']
         delete_category_callback = create_admin_callback(level=current_level + 1, action="delete_subcategory",
-                                                         args_to_action=subcategory_name)
-        delete_category_button = types.InlineKeyboardButton(text=subcategory_name,
+                                                         args_to_action=subcategory)
+        delete_category_button = types.InlineKeyboardButton(text=subcategory,
                                                             callback_data=delete_category_callback)
         delete_subcategory_builder.add(delete_category_button)
     delete_subcategory_builder.add(AdminConstants.back_to_main_button)
@@ -258,11 +258,11 @@ async def confirm_and_delete(callback: CallbackQuery):
     back_to_main_builder.add(AdminConstants.back_to_main_button)
     message_text = f"<b>Successfully deleted {args_to_action} {entity_to_delete}!</b>"
     if entity_to_delete == "category":
-        Item.delete_category(args_to_action)
+        await ItemService.delete_category(args_to_action)
         await callback.message.edit_text(text=message_text,
                                          parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
     elif entity_to_delete == "subcategory":
-        Item.delete_subcategory(args_to_action)
+        await ItemService.delete_subcategory(args_to_action)
         await callback.message.edit_text(text=message_text,
                                          parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
 
@@ -352,7 +352,7 @@ async def admin_menu_navigation(callback: CallbackQuery, state: FSMContext, call
         2: confirm_and_send,
         3: decline_action,
         4: add_items,
-        5: send_restocking_message,
+        # 5: send_restocking_message,
         6: get_new_users,
         7: delete_category,
         8: delete_subcategory,
