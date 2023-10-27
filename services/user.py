@@ -143,5 +143,21 @@ class UserService:
         async with async_session_maker() as session:
             stmt = select(User.telegram_id)
             user_ids = await session.execute(stmt)
-            user_ids = user_ids.scalars()
+            user_ids = user_ids.scalars().all()
             return user_ids
+
+    @staticmethod
+    async def get_new_users():
+        async with async_session_maker() as session:
+            stmt = select(User).where(User.is_new == 1)
+            new_users = await session.execute(stmt)
+            new_users = new_users.scalars().all()
+            await UserService.__set_new_users_not_new()
+            return new_users
+
+    @staticmethod
+    async def __set_new_users_not_new():
+        async with async_session_maker() as session:
+            stmt = update(User).where(User.is_new == 1).values(is_new=0)
+            await session.execute(stmt)
+            await session.commit()
