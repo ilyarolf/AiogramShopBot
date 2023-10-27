@@ -21,3 +21,10 @@ class BuyService:
             await session.commit()
             await session.refresh(new_buy)
             return new_buy.id
+
+    @staticmethod
+    async def get_not_refunded_buy_ids():
+        async with async_session_maker() as session:
+            stmt = select(Buy.id).where(Buy.is_refunded == 0)
+            not_refunded_buys = await session.execute(stmt)
+            return not_refunded_buys.scalars().all()

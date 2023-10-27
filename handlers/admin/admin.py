@@ -14,12 +14,11 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot import bot
 from models.buy import Buy
-from models.item import Item
-from models.user import User
+from services.buy import BuyService
 from services.item import ItemService
 from services.user import UserService
 from utils.custom_filters import AdminIdFilter
-# from utils.new_items_manager import NewItemsManager
+from utils.new_items_manager import NewItemsManager
 from utils.notification_manager import NotificationManager
 from utils.other_sql import OtherSQLQuery
 
@@ -152,31 +151,31 @@ async def add_items(callback: CallbackQuery, state: FSMContext):
         await state.set_state(AdminStates.new_items_file)
 
 
-# @admin_router.message(AdminIdFilter(), F.document | F.text, StateFilter(AdminStates.new_items_file))
-# async def receive_new_items_file(message: types.message, state: FSMContext):
-#     if message.document:
-#         await state.clear()
-#         file_name = "new_items.json"
-#         file_id = message.document.file_id
-#         file = await bot.get_file(file_id)
-#         await bot.download_file(file.file_path, file_name)
-#         adding_result = NewItemsManager.add(file_name)
-#         if isinstance(adding_result, BaseException):
-#             await message.answer(text=f"<b>Exception:</b>\n<code>{adding_result}</code>", parse_mode=ParseMode.HTML)
-#         elif type(adding_result) is int:
-#             await message.answer(text=f"<b>Successfully added {adding_result} items!</b>", parse_mode=ParseMode.HTML)
-#     elif message.text and message.text.lower() == "cancel":
-#         await state.clear()
-#         await message.answer("<b>Adding items successfully cancelled!</b>", parse_mode=ParseMode.HTML)
-#     else:
-#         await message.answer(text="<b>Send .json file with new items or type \"cancel\" for cancel.</b>",
-#                              parse_mode=ParseMode.HTML)
-#
-#
-# async def send_restocking_message(callback: CallbackQuery):
-#     message = NewItemsManager.generate_restocking_message()
-#     await callback.message.answer(message, parse_mode=ParseMode.HTML,
-#                                   reply_markup=AdminConstants.confirmation_builder.as_markup())
+@admin_router.message(AdminIdFilter(), F.document | F.text, StateFilter(AdminStates.new_items_file))
+async def receive_new_items_file(message: types.message, state: FSMContext):
+    if message.document:
+        await state.clear()
+        file_name = "new_items.json"
+        file_id = message.document.file_id
+        file = await bot.get_file(file_id)
+        await bot.download_file(file.file_path, file_name)
+        adding_result = await NewItemsManager.add(file_name)
+        if isinstance(adding_result, BaseException):
+            await message.answer(text=f"<b>Exception:</b>\n<code>{adding_result}</code>", parse_mode=ParseMode.HTML)
+        elif type(adding_result) is int:
+            await message.answer(text=f"<b>Successfully added {adding_result} items!</b>", parse_mode=ParseMode.HTML)
+    elif message.text and message.text.lower() == "cancel":
+        await state.clear()
+        await message.answer("<b>Adding items successfully cancelled!</b>", parse_mode=ParseMode.HTML)
+    else:
+        await message.answer(text="<b>Send .json file with new items or type \"cancel\" for cancel.</b>",
+                             parse_mode=ParseMode.HTML)
+
+
+async def send_restocking_message(callback: CallbackQuery):
+    message = await NewItemsManager.generate_restocking_message()
+    await callback.message.answer(message, parse_mode=ParseMode.HTML,
+                                  reply_markup=AdminConstants.confirmation_builder.as_markup())
 
 
 async def get_new_users(callback: CallbackQuery):
@@ -268,8 +267,9 @@ async def confirm_and_delete(callback: CallbackQuery):
 
 
 async def make_refund_markup():
+    # TODO("Migrate refund functionality to SQLAlchemy")
     refund_builder = InlineKeyboardBuilder()
-    not_refunded_buy_ids = Buy.get_not_refunded_buy_ids()
+    not_refunded_buy_ids = await BuyService.get_not_refunded_buy_ids()
     refund_data = OtherSQLQuery.get_refund_data(not_refunded_buy_ids)
     for buy in refund_data:
         if buy.telegram_username:
@@ -352,7 +352,7 @@ async def admin_menu_navigation(callback: CallbackQuery, state: FSMContext, call
         2: confirm_and_send,
         3: decline_action,
         4: add_items,
-        # 5: send_restocking_message,
+        5: send_restocking_message,
         6: get_new_users,
         7: delete_category,
         8: delete_subcategory,

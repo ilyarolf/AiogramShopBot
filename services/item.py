@@ -84,7 +84,7 @@ class ItemService:
     @staticmethod
     async def set_items_not_new():
         async with async_session_maker() as session:
-            stmt = update(Item.is_new).where(Item.is_new == 1).values(is_new=0)
+            stmt = update(Item).where(Item.is_new == 1).values(is_new=0)
             await session.execute(stmt)
             await session.commit()
 
@@ -109,3 +109,17 @@ class ItemService:
             stmt = delete(Item).where(Item.subcategory == subcategory)
             await session.execute(stmt)
             await session.commit()
+
+    @staticmethod
+    async def add_many(new_items: list[Item]):
+        async with async_session_maker() as session:
+            session.add_all(new_items)
+            await session.commit()
+
+    @staticmethod
+    async def get_new_items():
+        async with async_session_maker() as session:
+            stmt = select(Item).where(Item.is_new == 1)
+            new_items = await session.execute(stmt)
+            new_items = new_items.scalars().all()
+            return new_items
