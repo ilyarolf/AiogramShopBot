@@ -9,7 +9,7 @@ class Item(Base):
     id = Column(Integer, primary_key=True, unique=True)
     category = Column(String, nullable=False)
     subcategory = Column(String, nullable=False)
-    private_data = Column(String, nullable=False, unique=True)
+    private_data = Column(String, nullable=False, unique=False)
     price = Column(Float, nullable=False)
     is_sold = Column(Boolean, nullable=False, default=False)
     is_new = Column(Boolean, nullable=False, default=True)
