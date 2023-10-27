@@ -161,3 +161,13 @@ class UserService:
             stmt = update(User).where(User.is_new == 1).values(is_new=0)
             await session.execute(stmt)
             await session.commit()
+
+    @staticmethod
+    async def reduce_consume_records(user_id: int, total_price):
+        async with async_session_maker() as session:
+            old_consume_records_stmt = select(User.consume_records).where(User.id == user_id)
+            old_consume_records = await session.execute(old_consume_records_stmt)
+            old_consume_records = old_consume_records.scalar()
+            stmt = update(User).where(User.id == user_id).values(consume_records=old_consume_records-total_price)
+            await session.execute(stmt)
+            await session.commit()
