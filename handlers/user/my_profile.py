@@ -110,7 +110,6 @@ async def purchase_history(callback: CallbackQuery):
         quantity = order.quantity
         total_price = order.total_price
         buy_id = order.id
-        #TODO("Fix bug AttributeError: 'NoneType' object has no attribute 'item_id'")
         buy_item = await BuyItemService.get_buy_item_by_buy_id(buy_id)
         item = await ItemService.get_by_primary_key(buy_item.item_id)
         item_from_history_callback = create_callback_profile(current_level + 2, action="get_order",
@@ -150,7 +149,6 @@ async def refresh_balance(callback: CallbackQuery):
             await UserService.update_top_up_amount(telegram_id, deposit_usd_amount * 0.95)
             await NotificationManager.new_deposit(old_crypto_balances, new_crypto_balances, deposit_usd_amount,
                                                   telegram_id)
-        await callback.answer("Refreshed successfully!")
         await my_profile(callback)
     else:
         await callback.answer("Please wait and try again later", show_alert=True)

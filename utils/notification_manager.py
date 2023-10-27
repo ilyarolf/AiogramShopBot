@@ -4,6 +4,7 @@ from typing import Union
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from services.user import UserService
 from utils.CryptoAddressGenerator import CryptoAddressGenerator
 from bot import bot
 from config import ADMIN_ID_LIST
@@ -45,14 +46,15 @@ class NotificationManager:
                                       old_crypto_balances.values())]
         merged_crypto_balances_keys = [key.split('_')[0] for key in new_crypto_balances.keys()]
         merged_crypto_balances = zip(merged_crypto_balances_keys, merged_crypto_balances)
-        user = User.get_by_tgid(telegram_id)
+        user = await UserService.get_by_tgid(telegram_id)
+        user = user.__dict__
         username = user['telegram_username']
         user_button = await NotificationManager.make_user_button(username)
         if username:
             message = f"New deposit by user with username @{username} for ${deposit_amount_usd} with "
         else:
             message = f"New deposit by user with ID {telegram_id} for ${deposit_amount_usd} with "
-        private_keys = CryptoAddressGenerator().get_private_keys(user['user_id'])
+        private_keys = CryptoAddressGenerator().get_private_keys(user['id'])
         for crypto_name, value in merged_crypto_balances:
             if value > 0:
                 if crypto_name == "usdt":
