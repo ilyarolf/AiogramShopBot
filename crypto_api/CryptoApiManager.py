@@ -16,14 +16,14 @@ class CryptoApiManager:
             "usdt_balance": f'https://apilist.tronscan.org/api/account?address={self.trx_address}&includeToken=true',
             "ltc_balance": f'https://api.blockcypher.com/v1/ltc/main/addrs/{self.ltc_address}'
         }
-        balances = {}  # Изменяем список на словарь
+        balances = {}
         rs = (grequests.get(url) for url in urls.values())
         data_list = grequests.map(rs)
 
         for symbol, data in zip(urls.keys(), data_list):
             response_code = data.status_code
             if response_code != 200:
-                balances[symbol] = 0  # Устанавливаем баланс в 0
+                balances[symbol] = 0
             else:
                 data = data.json()
                 if 'total_received' in data:

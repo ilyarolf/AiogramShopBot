@@ -84,7 +84,8 @@ async def all_categories(message: Union[Message, CallbackQuery]):
     category_inline_buttons = await create_category_buttons(current_level)
     if isinstance(message, Message):
         if category_inline_buttons:
-            await message.answer('🔍 <b>All categories</b>', parse_mode=ParseMode.HTML, reply_markup=category_inline_buttons)
+            await message.answer('🔍 <b>All categories</b>', parse_mode=ParseMode.HTML,
+                                 reply_markup=category_inline_buttons)
         else:
             await message.answer('<b>No categories</b>', parse_mode=ParseMode.HTML)
     elif isinstance(message, CallbackQuery):
@@ -125,7 +126,8 @@ async def select_quantity(callback: CallbackQuery):
     await callback.message.edit_text(f'<b>You choose:{subcategory}\n'
                                      f'Price:${price}\n'
                                      f'Description:{description}\n'
-                                     f'Quantity:</b>', reply_markup=count_builder.as_markup(), parse_mode=ParseMode.HTML)
+                                     f'Quantity:</b>', reply_markup=count_builder.as_markup(),
+                                     parse_mode=ParseMode.HTML)
 
 
 async def buy_confirmation(callback: CallbackQuery):
@@ -193,14 +195,14 @@ async def buy_processing(callback: CallbackQuery):
         await ItemService.set_items_sold(sold_items)
         await callback.message.edit_text(text=message, parse_mode=ParseMode.HTML)
         await NotificationManager.new_buy(subcategory, quantity, total_price, user)
-    elif is_in_stock is False:
-        await callback.message.edit_text(text='<b>Out of stock!</b>', parse_mode=ParseMode.HTML,
+    elif confirmation is False:
+        await callback.message.edit_text(text='<b>Declined!</b>', parse_mode=ParseMode.HTML,
                                          reply_markup=back_to_main_builder.as_markup())
     elif is_enough_money is False:
         await callback.message.edit_text(text='<b>Insufficient funds!</b>', parse_mode=ParseMode.HTML,
                                          reply_markup=back_to_main_builder.as_markup())
-    elif confirmation is False:
-        await callback.message.edit_text(text='<b>Declined!</b>', parse_mode=ParseMode.HTML,
+    elif is_in_stock is False:
+        await callback.message.edit_text(text='<b>Out of stock!</b>', parse_mode=ParseMode.HTML,
                                          reply_markup=back_to_main_builder.as_markup())
 
 

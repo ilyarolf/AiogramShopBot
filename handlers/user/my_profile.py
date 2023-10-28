@@ -4,6 +4,7 @@ from aiogram.enums import ParseMode
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from bot import bot
 from crypto_api.CryptoApiManager import CryptoApiManager
 from handlers.user.all_categories import create_message_with_bought_items
 from services.buy import BuyService
@@ -87,8 +88,9 @@ async def top_up_balance(callback: CallbackQuery):
     back_button_builder = InlineKeyboardBuilder()
     back_button_builder.add(back_to_profile_button)
     back_button_markup = back_button_builder.as_markup()
+    bot_entity = await bot.get_me()
     await callback.message.edit_text(
-        f'<b>Deposit to the address the amount you want to top up the Shop Bot</b> \n\n'
+        f'<b>Deposit to the address the amount you want to top up the {bot_entity.first_name}</b> \n\n'
         f'<b>Important</b>\n<i>A unique BTC/LTC/USDT addresses is given for each deposit\n'
         f'The top up takes place within 5 minutes after the transfer</i>\n\n'
         f'<b>Your BTC address\n</b><code>{btc_address}</code>\n'
@@ -123,10 +125,11 @@ async def purchase_history(callback: CallbackQuery):
     orders_markup_builder.adjust(1)
     orders_markup = orders_markup_builder.as_markup()
     if not orders:
-        await callback.message.edit_text("<b>You haven't had any orders yet</b>", reply_markup=orders_markup,
+        await callback.message.edit_text("<b>You haven't had any purchases yet</b>", reply_markup=orders_markup,
                                          parse_mode=ParseMode.HTML)
     else:
-        await callback.message.edit_text('<b>Your orders</b>', reply_markup=orders_markup, parse_mode=ParseMode.HTML)
+        await callback.message.edit_text('<b>Your purchases:</b>', reply_markup=orders_markup,
+                                         parse_mode=ParseMode.HTML)
     await callback.answer()
 
 
