@@ -89,25 +89,31 @@ class ItemService:
             await session.commit()
 
     @staticmethod
-    async def get_all_subcategories():
+    async def get_all_not_sold_subcategories():
         async with async_session_maker() as session:
-            stmt = select(Item.subcategory).distinct()
+            stmt = select(Item.subcategory).where(Item.is_sold == 0).distinct()
             subcategories = await session.execute(stmt)
             subcategories = subcategories.scalars().all()
             return subcategories
 
     @staticmethod
-    async def delete_category(category: str):
+    async def delete_category(category_name: str):
         async with async_session_maker() as session:
-            stmt = delete(Item).where(Item.category == category)
-            await session.execute(stmt)
+            stmt = select(Item).where(Item.category == category_name, Item.is_sold == 0)
+            categories = await session.execute(stmt)
+            categories = categories.scalars().all()
+            for category in categories:
+                await session.delete(category)
             await session.commit()
 
     @staticmethod
     async def delete_subcategory(subcategory: str):
         async with async_session_maker() as session:
-            stmt = delete(Item).where(Item.subcategory == subcategory)
-            await session.execute(stmt)
+            stmt = select(Item).where(Item.subcategory == subcategory, Item.is_sold == 0)
+            subcategory_items = await session.execute(stmt)
+            subcategory_items = subcategory_items.scalars().all()
+            for item in subcategory_items:
+                await session.delete(item)
             await session.commit()
 
     @staticmethod

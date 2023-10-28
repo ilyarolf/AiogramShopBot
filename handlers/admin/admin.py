@@ -38,9 +38,9 @@ def create_admin_callback(level: int, action: str = "", args_to_action: str = ""
 class AdminConstants:
     confirmation_builder = InlineKeyboardBuilder()
     confirmation_button = types.InlineKeyboardButton(text="Confirm",
-                                                callback_data=create_admin_callback(level=2, action="confirm"))
+                                                     callback_data=create_admin_callback(level=2, action="confirm"))
     decline_button = types.InlineKeyboardButton(text="Decline",
-                                                     callback_data=create_admin_callback(level=3, action="decline"))
+                                                callback_data=create_admin_callback(level=3, action="decline"))
     confirmation_builder.add(decline_button, confirmation_button)
     back_to_main_button = types.InlineKeyboardButton(text="Back to admin menu",
                                                      callback_data=create_admin_callback(level=0))
@@ -207,7 +207,7 @@ async def delete_category(callback: CallbackQuery):
 
 async def delete_subcategory(callback: CallbackQuery):
     current_level = AdminCallback.unpack(callback.data).level
-    subcategories = await ItemService.get_all_subcategories()
+    subcategories = await ItemService.get_all_not_sold_subcategories()
     delete_subcategory_builder = InlineKeyboardBuilder()
     for subcategory in subcategories:
         delete_category_callback = create_admin_callback(level=current_level + 1, action="delete_subcategory",
