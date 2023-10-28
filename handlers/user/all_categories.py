@@ -45,7 +45,7 @@ async def all_categories_text_message(message: types.message):
 
 
 async def create_category_buttons(current_level: int):
-    categories = await ItemService.get_categories()
+    categories = await ItemService.get_unsold_categories()
     if categories:
         categories_builder = InlineKeyboardBuilder()
         for category in categories:
@@ -59,7 +59,7 @@ async def create_category_buttons(current_level: int):
 
 async def create_subcategory_buttons(category: str):
     current_level = 1
-    subcategories = await ItemService.get_unique_subcategories(category)
+    subcategories = await ItemService.get_unsold_subcategories_by_category(category)
     subcategories_builder = InlineKeyboardBuilder()
     for subcategory in subcategories:
         subcategory_price = await ItemService.get_price_by_subcategory(subcategory)
