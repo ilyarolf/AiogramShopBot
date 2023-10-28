@@ -191,7 +191,7 @@ async def get_new_users(callback: CallbackQuery):
 
 async def delete_category(callback: CallbackQuery):
     current_level = AdminCallback.unpack(callback.data).level
-    categories = await ItemService.get_categories()
+    categories = await ItemService.get_all_categories()
     delete_category_builder = InlineKeyboardBuilder()
     for category in categories:
         category_name = category['category']
@@ -207,7 +207,7 @@ async def delete_category(callback: CallbackQuery):
 
 async def delete_subcategory(callback: CallbackQuery):
     current_level = AdminCallback.unpack(callback.data).level
-    subcategories = await ItemService.get_all_not_sold_subcategories()
+    subcategories = await ItemService.get_all_subcategories()
     delete_subcategory_builder = InlineKeyboardBuilder()
     for subcategory in subcategories:
         delete_category_callback = create_admin_callback(level=current_level + 1, action="delete_subcategory",

@@ -14,7 +14,14 @@ class ItemService:
             return item.scalar()
 
     @staticmethod
-    async def get_categories() -> list[dict]:
+    async def get_unsold_categories() -> list[dict]:
+        async with async_session_maker() as session:
+            stmt = select(Item.category).where(Item.is_sold == 0).distinct()
+            category_list = await session.execute(stmt)
+            return category_list.mappings().all()
+
+    @staticmethod
+    async def get_all_categories() -> list[dict]:
         async with async_session_maker() as session:
             stmt = select(Item.category).distinct()
             category_list = await session.execute(stmt)
@@ -68,9 +75,9 @@ class ItemService:
             return items
 
     @staticmethod
-    async def get_unique_subcategories(category: str) -> list[str]:
+    async def get_unsold_subcategories_by_category(category: str) -> list[str]:
         async with async_session_maker() as session:
-            stmt = select(Item.subcategory).where(Item.category == category).distinct()
+            stmt = select(Item.subcategory).where(Item.category == category, Item.is_sold == 0).distinct()
             subcategories = await session.execute(stmt)
             return subcategories.scalars().all()
 
@@ -89,9 +96,17 @@ class ItemService:
             await session.commit()
 
     @staticmethod
-    async def get_all_not_sold_subcategories():
+    async def get_unsold_subcategories():
         async with async_session_maker() as session:
             stmt = select(Item.subcategory).where(Item.is_sold == 0).distinct()
+            subcategories = await session.execute(stmt)
+            subcategories = subcategories.scalars().all()
+            return subcategories
+
+    @staticmethod
+    async def get_all_subcategories():
+        async with async_session_maker() as session:
+            stmt = select(Item.subcategory).distinct()
             subcategories = await session.execute(stmt)
             subcategories = subcategories.scalars().all()
             return subcategories
