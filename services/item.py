@@ -1,4 +1,4 @@
-from sqlalchemy import select, func, update, delete
+from sqlalchemy import select, func, update
 
 from db import async_session_maker
 from models.buyItem import BuyItem
