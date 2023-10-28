@@ -1,13 +1,13 @@
 from bip_utils import Bip44Changes, Bip44Coins, Bip44, Bip39SeedGenerator, Bip84, Bip84Coins
-from os import getenv
 
-from config import MNEMONIC
+from config import MNEMONIC, ADDITIVE
 
 
 class CryptoAddressGenerator:
     def __init__(self,
                  seed: str = MNEMONIC):
         self.seed_bytes = Bip39SeedGenerator(seed).Generate()
+        self.additive_number = ADDITIVE
 
     def __generate_btc_pair(self, i: int):
         bip84_mst_ctx = Bip84.FromSeed(self.seed_bytes, Bip84Coins.BITCOIN)
@@ -34,17 +34,15 @@ class CryptoAddressGenerator:
         return {"address": bip44_addr_ctx, "private_key": private_key}
 
     def get_addresses(self, i):
-        additive_number = getenv("ADDITIVE")
-        if additive_number is not None:
-            i = i + int(additive_number)
+        if self.additive_number is not None:
+            i = i + int(self.additive_number)
         return {'btc': self.__generate_btc_pair(i)['address'],
                 'ltc': self.__generate_ltc_pair(i)['address'],
                 'trx': self.__generate_trx_pair(i)['address']}
 
     def get_private_keys(self, i):
-        additive_number = getenv("ADDITIVE")
-        if additive_number is not None:
-            i = i + int(additive_number)
+        if self.additive_number is not None:
+            i = i + int(self.additive_number)
         return {'btc': self.__generate_btc_pair(i)['private_key'],
                 'ltc': self.__generate_ltc_pair(i)['private_key'],
                 'usdt': self.__generate_trx_pair(i)['private_key']}
