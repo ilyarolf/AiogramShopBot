@@ -1,3 +1,5 @@
+import pathlib
+
 import config
 
 if config.DB_ENCRYPTION is True:
@@ -15,6 +17,12 @@ def dict_factory(cursor, row):
 
 class Database:
     def __init__(self, db_name=DB_NAME) -> None:
+        if pathlib.Path(db_name).exists() is False:
+            connect = sqlite3.connect(db_name)
+            cursor = connect.cursor()
+            with open("items_clean_dump.sql", "r") as sql_clean_dump:
+                print(f"Database {db_name} created successfully!")
+                cursor.executescript(sql_clean_dump.read())
         self.connect = sqlite3.connect(db_name)
         self.connect.row_factory = dict_factory
         self.cursor = self.connect.cursor()
