@@ -117,7 +117,7 @@ async def confirm_and_send(callback: CallbackQuery):
     is_restocking = callback.message.text and callback.message.text.__contains__("📅 Update")
     if confirmed:
         counter = 0
-        telegram_ids = await UserService.get_users_tg_ids()
+        telegram_ids = UserService.get_users_tg_ids()
         for telegram_id in telegram_ids:
             try:
                 await callback.message.copy_to(telegram_id, reply_markup=None)
@@ -134,7 +134,7 @@ async def confirm_and_send(callback: CallbackQuery):
                 text=message_text,
                 parse_mode=ParseMode.HTML)
     if is_restocking:
-        await ItemService.set_items_not_new()
+        ItemService.set_items_not_new()
 
 
 async def decline_action(callback: CallbackQuery):
@@ -179,7 +179,7 @@ async def send_restocking_message(callback: CallbackQuery):
 
 async def get_new_users(callback: CallbackQuery):
     users_builder = InlineKeyboardBuilder()
-    new_users = await UserService.get_new_users()
+    new_users = UserService.get_new_users()
     for user in new_users:
         if user.telegram_username:
             user_button = types.InlineKeyboardButton(text=user.telegram_username, url=f"t.me/{user.telegram_username}")
@@ -191,7 +191,7 @@ async def get_new_users(callback: CallbackQuery):
 
 async def delete_category(callback: CallbackQuery):
     current_level = AdminCallback.unpack(callback.data).level
-    categories = await ItemService.get_all_categories()
+    categories = ItemService.get_all_categories()
     delete_category_builder = InlineKeyboardBuilder()
     for category in categories:
         category_name = category['category']
@@ -207,7 +207,7 @@ async def delete_category(callback: CallbackQuery):
 
 async def delete_subcategory(callback: CallbackQuery):
     current_level = AdminCallback.unpack(callback.data).level
-    subcategories = await ItemService.get_all_subcategories()
+    subcategories = ItemService.get_all_subcategories()
     delete_subcategory_builder = InlineKeyboardBuilder()
     for subcategory in subcategories:
         delete_category_callback = create_admin_callback(level=current_level + 1, action="delete_subcategory",
@@ -256,18 +256,18 @@ async def confirm_and_delete(callback: CallbackQuery):
     back_to_main_builder.add(AdminConstants.back_to_main_button)
     message_text = f"<b>Successfully deleted {args_to_action} {entity_to_delete}!</b>"
     if entity_to_delete == "category":
-        await ItemService.delete_category(args_to_action)
+        ItemService.delete_category(args_to_action)
         await callback.message.edit_text(text=message_text,
                                          parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
     elif entity_to_delete == "subcategory":
-        await ItemService.delete_subcategory(args_to_action)
+        ItemService.delete_subcategory(args_to_action)
         await callback.message.edit_text(text=message_text,
                                          parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
 
 
 async def make_refund_markup():
     refund_builder = InlineKeyboardBuilder()
-    not_refunded_buy_ids = await BuyService.get_not_refunded_buy_ids()
+    not_refunded_buy_ids = BuyService.get_not_refunded_buy_ids()
     refund_data = await OtherSQLQuery.get_refund_data(not_refunded_buy_ids)
     for buy in refund_data:
         if buy.telegram_username:
@@ -326,7 +326,7 @@ async def make_refund(callback: CallbackQuery):
     is_confirmed = unpacked_callback.action == "confirm_refund"
     if is_confirmed:
         refund_data = await OtherSQLQuery.get_refund_data_single(buy_id)
-        await BuyService.refund(buy_id, refund_data)
+        BuyService.refund(buy_id, refund_data)
         await NotificationManager.send_refund_message(refund_data)
         if refund_data.telegram_username:
             await callback.message.edit_text(text=f"<b>Successfully refunded ${refund_data.total_price} "

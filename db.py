@@ -1,10 +1,12 @@
 from pathlib import Path
 
-from sqlalchemy import event, Engine
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-import config
-from config import DB_NAME
+from sqlalchemy import event, Engine, create_engine
+from sqlalchemy.orm import sessionmaker
+
+from config import DB_NAME, DB_PASS
 from models.base import Base
+from sqlcipher3 import dbapi2 as sqlcipher3
+# import sqlcipher3
 """
 Imports of these models are needed to correctly create tables in the database.
 For more information see https://stackoverflow.com/questions/7478403/sqlalchemy-classes-across-files
@@ -14,10 +16,10 @@ from models.user import User
 from models.buy import Buy
 from models.buyItem import BuyItem
 
-url = f"sqlite+aiosqlite:///{DB_NAME}"
+url = f"sqlite+pysqlcipher://:{DB_PASS}@/{DB_NAME}?cipher=aes-256-cfb&kdf_iter=64000"
 
-engine = create_async_engine(url, echo=True)
-async_session_maker = async_sessionmaker(engine, class_=AsyncSession)
+engine = create_engine(url, echo=True, module=sqlcipher3)
+session_maker = sessionmaker(engine)
 
 
 @event.listens_for(Engine, "connect")
@@ -28,9 +30,9 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 
 
 async def create_db_and_tables():
-    async with engine.begin() as conn:
-        if Path(config.DB_NAME).exists():
-            pass
-        else:
-            await conn.run_sync(Base.metadata.drop_all)
-            await conn.run_sync(Base.metadata.create_all)
+    # TODO("Doesn't work like I need")
+    if Path(DB_NAME).exists():
+        pass
+    else:
+        Base.metadata.drop_all(bind=engine)
+        Base.metadata.create_all(bind=engine)

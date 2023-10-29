@@ -3,7 +3,7 @@ from typing import Union
 
 from sqlalchemy import select
 
-from db import async_session_maker
+from db import session_maker
 from models.buy import Buy
 from models.buyItem import BuyItem
 from models.item import Item
@@ -34,7 +34,7 @@ class OtherSQLQuery:
 
     @staticmethod
     async def get_refund_data_single(buy_id: int):
-        async with async_session_maker() as session:
+        async with session_maker() as session:
             stmt = select(
                 User.telegram_username,
                 User.telegram_id,
