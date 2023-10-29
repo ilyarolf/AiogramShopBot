@@ -34,7 +34,7 @@ async def my_profile_text_message(message: types.message):
 
 
 async def get_my_profile_message(telegram_id: int):
-    user = await UserService.get_by_tgid(telegram_id)
+    user = UserService.get_by_tgid(telegram_id)
     btc_balance = user.btc_balance
     usdt_balance = user.usdt_balance
     ltc_balance = user.ltc_balance
@@ -78,7 +78,7 @@ async def my_profile(message: Union[Message, CallbackQuery]):
 
 async def top_up_balance(callback: CallbackQuery):
     telegram_id = callback.message.chat.id
-    user = await UserService.get_by_tgid(telegram_id)
+    user = UserService.get_by_tgid(telegram_id)
     current_level = 1
     btc_address = user.btc_address
     trx_address = user.trx_address
@@ -102,9 +102,9 @@ async def top_up_balance(callback: CallbackQuery):
 
 async def purchase_history(callback: CallbackQuery):
     telegram_id = callback.message.chat.id
-    user = await UserService.get_by_tgid(telegram_id)
+    user = UserService.get_by_tgid(telegram_id)
     current_level = 2
-    orders = await BuyService.get_buys_by_buyer_id(user.id)
+    orders = BuyService.get_buys_by_buyer_id(user.id)
     orders_markup_builder = InlineKeyboardBuilder()
     back_to_profile_button = types.InlineKeyboardButton(text='Back',
                                                         callback_data=create_callback_profile(current_level - 2))
@@ -112,8 +112,8 @@ async def purchase_history(callback: CallbackQuery):
         quantity = order.quantity
         total_price = order.total_price
         buy_id = order.id
-        buy_item = await BuyItemService.get_buy_item_by_buy_id(buy_id)
-        item = await ItemService.get_by_primary_key(buy_item.item_id)
+        buy_item = BuyItemService.get_buy_item_by_buy_id(buy_id)
+        item = ItemService.get_by_primary_key(buy_item.item_id)
         item_from_history_callback = create_callback_profile(current_level + 2, action="get_order",
                                                              args_for_action=str(buy_id))
         order_inline = types.InlineKeyboardButton(
@@ -135,11 +135,11 @@ async def purchase_history(callback: CallbackQuery):
 
 async def refresh_balance(callback: CallbackQuery):
     telegram_id = callback.from_user.id
-    if await UserService.can_refresh_balance(telegram_id):
+    if UserService.can_refresh_balance(telegram_id):
         await callback.answer("Refreshing...")
-        old_crypto_balances = await UserService.get_balances(telegram_id)
-        await UserService.create_last_balance_refresh_data(telegram_id)
-        addresses = await UserService.get_addresses(telegram_id)
+        old_crypto_balances = UserService.get_balances(telegram_id)
+        UserService.create_last_balance_refresh_data(telegram_id)
+        addresses = UserService.get_addresses(telegram_id)
         new_crypto_balances = await CryptoApiManager(**addresses).get_top_ups()
         crypto_prices = await CryptoApiManager.get_crypto_prices()
         deposit_usd_amount = 0.0
@@ -148,8 +148,8 @@ async def refresh_balance(callback: CallbackQuery):
                 balance_key = balance_key.split('_')[0]
                 crypto_balance_in_usd = balance * crypto_prices[balance_key]
                 deposit_usd_amount += crypto_balance_in_usd
-            await UserService.update_crypto_balances(telegram_id, new_crypto_balances)
-            await UserService.update_top_up_amount(telegram_id, deposit_usd_amount * 0.95)
+            UserService.update_crypto_balances(telegram_id, new_crypto_balances)
+            UserService.update_top_up_amount(telegram_id, deposit_usd_amount * 0.95)
             await NotificationManager.new_deposit(old_crypto_balances, new_crypto_balances, deposit_usd_amount,
                                                   telegram_id)
         await my_profile(callback)
@@ -160,7 +160,7 @@ async def refresh_balance(callback: CallbackQuery):
 async def get_order_from_history(callback: CallbackQuery):
     current_level = 4
     buy_id = MyProfileCallback.unpack(callback.data).args_for_action
-    items = await ItemService.get_items_by_buy_id(buy_id)
+    items = ItemService.get_items_by_buy_id(buy_id)
     message = await create_message_with_bought_items(items)
     back_builder = InlineKeyboardBuilder()
     back_button = types.InlineKeyboardButton(text="Back",

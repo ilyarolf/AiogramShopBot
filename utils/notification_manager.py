@@ -46,7 +46,7 @@ class NotificationManager:
                                       old_crypto_balances.values())]
         merged_crypto_balances_keys = [key.split('_')[0] for key in new_crypto_balances.keys()]
         merged_crypto_balances = zip(merged_crypto_balances_keys, merged_crypto_balances)
-        user = await UserService.get_by_tgid(telegram_id)
+        user = UserService.get_by_tgid(telegram_id)
         user = user.__dict__
         username = user['telegram_username']
         user_button = await NotificationManager.make_user_button(username)

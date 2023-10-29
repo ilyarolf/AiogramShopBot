@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from config import DB_NAME, DB_PASS
 from models.base import Base
 from sqlcipher3 import dbapi2 as sqlcipher3
+
 # import sqlcipher3
 """
 Imports of these models are needed to correctly create tables in the database.

@@ -168,6 +168,6 @@ class UserService:
             old_consume_records_stmt = select(User.consume_records).where(User.id == user_id)
             old_consume_records = session.execute(old_consume_records_stmt)
             old_consume_records = old_consume_records.scalar()
-            stmt = update(User).where(User.id == user_id).values(consume_records=old_consume_records-total_price)
+            stmt = update(User).where(User.id == user_id).values(consume_records=old_consume_records - total_price)
             session.execute(stmt)
             session.commit()

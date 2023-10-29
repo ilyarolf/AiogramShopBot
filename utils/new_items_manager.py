@@ -7,18 +7,18 @@ from datetime import date
 
 class NewItemsManager:
     @staticmethod
-    async def __parse_items_from_file(path_to_file: str) -> list[Item]:
+    def __parse_items_from_file(path_to_file: str) -> list[Item]:
         with open(path_to_file, "r", encoding="utf-8") as new_items_file:
             items_dict = load(new_items_file)["items"]
             new_items = [Item(**item) for item in items_dict]
             return new_items
 
     @staticmethod
-    async def add(path_to_file: str):
+    def add(path_to_file: str):
         # TODO(Need testing)
         try:
-            new_items_as_objects = await NewItemsManager.__parse_items_from_file(path_to_file)
-            await ItemService.add_many(new_items_as_objects)
+            new_items_as_objects = NewItemsManager.__parse_items_from_file(path_to_file)
+            ItemService.add_many(new_items_as_objects)
             Path(path_to_file).unlink(missing_ok=True)
             return len(new_items_as_objects)
         except Exception as e:
@@ -26,7 +26,7 @@ class NewItemsManager:
 
     @staticmethod
     async def generate_restocking_message():
-        new_items = await ItemService.get_new_items()
+        new_items = ItemService.get_new_items()
         filtered_items = {}
         for item in new_items:
             if item.category not in filtered_items:

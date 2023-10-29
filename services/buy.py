@@ -28,7 +28,7 @@ class BuyService:
     def get_not_refunded_buy_ids():
         with session_maker() as session:
             stmt = select(Buy.id).where(Buy.is_refunded == 0)
-            not_refunded_buys =session.execute(stmt)
+            not_refunded_buys = session.execute(stmt)
             return not_refunded_buys.scalars().all()
 
     @staticmethod
