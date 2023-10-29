@@ -23,18 +23,18 @@ class RefundBuyDTO:
 
 class OtherSQLQuery:
     @staticmethod
-    async def get_refund_data(buy_ids: Union[list[dict], int]):
+    def get_refund_data(buy_ids: Union[list[dict], int]):
         if isinstance(buy_ids, list):
             result_list = list()
             for buy_id in buy_ids:
-                result_list.append(await OtherSQLQuery.get_refund_data_single(buy_id))
+                result_list.append(OtherSQLQuery.get_refund_data_single(buy_id))
             return result_list
         else:
-            return await OtherSQLQuery.get_refund_data_single(buy_ids)
+            return OtherSQLQuery.get_refund_data_single(buy_ids)
 
     @staticmethod
-    async def get_refund_data_single(buy_id: int):
-        async with session_maker() as session:
+    def get_refund_data_single(buy_id: int):
+        with session_maker() as session:
             stmt = select(
                 User.telegram_username,
                 User.telegram_id,
@@ -52,6 +52,6 @@ class OtherSQLQuery:
             ).where(
                 BuyItem.buy_id == buy_id
             )
-            buy_items = await session.execute(stmt)
+            buy_items = session.execute(stmt)
             buy_items = buy_items.mappings().one()
             return RefundBuyDTO(**buy_items)

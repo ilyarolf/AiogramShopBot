@@ -161,7 +161,7 @@ async def get_order_from_history(callback: CallbackQuery):
     current_level = 4
     buy_id = MyProfileCallback.unpack(callback.data).args_for_action
     items = ItemService.get_items_by_buy_id(buy_id)
-    message = await create_message_with_bought_items(items)
+    message = create_message_with_bought_items(items)
     back_builder = InlineKeyboardBuilder()
     back_button = types.InlineKeyboardButton(text="Back",
                                              callback_data=create_callback_profile(level=current_level - 2))

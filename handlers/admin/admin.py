@@ -158,7 +158,7 @@ async def receive_new_items_file(message: types.message, state: FSMContext):
         file_id = message.document.file_id
         file = await bot.get_file(file_id)
         await bot.download_file(file.file_path, file_name)
-        adding_result = await NewItemsManager.add(file_name)
+        adding_result = NewItemsManager.add(file_name)
         if isinstance(adding_result, BaseException):
             await message.answer(text=f"<b>Exception:</b>\n<code>{adding_result}</code>", parse_mode=ParseMode.HTML)
         elif type(adding_result) is int:
@@ -172,7 +172,7 @@ async def receive_new_items_file(message: types.message, state: FSMContext):
 
 
 async def send_restocking_message(callback: CallbackQuery):
-    message = await NewItemsManager.generate_restocking_message()
+    message = NewItemsManager.generate_restocking_message()
     await callback.message.answer(message, parse_mode=ParseMode.HTML,
                                   reply_markup=AdminConstants.confirmation_builder.as_markup())
 
@@ -268,7 +268,7 @@ async def confirm_and_delete(callback: CallbackQuery):
 async def make_refund_markup():
     refund_builder = InlineKeyboardBuilder()
     not_refunded_buy_ids = BuyService.get_not_refunded_buy_ids()
-    refund_data = await OtherSQLQuery.get_refund_data(not_refunded_buy_ids)
+    refund_data = OtherSQLQuery.get_refund_data(not_refunded_buy_ids)
     for buy in refund_data:
         if buy.telegram_username:
             refund_buy_button = types.InlineKeyboardButton(
@@ -305,7 +305,7 @@ async def refund_confirmation(callback: CallbackQuery):
 
     confirmation_builder = InlineKeyboardBuilder()
     confirmation_builder.add(confirm_button, AdminConstants.decline_button, back_button)
-    refund_data = await OtherSQLQuery.get_refund_data_single(buy_id)
+    refund_data = OtherSQLQuery.get_refund_data_single(buy_id)
     if refund_data.telegram_username:
         await callback.message.edit_text(
             text=f"<b>Do you really want to refund user @{refund_data.telegram_username} "
@@ -325,7 +325,7 @@ async def make_refund(callback: CallbackQuery):
     buy_id = int(unpacked_callback.args_to_action)
     is_confirmed = unpacked_callback.action == "confirm_refund"
     if is_confirmed:
-        refund_data = await OtherSQLQuery.get_refund_data_single(buy_id)
+        refund_data = OtherSQLQuery.get_refund_data_single(buy_id)
         BuyService.refund(buy_id, refund_data)
         await NotificationManager.send_refund_message(refund_data)
         if refund_data.telegram_username:

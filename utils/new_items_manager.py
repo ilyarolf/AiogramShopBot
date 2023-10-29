@@ -25,7 +25,7 @@ class NewItemsManager:
             return e
 
     @staticmethod
-    async def generate_restocking_message():
+    def generate_restocking_message():
         new_items = ItemService.get_new_items()
         filtered_items = {}
         for item in new_items:
