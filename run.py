@@ -4,11 +4,13 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot import dp, main
 from config import SUPPORT_LINK
+import logging
+
 from handlers.admin.admin import admin_router
 from handlers.user.all_categories import all_categories_router
 from handlers.user.my_profile import my_profile_router
-from models.user import User
-import logging
+from services.user import UserService
+from utils.custom_filters import IsUserExistFilter
 
 logging.basicConfig(level=logging.INFO)
 
@@ -23,17 +25,15 @@ async def start(message: types.message):
     start_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, keyboard=keyboard)
     user_telegram_id = message.chat.id
     user_telegram_username = message.from_user.username
-    user = User(user_telegram_id, user_telegram_username)
-    if User.is_exist(message.chat.id) is False:
-        user.create()
+    is_exist = await UserService.is_exist(user_telegram_id)
+    if is_exist is False:
+        await UserService.create(user_telegram_id, user_telegram_username)
     else:
-        telegram_username = User.get_by_tgid(user_telegram_id)["telegram_username"]
-        if telegram_username != user_telegram_username:
-            User.update_username(user_telegram_id, user_telegram_username)
+        await UserService.update_username(user_telegram_id, user_telegram_username)
     await message.answer('Hi', reply_markup=start_markup)
 
 
-@dp.message(F.text == '🤝 FAQ')
+@dp.message(F.text == '🤝 FAQ', IsUserExistFilter())
 async def faq(message: types.message):
     faq_string = """<b>In our store ignorance of the rules does not exempt you from responsibility. Buying at least 
 one product in the store you automatically agree with all the rules of the store!\n
@@ -49,7 +49,7 @@ store.
     await message.answer(faq_string, parse_mode='html')
 
 
-@dp.message(F.text == '🚀 Help')
+@dp.message(F.text == '🚀 Help', IsUserExistFilter())
 async def support(message: types.message):
     admin_keyboard_builder = InlineKeyboardBuilder()
 

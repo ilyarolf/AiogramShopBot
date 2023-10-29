@@ -8,13 +8,14 @@ from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_applicati
 from aiohttp import web
 
 from config import TOKEN, WEBHOOK_URL, ADMIN_ID_LIST
-from db import db
+from db import create_db_and_tables
 
 bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(storage=MemoryStorage())
 
 
 async def on_startup(bot: Bot):
+    await create_db_and_tables()
     await bot.set_webhook(WEBHOOK_URL)
     for admin in ADMIN_ID_LIST:
         try:
@@ -25,7 +26,6 @@ async def on_startup(bot: Bot):
 
 async def on_shutdown(dp):
     logging.warning('Shutting down..')
-    db.close()
 
     await bot.delete_webhook()
     await dp.storage.close()

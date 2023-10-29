@@ -1,21 +1,14 @@
-from db import db
+from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy.orm import relationship, backref
+
+from models.base import Base
 
 
-class BuyItem:
-    def __init__(self, item_id: int, buy_id: int):
-        self.item_id = item_id
-        self.buy_id = buy_id
+class BuyItem(Base):
+    __tablename__ = "buyItem"
 
-    def insert_new(self):
-        db.cursor.execute("INSERT INTO `buyItem` (`item_id`, `buy_id`) VALUES (?,?)", (self.item_id, self.buy_id))
-        db.connect.commit()
-
-    @staticmethod
-    def insert_many(list_items: list, buy_id: int):
-        for item in list_items:
-            BuyItem(item['item_id'], buy_id).insert_new()
-
-    @staticmethod
-    def get_items_by_buy_id(buy_id: int):
-        items = db.cursor.execute("SELECT * FROM `buyItem` WHERE `buy_id`=?", (buy_id,)).fetchall()
-        return items
+    id = Column(Integer, primary_key=True, unique=True, nullable=False)
+    buy_id = Column(Integer, ForeignKey("buys.id", ondelete="CASCADE"), nullable=False)
+    buy = relationship("Buy", backref=backref("buys", cascade="all"), passive_deletes="all")
+    item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
+    item = relationship("Item", backref=backref("items", cascade="all"), passive_deletes="all")
