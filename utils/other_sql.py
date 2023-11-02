@@ -53,5 +53,5 @@ class OtherSQLQuery:
                 BuyItem.buy_id == buy_id
             )
             buy_items = session.execute(stmt)
-            buy_items = buy_items.mappings().one()
+            buy_items = buy_items.mappings().first()
             return RefundBuyDTO(**buy_items)

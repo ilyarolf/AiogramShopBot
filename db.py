@@ -17,7 +17,7 @@ from models.user import User
 from models.buy import Buy
 from models.buyItem import BuyItem
 
-url = f"sqlite+pysqlcipher://:{DB_PASS}@/{DB_NAME}?cipher=aes-256-cfb&kdf_iter=64000"
+url = f"sqlite+pysqlcipher://:{DB_PASS}@/{DB_NAME}"
 
 engine = create_engine(url, echo=True, module=sqlcipher3)
 session_maker = sessionmaker(engine)
