@@ -61,6 +61,7 @@ async def create_subcategory_buttons(category: str):
     subcategories = await ItemService.get_unsold_subcategories_by_category(category)
     subcategories_builder = InlineKeyboardBuilder()
     for subcategory in subcategories:
+        # TODO("Finish subcategory buttons generation")
         subcategory_price = await ItemService.get_price_by_subcategory(subcategory)
         available_quantity = await ItemService.get_available_quantity(subcategory)
         subcategory_inline_button = create_callback_all_categories(level=current_level + 1,

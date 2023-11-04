@@ -4,6 +4,7 @@ from db import async_session_maker
 from models.buyItem import BuyItem
 from models.category import Category
 from models.item import Item
+from models.subcategory import Subcategory
 from services.category import CategoryService
 
 
@@ -79,17 +80,15 @@ class ItemService:
 
     @staticmethod
     async def get_unsold_subcategories_by_category(category: str) -> list[str]:
-        category = await CategoryService.get_or_create_one(category)
-        category_id = int(category.id)
         async with async_session_maker() as session:
-            stmt = select(Item.subcategory).where(Item.category_id == category_id, Item.is_sold == 0).distinct()
+            stmt = select(Subcategory.name).join(Item).join(Category).where(Category.name == category).distinct()
             subcategories = await session.execute(stmt)
             return subcategories.scalars().all()
 
     @staticmethod
     async def get_price_by_subcategory(subcategory: str) -> float:
         async with async_session_maker() as session:
-            stmt = select(Item.price).where(Item.subcategory == subcategory).limit(1)
+            stmt = select(Item.price).join(Item.subcategory_id == Subcategory.id).where(Item.subcategory == subcategory).limit(1)
             price = await session.execute(stmt)
             return price.scalar()
 
