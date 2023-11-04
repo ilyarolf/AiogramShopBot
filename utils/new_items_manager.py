@@ -1,4 +1,5 @@
 from models.item import Item
+from services.category import CategoryService
 from services.item import ItemService
 from json import load
 from pathlib import Path
@@ -10,6 +11,9 @@ class NewItemsManager:
     def __parse_items_from_file(path_to_file: str) -> list[Item]:
         with open(path_to_file, "r", encoding="utf-8") as new_items_file:
             items_dict = load(new_items_file)["items"]
+            for item in items_dict:
+                category_id = CategoryService.get_id_by_category_name(item['category'])
+                item[category_id] = category_id
             new_items = [Item(**item) for item in items_dict]
             return new_items
 
@@ -29,11 +33,11 @@ class NewItemsManager:
         new_items = ItemService.get_new_items()
         filtered_items = {}
         for item in new_items:
-            if item.category not in filtered_items:
-                filtered_items[item.category] = {}
-            if item.subcategory not in filtered_items[item.category]:
-                filtered_items[item.category][item.subcategory] = []
-            filtered_items[item.category][item.subcategory].append(item)
+            if item.category_id not in filtered_items:
+                filtered_items[item.category_id] = {}
+            if item.subcategory not in filtered_items[item.category_id]:
+                filtered_items[item.category_id][item.subcategory] = []
+            filtered_items[item.category_id][item.subcategory].append(item)
         update_data = date.today()
         message = f'<b>📅 Update {update_data}\n'
         for category, subcategory_item_dict in filtered_items.items():

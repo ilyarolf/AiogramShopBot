@@ -2,7 +2,9 @@ from sqlalchemy import select, func, update
 
 from db import session_maker
 from models.buyItem import BuyItem
+from models.category import Category
 from models.item import Item
+from services.category import CategoryService
 
 
 class ItemService:
@@ -16,14 +18,14 @@ class ItemService:
     @staticmethod
     def get_unsold_categories() -> list[dict]:
         with session_maker() as session:
-            stmt = select(Item.category).where(Item.is_sold == 0).distinct()
+            stmt = select(Item.category_id).where(Item.is_sold == 0).distinct()
             category_list = session.execute(stmt)
             return category_list.mappings().all()
 
     @staticmethod
     def get_all_categories() -> list[dict]:
         with session_maker() as session:
-            stmt = select(Item.category).distinct()
+            stmt = select(Item.category_id).distinct()
             category_list = session.execute(stmt)
             return category_list.mappings().all()
 
@@ -77,7 +79,7 @@ class ItemService:
     @staticmethod
     def get_unsold_subcategories_by_category(category: str) -> list[str]:
         with session_maker() as session:
-            stmt = select(Item.subcategory).where(Item.category == category, Item.is_sold == 0).distinct()
+            stmt = select(Item.subcategory).where(Item.category_id == category, Item.is_sold == 0).distinct()
             subcategories = session.execute(stmt)
             return subcategories.scalars().all()
 
@@ -114,7 +116,7 @@ class ItemService:
     @staticmethod
     def delete_category(category_name: str):
         with session_maker() as session:
-            stmt = select(Item).where(Item.category == category_name, Item.is_sold == 0)
+            stmt = select(Item).where(Item.category_id == category_name, Item.is_sold == 0)
             categories = session.execute(stmt)
             categories = categories.scalars().all()
             for category in categories:
@@ -134,8 +136,14 @@ class ItemService:
     @staticmethod
     def add_many(new_items: list[Item]):
         with session_maker() as session:
-            session.add_all(new_items)
+            for item in new_items:
+                if item.category_id is None:
+                    category_obj = Category(name=item.category)
+                    item.category = CategoryService.add_new_category(category_obj)
+                session.add(item)
             session.commit()
+            # session.add_all(new_items)
+            # session.commit()
 
     @staticmethod
     def get_new_items():
