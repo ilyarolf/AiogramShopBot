@@ -1,4 +1,6 @@
+from models.category import Category
 from models.item import Item
+from services.category import CategoryService
 from services.item import ItemService
 from json import load
 from pathlib import Path
@@ -10,7 +12,12 @@ class NewItemsManager:
     async def __parse_items_from_file(path_to_file: str) -> list[Item]:
         with open(path_to_file, "r", encoding="utf-8") as new_items_file:
             items_dict = load(new_items_file)["items"]
-            new_items = [Item(**item) for item in items_dict]
+            new_items = list()
+            for item in items_dict:
+                category_obj = await CategoryService.get_or_create_one(item['category'])
+                item['category_id'] = category_obj.id
+                item.pop('category')
+                new_items.append(Item(**item))
             return new_items
 
     @staticmethod
