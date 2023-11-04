@@ -2,6 +2,7 @@ from sqlalchemy import select, func, update
 
 from db import async_session_maker
 from models.buyItem import BuyItem
+from models.category import Category
 from models.item import Item
 
 
@@ -14,11 +15,12 @@ class ItemService:
             return item.scalar()
 
     @staticmethod
-    async def get_unsold_categories() -> list[dict]:
+    async def get_unsold_categories() -> list[str]:
         async with async_session_maker() as session:
-            stmt = select(Item.category).where(Item.is_sold == 0).distinct()
-            category_list = await session.execute(stmt)
-            return category_list.mappings().all()
+            stmt = select(Category.name).join(Item).where(Item.is_sold == 0).distinct()
+            result = await session.execute(stmt)
+            category_names = result.scalars().all()
+            return category_names
 
     @staticmethod
     async def get_all_categories() -> list[dict]:
