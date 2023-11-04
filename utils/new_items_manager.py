@@ -36,11 +36,12 @@ class NewItemsManager:
         new_items = await ItemService.get_new_items()
         filtered_items = {}
         for item in new_items:
-            if item.category not in filtered_items:
-                filtered_items[item.category] = {}
-            if item.subcategory not in filtered_items[item.category]:
-                filtered_items[item.category][item.subcategory] = []
-            filtered_items[item.category][item.subcategory].append(item)
+            category = await CategoryService.get_by_primary_key(item.category_id)
+            if category.name not in filtered_items:
+                filtered_items[category.name] = {}
+            if item.subcategory not in filtered_items[category.name]:
+                filtered_items[category.name][item.subcategory] = []
+            filtered_items[category.name][item.subcategory].append(item)
         update_data = date.today()
         message = f'<b>📅 Update {update_data}\n'
         for category, subcategory_item_dict in filtered_items.items():

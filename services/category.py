@@ -20,3 +20,16 @@ class CategoryService:
             else:
                 return category
 
+    @staticmethod
+    async def get_by_primary_key(primary_key: int) -> Category:
+        async with async_session_maker() as session:
+            stmt = select(Category).where(Category.id == primary_key)
+            category = await session.execute(stmt)
+            return category.scalar()
+
+    @staticmethod
+    async def get_all_categories():
+        async with async_session_maker() as session:
+            stmt = select(Category).distinct()
+            categories = await session.execute(stmt)
+            return categories.scalars().all()
