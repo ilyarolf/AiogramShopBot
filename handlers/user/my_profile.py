@@ -117,7 +117,7 @@ async def purchase_history(callback: CallbackQuery):
         item_from_history_callback = create_callback_profile(current_level + 2, action="get_order",
                                                              args_for_action=str(buy_id))
         order_inline = types.InlineKeyboardButton(
-            text=f"{item.subcategory} | Total Price: {total_price}$ | Quantity: {quantity} pcs",
+            text=f"{item.subcategory.name} | Total Price: {total_price}$ | Quantity: {quantity} pcs",
             callback_data=item_from_history_callback
         )
         orders_markup_builder.add(order_inline)

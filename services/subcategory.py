@@ -1,6 +1,7 @@
 from sqlalchemy import select
 
 from db import async_session_maker
+from models.item import Item
 from models.subcategory import Subcategory
 
 
@@ -19,3 +20,31 @@ class SubcategoryService:
                 return new_category_obj
             else:
                 return subcategory
+
+    @staticmethod
+    async def get_all() -> list[Subcategory]:
+        async with async_session_maker() as session:
+            stmt = select(Subcategory).distinct()
+            subcategories = await session.execute(stmt)
+            subcategories = subcategories.scalars().all()
+            return subcategories
+
+    @staticmethod
+    async def get_by_primary_key(subcategory_id) -> Subcategory:
+        async with async_session_maker() as session:
+            stmt = select(Subcategory).where(Subcategory.id == subcategory_id)
+            subcategory = await session.execute(stmt)
+            return subcategory.scalar()
+
+    @staticmethod
+    async def delete_if_not_used(subcategory_id: int):
+        async with async_session_maker() as session:
+            stmt = select(Subcategory).join(Item, Item.subcategory_id == subcategory_id).where(
+                Subcategory.id == subcategory_id)
+            result = await session.execute(stmt)
+            if result.scalar() is None:
+                get_stmt = select(Subcategory).where(Subcategory.id == subcategory_id)
+                subcategory = await session.execute(get_stmt)
+                subcategory = subcategory.scalar()
+                await session.delete(subcategory)
+                await session.commit()
