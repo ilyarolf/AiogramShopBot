@@ -4,6 +4,7 @@ from typing import Union
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from services.subcategory import SubcategoryService
 from services.user import UserService
 from utils.CryptoAddressGenerator import CryptoAddressGenerator
 from bot import bot
@@ -66,15 +67,16 @@ class NotificationManager:
         await NotificationManager.send_to_admins(message, user_button)
 
     @staticmethod
-    async def new_buy(subcategory: str, quantity: int, total_price: float, user: User):
+    async def new_buy(subcategory_id: int, quantity: int, total_price: float, user: User):
+        subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
         message = ""
         username = user.telegram_username
         telegram_id = user.telegram_id
         user_button = await NotificationManager.make_user_button(username)
         if username:
             message += f"A new purchase by user @{username} for the amount of ${total_price} for the " \
-                       f"purchase of a {quantity} pcs {subcategory}."
+                       f"purchase of a {quantity} pcs {subcategory.name}."
         else:
             message += f"A new purchase by user with ID:{telegram_id} for the amount of ${total_price} for the " \
-                       f"purchase of a {quantity} pcs {subcategory}."
+                       f"purchase of a {quantity} pcs {subcategory.name}."
         await NotificationManager.send_to_admins(message, user_button)
