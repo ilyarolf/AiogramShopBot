@@ -259,10 +259,10 @@ async def confirm_and_delete(callback: CallbackQuery):
     back_to_main_builder = InlineKeyboardBuilder()
     back_to_main_builder.add(AdminConstants.back_to_main_button)
     if entity_to_delete == "category":
+        #TODO("Implement cascade delete subcategories, items with subcategories by category")
         category = await CategoryService.get_by_primary_key(args_to_action)
         message_text = f"<b>Successfully deleted {category.name} {entity_to_delete}!</b>"
-        await ItemService.delete_with_category_id(args_to_action)
-        await CategoryService.delete_if_not_used(args_to_action)
+        await ItemService.delete_unsold_with_category_id(args_to_action)
         await callback.message.edit_text(text=message_text,
                                          parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
     elif entity_to_delete == "subcategory":

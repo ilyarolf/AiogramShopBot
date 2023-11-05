@@ -2,7 +2,6 @@ from sqlalchemy import select, func, update
 
 from db import async_session_maker
 from models.buyItem import BuyItem
-from models.category import Category
 from models.item import Item
 from models.subcategory import Subcategory
 
@@ -85,13 +84,13 @@ class ItemService:
             await session.commit()
 
     @staticmethod
-    async def delete_with_category_id(category_id: int):
+    async def delete_unsold_with_category_id(category_id: int):
         async with async_session_maker() as session:
             stmt = select(Item).where(Item.category_id == category_id, Item.is_sold == 0)
-            categories = await session.execute(stmt)
-            categories = categories.scalars().all()
-            for category in categories:
-                await session.delete(category)
+            items = await session.execute(stmt)
+            items = items.scalars().all()
+            for item in items:
+                await session.delete(item)
             await session.commit()
 
     @staticmethod

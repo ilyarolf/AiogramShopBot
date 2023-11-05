@@ -38,6 +38,7 @@ class SubcategoryService:
 
     @staticmethod
     async def delete_if_not_used(subcategory_id: int):
+        # TODO("Need testing")
         async with async_session_maker() as session:
             stmt = select(Subcategory).join(Item, Item.subcategory_id == subcategory_id).where(
                 Subcategory.id == subcategory_id)
