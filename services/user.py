@@ -47,7 +47,8 @@ class UserService:
         async with async_session_maker() as session:
             user_from_db = await UserService.get_by_tgid(telegram_id)
             if user_from_db and user_from_db.telegram_username != telegram_username:
-                user_from_db.telegram_username = telegram_username
+                stmt = update(User).where(User.telegram_id == telegram_id).values(telegram_username=telegram_username)
+                await session.execute(stmt)
                 await session.commit()
 
     @staticmethod

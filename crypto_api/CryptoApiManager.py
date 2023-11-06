@@ -5,9 +5,9 @@ import grequests
 
 class CryptoApiManager:
     def __init__(self, btc_address, ltc_address, trx_address):
-        self.btc_address = btc_address
-        self.ltc_address = ltc_address
-        self.trx_address = trx_address
+        self.btc_address = btc_address.strip()
+        self.ltc_address = ltc_address.strip()
+        self.trx_address = trx_address.strip()
 
     async def get_top_ups(self):
         urls = {
