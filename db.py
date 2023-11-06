@@ -1,10 +1,10 @@
 from pathlib import Path
 
-from sqlalchemy import event, Engine
+from sqlalchemy import event, Engine, inspect
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-import config
 from config import DB_NAME
 from models.base import Base
+
 """
 Imports of these models are needed to correctly create tables in the database.
 For more information see https://stackoverflow.com/questions/7478403/sqlalchemy-classes-across-files
@@ -29,9 +29,17 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor.close()
 
 
+def check_all_tables_exist(db_engine):
+    insp = inspect(db_engine)
+    for table in Base.metadata.tables.values():
+        if not insp.has_table(table.name):
+            return False
+    return True
+
+
 async def create_db_and_tables():
     async with engine.begin() as conn:
-        if Path(config.DB_NAME).exists():
+        if check_all_tables_exist(engine):
             pass
         else:
             await conn.run_sync(Base.metadata.drop_all)
