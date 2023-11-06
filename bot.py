@@ -26,7 +26,6 @@ async def on_startup(bot: Bot):
 
 async def on_shutdown(dp):
     logging.warning('Shutting down..')
-    # db.close()
 
     await bot.delete_webhook()
     await dp.storage.close()

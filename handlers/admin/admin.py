@@ -14,7 +14,9 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot import bot
 from services.buy import BuyService
+from services.category import CategoryService
 from services.item import ItemService
+from services.subcategory import SubcategoryService
 from services.user import UserService
 from utils.custom_filters import AdminIdFilter
 from utils.new_items_manager import NewItemsManager
@@ -194,9 +196,9 @@ async def delete_category(callback: CallbackQuery):
     categories = ItemService.get_all_categories()
     delete_category_builder = InlineKeyboardBuilder()
     for category in categories:
-        category_name = category['category']
+        category_name = category.name
         delete_category_callback = create_admin_callback(level=current_level + 2, action="delete_category",
-                                                         args_to_action=category_name)
+                                                         args_to_action=category.id)
         delete_category_button = types.InlineKeyboardButton(text=category_name, callback_data=delete_category_callback)
         delete_category_builder.add(delete_category_button)
     delete_category_builder.add(AdminConstants.back_to_main_button)
@@ -207,12 +209,12 @@ async def delete_category(callback: CallbackQuery):
 
 async def delete_subcategory(callback: CallbackQuery):
     current_level = AdminCallback.unpack(callback.data).level
-    subcategories = ItemService.get_all_subcategories()
+    subcategories = SubcategoryService.get_all()
     delete_subcategory_builder = InlineKeyboardBuilder()
     for subcategory in subcategories:
         delete_category_callback = create_admin_callback(level=current_level + 1, action="delete_subcategory",
-                                                         args_to_action=subcategory)
-        delete_category_button = types.InlineKeyboardButton(text=subcategory,
+                                                         args_to_action=subcategory.id)
+        delete_category_button = types.InlineKeyboardButton(text=subcategory.name,
                                                             callback_data=delete_category_callback)
         delete_subcategory_builder.add(delete_category_button)
     delete_subcategory_builder.add(AdminConstants.back_to_main_button)
@@ -236,14 +238,16 @@ async def delete_confirmation(callback: CallbackQuery):
     delete_markup.add(confirm_button, decline_button)
     entity_to_delete = action.split('_')[-1]
     if entity_to_delete == "category":
-        category_name = args_to_action
-        await callback.message.edit_text(text=f"<b>Do you really want to delete the category {category_name}?</b>",
+        category_id = args_to_action
+        category = await CategoryService.get_by_primary_key(category_id)
+        await callback.message.edit_text(text=f"<b>Do you really want to delete the category {category.name}?</b>",
                                          parse_mode=ParseMode.HTML,
                                          reply_markup=delete_markup.as_markup())
     elif entity_to_delete == "subcategory":
-        subcategory_name = args_to_action
+        subcategory_id = args_to_action
+        subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
         await callback.message.edit_text(
-            text=f"<b>Do you really want to delete the subcategory {subcategory_name}?</b>",
+            text=f"<b>Do you really want to delete the subcategory {subcategory.name}?</b>",
             parse_mode=ParseMode.HTML,
             reply_markup=delete_markup.as_markup())
 
@@ -254,13 +258,18 @@ async def confirm_and_delete(callback: CallbackQuery):
     entity_to_delete = unpacked_callback.action.split('_')[-1]
     back_to_main_builder = InlineKeyboardBuilder()
     back_to_main_builder.add(AdminConstants.back_to_main_button)
-    message_text = f"<b>Successfully deleted {args_to_action} {entity_to_delete}!</b>"
     if entity_to_delete == "category":
-        ItemService.delete_category(args_to_action)
+        #TODO("Implement cascade delete subcategories, items with subcategories by category")
+        category = await CategoryService.get_by_primary_key(args_to_action)
+        message_text = f"<b>Successfully deleted {category.name} {entity_to_delete}!</b>"
+        ItemService.delete_unsold_with_category_id(args_to_action)
         await callback.message.edit_text(text=message_text,
                                          parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
     elif entity_to_delete == "subcategory":
-        ItemService.delete_subcategory(args_to_action)
+        subcategory = await SubcategoryService.get_by_primary_key(args_to_action)
+        message_text = f"<b>Successfully deleted {subcategory.name} {entity_to_delete}!</b>"
+        ItemService.delete_with_subcategory_id(args_to_action)
+        SubcategoryService.delete_if_not_used(args_to_action)
         await callback.message.edit_text(text=message_text,
                                          parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
 

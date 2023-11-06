@@ -12,8 +12,9 @@ class BuyService:
     def get_buys_by_buyer_id(buyer_id: int):
         with session_maker() as session:
             stmt = select(Buy).where(Buy.buyer_id == buyer_id)
-            buys = session.execute(stmt)
-            return list(buys.scalars().all())
+            buys = await session.execute(stmt)
+            return buys.scalars().all()
+            # list(buys.scalars().all())
 
     @staticmethod
     def insert_new(user: User, quantity: int, total_price: float) -> int:
