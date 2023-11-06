@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from sqlalchemy import event, Engine, create_engine
+from sqlalchemy import event, Engine, create_engine, inspect
 from sqlalchemy.orm import sessionmaker
 
 from config import DB_NAME, DB_PASS
@@ -32,9 +32,16 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor.close()
 
 
+def check_all_tables_exist(db_engine):
+    insp = inspect(db_engine)
+    for table in Base.metadata.tables.values():
+        if not insp.has_table(table.name):
+            return False
+    return True
+
+
 async def create_db_and_tables():
-    # TODO("Doesn't work like I need")
-    if Path(DB_NAME).exists():
+    if check_all_tables_exist(engine):
         pass
     else:
         Base.metadata.drop_all(bind=engine)

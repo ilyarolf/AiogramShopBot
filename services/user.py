@@ -47,7 +47,8 @@ class UserService:
         with session_maker() as session:
             user_from_db = UserService.get_by_tgid(telegram_id)
             if user_from_db and user_from_db.telegram_username != telegram_username:
-                user_from_db.telegram_username = telegram_username
+                stmt = update(User).where(User.telegram_id == telegram_id).values(telegram_username=telegram_username)
+                session.execute(stmt)
                 session.commit()
 
     @staticmethod

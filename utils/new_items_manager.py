@@ -53,6 +53,6 @@ class NewItemsManager:
         for category, subcategory_item_dict in filtered_items.items():
             message += f'\n📁 Category {category}\n\n'
             for subcategory, item in subcategory_item_dict.items():
-                message += f'📄 Subcategory {subcategory} {len(item)} pcs\n'
+                message += f'📄 Subcategory {subcategory.name} {len(item)} pcs\n'
         message += "</b>"
         return message
