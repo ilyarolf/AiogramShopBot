@@ -17,8 +17,8 @@ class NewItemsManager:
             items_dict = load(new_items_file)["items"]
             new_items = list()
             for item in items_dict:
-                category_obj = await CategoryService.get_or_create_one(item['category'])
-                subcategory_obj = await SubcategoryService.get_or_create_one(item['subcategory'])
+                category_obj = CategoryService.get_or_create_one(item['category'])
+                subcategory_obj = SubcategoryService.get_or_create_one(item['subcategory'])
                 item['category_id'] = category_obj.id
                 item['subcategory_id'] = subcategory_obj.id
                 item.pop('category')
