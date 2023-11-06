@@ -7,6 +7,7 @@ from db import async_session_maker
 from models.buy import Buy
 from models.buyItem import BuyItem
 from models.item import Item
+from models.subcategory import Subcategory
 from models.user import User
 
 
@@ -39,7 +40,7 @@ class OtherSQLQuery:
                 User.telegram_username,
                 User.telegram_id,
                 User.id.label("user_id"),
-                Item.subcategory,
+                Subcategory.name.label("subcategory"),
                 Buy.total_price,
                 Buy.quantity,
                 Buy.id.label("buy_id")
@@ -49,9 +50,11 @@ class OtherSQLQuery:
                 User, User.id == Buy.buyer_id
             ).join(
                 Item, Item.id == BuyItem.item_id
+            ).join(
+                Subcategory, Subcategory.id == Item.subcategory_id
             ).where(
                 BuyItem.buy_id == buy_id
-            )
+            ).limit(1)
             buy_items = await session.execute(stmt)
             buy_items = buy_items.mappings().one()
             return RefundBuyDTO(**buy_items)
