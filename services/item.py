@@ -3,6 +3,7 @@ from sqlalchemy import select, func, update
 from db import async_session_maker
 from models.buyItem import BuyItem
 from models.item import Item
+from models.subcategory import Subcategory
 
 
 class ItemService:
@@ -14,42 +15,27 @@ class ItemService:
             return item.scalar()
 
     @staticmethod
-    async def get_unsold_categories() -> list[dict]:
+    async def get_available_quantity(subcategory_id: int) -> int:
         async with async_session_maker() as session:
-            stmt = select(Item.category).where(Item.is_sold == 0).distinct()
-            category_list = await session.execute(stmt)
-            return category_list.mappings().all()
-
-    @staticmethod
-    async def get_all_categories() -> list[dict]:
-        async with async_session_maker() as session:
-            stmt = select(Item.category).distinct()
-            category_list = await session.execute(stmt)
-            return category_list.mappings().all()
-
-    @staticmethod
-    async def get_available_quantity(subcategory: str) -> int:
-        async with async_session_maker() as session:
-            stmt = (
-                select(func.count())
-                .select_from(Item)
-                .where(Item.is_sold == 0)
-                .where(Item.subcategory == subcategory)
-            )
+            stmt = select(func.count(Item.id)).where(Item.subcategory_id == subcategory_id, Item.is_sold == 0)
             available_quantity = await session.execute(stmt)
             return available_quantity.scalar()
 
     @staticmethod
-    async def get_description(subcategory: str) -> str:
+    async def get_description(subcategory_id: int) -> str:
         async with async_session_maker() as session:
-            stmt = select(Item.description).where(Item.subcategory == subcategory).distinct()
+            stmt = select(Item.description, Item.subcategory_id).join(Subcategory,
+                                                                      Item.subcategory_id == Subcategory.id).where(
+                Item.subcategory_id == subcategory_id).limit(1)
             description = await session.execute(stmt)
             return description.scalar()
 
     @staticmethod
-    async def get_bought_items(subcategory: str, quantity: int):
+    async def get_bought_items(subcategory_id: int, quantity: int):
         async with async_session_maker() as session:
-            stmt = select(Item).where(Item.subcategory == subcategory, Item.is_sold == 0).limit(quantity)
+            stmt = select(Item).join(Subcategory, Item.subcategory_id == Subcategory.id).where(
+                Subcategory.id == subcategory_id,
+                Item.is_sold == 0).limit(quantity)
             result = await session.execute(stmt)
             bought_items = result.scalars().all()
             return list(bought_items)
@@ -75,16 +61,18 @@ class ItemService:
             return items
 
     @staticmethod
-    async def get_unsold_subcategories_by_category(category: str) -> list[str]:
+    async def get_unsold_subcategories_by_category(category_id: int) -> list[Item]:
         async with async_session_maker() as session:
-            stmt = select(Item.subcategory).where(Item.category == category, Item.is_sold == 0).distinct()
+            stmt = select(Item).join(Subcategory, Subcategory.id == Item.subcategory_id).where(
+                Item.category_id == category_id, Item.is_sold == 0).group_by(Item.subcategory_id)
             subcategories = await session.execute(stmt)
             return subcategories.scalars().all()
 
     @staticmethod
-    async def get_price_by_subcategory(subcategory: str) -> float:
+    async def get_price_by_subcategory(subcategory_id: int) -> float:
         async with async_session_maker() as session:
-            stmt = select(Item.price).where(Item.subcategory == subcategory).limit(1)
+            stmt = select(Item.price).join(Subcategory, Subcategory.id == Item.subcategory_id).where(
+                Subcategory.id == subcategory_id)
             price = await session.execute(stmt)
             return price.scalar()
 
@@ -96,39 +84,23 @@ class ItemService:
             await session.commit()
 
     @staticmethod
-    async def get_unsold_subcategories():
+    async def delete_unsold_with_category_id(category_id: int):
         async with async_session_maker() as session:
-            stmt = select(Item.subcategory).where(Item.is_sold == 0).distinct()
-            subcategories = await session.execute(stmt)
-            subcategories = subcategories.scalars().all()
-            return subcategories
+            stmt = select(Item).where(Item.category_id == category_id, Item.is_sold == 0)
+            items = await session.execute(stmt)
+            items = items.scalars().all()
+            for item in items:
+                await session.delete(item)
+            await session.commit()
 
     @staticmethod
-    async def get_all_subcategories():
+    async def delete_with_subcategory_id(subcategory_id):
         async with async_session_maker() as session:
-            stmt = select(Item.subcategory).distinct()
-            subcategories = await session.execute(stmt)
-            subcategories = subcategories.scalars().all()
-            return subcategories
-
-    @staticmethod
-    async def delete_category(category_name: str):
-        async with async_session_maker() as session:
-            stmt = select(Item).where(Item.category == category_name, Item.is_sold == 0)
+            stmt = select(Item).where(Item.subcategory_id == subcategory_id, Item.is_sold == 0)
             categories = await session.execute(stmt)
             categories = categories.scalars().all()
             for category in categories:
                 await session.delete(category)
-            await session.commit()
-
-    @staticmethod
-    async def delete_subcategory(subcategory: str):
-        async with async_session_maker() as session:
-            stmt = select(Item).where(Item.subcategory == subcategory, Item.is_sold == 0)
-            subcategory_items = await session.execute(stmt)
-            subcategory_items = subcategory_items.scalars().all()
-            for item in subcategory_items:
-                await session.delete(item)
             await session.commit()
 
     @staticmethod
@@ -138,7 +110,7 @@ class ItemService:
             await session.commit()
 
     @staticmethod
-    async def get_new_items():
+    async def get_new_items() -> list[Item]:
         async with async_session_maker() as session:
             stmt = select(Item).where(Item.is_new == 1)
             new_items = await session.execute(stmt)
