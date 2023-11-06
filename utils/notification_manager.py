@@ -68,7 +68,7 @@ class NotificationManager:
 
     @staticmethod
     async def new_buy(subcategory_id: int, quantity: int, total_price: float, user: User):
-        subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
+        subcategory = SubcategoryService.get_by_primary_key(subcategory_id)
         message = ""
         username = user.telegram_username
         telegram_id = user.telegram_id

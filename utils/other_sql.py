@@ -55,6 +55,6 @@ class OtherSQLQuery:
             ).where(
                 BuyItem.buy_id == buy_id
             ).limit(1)
-            buy_items = await session.execute(stmt)
+            buy_items = session.execute(stmt)
             buy_items = buy_items.mappings().one()
             return RefundBuyDTO(**buy_items)

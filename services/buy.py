@@ -12,7 +12,7 @@ class BuyService:
     def get_buys_by_buyer_id(buyer_id: int):
         with session_maker() as session:
             stmt = select(Buy).where(Buy.buyer_id == buyer_id)
-            buys = await session.execute(stmt)
+            buys = session.execute(stmt)
             return buys.scalars().all()
             # list(buys.scalars().all())
 

@@ -47,7 +47,7 @@ async def all_categories_text_message(message: types.message):
 
 
 async def create_category_buttons(current_level: int):
-    categories = await CategoryService.get_unsold()
+    categories = CategoryService.get_unsold()
     if categories:
         categories_builder = InlineKeyboardBuilder()
         for category in categories:
@@ -124,7 +124,7 @@ async def select_quantity(callback: CallbackQuery):
                                                                                           category_id=category_id))
     count_builder.add(back_button)
     count_builder.adjust(3)
-    subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
+    subcategory = SubcategoryService.get_by_primary_key(subcategory_id)
     await callback.message.edit_text(f'<b>You choose:{subcategory.name}\n'
                                      f'Price:${price}\n'
                                      f'Description:{description}\n'
@@ -165,7 +165,7 @@ async def buy_confirmation(callback: CallbackQuery):
                                                                                           price=price))
     confirmation_builder.add(confirmation_button, decline_button, back_button)
     confirmation_builder.adjust(2)
-    subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
+    subcategory = SubcategoryService.get_by_primary_key(subcategory_id)
     await callback.message.edit_text(text=f'<b>You choose:{subcategory.name}\n'
                                           f'Price:${price}\n'
                                           f'Description:{description}\n'
@@ -193,11 +193,11 @@ async def buy_processing(callback: CallbackQuery):
         sold_items = ItemService.get_bought_items(subcategory_id, quantity)
         message = create_message_with_bought_items(sold_items)
         user = UserService.get_by_tgid(telegram_id)
-        new_buy_id = await BuyService.insert_new(user, quantity, total_price)
+        new_buy_id = BuyService.insert_new(user, quantity, total_price)
         BuyItemService.insert_many(sold_items, new_buy_id)
         ItemService.set_items_sold(sold_items)
-        callback.message.edit_text(text=message, parse_mode=ParseMode.HTML)
-        NotificationManager.new_buy(subcategory_id, quantity, total_price, user)
+        await callback.message.edit_text(text=message, parse_mode=ParseMode.HTML)
+        await NotificationManager.new_buy(subcategory_id, quantity, total_price, user)
     elif confirmation is False:
         await callback.message.edit_text(text='<b>Declined!</b>', parse_mode=ParseMode.HTML,
                                          reply_markup=back_to_main_builder.as_markup())

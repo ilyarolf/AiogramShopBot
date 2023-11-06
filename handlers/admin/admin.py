@@ -193,7 +193,7 @@ async def get_new_users(callback: CallbackQuery):
 
 async def delete_category(callback: CallbackQuery):
     current_level = AdminCallback.unpack(callback.data).level
-    categories = ItemService.get_all_categories()
+    categories = CategoryService.get_all_categories()
     delete_category_builder = InlineKeyboardBuilder()
     for category in categories:
         category_name = category.name
@@ -239,13 +239,13 @@ async def delete_confirmation(callback: CallbackQuery):
     entity_to_delete = action.split('_')[-1]
     if entity_to_delete == "category":
         category_id = args_to_action
-        category = await CategoryService.get_by_primary_key(category_id)
+        category = CategoryService.get_by_primary_key(category_id)
         await callback.message.edit_text(text=f"<b>Do you really want to delete the category {category.name}?</b>",
                                          parse_mode=ParseMode.HTML,
                                          reply_markup=delete_markup.as_markup())
     elif entity_to_delete == "subcategory":
         subcategory_id = args_to_action
-        subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
+        subcategory = SubcategoryService.get_by_primary_key(subcategory_id)
         await callback.message.edit_text(
             text=f"<b>Do you really want to delete the subcategory {subcategory.name}?</b>",
             parse_mode=ParseMode.HTML,
@@ -260,13 +260,13 @@ async def confirm_and_delete(callback: CallbackQuery):
     back_to_main_builder.add(AdminConstants.back_to_main_button)
     if entity_to_delete == "category":
         #TODO("Implement cascade delete subcategories, items with subcategories by category")
-        category = await CategoryService.get_by_primary_key(args_to_action)
+        category = CategoryService.get_by_primary_key(args_to_action)
         message_text = f"<b>Successfully deleted {category.name} {entity_to_delete}!</b>"
         ItemService.delete_unsold_with_category_id(args_to_action)
         await callback.message.edit_text(text=message_text,
                                          parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
     elif entity_to_delete == "subcategory":
-        subcategory = await SubcategoryService.get_by_primary_key(args_to_action)
+        subcategory = SubcategoryService.get_by_primary_key(args_to_action)
         message_text = f"<b>Successfully deleted {subcategory.name} {entity_to_delete}!</b>"
         ItemService.delete_with_subcategory_id(args_to_action)
         SubcategoryService.delete_if_not_used(args_to_action)
