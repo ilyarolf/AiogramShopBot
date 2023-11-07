@@ -144,7 +144,8 @@ async def refresh_balance(callback: CallbackQuery):
         crypto_prices = await CryptoApiManager.get_crypto_prices()
         deposit_usd_amount = 0.0
         if sum(new_crypto_balances.values()) > sum(old_crypto_balances.values()):
-            for balance_key, balance in new_crypto_balances.items():
+            merged_deposit = {key: new_crypto_balances[key] - old_crypto_balances[key] for key in new_crypto_balances.keys()}
+            for balance_key, balance in merged_deposit.items():
                 balance_key = balance_key.split('_')[0]
                 crypto_balance_in_usd = balance * crypto_prices[balance_key]
                 deposit_usd_amount += crypto_balance_in_usd
