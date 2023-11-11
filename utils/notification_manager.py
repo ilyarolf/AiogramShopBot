@@ -55,15 +55,13 @@ class NotificationManager:
             message = f"New deposit by user with username @{username} for ${deposit_amount_usd} with "
         else:
             message = f"New deposit by user with ID {telegram_id} for ${deposit_amount_usd} with "
-        private_keys = CryptoAddressGenerator().get_private_keys(user['id'])
         for crypto_name, value in merged_crypto_balances:
             if value > 0:
                 if crypto_name == "usdt":
-                    message += f"{value} {crypto_name.upper()}\nTRX address:<code>{user['trx_address']}</code>\n" \
-                               f":Private key:<code>{private_keys[crypto_name]}</code>\n"
+                    message += f"{value} {crypto_name.upper()}\nTRX address:<code>{user['trx_address']}</code>\n"
                 else:
-                    message += f"{value} {crypto_name.upper()}\n{crypto_name.upper()} address:<code>{user[f'{crypto_name}_address']}</code>\n" \
-                               f"Private key:<code>{private_keys[crypto_name]}</code>\n"
+                    message += f"{value} {crypto_name.upper()}\n{crypto_name.upper()} address:<code>{user[f'{crypto_name}_address']}</code>\n"
+            message += f"Seed: <code>{user['seed']}</code>"
         await NotificationManager.send_to_admins(message, user_button)
 
     @staticmethod

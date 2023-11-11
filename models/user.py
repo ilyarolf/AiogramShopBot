@@ -22,3 +22,4 @@ class User(Base):
     usdt_balance = Column(Float, nullable=False, default=0.0)
     is_new = Column(Boolean, default=True)
     registered_at = Column(DateTime, default=datetime.datetime.utcnow())
+    seed = Column(String, nullable=False, unique=True)
