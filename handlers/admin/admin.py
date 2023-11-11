@@ -124,7 +124,7 @@ async def confirm_and_send(callback: CallbackQuery):
             try:
                 await callback.message.copy_to(telegram_id, reply_markup=None)
                 counter += 1
-                await asyncio.sleep(5)
+                await asyncio.sleep(1.5)
             except Exception as e:
                 logging.error(e)
         message_text = f"<b>Message sent to {counter} out of {len(telegram_ids)} people</b>"
