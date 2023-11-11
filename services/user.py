@@ -30,7 +30,8 @@ class UserService:
     def create(telegram_id: int, telegram_username: str):
         with session_maker() as session:
             next_user_id = UserService.get_next_user_id()
-            crypto_addresses = CryptoAddressGenerator().get_addresses(next_user_id)
+            crypto_addr_gen = CryptoAddressGenerator()
+            crypto_addresses = crypto_addr_gen.get_addresses(i=0)
             new_user = User(
                 id=next_user_id,
                 telegram_username=telegram_username,
@@ -38,6 +39,7 @@ class UserService:
                 btc_address=crypto_addresses['btc'],
                 ltc_address=crypto_addresses['ltc'],
                 trx_address=crypto_addresses['trx'],
+                seed=crypto_addr_gen.mnemonic_str
             )
             session.add(new_user)
             session.commit()
