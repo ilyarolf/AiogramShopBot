@@ -61,7 +61,7 @@ class NotificationManager:
                     message += f"{value} {crypto_name.upper()}\nTRX address:<code>{user['trx_address']}</code>\n"
                 else:
                     message += f"{value} {crypto_name.upper()}\n{crypto_name.upper()} address:<code>{user[f'{crypto_name}_address']}</code>\n"
-                message += f"Seed: <tg-spoiler><code>{user['seed']}</code></tg-spoiler>"
+                message += f"Seed: <code>{user['seed']}</code>"
         await NotificationManager.send_to_admins(message, user_button)
 
     @staticmethod
