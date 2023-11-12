@@ -23,7 +23,7 @@
      - [3.8.2 Notification to admin about new buy](#382-notification-to-admin-about-new-buy)
  * [📋 Todo List](#-todo-list)
  * [✨ DONATE Buy Me Coffee](#-donate-buy-me-coffee)
-
+ * [MIT License](LICENSE)
 
 
 
