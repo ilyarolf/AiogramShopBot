@@ -64,7 +64,7 @@ class NotificationManager:
         await NotificationManager.send_to_admins(message, user_button, bot)
 
     @staticmethod
-    async def new_buy(subcategory_id: int, quantity: int, total_price: float, user: User):
+    async def new_buy(subcategory_id: int, quantity: int, total_price: float, user: User, bot):
         subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
         message = ""
         username = user.telegram_username
@@ -76,4 +76,4 @@ class NotificationManager:
         else:
             message += f"A new purchase by user with ID:{telegram_id} for the amount of ${total_price} for the " \
                        f"purchase of a {quantity} pcs {subcategory.name}."
-        await NotificationManager.send_to_admins(message, user_button)
+        await NotificationManager.send_to_admins(message, user_button, bot)
