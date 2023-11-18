@@ -41,7 +41,7 @@ def create_callback_all_categories(level: int,
 all_categories_router = Router()
 
 
-@all_categories_router.message(F.text == "🔍 All categories", IsUserExistFilter())
+@all_categories_router.message(F.text == "📁 Categories", IsUserExistFilter())
 async def all_categories_text_message(message: types.message):
     await all_categories(message)
 
