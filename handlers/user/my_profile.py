@@ -27,7 +27,7 @@ def create_callback_profile(level: int, action: str = "", args_for_action=""):
     return MyProfileCallback(level=level, action=action, args_for_action=args_for_action).pack()
 
 
-@my_profile_router.message(F.text == "🎓 My profile", IsUserExistFilter())
+@my_profile_router.message(F.text == "👤 Profile", IsUserExistFilter())
 async def my_profile_text_message(message: types.message):
     await my_profile(message)
 

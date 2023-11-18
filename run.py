@@ -17,10 +17,10 @@ main_router = Router()
 
 @main_router.message(Command(commands=["start", "help"]))
 async def start(message: types.message):
-    all_categories_button = types.KeyboardButton(text='🔍 All categories')
-    my_profile_button = types.KeyboardButton(text='🎓 My profile')
-    faq_button = types.KeyboardButton(text='🤝 FAQ')
-    help_button = types.KeyboardButton(text='🚀 Help')
+    all_categories_button = types.KeyboardButton(text='📁 Categories')
+    my_profile_button = types.KeyboardButton(text='👤 Profile')
+    faq_button = types.KeyboardButton(text='ℹ️ Info')
+    help_button = types.KeyboardButton(text='🆘 Support')
     keyboard = [[all_categories_button, my_profile_button], [faq_button, help_button]]
     start_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, keyboard=keyboard)
     user_telegram_id = message.chat.id
@@ -30,26 +30,23 @@ async def start(message: types.message):
         await UserService.create(user_telegram_id, user_telegram_username)
     else:
         await UserService.update_username(user_telegram_id, user_telegram_username)
-    await message.answer('Hi', reply_markup=start_markup)
+    await message.answer('<b>Hi this is a demo of a bot for automating sales. One of the advantages of this bot is that it uses cryptocurrency as payment for goods. Contact admin if you want to buy the source code of this bot, or buy the bot turnkey.</b>', reply_markup=start_markup)
 
 
-@main_router.message(F.text == '🤝 FAQ', IsUserExistFilter())
+@main_router.message(F.text == 'ℹ️ Info', IsUserExistFilter())
 async def faq(message: types.message):
-    faq_string = """<b>In our store ignorance of the rules does not exempt you from responsibility. Buying at least 
-one product in the store you automatically agree with all the rules of the store!\n
-Rules of the store</b>\n
-❗1.In case of inadequate/offensive behavior the seller has the right to refuse the service!
-❗2.A replacement is provided only if the product is invalid.
-❗3.Replacement is provided only if there is a video proof.
-❗4.30 minutes warranty period.
-❗5.The administration is not responsible for any unlawful actions performed by the buyer with the items purchased in the
-store.
-❗6.These terms and conditions may change at any time.
-❗7.Money cannot be withdrawn from your balance."""
+    faq_string = """<b>Here you can post any information that may be useful to users of your bot.
+
+For example</b>:
+-Rule#1
+-Rule#2
+-Rule#3
+-Rule#4
+-Rule#5"""
     await message.answer(faq_string, parse_mode='html')
 
 
-@main_router.message(F.text == '🚀 Help', IsUserExistFilter())
+@main_router.message(F.text == '🆘 Support', IsUserExistFilter())
 async def support(message: types.message):
     admin_keyboard_builder = InlineKeyboardBuilder()
 
