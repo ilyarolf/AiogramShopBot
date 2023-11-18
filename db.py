@@ -30,11 +30,11 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 
 
 def check_all_tables_exist(db_engine):
-    insp = inspect(db_engine)
-    for table in Base.metadata.tables.values():
-        if not insp.has_table(table.name):
-            return False
-    return True
+    # insp = inspect(db_engine)
+    # for table in Base.metadata.tables.values():
+    #     if not insp.has_table(table.name):
+    #         return False
+    return False
 
 
 async def create_db_and_tables():

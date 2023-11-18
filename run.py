@@ -2,20 +2,20 @@ from aiogram import types, F, Router
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from bot import dp, main
 from config import SUPPORT_LINK
 import logging
 
 from handlers.admin.admin import admin_router
 from handlers.user.all_categories import all_categories_router
 from handlers.user.my_profile import my_profile_router
+from multibot import multibot_dispatcher
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 
 logging.basicConfig(level=logging.INFO)
 
 
-@dp.message(Command(commands=["start", "help"]))
+@multibot_dispatcher.message(Command(commands=["start", "help"]))
 async def start(message: types.message):
     all_categories_button = types.KeyboardButton(text='🔍 All categories')
     my_profile_button = types.KeyboardButton(text='🎓 My profile')
@@ -33,7 +33,7 @@ async def start(message: types.message):
     await message.answer('Hi', reply_markup=start_markup)
 
 
-@dp.message(F.text == '🤝 FAQ', IsUserExistFilter())
+@multibot_dispatcher.message(F.text == '🤝 FAQ', IsUserExistFilter())
 async def faq(message: types.message):
     faq_string = """<b>In our store ignorance of the rules does not exempt you from responsibility. Buying at least 
 one product in the store you automatically agree with all the rules of the store!\n
@@ -49,7 +49,7 @@ store.
     await message.answer(faq_string, parse_mode='html')
 
 
-@dp.message(F.text == '🚀 Help', IsUserExistFilter())
+@multibot_dispatcher.message(F.text == '🚀 Help', IsUserExistFilter())
 async def support(message: types.message):
     admin_keyboard_builder = InlineKeyboardBuilder()
 
@@ -61,7 +61,7 @@ main_router = Router()
 main_router.include_router(admin_router)
 main_router.include_router(my_profile_router)
 main_router.include_router(all_categories_router)
-dp.include_router(main_router)
+# dp.include_router(main_router)
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()

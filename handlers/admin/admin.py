@@ -12,7 +12,7 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from bot import bot
+# from bot import bot
 from services.buy import BuyService
 from services.category import CategoryService
 from services.item import ItemService

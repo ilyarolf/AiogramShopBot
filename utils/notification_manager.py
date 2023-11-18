@@ -7,7 +7,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from services.subcategory import SubcategoryService
 from services.user import UserService
 from utils.CryptoAddressGenerator import CryptoAddressGenerator
-from bot import bot
+# from bot import bot
 from config import ADMIN_ID_LIST
 from models.user import User
 from utils.other_sql import RefundBuyDTO
@@ -18,10 +18,10 @@ class NotificationManager:
     async def send_refund_message(refund_data: RefundBuyDTO):
         message = f"You have been refunded ${refund_data.total_price} for the purchase of {refund_data.quantity}" \
                   f" pieces of {refund_data.subcategory}"
-        try:
-            await bot.send_message(refund_data.telegram_id, f"<b>{message}</b>", parse_mode="html")
-        except Exception as e:
-            logging.error(e)
+        # try:
+        #     await bot.send_message(refund_data.telegram_id, f"<b>{message}</b>", parse_mode="html")
+        # except Exception as e:
+        #     logging.error(e)
 
     @staticmethod
     async def send_to_admins(message: str, reply_markup: types.InlineKeyboardMarkup):
