@@ -4,7 +4,6 @@ from aiogram.enums import ParseMode
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-# from bot import bot
 from crypto_api.CryptoApiManager import CryptoApiManager
 from handlers.user.all_categories import create_message_with_bought_items
 from services.buy import BuyService
@@ -88,9 +87,9 @@ async def top_up_balance(callback: CallbackQuery):
     back_button_builder = InlineKeyboardBuilder()
     back_button_builder.add(back_to_profile_button)
     back_button_markup = back_button_builder.as_markup()
-    # bot_entity = await bot.get_me()
+    bot_entity = await callback.bot.get_me()
     await callback.message.edit_text(
-        # f'<b>Deposit to the address the amount you want to top up the {bot_entity.first_name}</b> \n\n'
+        f'<b>Deposit to the address the amount you want to top up the {bot_entity.first_name}</b> \n\n'
         f'<b>Important</b>\n<i>A unique BTC/LTC/USDT addresses is given for each deposit\n'
         f'The top up takes place within 5 minutes after the transfer</i>\n\n'
         f'<b>Your BTC address\n</b><code>{btc_address}</code>\n'
@@ -143,6 +142,7 @@ async def refresh_balance(callback: CallbackQuery):
         new_crypto_balances = await CryptoApiManager(**addresses).get_top_ups()
         crypto_prices = await CryptoApiManager.get_crypto_prices()
         deposit_usd_amount = 0.0
+        bot_obj = callback.bot
         if sum(new_crypto_balances.values()) > sum(old_crypto_balances.values()):
             merged_deposit = {key: new_crypto_balances[key] - old_crypto_balances[key] for key in new_crypto_balances.keys()}
             for balance_key, balance in merged_deposit.items():
@@ -152,7 +152,7 @@ async def refresh_balance(callback: CallbackQuery):
             await UserService.update_crypto_balances(telegram_id, new_crypto_balances)
             await UserService.update_top_up_amount(telegram_id, deposit_usd_amount * 0.95)
             await NotificationManager.new_deposit(old_crypto_balances, new_crypto_balances, deposit_usd_amount,
-                                                  telegram_id)
+                                                  telegram_id, bot_obj)
         await my_profile(callback)
     else:
         await callback.answer("Please wait and try again later", show_alert=True)
