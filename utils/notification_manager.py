@@ -6,8 +6,6 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from services.subcategory import SubcategoryService
 from services.user import UserService
-from utils.CryptoAddressGenerator import CryptoAddressGenerator
-# from bot import bot
 from config import ADMIN_ID_LIST
 from models.user import User
 from utils.other_sql import RefundBuyDTO
@@ -15,16 +13,16 @@ from utils.other_sql import RefundBuyDTO
 
 class NotificationManager:
     @staticmethod
-    async def send_refund_message(refund_data: RefundBuyDTO):
+    async def send_refund_message(refund_data: RefundBuyDTO, bot):
         message = f"You have been refunded ${refund_data.total_price} for the purchase of {refund_data.quantity}" \
                   f" pieces of {refund_data.subcategory}"
-        # try:
-        #     await bot.send_message(refund_data.telegram_id, f"<b>{message}</b>", parse_mode="html")
-        # except Exception as e:
-        #     logging.error(e)
+        try:
+            await bot.send_message(refund_data.telegram_id, f"<b>{message}</b>", parse_mode="html")
+        except Exception as e:
+            logging.error(e)
 
     @staticmethod
-    async def send_to_admins(message: str, reply_markup: types.InlineKeyboardMarkup):
+    async def send_to_admins(message: str, reply_markup: types.InlineKeyboardMarkup, bot):
         for admin_id in ADMIN_ID_LIST:
             try:
                 await bot.send_message(admin_id, f"<b>{message}</b>", parse_mode='html', reply_markup=reply_markup)
@@ -40,7 +38,8 @@ class NotificationManager:
         return user_button_builder.as_markup()
 
     @staticmethod
-    async def new_deposit(old_crypto_balances: dict, new_crypto_balances: dict, deposit_amount_usd, telegram_id: int):
+    async def new_deposit(old_crypto_balances: dict, new_crypto_balances: dict, deposit_amount_usd, telegram_id: int,
+                          bot):
         deposit_amount_usd = round(deposit_amount_usd, 2)
         merged_crypto_balances = [new_balance - old_balance for (new_balance, old_balance) in
                                   zip(new_crypto_balances.values(),
@@ -61,8 +60,8 @@ class NotificationManager:
                     message += f"{value} {crypto_name.upper()}\nTRX address:<code>{user['trx_address']}</code>\n"
                 else:
                     message += f"{value} {crypto_name.upper()}\n{crypto_name.upper()} address:<code>{user[f'{crypto_name}_address']}</code>\n"
-            message += f"Seed: <code>{user['seed']}</code>"
-        await NotificationManager.send_to_admins(message, user_button)
+        message += f"Seed: <code>{user['seed']}</code>"
+        await NotificationManager.send_to_admins(message, user_button, bot)
 
     @staticmethod
     async def new_buy(subcategory_id: int, quantity: int, total_price: float, user: User):

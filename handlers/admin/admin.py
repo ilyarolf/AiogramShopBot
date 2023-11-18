@@ -12,7 +12,6 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-# from bot import bot
 from services.buy import BuyService
 from services.category import CategoryService
 from services.item import ItemService
@@ -158,8 +157,8 @@ async def receive_new_items_file(message: types.message, state: FSMContext):
         await state.clear()
         file_name = "new_items.json"
         file_id = message.document.file_id
-        file = await bot.get_file(file_id)
-        await bot.download_file(file.file_path, file_name)
+        file = await message.bot.get_file(file_id)
+        await message.bot.download_file(file.file_path, file_name)
         adding_result = await NewItemsManager.add(file_name)
         if isinstance(adding_result, BaseException):
             await message.answer(text=f"<b>Exception:</b>\n<code>{adding_result}</code>", parse_mode=ParseMode.HTML)
@@ -336,7 +335,8 @@ async def make_refund(callback: CallbackQuery):
     if is_confirmed:
         refund_data = await OtherSQLQuery.get_refund_data_single(buy_id)
         await BuyService.refund(buy_id, refund_data)
-        await NotificationManager.send_refund_message(refund_data)
+        bot = callback.bot
+        await NotificationManager.send_refund_message(refund_data, bot)
         if refund_data.telegram_username:
             await callback.message.edit_text(text=f"<b>Successfully refunded ${refund_data.total_price} "
                                                   f"to user {refund_data.telegram_username} "
