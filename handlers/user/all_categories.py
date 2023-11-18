@@ -188,6 +188,7 @@ async def buy_processing(callback: CallbackQuery):
     back_to_main_callback = create_callback_all_categories(level=0)
     back_to_main_button = types.InlineKeyboardButton(text="🔍 All categories", callback_data=back_to_main_callback)
     back_to_main_builder.add(back_to_main_button)
+    bot = callback.bot
     if confirmation and is_in_stock and is_enough_money:
         await UserService.update_consume_records(telegram_id, total_price)
         sold_items = await ItemService.get_bought_items(subcategory_id, quantity)
@@ -197,7 +198,7 @@ async def buy_processing(callback: CallbackQuery):
         await BuyItemService.insert_many(sold_items, new_buy_id)
         await ItemService.set_items_sold(sold_items)
         await callback.message.edit_text(text=message, parse_mode=ParseMode.HTML)
-        await NotificationManager.new_buy(subcategory_id, quantity, total_price, user)
+        await NotificationManager.new_buy(subcategory_id, quantity, total_price, user, bot)
     elif confirmation is False:
         await callback.message.edit_text(text='<b>Declined!</b>', parse_mode=ParseMode.HTML,
                                          reply_markup=back_to_main_builder.as_markup())

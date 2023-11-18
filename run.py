@@ -49,7 +49,6 @@ For example</b>:
 @main_router.message(F.text == '🆘 Support', IsUserExistFilter())
 async def support(message: types.message):
     admin_keyboard_builder = InlineKeyboardBuilder()
-
     admin_keyboard_builder.button(text='Admin', url=SUPPORT_LINK)
     await message.answer(f'<b>Support</b>', reply_markup=admin_keyboard_builder.as_markup())
 

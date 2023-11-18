@@ -20,6 +20,7 @@ from aiogram.webhook.aiohttp_server import (
     setup_application,
 )
 
+from db import create_db_and_tables
 from run import main_router
 from utils.custom_filters import AdminIdFilter
 
@@ -58,6 +59,12 @@ async def command_add_bot(message: Message, command: CommandObject, bot: Bot) ->
 
 async def on_startup(dispatcher: Dispatcher, bot: Bot):
     await bot.set_webhook(f"{BASE_URL}{MAIN_BOT_PATH}")
+    await create_db_and_tables()
+    for admin in config.ADMIN_ID_LIST:
+        try:
+            await bot.send_message(admin, 'Bot is working')
+        except Exception as e:
+            logging.warning(e)
 
 
 def main():
