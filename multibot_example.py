@@ -5,7 +5,6 @@ from typing import Any, Dict, Union
 from aiohttp import web
 
 import config
-from db import create_db_and_tables
 
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.session.aiohttp import AiohttpSession
@@ -21,10 +20,10 @@ from aiogram.webhook.aiohttp_server import (
     setup_application,
 )
 
-from multibot import multibot_dispatcher
 from run import main_router
 
-main_multibot_router = Router()
+main_router_multibot = Router()
+
 BASE_URL = config.WEBHOOK_HOST
 MAIN_BOT_TOKEN = config.TOKEN
 
@@ -45,7 +44,7 @@ def is_bot_token(value: str) -> Union[bool, Dict[str, Any]]:
     return True
 
 
-@main_multibot_router.message(Command("add", magic=F.args.func(is_bot_token)))
+@main_router_multibot.message(Command("add", magic=F.args.func(is_bot_token)))
 async def command_add_bot(message: Message, command: CommandObject, bot: Bot) -> Any:
     new_bot = Bot(token=command.args, session=bot.session)
     try:
@@ -59,13 +58,6 @@ async def command_add_bot(message: Message, command: CommandObject, bot: Bot) ->
 
 async def on_startup(dispatcher: Dispatcher, bot: Bot):
     await bot.set_webhook(f"{BASE_URL}{MAIN_BOT_PATH}")
-    await create_db_and_tables()
-    await bot.set_webhook(config.WEBHOOK_URL)
-    for admin in config.ADMIN_ID_LIST:
-        try:
-            await bot.send_message(admin, 'Bot is working')
-        except Exception as e:
-            logging.warning(e)
 
 
 def main():
@@ -78,9 +70,10 @@ def main():
     # storage = RedisStorage.from_url(REDIS_DSN, key_builder=DefaultKeyBuilder(with_bot_id=True))
 
     main_dispatcher = Dispatcher(storage=storage)
-    main_dispatcher.include_router(main_multibot_router)
+    main_dispatcher.include_router(main_router_multibot)
     main_dispatcher.startup.register(on_startup)
 
+    multibot_dispatcher = Dispatcher(storage=storage)
     multibot_dispatcher.include_router(main_router)
 
     app = web.Application()
