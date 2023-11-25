@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from sqlalchemy import event, Engine, inspect
+from sqlalchemy import event, Engine, inspect, text
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from config import DB_NAME
 from models.base import Base
@@ -29,17 +29,19 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor.close()
 
 
-def check_all_tables_exist(db_engine):
-    insp = inspect(db_engine)
-    for table in Base.metadata.tables.values():
-        if not insp.has_table(table.name):
-            return False
+async def check_all_tables_exist(db_engine):
+    async with db_engine.begin() as conn:
+        for table in Base.metadata.tables.values():
+            result = await conn.execute(
+                text(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table.name}'"))
+            if result.scalar() is None:
+                return False
     return True
 
 
 async def create_db_and_tables():
     async with engine.begin() as conn:
-        if check_all_tables_exist(engine):
+        if await check_all_tables_exist(engine):
             pass
         else:
             await conn.run_sync(Base.metadata.drop_all)
