@@ -31,7 +31,7 @@
 ## 1.Starting the bot
 ### 1.1 Starting AiogramShopBot without SQLCipher database encryption.
 > **Note**
-> **AiogramShopBot from the master branch does not use database encryption via SQLCipher, but it does use Aiosqlite**
+> **<br>Fully compatible with python 3.9.6.<br>AiogramShopBot from the master branch does not use database encryption via SQLCipher, but it does use Aiosqlite**
 * Clone the project from the master branch. ``git clone git@github.com:ilyarolf/AiogramShopBot.git``
 * Install all necessary packages ``pip install -r requirements.txt``
 * Set the environment variables to run in the .env file.<br>Example:
