@@ -2,7 +2,7 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [ master ]
+    branches: [master, feature/ci-cd]
 
 jobs:
   build-and-push:
