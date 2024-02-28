@@ -24,6 +24,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/AiogramShopBot:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/aiogram-shop-bot:latest
       - name: clean all
         run: rm -rf ./*
