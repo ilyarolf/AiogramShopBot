@@ -1,0 +1,26 @@
+version: "3.8"
+services:
+  bot:
+    build:
+      context: .
+    container_name: 'AiogramShopBot'
+    environment:
+      WEBHOOK_PATH: ""
+      WEBAPP_HOST: "0.0.0.0" # Don't touch this
+      WEBAPP_PORT: 5000 # Here your port
+      TOKEN: "1234567890:QWER.....TYI" # Here your bot token from botfather
+      NGROK_TOKEN: 'NGROK_TOKEN_HERE' # Here your ngrok token from ngrok.com
+      ADMIN_ID_LIST: 12345678,87654321 # Telegram ID's for admins;
+      SUPPORT_LINK: "https://t.me/YourUsername"
+      DB_NAME: "database.db" # Here your database name
+    ports:
+      - "4040:4040"
+      - 5000:${WEBAPP_PORT}
+    expose:
+      - 4040
+      - ${WEBAPP_PORT}
+    volumes:
+      - /AiogramShopBot:/bot/${DB_NAME}
+
+volumes:
+  AiogramShopBot:
