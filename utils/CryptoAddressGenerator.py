@@ -1,15 +1,12 @@
 from bip_utils import Bip44Changes, Bip44Coins, Bip44, Bip39SeedGenerator, Bip84, Bip84Coins, Bip39MnemonicGenerator, \
     Bip39WordsNum
 
-from config import ADDITIVE
-
 
 class CryptoAddressGenerator:
     def __init__(self):
         mnemonic_gen = Bip39MnemonicGenerator().FromWordsNumber(Bip39WordsNum.WORDS_NUM_12)
         self.mnemonic_str = mnemonic_gen.ToStr()
         self.seed_bytes = Bip39SeedGenerator(self.mnemonic_str).Generate()
-        self.additive_number = ADDITIVE
 
     def __generate_btc_pair(self, i: int) -> str:
         bip84_mst_ctx = Bip84.FromSeed(self.seed_bytes, Bip84Coins.BITCOIN)
@@ -33,8 +30,6 @@ class CryptoAddressGenerator:
         return bip44_addr_ctx
 
     def get_addresses(self, i):
-        if self.additive_number is not None:
-            i = i + int(self.additive_number)
         return {'btc': self.__generate_btc_pair(i),
                 'ltc': self.__generate_ltc_pair(i),
                 'trx': self.__generate_trx_pair(i)}
