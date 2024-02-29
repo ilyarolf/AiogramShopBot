@@ -2,7 +2,7 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [master, feature/sqlalchemy-sqlcipher]
+    branches: [master, feature/sqlalchemy-sqlcipher, feature/ci-cd]
 
 jobs:
   build-and-push:
