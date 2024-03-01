@@ -21,7 +21,7 @@ services:
       - 4040
       - 5000 # ${WEBAPP_PORT}
     volumes:
-      - /AiogramShopBot:/database.db # endswith your database name
+      - /AiogramShopBot:/bot/data # endswith your database name
     command: ["python", "-u", "run.py"]
 
 volumes:
