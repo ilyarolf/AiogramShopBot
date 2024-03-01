@@ -19,8 +19,11 @@ from models.buyItem import BuyItem
 from models.category import Category
 from models.subcategory import Subcategory
 
-url = f"sqlite+pysqlcipher://:{DB_PASS}@/{DB_NAME}"
+url = f"sqlite+pysqlcipher://:{DB_PASS}@/data/{DB_NAME}"
 
+data_folder = Path("data")
+if data_folder.exists() is False:
+    data_folder.mkdir()
 engine = create_engine(url, echo=True, module=sqlcipher3)
 session_maker = sessionmaker(engine)
 
