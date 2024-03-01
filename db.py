@@ -16,8 +16,10 @@ from models.buyItem import BuyItem
 from models.category import Category
 from models.subcategory import Subcategory
 
-url = f"sqlite+aiosqlite:///{DB_NAME}"
-
+url = f"sqlite+aiosqlite:///data/{DB_NAME}"
+data_folder = Path("data")
+if data_folder.exists() is False:
+    data_folder.mkdir()
 engine = create_async_engine(url, echo=True)
 async_session_maker = async_sessionmaker(engine, class_=AsyncSession)
 
