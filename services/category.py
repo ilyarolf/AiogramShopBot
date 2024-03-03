@@ -41,10 +41,11 @@ class CategoryService:
             return categories.scalars().all()
 
     @staticmethod
-    async def get_unsold() -> list[Category]:
+    async def get_unsold(page) -> list[Category]:
         async with async_session_maker() as session:
             stmt = select(Category).join(Item, Item.category_id == Category.id).where(
-                Item.is_sold == 0).distinct().order_by(Category.name)
+                Item.is_sold == 0).distinct().limit(CategoryService.items_per_page).offset(
+                page * CategoryService.items_per_page).group_by(Category.name)
             category_names = await session.execute(stmt)
             return category_names.scalars().all()
 

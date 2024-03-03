@@ -199,7 +199,7 @@ async def delete_category(callback: CallbackQuery):
                                                                  CategoryService.get_all_categories(
                                                                      unpacked_callback.page),
                                                                  "category")
-    delete_category_builder = await add_pagination_buttons(delete_category_builder, callback,
+    delete_category_builder = await add_pagination_buttons(delete_category_builder, callback.data,
                                                            CategoryService.get_maximum_page(), AdminCallback.unpack,
                                                            AdminConstants.back_to_main_button)
     await callback.message.edit_text(text="<b>Categories:</b>", parse_mode=ParseMode.HTML,
@@ -225,7 +225,7 @@ async def delete_subcategory(callback: CallbackQuery):
     delete_subcategory_builder = await create_delete_entity_buttons(unpacked_callback,
                                                                     SubcategoryService.get_all(unpacked_callback.page),
                                                                     "subcategory")
-    delete_subcategory_builder = await add_pagination_buttons(delete_subcategory_builder, callback,
+    delete_subcategory_builder = await add_pagination_buttons(delete_subcategory_builder, callback.data,
                                                               SubcategoryService.get_maximum_page(),
                                                               AdminCallback.unpack,
                                                               AdminConstants.back_to_main_button)
@@ -309,7 +309,7 @@ async def make_refund_markup(page):
 async def send_refund_menu(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
     refund_builder = await make_refund_markup(unpacked_callback.page)
-    refund_builder = await add_pagination_buttons(refund_builder, callback, BuyService.get_max_refund_pages(),
+    refund_builder = await add_pagination_buttons(refund_builder, callback.data, BuyService.get_max_refund_pages(),
                                                   AdminCallback.unpack, AdminConstants.back_to_main_button)
     await callback.message.edit_text(text="<b>Refund menu:</b>", reply_markup=refund_builder.as_markup(),
                                      parse_mode=ParseMode.HTML)

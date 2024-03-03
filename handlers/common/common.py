@@ -1,11 +1,10 @@
 from aiogram import types
-from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
-async def add_pagination_buttons(keyboard_builder: InlineKeyboardBuilder, callback: CallbackQuery, max_page_function,
+async def add_pagination_buttons(keyboard_builder: InlineKeyboardBuilder, callback_str: str, max_page_function,
                                  callback_unpack_function, back_button):
-    unpacked_callback = callback_unpack_function(callback.data)
+    unpacked_callback = callback_unpack_function(callback_str)
     maximum_page = await max_page_function
     buttons = []
     if unpacked_callback.page > 0:
@@ -23,5 +22,6 @@ async def add_pagination_buttons(keyboard_builder: InlineKeyboardBuilder, callba
                                                   callback_data=unpacked_callback.pack()))
         buttons.append(types.InlineKeyboardButton(text="⏭ Last", callback_data=last_page_callback.pack()))
     keyboard_builder.row(*buttons)
-    keyboard_builder.row(back_button)
+    if back_button:
+        keyboard_builder.row(back_button)
     return keyboard_builder
