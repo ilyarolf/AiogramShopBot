@@ -6,6 +6,7 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from handlers.common.common import add_pagination_buttons
 from services.buy import BuyService
 from services.buyItem import BuyItemService
 from services.category import CategoryService
@@ -75,9 +76,6 @@ async def create_subcategory_buttons(category_id: int, page: int = 0):
             types.InlineKeyboardButton(
                 text=f"{item.subcategory.name}| Price: ${subcategory_price} | Quantity: {available_quantity} pcs",
                 callback_data=subcategory_inline_button))
-    back_button = types.InlineKeyboardButton(text="Back to all categories",
-                                             callback_data=create_callback_all_categories(level=current_level - 1))
-    subcategories_builder.add(back_button)
     subcategories_builder.adjust(1)
     return subcategories_builder
 
@@ -102,17 +100,14 @@ async def all_categories(message: Union[Message, CallbackQuery]):
 
 async def show_subcategories_in_category(callback: CallbackQuery):
     unpacked_callback = AllCategoriesCallback.unpack(callback.data)
-    maximum_page = await ItemService.get_maximum_page(unpacked_callback.category_id)
     subcategory_buttons = await create_subcategory_buttons(unpacked_callback.category_id, page=unpacked_callback.page)
-    if unpacked_callback.page >= 1:
-        back_page_callback = unpacked_callback.__copy__()
-        back_page_callback.page -= 1
-        subcategory_buttons.add(
-            types.InlineKeyboardButton(text="Previous page", callback_data=back_page_callback.pack()))
-    if unpacked_callback.page < maximum_page:
-        unpacked_callback.page += 1
-        subcategory_buttons.add(types.InlineKeyboardButton(text="Next page",
-                                                           callback_data=unpacked_callback.pack()))
+    back_button = types.InlineKeyboardButton(text="⤵️ Back to all categories",
+                                             callback_data=create_callback_all_categories(
+                                                 level=unpacked_callback.level - 1))
+    subcategory_buttons = await add_pagination_buttons(subcategory_buttons, callback,
+                                                       ItemService.get_maximum_page(unpacked_callback.category_id),
+                                                       AllCategoriesCallback.unpack,
+                                                       back_button)
     await callback.message.edit_text("<b>Subcategories:</b>", reply_markup=subcategory_buttons.as_markup(),
                                      parse_mode=ParseMode.HTML)
 
