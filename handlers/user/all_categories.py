@@ -24,6 +24,7 @@ class AllCategoriesCallback(CallbackData, prefix="all_categories"):
     quantity: int
     total_price: float
     confirmation: bool
+    page: int
 
 
 def create_callback_all_categories(level: int,
@@ -32,10 +33,11 @@ def create_callback_all_categories(level: int,
                                    price: float = 0.0,
                                    total_price: float = 0.0,
                                    quantity: int = 0,
-                                   confirmation: bool = False):
+                                   confirmation: bool = False,
+                                   page: int = 0):
     return AllCategoriesCallback(level=level, category_id=category_id, subcategory_id=subcategory_id, price=price,
                                  total_price=total_price,
-                                 quantity=quantity, confirmation=confirmation).pack()
+                                 quantity=quantity, confirmation=confirmation, page=page).pack()
 
 
 all_categories_router = Router()
@@ -58,9 +60,9 @@ async def create_category_buttons(current_level: int):
         return categories_builder.as_markup()
 
 
-async def create_subcategory_buttons(category_id: int):
+async def create_subcategory_buttons(category_id: int, page: int = 0):
     current_level = 1
-    items = await ItemService.get_unsold_subcategories_by_category(category_id)
+    items = await ItemService.get_unsold_subcategories_by_category(category_id, page)
     subcategories_builder = InlineKeyboardBuilder()
     for item in items:
         subcategory_price = await ItemService.get_price_by_subcategory(item.subcategory_id)
@@ -73,11 +75,11 @@ async def create_subcategory_buttons(category_id: int):
             types.InlineKeyboardButton(
                 text=f"{item.subcategory.name}| Price: ${subcategory_price} | Quantity: {available_quantity} pcs",
                 callback_data=subcategory_inline_button))
-    back_button = types.InlineKeyboardButton(text="Back",
+    back_button = types.InlineKeyboardButton(text="Back to all categories",
                                              callback_data=create_callback_all_categories(level=current_level - 1))
     subcategories_builder.add(back_button)
     subcategories_builder.adjust(1)
-    return subcategories_builder.as_markup()
+    return subcategories_builder
 
 
 async def all_categories(message: Union[Message, CallbackQuery]):
@@ -99,9 +101,19 @@ async def all_categories(message: Union[Message, CallbackQuery]):
 
 
 async def show_subcategories_in_category(callback: CallbackQuery):
-    category_id = AllCategoriesCallback.unpack(callback.data).category_id
-    subcategory_buttons = await create_subcategory_buttons(category_id)
-    await callback.message.edit_text("<b>Subcategories:</b>", reply_markup=subcategory_buttons,
+    unpacked_callback = AllCategoriesCallback.unpack(callback.data)
+    maximum_page = await ItemService.get_maximum_page(unpacked_callback.category_id)
+    subcategory_buttons = await create_subcategory_buttons(unpacked_callback.category_id, page=unpacked_callback.page)
+    if unpacked_callback.page >= 1:
+        back_page_callback = unpacked_callback.__copy__()
+        back_page_callback.page -= 1
+        subcategory_buttons.add(
+            types.InlineKeyboardButton(text="Previous page", callback_data=back_page_callback.pack()))
+    if unpacked_callback.page < maximum_page:
+        unpacked_callback.page += 1
+        subcategory_buttons.add(types.InlineKeyboardButton(text="Next page",
+                                                           callback_data=unpacked_callback.pack()))
+    await callback.message.edit_text("<b>Subcategories:</b>", reply_markup=subcategory_buttons.as_markup(),
                                      parse_mode=ParseMode.HTML)
 
 
