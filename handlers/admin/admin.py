@@ -284,9 +284,9 @@ async def confirm_and_delete(callback: CallbackQuery):
                                          parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
 
 
-async def make_refund_markup():
+async def make_refund_markup(page):
     refund_builder = InlineKeyboardBuilder()
-    not_refunded_buy_ids = await BuyService.get_not_refunded_buy_ids()
+    not_refunded_buy_ids = await BuyService.get_not_refunded_buy_ids(page)
     refund_data = await OtherSQLQuery.get_refund_data(not_refunded_buy_ids)
     for buy in refund_data:
         if buy.telegram_username:
@@ -302,14 +302,17 @@ async def make_refund_markup():
                                                     action="make_refund",
                                                     args_to_action=buy.buy_id))
         refund_builder.add(refund_buy_button)
-    refund_builder.add(AdminConstants.back_to_main_button)
     refund_builder.adjust(1)
-    return refund_builder.as_markup()
+    return refund_builder
 
 
 async def send_refund_menu(callback: CallbackQuery):
-    refund_markup = await make_refund_markup()
-    await callback.message.edit_text(text="<b>Refund menu:</b>", reply_markup=refund_markup, parse_mode=ParseMode.HTML)
+    unpacked_callback = AdminCallback.unpack(callback.data)
+    refund_builder = await make_refund_markup(unpacked_callback.page)
+    refund_builder = await add_pagination_buttons(refund_builder, callback, BuyService.get_max_refund_pages(),
+                                                  AdminCallback.unpack, AdminConstants.back_to_main_button)
+    await callback.message.edit_text(text="<b>Refund menu:</b>", reply_markup=refund_builder.as_markup(),
+                                     parse_mode=ParseMode.HTML)
 
 
 async def refund_confirmation(callback: CallbackQuery):
