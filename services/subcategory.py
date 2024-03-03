@@ -1,4 +1,6 @@
-from sqlalchemy import select
+import math
+
+from sqlalchemy import select, func
 
 from db import async_session_maker
 from models.item import Item
@@ -6,6 +8,8 @@ from models.subcategory import Subcategory
 
 
 class SubcategoryService:
+    items_per_page = 25
+
     @staticmethod
     async def get_or_create_one(subcategory_name: str) -> Subcategory:
         async with async_session_maker() as session:
@@ -22,12 +26,21 @@ class SubcategoryService:
                 return subcategory
 
     @staticmethod
-    async def get_all() -> list[Subcategory]:
+    async def get_all(page: int = 0) -> list[Subcategory]:
         async with async_session_maker() as session:
-            stmt = select(Subcategory).distinct()
+            stmt = select(Subcategory).distinct().limit(SubcategoryService.items_per_page).offset(
+                page * SubcategoryService.items_per_page).group_by(Subcategory.name)
             subcategories = await session.execute(stmt)
             subcategories = subcategories.scalars().all()
             return subcategories
+
+    @staticmethod
+    async def get_maximum_page():
+        async with async_session_maker() as session:
+            stmt = select(func.count(Subcategory.id)).distinct()
+            subcategories = await session.execute(stmt)
+            subcategories_count = subcategories.scalar_one()
+            return math.trunc(subcategories_count / SubcategoryService.items_per_page)
 
     @staticmethod
     async def get_by_primary_key(subcategory_id) -> Subcategory:
