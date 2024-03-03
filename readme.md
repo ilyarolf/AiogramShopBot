@@ -60,7 +60,6 @@ via SQLCipher, but it does use Aiosqlite**
 * Set the environment variables to run in the .env file.<br>Example:
 
 ```
-WEBHOOK_HOST = "www.my-bot-example.com"
 WEBHOOK_PATH = "/bot"
 WEBAPP_HOST = "localhost"
 WEBAPP_PORT = 1234
@@ -70,26 +69,13 @@ SUPPORT_LINK = "https://t.me/your_username_123"
 DB_NAME = "db_file_name.db"
 ```
 
-* If you don't have your own webhook site, you can always use ngrok for this, in which case your .env will look like
-  this.
-
-```
-WEBHOOK_HOST = "https://abcd-123-456-789-01.ngrok-free.app"
-WEBHOOK_PATH = ""
-WEBAPP_HOST = "localhost"
-WEBAPP_PORT = 1234
-TOKEN = "TELEGRAM_BOT_TOKEN_HERE"
-ADMIN_ID_LIST = 123456,654321
-SUPPORT_LINK = "https://t.me/your_username_123"
-DB_NAME = "db_file_name.db"
-```
 
 * After these steps the bot is ready to run, the entry point to run the bot is run.py ```python run.py```
 
 ### 1.3 Starting AiogramShopBot with SQLCipher database encryption.
 
 > **Note**
-> **To run AiogramShopBot with database encryption via SQLCipher, it is recommended to use Linux kernel operating
+> **<br>To run AiogramShopBot with database encryption via SQLCipher, it is recommended to use Linux kernel operating
 systems because installing SQLCipher on Windows is not the easiest.**
 
 * Clone the project from the feature/sqlalchemy-sqlcipher
@@ -100,7 +86,6 @@ systems because installing SQLCipher on Windows is not the easiest.**
   database.<br>Example:
 
 ```
-WEBHOOK_HOST = "www.my-bot-example.com"
 WEBHOOK_PATH = "/bot"
 WEBAPP_HOST = "localhost"
 WEBAPP_PORT = 1234
