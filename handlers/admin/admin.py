@@ -195,10 +195,10 @@ async def get_new_users(callback: CallbackQuery):
 
 async def delete_category(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
-    delete_category_builder = await create_delete_entity_buttons(unpacked_callback,
-                                                                 CategoryService.get_all_categories(
-                                                                     unpacked_callback.page),
-                                                                 "category")
+    delete_category_builder = await create_delete_entity_buttons(
+        CategoryService.get_all_categories(
+            unpacked_callback.page),
+        "category")
     delete_category_builder = await add_pagination_buttons(delete_category_builder, callback.data,
                                                            CategoryService.get_maximum_page(), AdminCallback.unpack,
                                                            AdminConstants.back_to_main_button)
@@ -206,12 +206,12 @@ async def delete_category(callback: CallbackQuery):
                                      reply_markup=delete_category_builder.as_markup())
 
 
-async def create_delete_entity_buttons(unpacked_callback, get_all_entities_function,
+async def create_delete_entity_buttons(get_all_entities_function,
                                        entity_name):
     entities = await get_all_entities_function
     delete_entity_builder = InlineKeyboardBuilder()
     for entity in entities:
-        delete_entity_callback = create_admin_callback(level=unpacked_callback.level + 1,
+        delete_entity_callback = create_admin_callback(level=9,
                                                        action=f"delete_{entity_name}",
                                                        args_to_action=entity.id)
         delete_entity_button = types.InlineKeyboardButton(text=entity.name, callback_data=delete_entity_callback)
@@ -222,9 +222,9 @@ async def create_delete_entity_buttons(unpacked_callback, get_all_entities_funct
 
 async def delete_subcategory(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
-    delete_subcategory_builder = await create_delete_entity_buttons(unpacked_callback,
-                                                                    SubcategoryService.get_all(unpacked_callback.page),
-                                                                    "subcategory")
+    delete_subcategory_builder = await create_delete_entity_buttons(
+        SubcategoryService.get_all(unpacked_callback.page),
+        "subcategory")
     delete_subcategory_builder = await add_pagination_buttons(delete_subcategory_builder, callback.data,
                                                               SubcategoryService.get_maximum_page(),
                                                               AdminCallback.unpack,
