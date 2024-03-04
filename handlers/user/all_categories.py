@@ -54,7 +54,7 @@ async def create_category_buttons(page: int):
     if categories:
         categories_builder = InlineKeyboardBuilder()
         for category in categories:
-            category_button_callback = create_callback_all_categories(level=2, category_id=category.id)
+            category_button_callback = create_callback_all_categories(level=1, category_id=category.id)
             category_button = types.InlineKeyboardButton(text=category.name, callback_data=category_button_callback)
             categories_builder.add(category_button)
         categories_builder.adjust(2)
