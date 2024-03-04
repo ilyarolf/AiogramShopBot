@@ -1,5 +1,6 @@
-from sqlalchemy import select, update
+import math
 
+from sqlalchemy import select, update, func
 from db import session_maker
 from models.buy import Buy
 from models.user import User
@@ -8,13 +9,14 @@ from utils.other_sql import RefundBuyDTO
 
 
 class BuyService:
+    buys_per_page = 25
+
     @staticmethod
     def get_buys_by_buyer_id(buyer_id: int):
         with session_maker() as session:
             stmt = select(Buy).where(Buy.buyer_id == buyer_id)
             buys = session.execute(stmt)
             return buys.scalars().all()
-            # list(buys.scalars().all())
 
     @staticmethod
     def insert_new(user: User, quantity: int, total_price: float) -> int:
@@ -26,9 +28,10 @@ class BuyService:
             return new_buy.id
 
     @staticmethod
-    def get_not_refunded_buy_ids():
+    def get_not_refunded_buy_ids(page: int):
         with session_maker() as session:
-            stmt = select(Buy.id).where(Buy.is_refunded == 0)
+            stmt = select(Buy.id).where(Buy.is_refunded == 0).limit(BuyService.buys_per_page).offset(
+                page * BuyService.buys_per_page)
             not_refunded_buys = session.execute(stmt)
             return not_refunded_buys.scalars().all()
 
@@ -39,3 +42,10 @@ class BuyService:
             stmt = update(Buy).where(Buy.id == buy_id).values(is_refunded=True)
             session.execute(stmt)
             session.commit()
+
+    @staticmethod
+    def get_max_refund_pages():
+        with session_maker() as session:
+            stmt = select(func.count(Buy.id)).where(Buy.is_refunded == 0)
+            not_refunded_buys = session.execute(stmt)
+            return math.trunc(not_refunded_buys.scalar_one() / BuyService.buys_per_page)

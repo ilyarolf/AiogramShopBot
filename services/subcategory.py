@@ -1,11 +1,14 @@
-from sqlalchemy import select
+import math
 
+from sqlalchemy import select, func, update, distinct
 from db import session_maker
 from models.item import Item
 from models.subcategory import Subcategory
 
 
 class SubcategoryService:
+    items_per_page = 25
+
     @staticmethod
     def get_or_create_one(subcategory_name: str) -> Subcategory:
         with session_maker() as session:
@@ -22,9 +25,10 @@ class SubcategoryService:
                 return subcategory
 
     @staticmethod
-    def get_all() -> list[Subcategory]:
+    def get_all(page: int = 0) -> list[Subcategory]:
         with session_maker() as session:
-            stmt = select(Subcategory).distinct()
+            stmt = select(Subcategory).distinct().limit(SubcategoryService.items_per_page).offset(
+                page * SubcategoryService.items_per_page).group_by(Subcategory.name)
             subcategories = session.execute(stmt)
             subcategories = subcategories.scalars().all()
             return subcategories
@@ -49,3 +53,11 @@ class SubcategoryService:
                 subcategory = subcategory.scalar()
                 session.delete(subcategory)
                 session.commit()
+
+    @staticmethod
+    def get_maximum_page():
+        with session_maker() as session:
+            stmt = select(func.count(Subcategory.id)).distinct()
+            subcategories = session.execute(stmt)
+            subcategories_count = subcategories.scalar_one()
+            return math.trunc(subcategories_count / SubcategoryService.items_per_page)
