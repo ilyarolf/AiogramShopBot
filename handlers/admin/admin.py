@@ -13,6 +13,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot import bot
+from handlers.common.common import add_pagination_buttons
 from services.buy import BuyService
 from services.category import CategoryService
 from services.item import ItemService
@@ -28,13 +29,14 @@ class AdminCallback(CallbackData, prefix="admin"):
     level: int
     action: str
     args_to_action: Union[str, int]
+    page: int
 
 
 admin_router = Router()
 
 
-def create_admin_callback(level: int, action: str = "", args_to_action: str = ""):
-    return AdminCallback(level=level, action=action, args_to_action=args_to_action).pack()
+def create_admin_callback(level: int, action: str = "", args_to_action: str = "", page: int = 0):
+    return AdminCallback(level=level, action=action, args_to_action=args_to_action, page=page).pack()
 
 
 class AdminConstants:
@@ -191,34 +193,40 @@ async def get_new_users(callback: CallbackQuery):
     await callback.message.edit_text(text=f"{len(new_users)} new users:", reply_markup=users_builder.as_markup())
 
 
+async def create_delete_entity_buttons(get_all_entities_function,
+                                       entity_name):
+    entities = get_all_entities_function
+    delete_entity_builder = InlineKeyboardBuilder()
+    for entity in entities:
+        delete_entity_callback = create_admin_callback(level=9,
+                                                       action=f"delete_{entity_name}",
+                                                       args_to_action=entity.id)
+        delete_entity_button = types.InlineKeyboardButton(text=entity.name, callback_data=delete_entity_callback)
+        delete_entity_builder.add(delete_entity_button)
+    delete_entity_builder.adjust(1)
+    return delete_entity_builder
+
+
 async def delete_category(callback: CallbackQuery):
-    current_level = AdminCallback.unpack(callback.data).level
-    categories = CategoryService.get_all_categories()
-    delete_category_builder = InlineKeyboardBuilder()
-    for category in categories:
-        category_name = category.name
-        delete_category_callback = create_admin_callback(level=current_level + 2, action="delete_category",
-                                                         args_to_action=category.id)
-        delete_category_button = types.InlineKeyboardButton(text=category_name, callback_data=delete_category_callback)
-        delete_category_builder.add(delete_category_button)
-    delete_category_builder.add(AdminConstants.back_to_main_button)
-    delete_category_builder.adjust(1)
+    unpacked_callback = AdminCallback.unpack(callback.data)
+    delete_category_builder = await create_delete_entity_buttons(CategoryService.get_all_categories(
+        unpacked_callback.page),
+        "category")
+    delete_category_builder = await add_pagination_buttons(delete_category_builder, callback.data,
+                                                           CategoryService.get_maximum_page(), AdminCallback.unpack,
+                                                           AdminConstants.back_to_main_button)
     await callback.message.edit_text(text="<b>Categories:</b>", parse_mode=ParseMode.HTML,
                                      reply_markup=delete_category_builder.as_markup())
 
 
 async def delete_subcategory(callback: CallbackQuery):
-    current_level = AdminCallback.unpack(callback.data).level
-    subcategories = SubcategoryService.get_all()
-    delete_subcategory_builder = InlineKeyboardBuilder()
-    for subcategory in subcategories:
-        delete_category_callback = create_admin_callback(level=current_level + 1, action="delete_subcategory",
-                                                         args_to_action=subcategory.id)
-        delete_category_button = types.InlineKeyboardButton(text=subcategory.name,
-                                                            callback_data=delete_category_callback)
-        delete_subcategory_builder.add(delete_category_button)
-    delete_subcategory_builder.add(AdminConstants.back_to_main_button)
-    delete_subcategory_builder.adjust(1)
+    unpacked_callback = AdminCallback.unpack(callback.data)
+    delete_subcategory_builder = await create_delete_entity_buttons(SubcategoryService.get_all(unpacked_callback.page),
+                                                                    "subcategory")
+    delete_subcategory_builder = await add_pagination_buttons(delete_subcategory_builder, callback.data,
+                                                              SubcategoryService.get_maximum_page(),
+                                                              AdminCallback.unpack,
+                                                              AdminConstants.back_to_main_button)
     await callback.message.edit_text(text="<b>Subcategories:</b>", parse_mode=ParseMode.HTML,
                                      reply_markup=delete_subcategory_builder.as_markup())
 
@@ -259,7 +267,7 @@ async def confirm_and_delete(callback: CallbackQuery):
     back_to_main_builder = InlineKeyboardBuilder()
     back_to_main_builder.add(AdminConstants.back_to_main_button)
     if entity_to_delete == "category":
-        #TODO("Implement cascade delete subcategories, items with subcategories by category")
+        # TODO("Implement cascade delete subcategories, items with subcategories by category")
         category = CategoryService.get_by_primary_key(args_to_action)
         message_text = f"<b>Successfully deleted {category.name} {entity_to_delete}!</b>"
         ItemService.delete_unsold_with_category_id(args_to_action)
@@ -274,9 +282,9 @@ async def confirm_and_delete(callback: CallbackQuery):
                                          parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
 
 
-async def make_refund_markup():
+async def make_refund_markup(page):
     refund_builder = InlineKeyboardBuilder()
-    not_refunded_buy_ids = BuyService.get_not_refunded_buy_ids()
+    not_refunded_buy_ids = BuyService.get_not_refunded_buy_ids(page)
     refund_data = OtherSQLQuery.get_refund_data(not_refunded_buy_ids)
     for buy in refund_data:
         if buy.telegram_username:
@@ -292,14 +300,17 @@ async def make_refund_markup():
                                                     action="make_refund",
                                                     args_to_action=buy.buy_id))
         refund_builder.add(refund_buy_button)
-    refund_builder.add(AdminConstants.back_to_main_button)
     refund_builder.adjust(1)
-    return refund_builder.as_markup()
+    return refund_builder
 
 
 async def send_refund_menu(callback: CallbackQuery):
-    refund_markup = await make_refund_markup()
-    await callback.message.edit_text(text="<b>Refund menu:</b>", reply_markup=refund_markup, parse_mode=ParseMode.HTML)
+    unpacked_callback = AdminCallback.unpack(callback.data)
+    refund_builder = await make_refund_markup(unpacked_callback.page)
+    refund_builder = await add_pagination_buttons(refund_builder, callback.data, BuyService.get_max_refund_pages(),
+                                                  AdminCallback.unpack, AdminConstants.back_to_main_button)
+    await callback.message.edit_text(text="<b>Refund menu:</b>", reply_markup=refund_builder.as_markup(),
+                                     parse_mode=ParseMode.HTML)
 
 
 async def refund_confirmation(callback: CallbackQuery):
