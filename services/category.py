@@ -1,4 +1,6 @@
-from sqlalchemy import select
+import math
+
+from sqlalchemy import select, func
 
 from db import async_session_maker
 from models.category import Category
@@ -6,6 +8,8 @@ from models.item import Item
 
 
 class CategoryService:
+    items_per_page = 25
+
     @staticmethod
     async def get_or_create_one(category_name: str) -> Category:
         async with async_session_maker() as session:
@@ -29,15 +33,27 @@ class CategoryService:
             return category.scalar()
 
     @staticmethod
-    async def get_all_categories():
+    async def get_all_categories(page: int = 0):
         async with async_session_maker() as session:
-            stmt = select(Category).distinct()
+            stmt = select(Category).distinct().limit(CategoryService.items_per_page).offset(
+                page * CategoryService.items_per_page).group_by(Category.name)
             categories = await session.execute(stmt)
             return categories.scalars().all()
 
     @staticmethod
-    async def get_unsold() -> list[Category]:
+    async def get_unsold(page) -> list[Category]:
         async with async_session_maker() as session:
-            stmt = select(Category).join(Item, Item.category_id == Category.id).where(Item.is_sold == 0).distinct()
+            stmt = select(Category).join(Item, Item.category_id == Category.id).where(
+                Item.is_sold == 0).distinct().limit(CategoryService.items_per_page).offset(
+                page * CategoryService.items_per_page).group_by(Category.name)
             category_names = await session.execute(stmt)
             return category_names.scalars().all()
+
+    @staticmethod
+    async def get_maximum_page():
+        async with async_session_maker() as session:
+            stmt = select(func.count(Category.id)).distinct()
+            subcategories = await session.execute(stmt)
+            subcategories_count = subcategories.scalar_one()
+            return math.trunc(subcategories_count / CategoryService.items_per_page)
+

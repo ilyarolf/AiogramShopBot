@@ -1,4 +1,6 @@
-from sqlalchemy import select, func, update
+import math
+
+from sqlalchemy import select, func, update, distinct
 
 from db import async_session_maker
 from models.buyItem import BuyItem
@@ -7,6 +9,8 @@ from models.subcategory import Subcategory
 
 
 class ItemService:
+    items_per_page = 25
+
     @staticmethod
     async def get_by_primary_key(item_id: int) -> Item:
         async with async_session_maker() as session:
@@ -61,12 +65,21 @@ class ItemService:
             return items
 
     @staticmethod
-    async def get_unsold_subcategories_by_category(category_id: int) -> list[Item]:
+    async def get_unsold_subcategories_by_category(category_id: int, page) -> list[Item]:
         async with async_session_maker() as session:
             stmt = select(Item).join(Subcategory, Subcategory.id == Item.subcategory_id).where(
-                Item.category_id == category_id, Item.is_sold == 0).group_by(Item.subcategory_id)
+                Item.category_id == category_id, Item.is_sold == 0).group_by(Subcategory.name).limit(
+                ItemService.items_per_page).offset(ItemService.items_per_page * page)
             subcategories = await session.execute(stmt)
             return subcategories.scalars().all()
+
+    @staticmethod
+    async def get_maximum_page(category_id: int):
+        async with async_session_maker() as session:
+            subquery = select(Item.subcategory_id).where(Item.category_id == category_id, Item.is_sold == 0)
+            stmt = select(func.count(distinct(subquery.c.subcategory_id)))
+            maximum_page = await session.execute(stmt)
+            return math.ceil(maximum_page.scalar() / ItemService.items_per_page) - 1
 
     @staticmethod
     async def get_price_by_subcategory(subcategory_id: int) -> float:
