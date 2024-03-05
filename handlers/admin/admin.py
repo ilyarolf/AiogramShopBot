@@ -88,6 +88,8 @@ async def admin(message: Union[Message, CallbackQuery]):
                               callback_data=create_admin_callback(
                                   level=11
                               ))
+    admin_menu_builder.button(text="Statistics",
+                              callback_data=create_admin_callback(level=14))
     admin_menu_builder.adjust(2)
     if isinstance(message, Message):
         await message.answer("<b>Admin Menu:</b>", parse_mode=ParseMode.HTML,
@@ -342,6 +344,51 @@ async def refund_confirmation(callback: CallbackQuery):
             reply_markup=confirmation_builder.as_markup())
 
 
+async def pick_statistics_entity(callback: CallbackQuery):
+    unpacked_callback = AdminCallback.unpack(callback.data)
+    users_statistics_callback = create_admin_callback(unpacked_callback.level + 1, "users")
+    buys_statistics_callback = create_admin_callback(unpacked_callback.level + 1, "buys")
+    buttons_builder = InlineKeyboardBuilder()
+    buttons_builder.add(types.InlineKeyboardButton(text="📊Users statistics", callback_data=users_statistics_callback))
+    buttons_builder.add(types.InlineKeyboardButton(text="📊Buys statistics", callback_data=buys_statistics_callback))
+    await callback.message.edit_text(text="Pick entity", reply_markup=buttons_builder.as_markup())
+
+
+async def pick_statistics_timedelta(callback: CallbackQuery):
+    unpacked_callback = AdminCallback.unpack(callback.data)
+    one_day_cb = unpacked_callback.model_copy(
+        update={"args_to_action": '1', 'level': unpacked_callback.level + 1}).pack()
+    seven_days_cb = unpacked_callback.model_copy(
+        update={"args_to_action": '7', 'level': unpacked_callback.level + 1}).pack()
+    one_month_cb = unpacked_callback.model_copy(
+        update={"args_to_action": '30', 'level': unpacked_callback.level + 1}).pack()
+    timedelta_buttons_builder = InlineKeyboardBuilder()
+    timedelta_buttons_builder.add(types.InlineKeyboardButton(text="1 Day", callback_data=one_day_cb))
+    timedelta_buttons_builder.add(types.InlineKeyboardButton(text="7 Days", callback_data=seven_days_cb))
+    timedelta_buttons_builder.add(types.InlineKeyboardButton(text="30 Days", callback_data=one_month_cb))
+    await callback.message.edit_text(text="Pick timedelta", reply_markup=timedelta_buttons_builder.as_markup())
+
+
+async def get_statistics(callback: CallbackQuery):
+    unpacked_callback = AdminCallback.unpack(callback.data)
+    if unpacked_callback.action == "users":
+        users_builder = InlineKeyboardBuilder()
+        users = await UserService.get_new_users_by_timedelta(unpacked_callback.args_to_action)
+        for user in users:
+            if user.telegram_username:
+                user_button = types.InlineKeyboardButton(text=user.telegram_username,
+                                                         url=f"t.me/{user.telegram_username}")
+                users_builder.add(user_button)
+        users_builder.add(AdminConstants.back_to_main_button)
+        users_builder.adjust(1)
+        await callback.message.edit_text(
+            text=f"{len(users)} new users in the last {unpacked_callback.args_to_action} days:",
+            reply_markup=users_builder.as_markup())
+
+    elif unpacked_callback.action == "buys":
+        pass
+
+
 async def make_refund(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
     buy_id = int(unpacked_callback.args_to_action)
@@ -381,6 +428,9 @@ async def admin_menu_navigation(callback: CallbackQuery, state: FSMContext, call
         11: send_refund_menu,
         12: refund_confirmation,
         13: make_refund,
+        14: pick_statistics_entity,
+        15: pick_statistics_timedelta,
+        16: get_statistics
     }
 
     current_level_function = levels[current_level]
