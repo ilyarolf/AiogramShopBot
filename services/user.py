@@ -171,6 +171,16 @@ class UserService:
             old_consume_records_stmt = select(User.consume_records).where(User.id == user_id)
             old_consume_records = await session.execute(old_consume_records_stmt)
             old_consume_records = old_consume_records.scalar()
-            stmt = update(User).where(User.id == user_id).values(consume_records=old_consume_records-total_price)
+            stmt = update(User).where(User.id == user_id).values(consume_records=old_consume_records - total_price)
             await session.execute(stmt)
             await session.commit()
+
+    @staticmethod
+    async def get_new_users_by_timedelta(timedelta_int):
+        async with async_session_maker() as session:
+            current_time = datetime.datetime.now()
+            one_day_interval = datetime.timedelta(days=int(timedelta_int))
+            time_to_subtract = current_time - one_day_interval
+            stmt = select(User).where(User.registered_at >= time_to_subtract)
+            users = await session.execute(stmt)
+            return users.scalars().all()

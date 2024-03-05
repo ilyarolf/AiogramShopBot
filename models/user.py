@@ -1,6 +1,4 @@
-import datetime
-
-from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float
+from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func
 
 from models.base import Base
 
@@ -21,5 +19,5 @@ class User(Base):
     ltc_balance = Column(Float, nullable=False, default=0.0)
     usdt_balance = Column(Float, nullable=False, default=0.0)
     is_new = Column(Boolean, default=True)
-    registered_at = Column(DateTime, default=datetime.datetime.utcnow())
+    registered_at = Column(DateTime, default=func.now())
     seed = Column(String, nullable=False, unique=True)
