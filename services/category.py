@@ -53,5 +53,8 @@ class CategoryService:
         with session_maker() as session:
             stmt = select(func.count(Category.id)).distinct()
             subcategories = session.execute(stmt)
-            subcategories_count = subcategories.scalar_one()
-            return math.trunc(subcategories_count / CategoryService.items_per_page)
+            categories_count = subcategories.scalar_one()
+            if categories_count % CategoryService.items_per_page == 0:
+                return categories_count / CategoryService.items_per_page - 1
+            else:
+                return math.trunc(categories_count / CategoryService.items_per_page) - 1

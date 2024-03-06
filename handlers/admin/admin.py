@@ -364,8 +364,8 @@ async def get_statistics(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
     statistics_keyboard_builder = InlineKeyboardBuilder()
     if unpacked_callback.action == "users":
-        users, users_count = await UserService.get_new_users_by_timedelta(unpacked_callback.args_to_action,
-                                                                          unpacked_callback.page)
+        users, users_count = UserService.get_new_users_by_timedelta(unpacked_callback.args_to_action,
+                                                                    unpacked_callback.page)
         for user in users:
             if user.telegram_username:
                 user_button = types.InlineKeyboardButton(text=user.telegram_username,
@@ -387,7 +387,7 @@ async def get_statistics(callback: CallbackQuery):
         buttons = [back_button,
                    AdminConstants.back_to_main_button]
         statistics_keyboard_builder.add(*buttons)
-        buys = await BuyService.get_new_buys_by_timedelta(unpacked_callback.args_to_action)
+        buys = BuyService.get_new_buys_by_timedelta(unpacked_callback.args_to_action)
         total_profit = 0
         items_sold = 0
         for buy in buys:

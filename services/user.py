@@ -200,4 +200,8 @@ class UserService:
             stmt = select(func.count(User.id)).where(User.registered_at >= time_to_subtract,
                                                      User.telegram_username != None)
             users = session.execute(stmt)
-            return math.trunc(users.scalar_one() / UserService.users_per_page)
+            users = users.scalar_one()
+            if users % UserService.users_per_page == 0:
+                return users / UserService.users_per_page - 1
+            else:
+                return math.trunc(users / UserService.users_per_page) - 1

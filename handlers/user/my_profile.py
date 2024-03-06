@@ -109,7 +109,7 @@ async def top_up_balance(callback: CallbackQuery):
 
 async def create_purchase_history_keyboard_builder(page: int, user_id: int):
     orders_markup_builder = InlineKeyboardBuilder()
-    orders = await BuyService.get_buys_by_buyer_id(user_id, page)
+    orders = BuyService.get_buys_by_buyer_id(user_id, page)
     for order in orders:
         quantity = order.quantity
         total_price = order.total_price
