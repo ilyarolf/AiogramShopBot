@@ -6,6 +6,7 @@ from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from bot import bot
 from crypto_api.CryptoApiManager import CryptoApiManager
+from handlers.common.common import add_pagination_buttons
 from handlers.user.all_categories import create_message_with_bought_items
 from services.buy import BuyService
 from services.buyItem import BuyItemService
@@ -22,10 +23,16 @@ class MyProfileCallback(CallbackData, prefix="my_profile"):
     level: int
     action: str
     args_for_action: Union[int, str]
+    page: int
 
 
-def create_callback_profile(level: int, action: str = "", args_for_action=""):
-    return MyProfileCallback(level=level, action=action, args_for_action=args_for_action).pack()
+def create_callback_profile(level: int, action: str = "", args_for_action="", page=0):
+    return MyProfileCallback(level=level, action=action, args_for_action=args_for_action, page=page).pack()
+
+
+class MyProfileConstants:
+    back_to_main_menu = types.InlineKeyboardButton(text="⤵️Back my profile",
+                                                   callback_data=create_callback_profile(level=0))
 
 
 @my_profile_router.message(F.text == "🎓 My profile", IsUserExistFilter())
@@ -100,35 +107,40 @@ async def top_up_balance(callback: CallbackQuery):
     await callback.answer()
 
 
-async def purchase_history(callback: CallbackQuery):
-    telegram_id = callback.message.chat.id
-    user = UserService.get_by_tgid(telegram_id)
-    current_level = 2
-    orders = BuyService.get_buys_by_buyer_id(user.id)
+async def create_purchase_history_keyboard_builder(page: int, user_id: int):
     orders_markup_builder = InlineKeyboardBuilder()
-    back_to_profile_button = types.InlineKeyboardButton(text='Back',
-                                                        callback_data=create_callback_profile(current_level - 2))
+    orders = await BuyService.get_buys_by_buyer_id(user_id, page)
     for order in orders:
         quantity = order.quantity
         total_price = order.total_price
         buy_id = order.id
         buy_item = BuyItemService.get_buy_item_by_buy_id(buy_id)
         item = ItemService.get_by_primary_key(buy_item.item_id)
-        item_from_history_callback = create_callback_profile(current_level + 2, action="get_order",
+        item_from_history_callback = create_callback_profile(4, action="get_order",
                                                              args_for_action=str(buy_id))
         order_inline = types.InlineKeyboardButton(
             text=f"{item.subcategory.name} | Total Price: {total_price}$ | Quantity: {quantity} pcs",
             callback_data=item_from_history_callback
         )
         orders_markup_builder.add(order_inline)
-    orders_markup_builder.add(back_to_profile_button)
     orders_markup_builder.adjust(1)
-    orders_markup = orders_markup_builder.as_markup()
-    if not orders:
-        await callback.message.edit_text("<b>You haven't had any purchases yet</b>", reply_markup=orders_markup,
+    return orders_markup_builder, len(orders)
+
+
+async def purchase_history(callback: CallbackQuery):
+    unpacked_callback = MyProfileCallback.unpack(callback.data)
+    telegram_id = callback.message.chat.id
+    user = UserService.get_by_tgid(telegram_id)
+    orders_markup_builder, orders_num = await create_purchase_history_keyboard_builder(unpacked_callback.page, user.id)
+    orders_markup_builder = await add_pagination_buttons(orders_markup_builder, callback.data,
+                                                         BuyService.get_max_page_purchase_history(user.id),
+                                                         MyProfileCallback.unpack, MyProfileConstants.back_to_main_menu)
+    if orders_num == 0:
+        await callback.message.edit_text("<b>You haven't had any purchases yet</b>",
+                                         reply_markup=orders_markup_builder.as_markup(),
                                          parse_mode=ParseMode.HTML)
     else:
-        await callback.message.edit_text('<b>Your purchases:</b>', reply_markup=orders_markup,
+        await callback.message.edit_text('<b>Your purchases:</b>', reply_markup=orders_markup_builder.as_markup(),
                                          parse_mode=ParseMode.HTML)
     await callback.answer()
 
@@ -144,7 +156,8 @@ async def refresh_balance(callback: CallbackQuery):
         crypto_prices = await CryptoApiManager.get_crypto_prices()
         deposit_usd_amount = 0.0
         if sum(new_crypto_balances.values()) > sum(old_crypto_balances.values()):
-            merged_deposit = {key: new_crypto_balances[key] - old_crypto_balances[key] for key in new_crypto_balances.keys()}
+            merged_deposit = {key: new_crypto_balances[key] - old_crypto_balances[key] for key in
+                              new_crypto_balances.keys()}
             for balance_key, balance in merged_deposit.items():
                 balance_key = balance_key.split('_')[0]
                 crypto_balance_in_usd = balance * crypto_prices[balance_key]
