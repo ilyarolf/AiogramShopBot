@@ -13,11 +13,19 @@ class BuyService:
     buys_per_page = 25
 
     @staticmethod
-    async def get_buys_by_buyer_id(buyer_id: int):
+    async def get_buys_by_buyer_id(buyer_id: int, page: int):
         async with async_session_maker() as session:
-            stmt = select(Buy).where(Buy.buyer_id == buyer_id)
+            stmt = select(Buy).where(Buy.buyer_id == buyer_id).limit(BuyService.buys_per_page).offset(
+                page * BuyService.buys_per_page)
             buys = await session.execute(stmt)
             return buys.scalars().all()
+
+    @staticmethod
+    async def get_max_page_purchase_history(buyer_id: int):
+        async with async_session_maker() as session:
+            stmt = select(func.count(Buy.id)).where(Buy.buyer_id == buyer_id)
+            max_page = await session.execute(stmt)
+            return math.trunc(max_page.scalar_one() / BuyService.buys_per_page)
 
     @staticmethod
     async def insert_new(user: User, quantity: int, total_price: float) -> int:
@@ -49,4 +57,4 @@ class BuyService:
         async with async_session_maker() as session:
             stmt = select(func.count(Buy.id)).where(Buy.is_refunded == 0)
             not_refunded_buys = await session.execute(stmt)
-            return math.trunc(not_refunded_buys.scalar_one()/BuyService.buys_per_page)
+            return math.trunc(not_refunded_buys.scalar_one() / BuyService.buys_per_page)
