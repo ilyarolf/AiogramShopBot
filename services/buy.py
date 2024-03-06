@@ -1,3 +1,4 @@
+import datetime
 import math
 
 from sqlalchemy import select, update, func
@@ -58,3 +59,14 @@ class BuyService:
             stmt = select(func.count(Buy.id)).where(Buy.is_refunded == 0)
             not_refunded_buys = await session.execute(stmt)
             return math.trunc(not_refunded_buys.scalar_one() / BuyService.buys_per_page)
+
+    @staticmethod
+    async def get_new_buys_by_timedelta(timedelta_int):
+        async with async_session_maker() as session:
+            current_time = datetime.datetime.now()
+            one_day_interval = datetime.timedelta(days=int(timedelta_int))
+            time_to_subtract = current_time - one_day_interval
+            stmt = select(Buy).where(Buy.buy_datetime >= time_to_subtract)
+            buys = await session.execute(stmt)
+            return buys.scalars().all()
+
