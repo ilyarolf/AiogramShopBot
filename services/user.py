@@ -8,7 +8,7 @@ from utils.CryptoAddressGenerator import CryptoAddressGenerator
 
 
 class UserService:
-    users_per_page = 25
+    users_per_page = 20
 
     @staticmethod
     def is_exist(telegram_id: int) -> bool:

@@ -8,7 +8,7 @@ from models.subcategory import Subcategory
 
 
 class ItemService:
-    items_per_page = 25
+    items_per_page = 20
 
     @staticmethod
     def get_by_primary_key(item_id: int) -> Item:

@@ -10,7 +10,7 @@ from utils.other_sql import RefundBuyDTO
 
 
 class BuyService:
-    buys_per_page = 3
+    buys_per_page = 20
 
     @staticmethod
     def get_buys_by_buyer_id(buyer_id: int, page: int):

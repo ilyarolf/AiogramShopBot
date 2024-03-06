@@ -7,7 +7,7 @@ from models.subcategory import Subcategory
 
 
 class SubcategoryService:
-    items_per_page = 25
+    items_per_page = 20
 
     @staticmethod
     def get_or_create_one(subcategory_name: str) -> Subcategory:
