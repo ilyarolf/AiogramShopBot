@@ -12,6 +12,7 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+import config
 from bot import bot
 from handlers.common.common import add_pagination_buttons
 from services.buy import BuyService
@@ -72,10 +73,10 @@ async def admin(message: Union[Message, CallbackQuery]):
                               callback_data=create_admin_callback(
                                   level=5,
                                   action="send_to_everyone"))
-    admin_menu_builder.button(text="Get new users",
+    admin_menu_builder.button(text="Get database file",
                               callback_data=create_admin_callback(
                                   level=6,
-                                  action="get_new_users"
+                                  action="get_db_file"
                               ))
     admin_menu_builder.button(text="Delete category",
                               callback_data=create_admin_callback(
@@ -182,18 +183,6 @@ async def send_restocking_message(callback: CallbackQuery):
     message = await NewItemsManager.generate_restocking_message()
     await callback.message.answer(message, parse_mode=ParseMode.HTML,
                                   reply_markup=AdminConstants.confirmation_builder.as_markup())
-
-
-async def get_new_users(callback: CallbackQuery):
-    users_builder = InlineKeyboardBuilder()
-    new_users = await UserService.get_new_users()
-    for user in new_users:
-        if user.telegram_username:
-            user_button = types.InlineKeyboardButton(text=user.telegram_username, url=f"t.me/{user.telegram_username}")
-            users_builder.add(user_button)
-    users_builder.add(AdminConstants.back_to_main_button)
-    users_builder.adjust(1)
-    await callback.message.edit_text(text=f"{len(new_users)} new users:", reply_markup=users_builder.as_markup())
 
 
 async def delete_category(callback: CallbackQuery):
@@ -435,6 +424,13 @@ async def make_refund(callback: CallbackQuery):
                                                   f"{refund_data.subcategory}</b>", parse_mode=ParseMode.HTML)
 
 
+async def send_db_file(callback: CallbackQuery):
+    with open(f"./data/{config.DB_NAME}", "rb") as f:
+        await callback.message.bot.send_document(callback.from_user.id,
+                                                 types.BufferedInputFile(file=f.read(), filename="database.db"))
+    await callback.answer()
+
+
 @admin_router.callback_query(AdminIdFilter(), AdminCallback.filter())
 async def admin_menu_navigation(callback: CallbackQuery, state: FSMContext, callback_data: AdminCallback):
     current_level = callback_data.level
@@ -445,8 +441,8 @@ async def admin_menu_navigation(callback: CallbackQuery, state: FSMContext, call
         2: confirm_and_send,
         3: decline_action,
         4: add_items,
+        6: send_db_file,
         5: send_restocking_message,
-        6: get_new_users,
         7: delete_category,
         8: delete_subcategory,
         9: delete_confirmation,
