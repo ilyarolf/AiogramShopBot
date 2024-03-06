@@ -50,8 +50,9 @@ class AdminConstants:
                                                      callback_data=create_admin_callback(level=0))
 
     @staticmethod
-    async def get_back_button(current_level: int) -> types.InlineKeyboardButton:
-        return types.InlineKeyboardButton(text="Back", callback_data=create_admin_callback(level=current_level - 1))
+    async def get_back_button(unpacked_callback: AdminCallback) -> types.InlineKeyboardButton:
+        new_callback = unpacked_callback.model_copy(update={"level": unpacked_callback.level - 1})
+        return types.InlineKeyboardButton(text="Back", callback_data=new_callback.pack())
 
 
 @admin_router.message(Command("admin"), AdminIdFilter())
@@ -321,7 +322,7 @@ async def refund_confirmation(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
     current_level = unpacked_callback.level
     buy_id = int(unpacked_callback.args_to_action)
-    back_button = await AdminConstants.get_back_button(current_level)
+    back_button = await AdminConstants.get_back_button(unpacked_callback)
     confirm_button = types.InlineKeyboardButton(text="Confirm",
                                                 callback_data=create_admin_callback(level=current_level + 1,
                                                                                     action="confirm_refund",
@@ -351,7 +352,9 @@ async def pick_statistics_entity(callback: CallbackQuery):
     buttons_builder = InlineKeyboardBuilder()
     buttons_builder.add(types.InlineKeyboardButton(text="📊Users statistics", callback_data=users_statistics_callback))
     buttons_builder.add(types.InlineKeyboardButton(text="📊Buys statistics", callback_data=buys_statistics_callback))
-    await callback.message.edit_text(text="Pick entity", reply_markup=buttons_builder.as_markup())
+    buttons_builder.row(AdminConstants.back_to_main_button)
+    await callback.message.edit_text(text="<b>📊 Pick statistics entity</b>", reply_markup=buttons_builder.as_markup(),
+                                     parse_mode=ParseMode.HTML)
 
 
 async def pick_statistics_timedelta(callback: CallbackQuery):
@@ -366,27 +369,50 @@ async def pick_statistics_timedelta(callback: CallbackQuery):
     timedelta_buttons_builder.add(types.InlineKeyboardButton(text="1 Day", callback_data=one_day_cb))
     timedelta_buttons_builder.add(types.InlineKeyboardButton(text="7 Days", callback_data=seven_days_cb))
     timedelta_buttons_builder.add(types.InlineKeyboardButton(text="30 Days", callback_data=one_month_cb))
-    await callback.message.edit_text(text="Pick timedelta", reply_markup=timedelta_buttons_builder.as_markup())
+    timedelta_buttons_builder.row(await AdminConstants.get_back_button(unpacked_callback))
+    await callback.message.edit_text(text="<b>🗓 Pick timedelta to statistics</b>",
+                                     reply_markup=timedelta_buttons_builder.as_markup(), parse_mode=ParseMode.HTML)
 
 
 async def get_statistics(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
+    statistics_keyboard_builder = InlineKeyboardBuilder()
     if unpacked_callback.action == "users":
-        users_builder = InlineKeyboardBuilder()
-        users = await UserService.get_new_users_by_timedelta(unpacked_callback.args_to_action)
+        users, users_count = await UserService.get_new_users_by_timedelta(unpacked_callback.args_to_action,
+                                                                          unpacked_callback.page)
         for user in users:
             if user.telegram_username:
                 user_button = types.InlineKeyboardButton(text=user.telegram_username,
                                                          url=f"t.me/{user.telegram_username}")
-                users_builder.add(user_button)
-        users_builder.add(AdminConstants.back_to_main_button)
-        users_builder.adjust(1)
+                statistics_keyboard_builder.add(user_button)
+        statistics_keyboard_builder.adjust(1)
+        statistics_keyboard_builder = await add_pagination_buttons(statistics_keyboard_builder, callback.data,
+                                                                   UserService.get_max_page_for_users_by_timedelta(
+                                                                       unpacked_callback.args_to_action),
+                                                                   AdminCallback.unpack, None)
+        statistics_keyboard_builder.row(
+            *[AdminConstants.back_to_main_button, await AdminConstants.get_back_button(unpacked_callback)])
         await callback.message.edit_text(
-            text=f"{len(users)} new users in the last {unpacked_callback.args_to_action} days:",
-            reply_markup=users_builder.as_markup())
+            text=f"<b>{users_count} new users in the last {unpacked_callback.args_to_action} days:</b>",
+            reply_markup=statistics_keyboard_builder.as_markup(), parse_mode=ParseMode.HTML)
 
     elif unpacked_callback.action == "buys":
-        pass
+        back_button = await AdminConstants.get_back_button(unpacked_callback)
+        buttons = [back_button,
+                   AdminConstants.back_to_main_button]
+        statistics_keyboard_builder.add(*buttons)
+        buys = await BuyService.get_new_buys_by_timedelta(unpacked_callback.args_to_action)
+        total_profit = 0
+        items_sold = 0
+        for buy in buys:
+            total_profit += buy.total_price
+            items_sold += buy.quantity
+        await callback.message.edit_text(
+            text=f"<b>📊 Sales statistics for the last {unpacked_callback.args_to_action} days.\n"
+                 f"💰 Total profit: ${total_profit}\n"
+                 f"🛍️ Items sold: {items_sold}\n"
+                 f"💼 Total buys: {len(buys)}</b>", reply_markup=statistics_keyboard_builder.as_markup(),
+            parse_mode=ParseMode.HTML)
 
 
 async def make_refund(callback: CallbackQuery):
