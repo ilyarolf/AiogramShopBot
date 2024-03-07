@@ -128,4 +128,7 @@ class ItemService:
             stmt = select(func.count(distinct(subquery.c.subcategory_id)))
             maximum_page = session.execute(stmt)
             maximum_page = maximum_page.scalar_one()
-            return math.trunc(maximum_page / ItemService.items_per_page)
+            if maximum_page % ItemService.items_per_page == 0:
+                return maximum_page / ItemService.items_per_page - 1
+            else:
+                return math.trunc(maximum_page / ItemService.items_per_page)
