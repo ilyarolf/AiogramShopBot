@@ -11,7 +11,7 @@ from utils.other_sql import RefundBuyDTO
 
 
 class BuyService:
-    buys_per_page = 25
+    buys_per_page = 20
 
     @staticmethod
     async def get_buys_by_buyer_id(buyer_id: int, page: int):
@@ -26,7 +26,11 @@ class BuyService:
         async with async_session_maker() as session:
             stmt = select(func.count(Buy.id)).where(Buy.buyer_id == buyer_id)
             max_page = await session.execute(stmt)
-            return math.trunc(max_page.scalar_one() / BuyService.buys_per_page)
+            max_page = max_page.scalar_one()
+            if max_page % BuyService.buys_per_page == 0:
+                return max_page / BuyService.buys_per_page - 1
+            else:
+                return math.trunc(max_page / BuyService.buys_per_page)
 
     @staticmethod
     async def insert_new(user: User, quantity: int, total_price: float) -> int:
@@ -58,7 +62,10 @@ class BuyService:
         async with async_session_maker() as session:
             stmt = select(func.count(Buy.id)).where(Buy.is_refunded == 0)
             not_refunded_buys = await session.execute(stmt)
-            return math.trunc(not_refunded_buys.scalar_one() / BuyService.buys_per_page)
+            if not_refunded_buys % BuyService.buys_per_page == 0:
+                return not_refunded_buys / BuyService.buys_per_page - 1
+            else:
+                return math.trunc(not_refunded_buys.scalar_one() / BuyService.buys_per_page)
 
     @staticmethod
     async def get_new_buys_by_timedelta(timedelta_int):

@@ -9,7 +9,7 @@ from models.subcategory import Subcategory
 
 
 class ItemService:
-    items_per_page = 25
+    items_per_page = 20
 
     @staticmethod
     async def get_by_primary_key(item_id: int) -> Item:
@@ -79,7 +79,11 @@ class ItemService:
             subquery = select(Item.subcategory_id).where(Item.category_id == category_id, Item.is_sold == 0)
             stmt = select(func.count(distinct(subquery.c.subcategory_id)))
             maximum_page = await session.execute(stmt)
-            return math.ceil(maximum_page.scalar() / ItemService.items_per_page) - 1
+            maximum_page = maximum_page.scalar_one()
+            if maximum_page % ItemService.items_per_page == 0:
+                return maximum_page / ItemService.items_per_page - 1
+            else:
+                return math.trunc(maximum_page / ItemService.items_per_page)
 
     @staticmethod
     async def get_price_by_subcategory(subcategory_id: int) -> float:
