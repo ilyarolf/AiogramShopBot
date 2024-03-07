@@ -1,6 +1,6 @@
 import datetime
-
-from sqlalchemy import select, update
+import math
+from sqlalchemy import select, update, func
 from db import session_maker
 
 from models.user import User
@@ -8,6 +8,8 @@ from utils.CryptoAddressGenerator import CryptoAddressGenerator
 
 
 class UserService:
+    users_per_page = 20
+
     @staticmethod
     def is_exist(telegram_id: int) -> bool:
         with session_maker() as session:
@@ -174,3 +176,32 @@ class UserService:
             stmt = update(User).where(User.id == user_id).values(consume_records=old_consume_records - total_price)
             session.execute(stmt)
             session.commit()
+
+    @staticmethod
+    def get_new_users_by_timedelta(timedelta_int, page):
+        with session_maker() as session:
+            current_time = datetime.datetime.now()
+            one_day_interval = datetime.timedelta(days=int(timedelta_int))
+            time_to_subtract = current_time - one_day_interval
+            stmt = select(User).where(User.registered_at >= time_to_subtract, User.telegram_username != None).limit(
+                UserService.users_per_page).offset(
+                page * UserService.users_per_page)
+            count_stmt = select(func.count(User.id)).where(User.registered_at >= time_to_subtract)
+            users = session.execute(stmt)
+            users_count = session.execute(count_stmt)
+            return users.scalars().all(), users_count.scalar_one()
+
+    @staticmethod
+    def get_max_page_for_users_by_timedelta(timedelta_int):
+        with session_maker() as session:
+            current_time = datetime.datetime.now()
+            one_day_interval = datetime.timedelta(days=int(timedelta_int))
+            time_to_subtract = current_time - one_day_interval
+            stmt = select(func.count(User.id)).where(User.registered_at >= time_to_subtract,
+                                                     User.telegram_username != None)
+            users = session.execute(stmt)
+            users = users.scalar_one()
+            if users % UserService.users_per_page == 0:
+                return users / UserService.users_per_page - 1
+            else:
+                return math.trunc(users / UserService.users_per_page)
