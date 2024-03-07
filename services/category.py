@@ -50,11 +50,14 @@ class CategoryService:
 
     @staticmethod
     def get_maximum_page():
+        #TODO(Pagination bug with get last page)
         with session_maker() as session:
-            stmt = select(func.count(Category.id)).distinct()
-            subcategories = session.execute(stmt)
-            categories_count = subcategories.scalar_one()
-            if categories_count % CategoryService.items_per_page == 0:
-                return categories_count / CategoryService.items_per_page - 1
-            else:
-                return math.trunc(categories_count / CategoryService.items_per_page) - 1
+            stmt = (
+                select(func.count(Category.id).label('unique_category_count'))
+                .join(Item, Item.category_id == Category.id)
+                .filter(Item.is_sold == 0)
+                .distinct()
+            )
+            max_page = session.execute(stmt)
+            max_page = max_page.scalar_one()
+            return math.trunc(max_page / CategoryService.items_per_page)

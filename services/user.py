@@ -201,7 +201,4 @@ class UserService:
                                                      User.telegram_username != None)
             users = session.execute(stmt)
             users = users.scalar_one()
-            if users % UserService.users_per_page == 0:
-                return users / UserService.users_per_page - 1
-            else:
-                return math.trunc(users / UserService.users_per_page) - 1
+            return math.trunc(users / UserService.users_per_page)

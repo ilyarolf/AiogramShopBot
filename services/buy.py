@@ -26,11 +26,7 @@ class BuyService:
             stmt = select(func.count(Buy.id)).where(Buy.buyer_id == buyer_id)
             max_page = session.execute(stmt)
             max_page = max_page.scalar_one()
-            if max_page % BuyService.buys_per_page == 0:
-                return max_page / BuyService.buys_per_page - 1
-            else:
-                return math.trunc(max_page.scalar_one() / BuyService.buys_per_page) - 1
-
+            return math.trunc(max_page / BuyService.buys_per_page)
 
     @staticmethod
     def insert_new(user: User, quantity: int, total_price: float) -> int:
@@ -41,7 +37,6 @@ class BuyService:
             session.refresh(new_buy)
             return new_buy.id
 
-
     @staticmethod
     def get_not_refunded_buy_ids(page: int):
         with session_maker() as session:
@@ -49,7 +44,6 @@ class BuyService:
                 page * BuyService.buys_per_page)
             not_refunded_buys = session.execute(stmt)
             return not_refunded_buys.scalars().all()
-
 
     @staticmethod
     def refund(buy_id: int, refund_data: RefundBuyDTO):
@@ -59,18 +53,13 @@ class BuyService:
             session.execute(stmt)
             session.commit()
 
-
     @staticmethod
     def get_max_refund_pages():
         with session_maker() as session:
             stmt = select(func.count(Buy.id)).where(Buy.is_refunded == 0)
             not_refunded_buys = session.execute(stmt)
             not_refunded_buys = not_refunded_buys.scalar_one()
-            if not_refunded_buys % BuyService.buys_per_page == 0:
-                return not_refunded_buys / BuyService.buys_per_page - 1
-            else:
-                return math.trunc(not_refunded_buys / BuyService.buys_per_page) - 1
-
+            return math.trunc(not_refunded_buys / BuyService.buys_per_page)
 
     @staticmethod
     def get_new_buys_by_timedelta(timedelta_int):

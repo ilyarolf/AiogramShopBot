@@ -60,7 +60,4 @@ class SubcategoryService:
             stmt = select(func.count(Subcategory.id)).distinct()
             subcategories = session.execute(stmt)
             subcategories_count = subcategories.scalar_one()
-            if subcategories_count % SubcategoryService.items_per_page == 0:
-                return subcategories_count / SubcategoryService.items_per_page - 1
-            else:
-                return math.trunc(subcategories_count / SubcategoryService.items_per_page) - 1
+            return math.trunc(subcategories_count / SubcategoryService.items_per_page)
