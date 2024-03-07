@@ -8,7 +8,7 @@ from models.subcategory import Subcategory
 
 
 class SubcategoryService:
-    items_per_page = 25
+    items_per_page = 20
 
     @staticmethod
     async def get_or_create_one(subcategory_name: str) -> Subcategory:
@@ -40,7 +40,10 @@ class SubcategoryService:
             stmt = select(func.count(Subcategory.id)).distinct()
             subcategories = await session.execute(stmt)
             subcategories_count = subcategories.scalar_one()
-            return math.trunc(subcategories_count / SubcategoryService.items_per_page)
+            if subcategories_count % SubcategoryService.items_per_page == 0:
+                return subcategories_count / SubcategoryService.items_per_page - 1
+            else:
+                return math.trunc(subcategories_count / SubcategoryService.items_per_page)
 
     @staticmethod
     async def get_by_primary_key(subcategory_id) -> Subcategory:

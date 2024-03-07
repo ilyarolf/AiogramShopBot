@@ -12,6 +12,7 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+import config
 from bot import bot
 from handlers.common.common import add_pagination_buttons
 from services.buy import BuyService
@@ -50,8 +51,9 @@ class AdminConstants:
                                                      callback_data=create_admin_callback(level=0))
 
     @staticmethod
-    async def get_back_button(current_level: int) -> types.InlineKeyboardButton:
-        return types.InlineKeyboardButton(text="Back", callback_data=create_admin_callback(level=current_level - 1))
+    async def get_back_button(unpacked_callback: AdminCallback) -> types.InlineKeyboardButton:
+        new_callback = unpacked_callback.model_copy(update={"level": unpacked_callback.level - 1})
+        return types.InlineKeyboardButton(text="Back", callback_data=new_callback.pack())
 
 
 @admin_router.message(Command("admin"), AdminIdFilter())
@@ -71,10 +73,10 @@ async def admin(message: Union[Message, CallbackQuery]):
                               callback_data=create_admin_callback(
                                   level=5,
                                   action="send_to_everyone"))
-    admin_menu_builder.button(text="Get new users",
+    admin_menu_builder.button(text="Get database file",
                               callback_data=create_admin_callback(
                                   level=6,
-                                  action="get_new_users"
+                                  action="get_db_file"
                               ))
     admin_menu_builder.button(text="Delete category",
                               callback_data=create_admin_callback(
@@ -88,6 +90,8 @@ async def admin(message: Union[Message, CallbackQuery]):
                               callback_data=create_admin_callback(
                                   level=11
                               ))
+    admin_menu_builder.button(text="Statistics",
+                              callback_data=create_admin_callback(level=14))
     admin_menu_builder.adjust(2)
     if isinstance(message, Message):
         await message.answer("<b>Admin Menu:</b>", parse_mode=ParseMode.HTML,
@@ -179,18 +183,6 @@ async def send_restocking_message(callback: CallbackQuery):
     message = await NewItemsManager.generate_restocking_message()
     await callback.message.answer(message, parse_mode=ParseMode.HTML,
                                   reply_markup=AdminConstants.confirmation_builder.as_markup())
-
-
-async def get_new_users(callback: CallbackQuery):
-    users_builder = InlineKeyboardBuilder()
-    new_users = await UserService.get_new_users()
-    for user in new_users:
-        if user.telegram_username:
-            user_button = types.InlineKeyboardButton(text=user.telegram_username, url=f"t.me/{user.telegram_username}")
-            users_builder.add(user_button)
-    users_builder.add(AdminConstants.back_to_main_button)
-    users_builder.adjust(1)
-    await callback.message.edit_text(text=f"{len(new_users)} new users:", reply_markup=users_builder.as_markup())
 
 
 async def delete_category(callback: CallbackQuery):
@@ -319,7 +311,7 @@ async def refund_confirmation(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
     current_level = unpacked_callback.level
     buy_id = int(unpacked_callback.args_to_action)
-    back_button = await AdminConstants.get_back_button(current_level)
+    back_button = await AdminConstants.get_back_button(unpacked_callback)
     confirm_button = types.InlineKeyboardButton(text="Confirm",
                                                 callback_data=create_admin_callback(level=current_level + 1,
                                                                                     action="confirm_refund",
@@ -342,6 +334,76 @@ async def refund_confirmation(callback: CallbackQuery):
             reply_markup=confirmation_builder.as_markup())
 
 
+async def pick_statistics_entity(callback: CallbackQuery):
+    unpacked_callback = AdminCallback.unpack(callback.data)
+    users_statistics_callback = create_admin_callback(unpacked_callback.level + 1, "users")
+    buys_statistics_callback = create_admin_callback(unpacked_callback.level + 1, "buys")
+    buttons_builder = InlineKeyboardBuilder()
+    buttons_builder.add(types.InlineKeyboardButton(text="📊Users statistics", callback_data=users_statistics_callback))
+    buttons_builder.add(types.InlineKeyboardButton(text="📊Buys statistics", callback_data=buys_statistics_callback))
+    buttons_builder.row(AdminConstants.back_to_main_button)
+    await callback.message.edit_text(text="<b>📊 Pick statistics entity</b>", reply_markup=buttons_builder.as_markup(),
+                                     parse_mode=ParseMode.HTML)
+
+
+async def pick_statistics_timedelta(callback: CallbackQuery):
+    unpacked_callback = AdminCallback.unpack(callback.data)
+    one_day_cb = unpacked_callback.model_copy(
+        update={"args_to_action": '1', 'level': unpacked_callback.level + 1}).pack()
+    seven_days_cb = unpacked_callback.model_copy(
+        update={"args_to_action": '7', 'level': unpacked_callback.level + 1}).pack()
+    one_month_cb = unpacked_callback.model_copy(
+        update={"args_to_action": '30', 'level': unpacked_callback.level + 1}).pack()
+    timedelta_buttons_builder = InlineKeyboardBuilder()
+    timedelta_buttons_builder.add(types.InlineKeyboardButton(text="1 Day", callback_data=one_day_cb))
+    timedelta_buttons_builder.add(types.InlineKeyboardButton(text="7 Days", callback_data=seven_days_cb))
+    timedelta_buttons_builder.add(types.InlineKeyboardButton(text="30 Days", callback_data=one_month_cb))
+    timedelta_buttons_builder.row(await AdminConstants.get_back_button(unpacked_callback))
+    await callback.message.edit_text(text="<b>🗓 Pick timedelta to statistics</b>",
+                                     reply_markup=timedelta_buttons_builder.as_markup(), parse_mode=ParseMode.HTML)
+
+
+async def get_statistics(callback: CallbackQuery):
+    unpacked_callback = AdminCallback.unpack(callback.data)
+    statistics_keyboard_builder = InlineKeyboardBuilder()
+    if unpacked_callback.action == "users":
+        users, users_count = await UserService.get_new_users_by_timedelta(unpacked_callback.args_to_action,
+                                                                          unpacked_callback.page)
+        for user in users:
+            if user.telegram_username:
+                user_button = types.InlineKeyboardButton(text=user.telegram_username,
+                                                         url=f"t.me/{user.telegram_username}")
+                statistics_keyboard_builder.add(user_button)
+        statistics_keyboard_builder.adjust(1)
+        statistics_keyboard_builder = await add_pagination_buttons(statistics_keyboard_builder, callback.data,
+                                                                   UserService.get_max_page_for_users_by_timedelta(
+                                                                       unpacked_callback.args_to_action),
+                                                                   AdminCallback.unpack, None)
+        statistics_keyboard_builder.row(
+            *[AdminConstants.back_to_main_button, await AdminConstants.get_back_button(unpacked_callback)])
+        await callback.message.edit_text(
+            text=f"<b>{users_count} new users in the last {unpacked_callback.args_to_action} days:</b>",
+            reply_markup=statistics_keyboard_builder.as_markup(), parse_mode=ParseMode.HTML)
+
+    elif unpacked_callback.action == "buys":
+        back_button = await AdminConstants.get_back_button(unpacked_callback)
+        buttons = [back_button,
+                   AdminConstants.back_to_main_button]
+        statistics_keyboard_builder.add(*buttons)
+        buys = await BuyService.get_new_buys_by_timedelta(unpacked_callback.args_to_action)
+        total_profit = 0
+        items_sold = 0
+        for buy in buys:
+            total_profit += buy.total_price
+            items_sold += buy.quantity
+        await callback.message.edit_text(
+            text=f"<b>📊 Sales statistics for the last {unpacked_callback.args_to_action} days.\n"
+                 f"💰 Total profit: ${total_profit}\n"
+                 f"🛍️ Items sold: {items_sold}\n"
+                 f"💼 Total buys: {len(buys)}</b>", reply_markup=statistics_keyboard_builder.as_markup(),
+            parse_mode=ParseMode.HTML)
+
+
 async def make_refund(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
     buy_id = int(unpacked_callback.args_to_action)
@@ -362,6 +424,13 @@ async def make_refund(callback: CallbackQuery):
                                                   f"{refund_data.subcategory}</b>", parse_mode=ParseMode.HTML)
 
 
+async def send_db_file(callback: CallbackQuery):
+    with open(f"./data/{config.DB_NAME}", "rb") as f:
+        await callback.message.bot.send_document(callback.from_user.id,
+                                                 types.BufferedInputFile(file=f.read(), filename="database.db"))
+    await callback.answer()
+
+
 @admin_router.callback_query(AdminIdFilter(), AdminCallback.filter())
 async def admin_menu_navigation(callback: CallbackQuery, state: FSMContext, callback_data: AdminCallback):
     current_level = callback_data.level
@@ -372,8 +441,8 @@ async def admin_menu_navigation(callback: CallbackQuery, state: FSMContext, call
         2: confirm_and_send,
         3: decline_action,
         4: add_items,
+        6: send_db_file,
         5: send_restocking_message,
-        6: get_new_users,
         7: delete_category,
         8: delete_subcategory,
         9: delete_confirmation,
@@ -381,6 +450,9 @@ async def admin_menu_navigation(callback: CallbackQuery, state: FSMContext, call
         11: send_refund_menu,
         12: refund_confirmation,
         13: make_refund,
+        14: pick_statistics_entity,
+        15: pick_statistics_timedelta,
+        16: get_statistics
     }
 
     current_level_function = levels[current_level]

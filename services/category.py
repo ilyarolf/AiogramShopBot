@@ -8,7 +8,7 @@ from models.item import Item
 
 
 class CategoryService:
-    items_per_page = 25
+    items_per_page = 20
 
     @staticmethod
     async def get_or_create_one(category_name: str) -> Category:
@@ -52,8 +52,17 @@ class CategoryService:
     @staticmethod
     async def get_maximum_page():
         async with async_session_maker() as session:
-            stmt = select(func.count(Category.id)).distinct()
-            subcategories = await session.execute(stmt)
-            subcategories_count = subcategories.scalar_one()
-            return math.trunc(subcategories_count / CategoryService.items_per_page)
+            unique_categories_subquery = (
+                select(Category.id)
+                .join(Item, Item.category_id == Category.id)
+                .filter(Item.is_sold == 0)
+                .distinct()
+            ).alias('unique_categories')
+            stmt = select(func.count()).select_from(unique_categories_subquery)
+            max_page = await session.execute(stmt)
+            max_page = max_page.scalar_one()
+            if max_page % CategoryService.items_per_page == 0:
+                return max_page / CategoryService.items_per_page - 1
+            else:
+                return math.trunc(max_page / CategoryService.items_per_page)
 
