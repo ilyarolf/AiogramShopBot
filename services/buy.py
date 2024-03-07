@@ -62,10 +62,11 @@ class BuyService:
         async with async_session_maker() as session:
             stmt = select(func.count(Buy.id)).where(Buy.is_refunded == 0)
             not_refunded_buys = await session.execute(stmt)
+            not_refunded_buys = not_refunded_buys.scalar_one()
             if not_refunded_buys % BuyService.buys_per_page == 0:
                 return not_refunded_buys / BuyService.buys_per_page - 1
             else:
-                return math.trunc(not_refunded_buys.scalar_one() / BuyService.buys_per_page)
+                return math.trunc(not_refunded_buys / BuyService.buys_per_page)
 
     @staticmethod
     async def get_new_buys_by_timedelta(timedelta_int):
