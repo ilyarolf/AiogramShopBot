@@ -3,7 +3,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
 async def add_pagination_buttons(keyboard_builder: InlineKeyboardBuilder, callback_str: str, max_page_function,
-                                 callback_unpack_function, back_button):
+                                 callback_unpack_function, back_button) -> InlineKeyboardBuilder:
     unpacked_callback = callback_unpack_function(callback_str)
     maximum_page = await max_page_function
     buttons = []

@@ -276,13 +276,15 @@ A new purchase by user @durov for the amount of $500.0 for the purchase of a 1 p
 
 ## 📋 Todo List
 
-- [x] Make migration from direct raw database queries to SQLAlchemy ORM 
-- [x] Add option to encrypt database via SQLCipher (when using SQLAlchemy) 
-- [x] Add an option to generate new crypto addresses using new mnemonic phrases so that 1 user=1 mnemonic phrase
-- [ ] Make functionality of automatic database backup by timer, with sending database to admin in telegram
-- [ ] Make the functionality of database backup by action in the admin in the Telegram bot
-- [ ] Make the functionality of generating statistics of sales and deposits in the bot for a month/week in the admin panel
-- [ ] Items pagination
+- [x] Make migration from direct raw database queries to SQLAlchemy ORM.
+- [x] Add option to encrypt database via SQLCipher (when using SQLAlchemy).
+- [x] Add an option to generate new crypto addresses using new mnemonic phrases so that 1 user=1 mnemonic phrase.
+- [x] Items pagination.
+- [x] Make the functionality of database backup by action in the admin in the Telegram bot.
+- [x] Make the functionality of generating statistics of sales and users in the bot for a month/week/day in the admin
+  panel.
+- [ ] Make the functionality of generating statistics of deposits in the bot for a month/week in the admin
+  panel.
 
 ## ✨ DONATE Buy Me Coffee
 
