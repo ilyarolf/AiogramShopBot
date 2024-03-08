@@ -86,10 +86,10 @@ async def all_categories(message: Union[Message, CallbackQuery]):
     if isinstance(message, Message):
         category_inline_buttons = await create_category_buttons(0)
         zero_level_callback = create_callback_all_categories(0)
-        category_inline_buttons = await add_pagination_buttons(category_inline_buttons, zero_level_callback,
-                                                               CategoryService.get_maximum_page(),
-                                                               AllCategoriesCallback.unpack, None)
         if category_inline_buttons:
+            category_inline_buttons = await add_pagination_buttons(category_inline_buttons, zero_level_callback,
+                                                                   CategoryService.get_maximum_page(),
+                                                                   AllCategoriesCallback.unpack, None)
             await message.answer('🔍 <b>All categories</b>', parse_mode=ParseMode.HTML,
                                  reply_markup=category_inline_buttons.as_markup())
         else:
@@ -98,10 +98,10 @@ async def all_categories(message: Union[Message, CallbackQuery]):
         callback = message
         unpacked_callback = AllCategoriesCallback.unpack(callback.data)
         category_inline_buttons = await create_category_buttons(unpacked_callback.page)
-        category_inline_buttons = await add_pagination_buttons(category_inline_buttons, callback.data,
-                                                               CategoryService.get_maximum_page(),
-                                                               AllCategoriesCallback.unpack, None)
         if category_inline_buttons:
+            category_inline_buttons = await add_pagination_buttons(category_inline_buttons, callback.data,
+                                                                   CategoryService.get_maximum_page(),
+                                                                   AllCategoriesCallback.unpack, None)
             await callback.message.edit_text('🔍 <b>All categories</b>', parse_mode=ParseMode.HTML,
                                              reply_markup=category_inline_buttons.as_markup())
         else:
