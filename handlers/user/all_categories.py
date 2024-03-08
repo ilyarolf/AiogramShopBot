@@ -92,7 +92,6 @@ async def all_categories(message: Union[Message, CallbackQuery]):
                                                                    AllCategoriesCallback.unpack, None)
             await message.answer('🔍 <b>All categories</b>', parse_mode=ParseMode.HTML,
                                  reply_markup=category_inline_buttons.as_markup())
-
         else:
             await message.answer('<b>No categories</b>', parse_mode=ParseMode.HTML)
     elif isinstance(message, CallbackQuery):
