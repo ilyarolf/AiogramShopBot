@@ -23,7 +23,7 @@ from utils.custom_filters import AdminIdFilter
 from utils.new_items_manager import NewItemsManager
 from utils.notification_manager import NotificationManager
 from utils.other_sql import OtherSQLQuery
-
+from aiogram.exceptions import TelegramForbiddenError
 
 class AdminCallback(CallbackData, prefix="admin"):
     level: int
@@ -130,6 +130,12 @@ async def confirm_and_send(callback: CallbackQuery):
                 await callback.message.copy_to(telegram_id, reply_markup=None)
                 counter += 1
                 await asyncio.sleep(1.5)
+            except TelegramForbiddenError as e:
+                logging.error(f"TelegramForbiddenError: {e.message}")
+                if "user is deactivated" in e.message.lower():
+                    logging.error(f"Trying to delete {telegram_id} from db...")
+                    UserService.delete_user(telegram_id)
+                    logging.error(f"User with id {telegram_id} deleted from db!")
             except Exception as e:
                 logging.error(e)
         message_text = f"<b>Message sent to {counter} out of {len(telegram_ids)} people</b>"
