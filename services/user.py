@@ -193,7 +193,7 @@ class UserService:
     @staticmethod
     def delete_user(telegram_id):
         with session_maker() as session:
-            stmt = select(User.id).where(User.telegram_id == telegram_id)
+            stmt = select(User).where(User.telegram_id == telegram_id)
             user = session.execute(stmt)
             user = user.scalar()
             session.delete(user)
