@@ -152,22 +152,6 @@ class UserService:
             return user_ids
 
     @staticmethod
-    def get_new_users():
-        with session_maker() as session:
-            stmt = select(User).where(User.is_new == 1)
-            new_users = session.execute(stmt)
-            new_users = new_users.scalars().all()
-            UserService.__set_new_users_not_new()
-            return new_users
-
-    @staticmethod
-    def __set_new_users_not_new():
-        with session_maker() as session:
-            stmt = update(User).where(User.is_new == 1).values(is_new=0)
-            session.execute(stmt)
-            session.commit()
-
-    @staticmethod
     def reduce_consume_records(user_id: int, total_price):
         with session_maker() as session:
             old_consume_records_stmt = select(User.consume_records).where(User.id == user_id)

@@ -75,9 +75,6 @@ async def create_subcategory_buttons(category_id: int, page: int):
             types.InlineKeyboardButton(
                 text=f"{item.subcategory.name}| Price: ${subcategory_price} | Quantity: {available_quantity} pcs",
                 callback_data=subcategory_inline_button))
-    back_button = types.InlineKeyboardButton(text="Back",
-                                             callback_data=create_callback_all_categories(level=current_level - 1))
-    subcategories_builder.add(back_button)
     subcategories_builder.adjust(1)
     return subcategories_builder
 
