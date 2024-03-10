@@ -29,6 +29,7 @@ async def start(message: types.message):
     if is_exist is False:
         await UserService.create(user_telegram_id, user_telegram_username)
     else:
+        await UserService.update_receive_messages(user_telegram_id, True)
         await UserService.update_username(user_telegram_id, user_telegram_username)
     await message.answer('Hi', reply_markup=start_markup)
 
