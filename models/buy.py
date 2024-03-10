@@ -8,7 +8,7 @@ class Buy(Base):
     __tablename__ = 'buys'
 
     id = Column(Integer, primary_key=True, unique=True)
-    buyer_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    buyer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     buyer = relationship('User', backref='buys')
     quantity = Column(Integer, nullable=False)
     total_price = Column(Float, nullable=False)
