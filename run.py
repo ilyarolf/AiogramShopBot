@@ -27,6 +27,7 @@ async def start(message: types.message):
     user_telegram_username = message.from_user.username
     is_exist = UserService.is_exist(user_telegram_id)
     if is_exist is False:
+        UserService.update_receive_messages(user_telegram_id, True)
         UserService.create(user_telegram_id, user_telegram_username)
     else:
         UserService.update_username(user_telegram_id, user_telegram_username)

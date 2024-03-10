@@ -124,7 +124,8 @@ async def confirm_and_send(callback: CallbackQuery):
     is_restocking = callback.message.text and callback.message.text.__contains__("📅 Update")
     if confirmed:
         counter = 0
-        telegram_ids = UserService.get_users_tg_ids()
+        users_count = UserService.get_all_users_count()
+        telegram_ids = UserService.get_users_tg_ids_for_sending()
         for telegram_id in telegram_ids:
             try:
                 await callback.message.copy_to(telegram_id, reply_markup=None)
@@ -133,10 +134,13 @@ async def confirm_and_send(callback: CallbackQuery):
             except TelegramForbiddenError as e:
                 logging.error(f"TelegramForbiddenError: {e.message}")
                 if "user is deactivated" in e.message.lower():
-                    UserService.delete_user(telegram_id)
+                    UserService.update_receive_messages(telegram_id, False)
+                elif "bot was blocked by the user" in e.message.lower():
+                    UserService.update_receive_messages(telegram_id, False)
             except Exception as e:
                 logging.error(e)
-        message_text = f"<b>Message sent to {counter} out of {len(telegram_ids)} people</b>"
+        message_text = (f"<b>Message sent to {counter} out of {len(telegram_ids)} active users.\n"
+                        f"Total users:{users_count}</b>")
         if is_caption:
             await callback.message.delete()
             await callback.message.answer(text=message_text, parse_mode=ParseMode.HTML)

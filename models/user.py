@@ -20,3 +20,4 @@ class User(Base):
     usdt_balance = Column(Float, nullable=False, default=0.0)
     registered_at = Column(DateTime, default=func.now())
     seed = Column(String, nullable=False, unique=True)
+    can_receive_messages = Column(Boolean, default=True)
