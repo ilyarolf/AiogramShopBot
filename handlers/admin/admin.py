@@ -5,6 +5,7 @@ from typing import Union
 
 from aiogram import types, Router, F
 from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramForbiddenError
 from aiogram.filters import Command, StateFilter
 from aiogram.filters.callback_data import CallbackData
 from aiogram.fsm.context import FSMContext
@@ -131,6 +132,10 @@ async def confirm_and_send(callback: CallbackQuery):
                 await callback.message.copy_to(telegram_id, reply_markup=None)
                 counter += 1
                 await asyncio.sleep(1.5)
+            except TelegramForbiddenError as e:
+                logging.error(f"TelegramForbiddenError: {e.message}")
+                if "user is deactivated" in e.message.lower():
+                    await UserService.delete_user(telegram_id)
             except Exception as e:
                 logging.error(e)
         message_text = f"<b>Message sent to {counter} out of {len(telegram_ids)} people</b>"
