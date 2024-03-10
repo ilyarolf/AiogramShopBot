@@ -1,4 +1,5 @@
 import datetime
+import logging
 import math
 
 from sqlalchemy import select, update, func
@@ -152,21 +153,6 @@ class UserService:
             user_ids = user_ids.scalars().all()
             return user_ids
 
-    @staticmethod
-    async def get_new_users():
-        async with async_session_maker() as session:
-            stmt = select(User).where(User.is_new == 1)
-            new_users = await session.execute(stmt)
-            new_users = new_users.scalars().all()
-            await UserService.__set_new_users_not_new()
-            return new_users
-
-    @staticmethod
-    async def __set_new_users_not_new():
-        async with async_session_maker() as session:
-            stmt = update(User).where(User.is_new == 1).values(is_new=0)
-            await session.execute(stmt)
-            await session.commit()
 
     @staticmethod
     async def reduce_consume_records(user_id: int, total_price):
@@ -206,3 +192,17 @@ class UserService:
                 return users / UserService.users_per_page - 1
             else:
                 return math.trunc(users / UserService.users_per_page)
+
+    @staticmethod
+    async def delete_user(telegram_id):
+        async with async_session_maker() as session:
+            try:
+                logging.error(f"Trying to delete {telegram_id} from db...")
+                stmt = select(User).where(User.telegram_id == telegram_id)
+                user = await session.execute(stmt)
+                user = user.scalar()
+                await session.delete(user)
+                await session.commit()
+                logging.error(f"User with id {telegram_id} deleted from db!")
+            except Exception as e:
+                logging.error(f"Can't delete user with id {telegram_id}!\n{e}")
