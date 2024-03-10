@@ -137,7 +137,7 @@ async def confirm_and_send(callback: CallbackQuery):
                 logging.error(f"TelegramForbiddenError: {e.message}")
                 if "user is deactivated" in e.message.lower():
                     await UserService.update_receive_messages(telegram_id, False)
-                elif "bot was blocked by the user":
+                elif "bot was blocked by the user" in e.message.lower():
                     await UserService.update_receive_messages(telegram_id, False)
             except Exception as e:
                 logging.error(e)
