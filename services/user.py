@@ -1,4 +1,5 @@
 import datetime
+import logging
 import math
 from sqlalchemy import select, update, func
 from db import session_maker
@@ -193,9 +194,13 @@ class UserService:
     @staticmethod
     def delete_user(telegram_id):
         with session_maker() as session:
-            stmt = select(User).where(User.telegram_id == telegram_id)
-            user = session.execute(stmt)
-            user = user.scalar()
-            session.delete(user)
-            session.commit()
-
+            try:
+                logging.error(f"Trying to delete {telegram_id} from db...")
+                stmt = select(User).where(User.telegram_id == telegram_id)
+                user = session.execute(stmt)
+                user = user.scalar()
+                session.delete(user)
+                session.commit()
+                logging.error(f"User with id {telegram_id} deleted from db!")
+            except Exception as e:
+                logging.error(f"Can't delete user with id {telegram_id}!\n{e}")

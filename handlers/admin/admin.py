@@ -133,9 +133,7 @@ async def confirm_and_send(callback: CallbackQuery):
             except TelegramForbiddenError as e:
                 logging.error(f"TelegramForbiddenError: {e.message}")
                 if "user is deactivated" in e.message.lower():
-                    logging.error(f"Trying to delete {telegram_id} from db...")
                     UserService.delete_user(telegram_id)
-                    logging.error(f"User with id {telegram_id} deleted from db!")
             except Exception as e:
                 logging.error(e)
         message_text = f"<b>Message sent to {counter} out of {len(telegram_ids)} people</b>"
