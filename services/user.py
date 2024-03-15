@@ -1,7 +1,8 @@
 import datetime
-import logging
 import math
 from sqlalchemy import select, update, func
+
+import config
 from db import session_maker
 
 from models.user import User
@@ -9,7 +10,7 @@ from utils.CryptoAddressGenerator import CryptoAddressGenerator
 
 
 class UserService:
-    users_per_page = 20
+    users_per_page = config.PAGE_ENTRIES
 
     @staticmethod
     def is_exist(telegram_id: int) -> bool:

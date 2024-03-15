@@ -1,6 +1,8 @@
 import math
 
 from sqlalchemy import select, func, update, distinct
+
+import config
 from db import session_maker
 from models.buyItem import BuyItem
 from models.item import Item
@@ -8,7 +10,7 @@ from models.subcategory import Subcategory
 
 
 class ItemService:
-    items_per_page = 20
+    items_per_page = config.PAGE_ENTRIES
 
     @staticmethod
     def get_by_primary_key(item_id: int) -> Item:

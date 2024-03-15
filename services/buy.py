@@ -2,6 +2,8 @@ import datetime
 import math
 
 from sqlalchemy import select, update, func
+
+import config
 from db import session_maker
 from models.buy import Buy
 from models.user import User
@@ -10,7 +12,7 @@ from utils.other_sql import RefundBuyDTO
 
 
 class BuyService:
-    buys_per_page = 20
+    buys_per_page = config.PAGE_ENTRIES
 
     @staticmethod
     def get_buys_by_buyer_id(buyer_id: int, page: int):
