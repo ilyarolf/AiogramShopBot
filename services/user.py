@@ -148,13 +148,19 @@ class UserService:
             await session.commit()
 
     @staticmethod
-    async def get_users_tg_ids():
+    async def get_users_tg_ids_for_sending():
         async with async_session_maker() as session:
-            stmt = select(User.telegram_id)
+            stmt = select(User.telegram_id).where(User.can_receive_messages == True)
             user_ids = await session.execute(stmt)
             user_ids = user_ids.scalars().all()
             return user_ids
 
+    @staticmethod
+    async def get_all_users_count():
+        async with async_session_maker() as session:
+            stmt = func.count(User.id)
+            users_count = await session.execute(stmt)
+            return users_count.scalar()
 
     @staticmethod
     async def reduce_consume_records(user_id: int, total_price):
@@ -196,15 +202,9 @@ class UserService:
                 return math.trunc(users / UserService.users_per_page)
 
     @staticmethod
-    async def delete_user(telegram_id):
+    async def update_receive_messages(telegram_id, new_value):
         async with async_session_maker() as session:
-            try:
-                logging.error(f"Trying to delete {telegram_id} from db...")
-                stmt = select(User).where(User.telegram_id == telegram_id)
-                user = await session.execute(stmt)
-                user = user.scalar()
-                await session.delete(user)
-                await session.commit()
-                logging.error(f"User with id {telegram_id} deleted from db!")
-            except Exception as e:
-                logging.error(f"Can't delete user with id {telegram_id}!\n{e}")
+            stmt = update(User).where(User.telegram_id == telegram_id).values(
+                can_receive_messages=new_value)
+            await session.execute(stmt)
+            await session.commit()
