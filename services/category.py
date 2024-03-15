@@ -2,13 +2,14 @@ import math
 
 from sqlalchemy import select, func
 
+import config
 from db import async_session_maker
 from models.category import Category
 from models.item import Item
 
 
 class CategoryService:
-    items_per_page = 20
+    items_per_page = config.PAGE_ENTRIES
 
     @staticmethod
     async def get_or_create_one(category_name: str) -> Category:

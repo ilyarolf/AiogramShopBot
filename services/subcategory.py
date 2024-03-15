@@ -2,13 +2,14 @@ import math
 
 from sqlalchemy import select, func
 
+import config
 from db import async_session_maker
 from models.item import Item
 from models.subcategory import Subcategory
 
 
 class SubcategoryService:
-    items_per_page = 20
+    items_per_page = config.PAGE_ENTRIES
 
     @staticmethod
     async def get_or_create_one(subcategory_name: str) -> Subcategory:
