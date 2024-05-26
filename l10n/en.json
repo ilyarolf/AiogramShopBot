@@ -48,7 +48,20 @@
   "admin_sales_statistics": "<b>\uD83D\uDCCA Sales statistics for the last {timedelta} days.\n\uD83D\uDCB0 Total profit: ${total_profit}\n\uD83D\uDECD\uFE0F Items sold: {items_sold}\n\uD83D\uDCBC Total buys: {buys_count}</b>",
   "admin_successfully_refunded_with_username": "<b>Successfully refunded ${total_price}\nto user {telegram_username}\nfor purchasing {quantity}\n{subcategory}</b>",
   "admin_successfully_refunded_with_tgid": "<b>Successfully refunded ${total_price}\nto user with ID{telegram_id}\nfor purchasing {quantity}\n{subcategory}</b>",
-  "admin_back_button": "Back"
+  "admin_back_button": "Back",
+  "pagination_first": "⏮ First",
+  "pagination_previous": "⬅\uFE0F Previous",
+  "pagination_next": "➡\uFE0F Next",
+  "pagination_last": "⏭ Last",
+  "subcategory_button": "{subcategory_name}| Price: ${subcategory_price} | Quantity: {available_quantity} pcs",
+  "no_categories": "<b>No categories</b>",
+  "back_to_all_categories": "⤵\uFE0F Back to all categories",
+  "select_quantity": "<b>You choose:{subcategory_name}\nPrice:${price}\nDescription:{description}\nQuantity:</b>",
+  "buy_confirmation": "<b>You choose:{subcategory_name}\nPrice:${price}\nDescription:{description}\nQuantity:{quantity}\nTotal price:${total_price}</b>",
+  "insufficient_funds": "<b>Insufficient funds!</b>",
+  "out_of_stock": "<b>Out of stock!</b>",
+  "purchased_item": "Item#{count}\nData:<code>{private_data}</code>\n"
+
 
 
 }
