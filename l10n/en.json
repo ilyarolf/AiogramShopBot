@@ -71,7 +71,15 @@
   "no_purchases": "<b>You haven't had any purchases yet</b>",
   "purchases": "<b>Your purchases:</b>",
   "balance_refreshing": "Refreshing...",
-  "balance_refresh_timeout": "Please wait and try again later"
+  "balance_refresh_timeout": "Please wait and try again later",
+  "user_notification_refund": "You have been refunded ${total_price} for the purchase of {quantity} pieces of {subcategory}",
+  "admin_notification_new_deposit_username": "New deposit by user with username @{username} for ${deposit_amount_usd} with ",
+  "admin_notification_new_deposit_id": "New deposit by user with ID {telegram_id} for ${deposit_amount_usd} with ",
+  "usdt_deposit_notification_part": "{value} {crypto_name}\nTRX address:<code>{trx_address}</code>\n",
+  "crypto_deposit_notification_part": "{value} {crypto_name}\n{crypto_name} address:<code>{crypto_address}</code>\n",
+  "seed_notification_part": "Seed: <code>{seed}</code>",
+  "new_purchase_notification_with_tgid": "A new purchase by user @{username} for the amount of ${total_price} for the purchase of a {quantity} pcs {subcategory_name}.",
+  "new_purchase_notification_with_username": "A new purchase by user with ID:{telegram_id} for the amount of ${total_price} for the purchase of a {quantity} pcs {subcategory_name}."
 
 
 

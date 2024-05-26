@@ -6,18 +6,19 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from services.subcategory import SubcategoryService
 from services.user import UserService
-from utils.CryptoAddressGenerator import CryptoAddressGenerator
 from bot import bot
 from config import ADMIN_ID_LIST
 from models.user import User
+from utils.localizator import Localizator
 from utils.other_sql import RefundBuyDTO
 
 
 class NotificationManager:
     @staticmethod
     async def send_refund_message(refund_data: RefundBuyDTO):
-        message = f"You have been refunded ${refund_data.total_price} for the purchase of {refund_data.quantity}" \
-                  f" pieces of {refund_data.subcategory}"
+        message = Localizator.get_text_from_key("user_notification_refund").format(total_price=refund_data.total_price,
+                                                                                   quantity=refund_data.quantity,
+                                                                                   subcategory=refund_data.subcategory)
         try:
             await bot.send_message(refund_data.telegram_id, f"<b>{message}</b>", parse_mode="html")
         except Exception as e:
@@ -52,16 +53,28 @@ class NotificationManager:
         username = user['telegram_username']
         user_button = await NotificationManager.make_user_button(username)
         if username:
-            message = f"New deposit by user with username @{username} for ${deposit_amount_usd} with "
+            message = Localizator.get_text_from_key("admin_notification_new_deposit_username").format(
+                username=username,
+                deposit_amount_usd=deposit_amount_usd)
         else:
-            message = f"New deposit by user with ID {telegram_id} for ${deposit_amount_usd} with "
+            message = Localizator.get_text_from_key("admin_notification_new_deposit_id").format(
+                telegram_id=telegram_id,
+                deposit_amount_usd=deposit_amount_usd)
         for crypto_name, value in merged_crypto_balances:
             if value > 0:
                 if crypto_name == "usdt":
-                    message += f"{value} {crypto_name.upper()}\nTRX address:<code>{user['trx_address']}</code>\n"
+                    message += Localizator.get_text_from_key("usdt_deposit_notification_part").format(
+                        value=value,
+                        crypto_name=crypto_name.upper(),
+                        trx_address=user[
+                            'trx_address'])
                 else:
-                    message += f"{value} {crypto_name.upper()}\n{crypto_name.upper()} address:<code>{user[f'{crypto_name}_address']}</code>\n"
-            message += f"Seed: <code>{user['seed']}</code>"
+                    crypto_address = user[f'{crypto_name}_address']
+                    message += Localizator.get_text_from_key("crypto_deposit_notification_part").format(
+                        value=value,
+                        crypto_name=crypto_name.upper(),
+                        crypto_address=crypto_address)
+            message += Localizator.get_text_from_key("seed_notification_part").format(seed=user['seed'])
         await NotificationManager.send_to_admins(message, user_button)
 
     @staticmethod
@@ -72,9 +85,15 @@ class NotificationManager:
         telegram_id = user.telegram_id
         user_button = await NotificationManager.make_user_button(username)
         if username:
-            message += f"A new purchase by user @{username} for the amount of ${total_price} for the " \
-                       f"purchase of a {quantity} pcs {subcategory.name}."
+            message += Localizator.get_text_from_key("new_purchase_notification_with_tgid").format(
+                username=username,
+                total_price=total_price,
+                quantity=quantity,
+                subcategory_name=subcategory.name)
         else:
-            message += f"A new purchase by user with ID:{telegram_id} for the amount of ${total_price} for the " \
-                       f"purchase of a {quantity} pcs {subcategory.name}."
+            message += Localizator.get_text_from_key("new_purchase_notification_with_username").format(
+                telegram_id=telegram_id,
+                total_price=total_price,
+                quantity=quantity,
+                subcategory_name=subcategory.name)
         await NotificationManager.send_to_admins(message, user_button)
