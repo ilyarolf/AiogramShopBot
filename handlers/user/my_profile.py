@@ -13,6 +13,7 @@ from services.buyItem import BuyItemService
 from services.item import ItemService
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
+from utils.localizator import Localizator
 from utils.notification_manager import NotificationManager
 from utils.tags_remover import HTMLTagsRemover
 
@@ -30,13 +31,13 @@ def create_callback_profile(level: int, action: str = "", args_for_action="", pa
     return MyProfileCallback(level=level, action=action, args_for_action=args_for_action, page=page).pack()
 
 
-@my_profile_router.message(F.text == "🎓 My profile", IsUserExistFilter())
+@my_profile_router.message(F.text == Localizator.get_text_from_key("my_profile"), IsUserExistFilter())
 async def my_profile_text_message(message: types.message):
     await my_profile(message)
 
 
 class MyProfileConstants:
-    back_to_main_menu = types.InlineKeyboardButton(text="⤵️Back my profile",
+    back_to_main_menu = types.InlineKeyboardButton(text=Localizator.get_text_from_key("back_to_my_profile"),
                                                    callback_data=create_callback_profile(level=0))
 
 
@@ -46,21 +47,21 @@ async def get_my_profile_message(telegram_id: int):
     usdt_balance = user.usdt_balance
     ltc_balance = user.ltc_balance
     usd_balance = round(user.top_up_amount - user.consume_records, 2)
-    return (f'<b>Your profile\nID:</b> <code>{telegram_id}</code>\n\n'
-            f'<b>Your BTC balance:</b>\n<code>{btc_balance}</code>\n'
-            f'<b>Your USDT balance:</b>\n<code>{usdt_balance}</code>\n'
-            f'<b>Your LTC balance:</b>\n<code>{ltc_balance}</code>\n'
-            f"<b>Your balance in USD:</b>\n{usd_balance}$")
+    return Localizator.get_text_from_key("my_profile_msg").format(telegram_id=telegram_id,
+                                                                  btc_balance=btc_balance,
+                                                                  usdt_balance=usdt_balance,
+                                                                  ltc_balance=ltc_balance,
+                                                                  usd_balance=usd_balance)
 
 
 async def my_profile(message: Union[Message, CallbackQuery]):
     current_level = 0
-    top_up_button = types.InlineKeyboardButton(text='Top Up balance',
+    top_up_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("top_up_balance_button"),
                                                callback_data=create_callback_profile(current_level + 1, "top_up"))
-    purchase_history_button = types.InlineKeyboardButton(text='Purchase history',
+    purchase_history_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("purchase_history_button"),
                                                          callback_data=create_callback_profile(current_level + 2,
                                                                                                "purchase_history"))
-    update_balance = types.InlineKeyboardButton(text='Refresh balance',
+    update_balance = types.InlineKeyboardButton(text=Localizator.get_text_from_key("refresh_balance_button"),
                                                 callback_data=create_callback_profile(current_level + 3,
                                                                                       "refresh_balance"))
     my_profile_builder = InlineKeyboardBuilder()
@@ -90,19 +91,18 @@ async def top_up_balance(callback: CallbackQuery):
     btc_address = user.btc_address
     trx_address = user.trx_address
     ltc_address = user.ltc_address
-    back_to_profile_button = types.InlineKeyboardButton(text='Back',
+    back_to_profile_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
                                                         callback_data=create_callback_profile(current_level - 1))
     back_button_builder = InlineKeyboardBuilder()
     back_button_builder.add(back_to_profile_button)
     back_button_markup = back_button_builder.as_markup()
     bot_entity = await bot.get_me()
     await callback.message.edit_text(
-        f'<b>Deposit to the address the amount you want to top up the {bot_entity.first_name}</b> \n\n'
-        f'<b>Important</b>\n<i>A unique BTC/LTC/USDT addresses is given for each deposit\n'
-        f'The top up takes place within 5 minutes after the transfer</i>\n\n'
-        f'<b>Your BTC address\n</b><code>{btc_address}</code>\n'
-        f'<b>Your USDT TRC-20 address\n</b><code>{trx_address}</code>\n'
-        f'<b>Your LTC address</b>\n<code>{ltc_address}</code>\n', parse_mode=ParseMode.HTML,
+        text=Localizator.get_text_from_key("top_up_balance_msg").format(bot_name=bot_entity.first_name,
+                                                                        btc_address=btc_address,
+                                                                        trx_address=trx_address,
+                                                                        ltc_address=ltc_address),
+        parse_mode=ParseMode.HTML,
         reply_markup=back_button_markup)
     await callback.answer()
 
@@ -119,7 +119,9 @@ async def create_purchase_history_keyboard_builder(page: int, user_id: int):
         item_from_history_callback = create_callback_profile(4, action="get_order",
                                                              args_for_action=str(buy_id))
         order_inline = types.InlineKeyboardButton(
-            text=f"{item.subcategory.name} | Total Price: {total_price}$ | Quantity: {quantity} pcs",
+            text=Localizator.get_text_from_key("purchase_history_item").format(subcategory_name=item.subcategory.name,
+                                                                               total_price=total_price,
+                                                                               quantity=quantity),
             callback_data=item_from_history_callback
         )
         orders_markup_builder.add(order_inline)
@@ -136,11 +138,11 @@ async def purchase_history(callback: CallbackQuery):
                                                          BuyService.get_max_page_purchase_history(user.id),
                                                          MyProfileCallback.unpack, MyProfileConstants.back_to_main_menu)
     if orders_num == 0:
-        await callback.message.edit_text("<b>You haven't had any purchases yet</b>",
+        await callback.message.edit_text(Localizator.get_text_from_key("no_purchases"),
                                          reply_markup=orders_markup_builder.as_markup(),
                                          parse_mode=ParseMode.HTML)
     else:
-        await callback.message.edit_text('<b>Your purchases:</b>', reply_markup=orders_markup_builder.as_markup(),
+        await callback.message.edit_text(Localizator.get_text_from_key("purchases"), reply_markup=orders_markup_builder.as_markup(),
                                          parse_mode=ParseMode.HTML)
     await callback.answer()
 
@@ -148,7 +150,7 @@ async def purchase_history(callback: CallbackQuery):
 async def refresh_balance(callback: CallbackQuery):
     telegram_id = callback.from_user.id
     if await UserService.can_refresh_balance(telegram_id):
-        await callback.answer("Refreshing...")
+        await callback.answer(Localizator.get_text_from_key("balance_refreshing"))
         old_crypto_balances = await UserService.get_balances(telegram_id)
         await UserService.create_last_balance_refresh_data(telegram_id)
         addresses = await UserService.get_addresses(telegram_id)
@@ -168,7 +170,7 @@ async def refresh_balance(callback: CallbackQuery):
                                                   telegram_id)
         await my_profile(callback)
     else:
-        await callback.answer("Please wait and try again later", show_alert=True)
+        await callback.answer(Localizator.get_text_from_key("balance_refresh_timeout"), show_alert=True)
 
 
 async def get_order_from_history(callback: CallbackQuery):
@@ -177,7 +179,7 @@ async def get_order_from_history(callback: CallbackQuery):
     items = await ItemService.get_items_by_buy_id(buy_id)
     message = await create_message_with_bought_items(items)
     back_builder = InlineKeyboardBuilder()
-    back_button = types.InlineKeyboardButton(text="Back",
+    back_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
                                              callback_data=create_callback_profile(level=current_level - 2))
     back_builder.add(back_button)
     await callback.message.edit_text(text=message, parse_mode=ParseMode.HTML, reply_markup=back_builder.as_markup())
