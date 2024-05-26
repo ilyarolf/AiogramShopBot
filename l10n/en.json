@@ -79,9 +79,8 @@
   "crypto_deposit_notification_part": "{value} {crypto_name}\n{crypto_name} address:<code>{crypto_address}</code>\n",
   "seed_notification_part": "Seed: <code>{seed}</code>",
   "new_purchase_notification_with_tgid": "A new purchase by user @{username} for the amount of ${total_price} for the purchase of a {quantity} pcs {subcategory_name}.",
-  "new_purchase_notification_with_username": "A new purchase by user with ID:{telegram_id} for the amount of ${total_price} for the purchase of a {quantity} pcs {subcategory_name}."
-
-
-
-
+  "new_purchase_notification_with_username": "A new purchase by user with ID:{telegram_id} for the amount of ${total_price} for the purchase of a {quantity} pcs {subcategory_name}.",
+  "new_items_message_update": "<b>\uD83D\uDCC5 Update {update_data}\n",
+  "new_items_message_category": "\n\uD83D\uDCC1 Category {category}\n\n",
+  "new_items_message_subcategory": "\uD83D\uDCC4 Subcategory {subcategory_name} {items_len} pcs\n"
 }
