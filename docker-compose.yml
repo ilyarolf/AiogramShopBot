@@ -14,6 +14,7 @@ services:
       SUPPORT_LINK: "https://t.me/YourUsername"
       DB_NAME: "database.db" # Here your database name
       PAGE_ENTRIES: 20 # Items per page
+      LANGUAGE: "en" # The name of your file from the l10n folder without the .json suffix
     ports:
       - "4040:4040"
       - "5000:5000" # ${WEBAPP_PORT}:${WEBAPP_PORT}
