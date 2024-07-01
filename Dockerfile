@@ -2,7 +2,7 @@ FROM python:3.9-slim
 
 WORKDIR /bot
 COPY . .
-RUN apt-get update && apt-get upgrade
+RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y gcc
 RUN apt-get install -y sqlcipher
 RUN apt-get install libsqlcipher-dev
