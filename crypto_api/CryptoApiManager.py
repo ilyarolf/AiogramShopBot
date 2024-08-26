@@ -53,7 +53,7 @@ class CryptoApiManager:
         datas = grequests.map(responses)
         for symbol, data in zip(urls.keys(), datas):
             data = data.json()
-            price = float(next(iter(data['result'].values()))['b'][0])
+            price = float(next(iter(data['result'].values()))['l'][1])
             usd_crypto_prices[symbol] = price
         return usd_crypto_prices
 
