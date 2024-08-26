@@ -46,8 +46,8 @@ class CryptoApiManager:
         usd_crypto_prices = {}
         urls = {
             "btc": 'https://api.kraken.com/0/public/Ticker?pair=BTCUSDT',
-            "usdt": 'https://api.kraken.com/0/public/Ticker?pair=USDTEUR',
-            "ltc": 'https://api.kraken.com/0/public/Ticker?pair=LTCEUR'
+            "usdt": 'https://api.kraken.com/0/public/Ticker?pair=USDTUSD',
+            "ltc": 'https://api.kraken.com/0/public/Ticker?pair=LTCUSD'
         }
         responses = (grequests.get(url) for url in urls.values())
         datas = grequests.map(responses)
