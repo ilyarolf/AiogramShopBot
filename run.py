@@ -2,9 +2,10 @@ from aiogram import types, F, Router
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+import config
 from config import SUPPORT_LINK
 import logging
-
+from bot import dp, main
 from handlers.admin.admin import admin_router
 from handlers.user.all_categories import all_categories_router
 from handlers.user.my_profile import my_profile_router
@@ -52,7 +53,8 @@ async def support(message: types.message):
 main_router.include_router(admin_router)
 main_router.include_router(my_profile_router)
 main_router.include_router(all_categories_router)
-# dp.include_router(main_router)
 
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    if config.MULTIBOT is False:
+        dp.include_router(main_router)
+    main()
