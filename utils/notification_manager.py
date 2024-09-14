@@ -14,7 +14,7 @@ from utils.other_sql import RefundBuyDTO
 
 class NotificationManager:
     @staticmethod
-    async def send_refund_message(refund_data: RefundBuyDTO):
+    async def send_refund_message(refund_data: RefundBuyDTO, bot):
         message = Localizator.get_text_from_key("user_notification_refund").format(total_price=refund_data.total_price,
                                                                                    quantity=refund_data.quantity,
                                                                                    subcategory=refund_data.subcategory)
@@ -75,7 +75,7 @@ class NotificationManager:
                         crypto_name=crypto_name.upper(),
                         crypto_address=crypto_address)
         message += Localizator.get_text_from_key("seed_notification_part").format(seed=user['seed'])
-        await NotificationManager.send_to_admins(message, user_button)
+        await NotificationManager.send_to_admins(message, user_button, bot)
 
     @staticmethod
     async def new_buy(subcategory_id: int, quantity: int, total_price: float, user: User, bot):
@@ -96,4 +96,4 @@ class NotificationManager:
                 total_price=total_price,
                 quantity=quantity,
                 subcategory_name=subcategory.name)
-        await NotificationManager.send_to_admins(message, user_button)
+        await NotificationManager.send_to_admins(message, user_button, bot)

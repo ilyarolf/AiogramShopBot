@@ -14,7 +14,6 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import config
-from bot import bot
 from handlers.common.common import add_pagination_buttons
 from services.buy import BuyService
 from services.category import CategoryService
