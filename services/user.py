@@ -1,6 +1,10 @@
 import datetime
+import logging
+import math
 
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
+
+import config
 from db import async_session_maker
 
 from models.user import User
@@ -8,6 +12,8 @@ from utils.CryptoAddressGenerator import CryptoAddressGenerator
 
 
 class UserService:
+    users_per_page = config.PAGE_ENTRIES
+
     @staticmethod
     async def is_exist(telegram_id: int) -> bool:
         async with async_session_maker() as session:
@@ -142,28 +148,19 @@ class UserService:
             await session.commit()
 
     @staticmethod
-    async def get_users_tg_ids():
+    async def get_users_tg_ids_for_sending():
         async with async_session_maker() as session:
-            stmt = select(User.telegram_id)
+            stmt = select(User.telegram_id).where(User.can_receive_messages == True)
             user_ids = await session.execute(stmt)
             user_ids = user_ids.scalars().all()
             return user_ids
 
     @staticmethod
-    async def get_new_users():
+    async def get_all_users_count():
         async with async_session_maker() as session:
-            stmt = select(User).where(User.is_new == 1)
-            new_users = await session.execute(stmt)
-            new_users = new_users.scalars().all()
-            await UserService.__set_new_users_not_new()
-            return new_users
-
-    @staticmethod
-    async def __set_new_users_not_new():
-        async with async_session_maker() as session:
-            stmt = update(User).where(User.is_new == 1).values(is_new=0)
-            await session.execute(stmt)
-            await session.commit()
+            stmt = func.count(User.id)
+            users_count = await session.execute(stmt)
+            return users_count.scalar()
 
     @staticmethod
     async def reduce_consume_records(user_id: int, total_price):
@@ -171,6 +168,43 @@ class UserService:
             old_consume_records_stmt = select(User.consume_records).where(User.id == user_id)
             old_consume_records = await session.execute(old_consume_records_stmt)
             old_consume_records = old_consume_records.scalar()
-            stmt = update(User).where(User.id == user_id).values(consume_records=old_consume_records-total_price)
+            stmt = update(User).where(User.id == user_id).values(consume_records=old_consume_records - total_price)
+            await session.execute(stmt)
+            await session.commit()
+
+    @staticmethod
+    async def get_new_users_by_timedelta(timedelta_int, page):
+        async with async_session_maker() as session:
+            current_time = datetime.datetime.now()
+            one_day_interval = datetime.timedelta(days=int(timedelta_int))
+            time_to_subtract = current_time - one_day_interval
+            stmt = select(User).where(User.registered_at >= time_to_subtract, User.telegram_username != None).limit(
+                UserService.users_per_page).offset(
+                page * UserService.users_per_page)
+            count_stmt = select(func.count(User.id)).where(User.registered_at >= time_to_subtract)
+            users = await session.execute(stmt)
+            users_count = await session.execute(count_stmt)
+            return users.scalars().all(), users_count.scalar_one()
+
+    @staticmethod
+    async def get_max_page_for_users_by_timedelta(timedelta_int):
+        async with async_session_maker() as session:
+            current_time = datetime.datetime.now()
+            one_day_interval = datetime.timedelta(days=int(timedelta_int))
+            time_to_subtract = current_time - one_day_interval
+            stmt = select(func.count(User.id)).where(User.registered_at >= time_to_subtract,
+                                                     User.telegram_username != None)
+            users = await session.execute(stmt)
+            users = users.scalar_one()
+            if users % UserService.users_per_page == 0:
+                return users / UserService.users_per_page - 1
+            else:
+                return math.trunc(users / UserService.users_per_page)
+
+    @staticmethod
+    async def update_receive_messages(telegram_id, new_value):
+        async with async_session_maker() as session:
+            stmt = update(User).where(User.telegram_id == telegram_id).values(
+                can_receive_messages=new_value)
             await session.execute(stmt)
             await session.commit()
