@@ -177,7 +177,7 @@ reload the bot.<br>For example: ``ADMIN_ID_LIST=123456,654321``
   italics, spoilers, etc.).
 * Confirm or decline the sending of messages.
 * After successful message sending, the original message with inline buttons "Confirm", "Decline" will change
-  to this.
+  to this.<br>
   ![img](https://i.imgur.com/Jy5pXLe.png)
 
 ### 3.3 Adding new items to the bot
