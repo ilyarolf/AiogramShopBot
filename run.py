@@ -6,6 +6,7 @@ import config
 from config import SUPPORT_LINK
 import logging
 from bot import dp, main
+from multibot import main as main_multibot
 from handlers.admin.admin import admin_router
 from handlers.user.all_categories import all_categories_router
 from handlers.user.my_profile import my_profile_router
@@ -57,4 +58,6 @@ main_router.include_router(all_categories_router)
 if __name__ == '__main__':
     if config.MULTIBOT is False:
         dp.include_router(main_router)
-    main()
+        main()
+    else:
+        main_multibot(main_router)
