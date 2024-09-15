@@ -2,10 +2,11 @@ from aiogram import types, F, Router
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from bot import dp, main
+import config
 from config import SUPPORT_LINK
 import logging
-
+from bot import dp, main
+from multibot import main as main_multibot
 from handlers.admin.admin import admin_router
 from handlers.user.all_categories import all_categories_router
 from handlers.user.my_profile import my_profile_router
@@ -14,9 +15,10 @@ from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator
 
 logging.basicConfig(level=logging.INFO)
+main_router = Router()
 
 
-@dp.message(Command(commands=["start", "help"]))
+@main_router.message(Command(commands=["start", "help"]))
 async def start(message: types.message):
     all_categories_button = types.KeyboardButton(text=Localizator.get_text_from_key("all_categories"))
     my_profile_button = types.KeyboardButton(text=Localizator.get_text_from_key("my_profile"))
@@ -35,13 +37,13 @@ async def start(message: types.message):
     await message.answer(Localizator.get_text_from_key("start_message"), reply_markup=start_markup)
 
 
-@dp.message(F.text == Localizator.get_text_from_key("faq"), IsUserExistFilter())
+@main_router.message(F.text == Localizator.get_text_from_key("faq"), IsUserExistFilter())
 async def faq(message: types.message):
     faq_string = Localizator.get_text_from_key("faq_string")
     await message.answer(faq_string, parse_mode='html')
 
 
-@dp.message(F.text == Localizator.get_text_from_key("help"), IsUserExistFilter())
+@main_router.message(F.text == Localizator.get_text_from_key("help"), IsUserExistFilter())
 async def support(message: types.message):
     admin_keyboard_builder = InlineKeyboardBuilder()
 
@@ -49,11 +51,13 @@ async def support(message: types.message):
     await message.answer(Localizator.get_text_from_key("help_string"), reply_markup=admin_keyboard_builder.as_markup())
 
 
-main_router = Router()
 main_router.include_router(admin_router)
 main_router.include_router(my_profile_router)
 main_router.include_router(all_categories_router)
-dp.include_router(main_router)
 
 if __name__ == '__main__':
-    main()
+    if config.MULTIBOT:
+        main_multibot(main_router)
+    else:
+        dp.include_router(main_router)
+        main()
