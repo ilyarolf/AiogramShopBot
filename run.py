@@ -56,8 +56,8 @@ main_router.include_router(my_profile_router)
 main_router.include_router(all_categories_router)
 
 if __name__ == '__main__':
-    if config.MULTIBOT is False:
+    if config.MULTIBOT:
+        main_multibot(main_router)
+    else:
         dp.include_router(main_router)
         main()
-    else:
-        main_multibot(main_router)
