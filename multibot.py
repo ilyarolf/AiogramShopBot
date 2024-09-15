@@ -21,7 +21,6 @@ from aiogram.webhook.aiohttp_server import (
 )
 
 from db import create_db_and_tables
-from run import main_router
 from utils.custom_filters import AdminIdFilter
 
 main_router_multibot = Router()
@@ -67,7 +66,7 @@ async def on_startup(dispatcher: Dispatcher, bot: Bot):
             logging.warning(e)
 
 
-def main():
+def main(main_router):
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     session = AiohttpSession()
     bot_settings = {"session": session, "parse_mode": ParseMode.HTML}
@@ -93,6 +92,3 @@ def main():
 
     web.run_app(app, host=WEB_SERVER_HOST, port=WEB_SERVER_PORT)
 
-
-if __name__ == "__main__":
-    main()
