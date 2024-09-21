@@ -7,7 +7,8 @@ Bitcoin, Litecoin, USDT TRC-20, which allows you to sell digital goods worldwide
 - [AiogramShopBot](#aiogramshopbot)
 
 * [Commercial offers](#commercial-offers)
-    + [Telegram. ](#for-commercial-offers-contact-me-on-telegram)
+    + [Telegram. ](#-for-commercial-offers-contact-me-on-telegram)
+    + [AiogramShopBotDemo](#-you-can-test-the-functionality-in-aiogramshopbotdemo).
 
 * [1.Starting the bot](#1starting-the-bot)
     + [1.0 Description of required environment variables. ](#10-description-of-required-environment-variables)
