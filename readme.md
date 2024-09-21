@@ -37,9 +37,10 @@ Bitcoin, Litecoin, USDT TRC-20, which allows you to sell digital goods worldwide
 * [✨ DONATE Buy Me Coffee](#-donate-buy-me-coffee)
 * [MIT License](LICENSE)
 
-## Commercial offers
+## 📌Commercial offers
 
-### For commercial offers contact me on [Telegram](https://t.me/ilyarolf_dev).
+### ➤ For commercial offers contact me on [Telegram](https://t.me/ilyarolf_dev).
+### 🤖 You can test the functionality in [AiogramShopBotDemo](https://t.me/demo_aiogramshopbot).
 
 ## 1.Starting the bot
 
