@@ -74,7 +74,7 @@ class NotificationManager:
                         value=value,
                         crypto_name=crypto_name.upper(),
                         crypto_address=crypto_address)
-                message += Localizator.get_text_from_key("seed_notification_part").format(seed=user['seed'])
+        message += Localizator.get_text_from_key("seed_notification_part").format(seed=user['seed'])
         await NotificationManager.send_to_admins(message, user_button)
 
     @staticmethod
