@@ -12,7 +12,6 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 import config
-from bot import bot
 from handlers.common.common import add_pagination_buttons
 from services.buy import BuyService
 from services.category import CategoryService
@@ -176,8 +175,8 @@ async def receive_new_items_file(message: types.message, state: FSMContext):
         await state.clear()
         file_name = "new_items.json"
         file_id = message.document.file_id
-        file = await bot.get_file(file_id)
-        await bot.download_file(file.file_path, file_name)
+        file = await message.bot.get_file(file_id)
+        await message.bot.download_file(file.file_path, file_name)
         adding_result = NewItemsManager.add(file_name)
         if isinstance(adding_result, BaseException):
             await message.answer(
@@ -461,7 +460,8 @@ async def make_refund(callback: CallbackQuery):
     if is_confirmed:
         refund_data = OtherSQLQuery.get_refund_data_single(buy_id)
         BuyService.refund(buy_id, refund_data)
-        await NotificationManager.send_refund_message(refund_data)
+        bot = callback.bot
+        await NotificationManager.send_refund_message(refund_data, bot)
         if refund_data.telegram_username:
             await callback.message.edit_text(
                 text=Localizator.get_text_from_key("admin_successfully_refunded_with_username").format(
