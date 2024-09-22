@@ -1,4 +1,3 @@
-from models.category import Category
 from models.item import Item
 from services.category import CategoryService
 from services.item import ItemService
@@ -7,6 +6,7 @@ from pathlib import Path
 from datetime import date
 
 from services.subcategory import SubcategoryService
+from utils.localizator import Localizator
 
 
 class NewItemsManager:
@@ -49,10 +49,12 @@ class NewItemsManager:
                 filtered_items[category.name][item.subcategory] = []
             filtered_items[category.name][item.subcategory].append(item)
         update_data = date.today()
-        message = f'<b>📅 Update {update_data}\n'
+        message = Localizator.get_text_from_key("new_items_message_update").format(update_data=update_data)
         for category, subcategory_item_dict in filtered_items.items():
-            message += f'\n📁 Category {category}\n\n'
+            message += Localizator.get_text_from_key("new_items_message_category").format(category=category)
             for subcategory, item in subcategory_item_dict.items():
-                message += f'📄 Subcategory {subcategory.name} {len(item)} pcs\n'
+                message += Localizator.get_text_from_key("new_items_message_subcategory").format(
+                    subcategory_name=subcategory.name,
+                    items_len=len(item))
         message += "</b>"
         return message
