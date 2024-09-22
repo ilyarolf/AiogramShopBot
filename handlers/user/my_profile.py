@@ -30,14 +30,14 @@ def create_callback_profile(level: int, action: str = "", args_for_action="", pa
     return MyProfileCallback(level=level, action=action, args_for_action=args_for_action, page=page).pack()
 
 
-class MyProfileConstants:
-    back_to_main_menu = types.InlineKeyboardButton(text=Localizator.get_text_from_key("back_to_my_profile"),
-                                                   callback_data=create_callback_profile(level=0))
-
-
 @my_profile_router.message(F.text == Localizator.get_text_from_key("my_profile"), IsUserExistFilter())
 async def my_profile_text_message(message: types.message):
     await my_profile(message)
+
+
+class MyProfileConstants:
+    back_to_main_menu = types.InlineKeyboardButton(text=Localizator.get_text_from_key("back_to_my_profile"),
+                                                   callback_data=create_callback_profile(level=0))
 
 
 async def get_my_profile_message(telegram_id: int):

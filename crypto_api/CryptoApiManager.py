@@ -1,5 +1,3 @@
-from typing import Any
-
 import grequests
 
 
@@ -42,7 +40,7 @@ class CryptoApiManager:
         return balances
 
     @staticmethod
-    async def get_crypto_prices() -> dict[Any, float]:
+    async def get_crypto_prices() -> dict[str, float]:
         usd_crypto_prices = {}
         urls = {
             "btc": 'https://api.kraken.com/0/public/Ticker?pair=BTCUSDT',

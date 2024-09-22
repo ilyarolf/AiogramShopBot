@@ -118,7 +118,8 @@ async def show_subcategories_in_category(callback: CallbackQuery):
                                                        ItemService.get_maximum_page(unpacked_callback.category_id),
                                                        AllCategoriesCallback.unpack,
                                                        back_button)
-    await callback.message.edit_text(Localizator.get_text_from_key("admin_delete_subcategory_msg"), reply_markup=subcategory_buttons.as_markup(),
+    await callback.message.edit_text(Localizator.get_text_from_key("admin_delete_subcategory_msg"),
+                                     reply_markup=subcategory_buttons.as_markup(),
                                      parse_mode=ParseMode.HTML)
 
 

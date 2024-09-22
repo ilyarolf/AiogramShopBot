@@ -25,6 +25,7 @@ from utils.notification_manager import NotificationManager
 from utils.other_sql import OtherSQLQuery
 from aiogram.exceptions import TelegramForbiddenError
 
+
 class AdminCallback(CallbackData, prefix="admin"):
     level: int
     action: str
@@ -200,6 +201,19 @@ async def send_restocking_message(callback: CallbackQuery):
                                   reply_markup=AdminConstants.confirmation_builder.as_markup())
 
 
+async def delete_category(callback: CallbackQuery):
+    unpacked_callback = AdminCallback.unpack(callback.data)
+    delete_category_builder = await create_delete_entity_buttons(CategoryService.get_all_categories(
+        unpacked_callback.page),
+        "category")
+    delete_category_builder = await add_pagination_buttons(delete_category_builder, callback.data,
+                                                           CategoryService.get_maximum_page(), AdminCallback.unpack,
+                                                           AdminConstants.back_to_main_button)
+    await callback.message.edit_text(text=Localizator.get_text_from_key("admin_delete_category_msg"),
+                                     parse_mode=ParseMode.HTML,
+                                     reply_markup=delete_category_builder.as_markup())
+
+
 async def create_delete_entity_buttons(get_all_entities_function,
                                        entity_name):
     entities = get_all_entities_function
@@ -214,23 +228,11 @@ async def create_delete_entity_buttons(get_all_entities_function,
     return delete_entity_builder
 
 
-async def delete_category(callback: CallbackQuery):
-    unpacked_callback = AdminCallback.unpack(callback.data)
-    delete_category_builder = await create_delete_entity_buttons(CategoryService.get_all_categories(
-        unpacked_callback.page),
-        "category")
-    delete_category_builder = await add_pagination_buttons(delete_category_builder, callback.data,
-                                                           CategoryService.get_maximum_page(), AdminCallback.unpack,
-                                                           AdminConstants.back_to_main_button)
-    await callback.message.edit_text(text=Localizator.get_text_from_key("admin_delete_category_msg"),
-                                     parse_mode=ParseMode.HTML,
-                                     reply_markup=delete_category_builder.as_markup())
-
-
 async def delete_subcategory(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
-    delete_subcategory_builder = await create_delete_entity_buttons(SubcategoryService.get_all(unpacked_callback.page),
-                                                                    "subcategory")
+    delete_subcategory_builder = await create_delete_entity_buttons(
+        SubcategoryService.get_all(unpacked_callback.page),
+        "subcategory")
     delete_subcategory_builder = await add_pagination_buttons(delete_subcategory_builder, callback.data,
                                                               SubcategoryService.get_maximum_page(),
                                                               AdminCallback.unpack,
@@ -446,13 +448,6 @@ async def get_statistics(callback: CallbackQuery):
             parse_mode=ParseMode.HTML)
 
 
-async def send_db_file(callback: CallbackQuery):
-    with open(f"./data/{config.DB_NAME}", "rb") as f:
-        await callback.message.bot.send_document(callback.from_user.id,
-                                                 types.BufferedInputFile(file=f.read(), filename="database.db"))
-    await callback.answer()
-
-
 async def make_refund(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
     buy_id = int(unpacked_callback.args_to_action)
@@ -471,12 +466,18 @@ async def make_refund(callback: CallbackQuery):
                     subcategory=refund_data.subcategory),
                 parse_mode=ParseMode.HTML)
         else:
-            await callback.message.edit_text(
-                text=Localizator.get_text_from_key("admin_successfully_refunded_with_tgid").format(
+            await callback.message.edit_text(text=Localizator.get_text_from_key("admin_successfully_refunded_with_tgid").format(
                     total_price=refund_data.total_price,
                     telegram_id=refund_data.telegram_id,
                     quantity=refund_data.quantity,
                     subcategory=refund_data.subcategory), parse_mode=ParseMode.HTML)
+
+
+async def send_db_file(callback: CallbackQuery):
+    with open(f"./data/{config.DB_NAME}", "rb") as f:
+        await callback.message.bot.send_document(callback.from_user.id,
+                                                 types.BufferedInputFile(file=f.read(), filename="database.db"))
+    await callback.answer()
 
 
 @admin_router.callback_query(AdminIdFilter(), AdminCallback.filter())
