@@ -44,14 +44,16 @@ class CryptoApiManager:
     @staticmethod
     async def get_crypto_prices() -> dict[Any, float]:
         usd_crypto_prices = {}
-        urls = {"btc": f'https://api.coinbase.com/v2/prices/BTC-USD/buy',
-                "usdt": 'https://api.coinbase.com/v2/prices/USDT-USD/buy',
-                "ltc": 'https://api.coinbase.com/v2/prices/LTC-USD/buy'}
+        urls = {
+            "btc": 'https://api.kraken.com/0/public/Ticker?pair=BTCUSDT',
+            "usdt": 'https://api.kraken.com/0/public/Ticker?pair=USDTUSD',
+            "ltc": 'https://api.kraken.com/0/public/Ticker?pair=LTCUSD'
+        }
         responses = (grequests.get(url) for url in urls.values())
         datas = grequests.map(responses)
         for symbol, data in zip(urls.keys(), datas):
             data = data.json()
-            price = float(data['data']['amount'])
+            price = float(next(iter(data['result'].values()))['l'][1])
             usd_crypto_prices[symbol] = price
         return usd_crypto_prices
 
