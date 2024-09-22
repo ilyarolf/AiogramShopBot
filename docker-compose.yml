@@ -15,6 +15,7 @@ services:
       DB_NAME: "database.db" # Here your database name
       DB_PASS: "1234567" # Here your database password
       PAGE_ENTRIES : 20
+      LANGUAGE: "en"
     ports:
       - "4040:4040"
       - "5000:5000" # ${WEBAPP_PORT}:${WEBAPP_PORT}
