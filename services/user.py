@@ -1,8 +1,8 @@
 import datetime
-import logging
 import math
 
 from sqlalchemy import select, update, func
+from sqlalchemy.orm import joinedload
 
 import config
 from db import async_session_maker
@@ -67,9 +67,16 @@ class UserService:
     @staticmethod
     async def get_by_tgid(telegram_id: int) -> User:
         async with async_session_maker() as session:
-            stmt = select(User).where(User.telegram_id == telegram_id)
+            stmt = (
+                select(User)
+                .options(
+                    joinedload(User.eth_account),
+                    joinedload(User.trx_account)
+                )
+                .where(User.telegram_id == telegram_id)
+            )
             user_from_db = await session.execute(stmt)
-            user_from_db = user_from_db.scalar()
+            user_from_db = user_from_db.scalar_one_or_none()  # Use scalar_one_or_none to handle None case
             return user_from_db
 
     @staticmethod

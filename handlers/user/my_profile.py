@@ -43,12 +43,18 @@ class MyProfileConstants:
 async def get_my_profile_message(telegram_id: int):
     user = await UserService.get_by_tgid(telegram_id)
     btc_balance = user.btc_balance
-    usdt_balance = user.usdt_balance
+    usdt_trc20_balance = user.trx_account.usdt_balance
+    usdd_trc20_balance = user.trx_account.usdd_balance
+    usdt_erc20_balance = user.eth_account.usdt_balance
+    usdc_erc20_balance = user.eth_account.usdc_balance
     ltc_balance = user.ltc_balance
     usd_balance = round(user.top_up_amount - user.consume_records, 2)
     return Localizator.get_text_from_key("my_profile_msg").format(telegram_id=telegram_id,
                                                                   btc_balance=btc_balance,
-                                                                  usdt_balance=usdt_balance,
+                                                                  usdt_trc20_balance=usdt_trc20_balance,
+                                                                  usdd_trc20_balance=usdd_trc20_balance,
+                                                                  usdt_erc20_balance=usdt_erc20_balance,
+                                                                  usdc_erc20_balance=usdc_erc20_balance,
                                                                   ltc_balance=ltc_balance,
                                                                   usd_balance=usd_balance)
 
@@ -88,7 +94,8 @@ async def top_up_balance(callback: CallbackQuery):
     user = await UserService.get_by_tgid(telegram_id)
     current_level = 1
     btc_address = user.btc_address
-    trx_address = user.trx_address
+    trx_address = user.trx_account.address
+    eth_address = user.eth_account.address
     ltc_address = user.ltc_address
     back_to_profile_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
                                                         callback_data=create_callback_profile(current_level - 1))
@@ -100,7 +107,8 @@ async def top_up_balance(callback: CallbackQuery):
         text=Localizator.get_text_from_key("top_up_balance_msg").format(bot_name=bot_entity.first_name,
                                                                         btc_address=btc_address,
                                                                         trx_address=trx_address,
-                                                                        ltc_address=ltc_address),
+                                                                        ltc_address=ltc_address,
+                                                                        eth_address=eth_address),
         parse_mode=ParseMode.HTML,
         reply_markup=back_button_markup)
     await callback.answer()
