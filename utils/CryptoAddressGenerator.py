@@ -29,7 +29,15 @@ class CryptoAddressGenerator:
         bip44_addr_ctx = bip44_chg_ctx.AddressIndex(i).PublicKey().ToAddress()
         return bip44_addr_ctx
 
+    def __generate_eth_pair(self, i: int) -> str:
+        bip44_mst_ctx = Bip44.FromSeed(self.seed_bytes, Bip44Coins.ETHEREUM)
+        bip44_acc_ctx = bip44_mst_ctx.Purpose().Coin().Account(0)
+        bip44_chg_ctx = bip44_acc_ctx.Change(Bip44Changes.CHAIN_EXT)
+        bip44_addr_ctx = bip44_chg_ctx.AddressIndex(i).PublicKey().ToAddress()
+        return bip44_addr_ctx
+
     def get_addresses(self, i):
         return {'btc': self.__generate_btc_pair(i),
                 'ltc': self.__generate_ltc_pair(i),
-                'trx': self.__generate_trx_pair(i)}
+                'trx': self.__generate_trx_pair(i),
+                'eth': self.__generate_eth_pair(i)}

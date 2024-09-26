@@ -8,6 +8,8 @@ import config
 from db import async_session_maker
 
 from models.user import User
+from services.eth_account import EthAccountService
+from services.trx_account import TrxAccountService
 from utils.CryptoAddressGenerator import CryptoAddressGenerator
 
 
@@ -34,17 +36,20 @@ class UserService:
 
     @staticmethod
     async def create(telegram_id: int, telegram_username: str):
+        crypto_addr_gen = CryptoAddressGenerator()
+        crypto_addresses = crypto_addr_gen.get_addresses(i=0)
+        eth_account_id = await EthAccountService.create(crypto_addresses['eth'])
+        trx_account_id = await TrxAccountService.create(crypto_addresses['trx'])
         async with async_session_maker() as session:
             next_user_id = await UserService.get_next_user_id()
-            crypto_addr_gen = CryptoAddressGenerator()
-            crypto_addresses = crypto_addr_gen.get_addresses(i=0)
             new_user = User(
                 id=next_user_id,
                 telegram_username=telegram_username,
                 telegram_id=telegram_id,
                 btc_address=crypto_addresses['btc'],
                 ltc_address=crypto_addresses['ltc'],
-                trx_address=crypto_addresses['trx'],
+                eth_account_id=eth_account_id,
+                trx_account_id=trx_account_id,
                 seed=crypto_addr_gen.mnemonic_str
             )
             session.add(new_user)
