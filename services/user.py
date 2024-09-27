@@ -102,21 +102,35 @@ class UserService:
 
     @staticmethod
     async def get_balances(telegram_id: int) -> dict:
-        async with async_session_maker() as session:
-            stmt = select(User.btc_balance, User.ltc_balance, User.usdt_balance).where(User.telegram_id == telegram_id)
+        async with (async_session_maker() as session):
+            stmt = select(User).options(joinedload(User.eth_account),
+                                        joinedload(User.trx_account)).where(
+                User.telegram_id == telegram_id)
             user_balances = await session.execute(stmt)
-            user_balances = user_balances.fetchone()
-            keys = ["btc_balance", "ltc_balance", "usdt_balance"]
+            user_balances = user_balances.scalar()
+            user_balances = [user_balances.btc_balance, user_balances.ltc_balance,
+                             user_balances.trx_account.trx_balance,
+                             user_balances.trx_account.usdt_balance, user_balances.trx_account.usdd_balance,
+                             user_balances.eth_account.eth_balance, user_balances.eth_account.usdt_balance,
+                             user_balances.eth_account.usdc_balance]
+            keys = ["btc_balance",
+                    "ltc_balance",
+                    "trx_balance", "trc_20_usdt_balance", "trc_20_usdd_balance",
+                    "eth_balance", "erc_20_usdt_balance", "erc_20_usdc_balance"]
             user_balances = dict(zip(keys, user_balances))
             return user_balances
 
     @staticmethod
     async def get_addresses(telegram_id: int) -> dict:
-        async with async_session_maker() as session:
-            stmt = select(User.btc_address, User.ltc_address, User.trx_address).where(User.telegram_id == telegram_id)
+        async with (async_session_maker() as session):
+            stmt = select(User).options(joinedload(User.eth_account),
+                                        joinedload(User.trx_account)
+                                        ).where(User.telegram_id == telegram_id)
             user_addresses = await session.execute(stmt)
-            user_addresses = user_addresses.fetchone()
-            keys = ["btc_address", "ltc_address", "trx_address"]
+            user_addresses = user_addresses.scalar()
+            user_addresses = [user_addresses.btc_address, user_addresses.ltc_address,
+                              user_addresses.trx_account.address,user_addresses.eth_account.address]
+            keys = ["btc_address", "ltc_address", "trx_address", "eth_address"]
             user_addresses = dict(zip(keys, user_addresses))
             return user_addresses
 

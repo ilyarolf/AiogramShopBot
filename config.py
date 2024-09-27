@@ -18,4 +18,4 @@ DB_NAME = os.environ.get("DB_NAME")
 PAGE_ENTRIES = int(os.environ.get("PAGE_ENTRIES"))
 LANGUAGE = os.environ.get("LANGUAGE")
 MULTIBOT = os.environ.get("MULTIBOT", False) == 'true'
-ETHERSCAN_TOKEN = os.environ.get("ETHERSCAN_TOKEN")
+ETHPLORER_API_KEY = os.environ.get("ETHPLORER_API_KEY")
