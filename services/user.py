@@ -6,6 +6,8 @@ from sqlalchemy.orm import joinedload
 
 import config
 from db import async_session_maker
+from models.eth_account import EthAccount
+from models.trx_account import TrxAccount
 
 from models.user import User
 from services.eth_account import EthAccountService
@@ -68,15 +70,11 @@ class UserService:
     async def get_by_tgid(telegram_id: int) -> User:
         async with async_session_maker() as session:
             stmt = (
-                select(User)
-                .options(
-                    joinedload(User.eth_account),
-                    joinedload(User.trx_account)
-                )
+                select(User).join(EthAccount, User.eth_account_id == EthAccount.id).join(TrxAccount, User.trx_account_id == TrxAccount.id)
                 .where(User.telegram_id == telegram_id)
             )
             user_from_db = await session.execute(stmt)
-            user_from_db = user_from_db.scalar_one_or_none()  # Use scalar_one_or_none to handle None case
+            user_from_db = user_from_db.scalar()
             return user_from_db
 
     @staticmethod
@@ -102,9 +100,8 @@ class UserService:
 
     @staticmethod
     async def get_balances(telegram_id: int) -> dict:
-        async with (async_session_maker() as session):
-            stmt = select(User).options(joinedload(User.eth_account),
-                                        joinedload(User.trx_account)).where(
+        async with async_session_maker() as session:
+            stmt = select(User).join(EthAccount, User.eth_account_id==EthAccount.id).join(TrxAccount, User.trx_account_id == TrxAccount.id).where(
                 User.telegram_id == telegram_id)
             user_balances = await session.execute(stmt)
             user_balances = user_balances.scalar()
@@ -129,7 +126,7 @@ class UserService:
             user_addresses = await session.execute(stmt)
             user_addresses = user_addresses.scalar()
             user_addresses = [user_addresses.btc_address, user_addresses.ltc_address,
-                              user_addresses.trx_account.address,user_addresses.eth_account.address]
+                              user_addresses.trx_account.address, user_addresses.eth_account.address]
             keys = ["btc_address", "ltc_address", "trx_address", "eth_address"]
             user_addresses = dict(zip(keys, user_addresses))
             return user_addresses
