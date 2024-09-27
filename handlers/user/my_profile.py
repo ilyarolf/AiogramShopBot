@@ -156,12 +156,14 @@ async def purchase_history(callback: CallbackQuery):
 
 async def refresh_balance(callback: CallbackQuery):
     telegram_id = callback.from_user.id
-    if await UserService.can_refresh_balance(telegram_id):
+    # if await UserService.can_refresh_balance(telegram_id):
+    if True:
         await callback.answer(Localizator.get_text_from_key("balance_refreshing"))
         old_crypto_balances = await UserService.get_balances(telegram_id)
         await UserService.create_last_balance_refresh_data(telegram_id)
+        user = await UserService.get_by_tgid(telegram_id)
         addresses = await UserService.get_addresses(telegram_id)
-        new_crypto_balances = await CryptoApiManager(**addresses).get_top_ups()
+        new_crypto_balances = await CryptoApiManager(**addresses, user_id=user.id).get_top_ups()
         crypto_prices = await CryptoApiManager.get_crypto_prices()
         deposit_usd_amount = 0.0
         bot_obj = callback.bot

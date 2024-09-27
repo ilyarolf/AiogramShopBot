@@ -1,6 +1,6 @@
 import json
 
-from typesDTO.itemDTO import ItemDTO
+from typesDTO.dto.itemDTO import ItemDTO
 from dataclasses import asdict
 
 
