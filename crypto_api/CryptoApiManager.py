@@ -79,7 +79,7 @@ class CryptoApiManager:
         return deposits_sum
 
     async def get_trx_balance(self, deposits) -> float:
-        url = f'https://apilist.tronscanapi.com/api/new/transfer?sort=-timestamp&count=true&limit=100&start=0&address={self.trx_address}'
+        url = f'https://apilist.tronscanapi.com/api/new/transfer?sort=-timestamp&count=true&limit=1000&start=0&address={self.trx_address}'
         data = await self.fetch_api_request(url)
         deposits = [deposits.tx_id for deposit in deposits if deposit.network == "TRX" and deposit.token_name is None]
         deposit_sum = 0.0
@@ -90,11 +90,35 @@ class CryptoApiManager:
                 deposit_sum += float(deposit['amount'] / pow(10, deposit['tokenInfo']['tokenDecimal']))
         return deposit_sum
 
-    async def get_eth_and_erc_20_balance(self) -> dict:
-        url = f'https://api.ethplorer.io/getAddressInfo/{self.eth_address}?apiKey={config.ETHPLORER_API_KEY}'
+    async def get_usdt_erc20_balance(self, deposits) -> float:
+        url = f'https://api.ethplorer.io/getAddressHistory/{self.eth_address}?type=transfer&token=0xdAC17F958D2ee523a2206206994597C13D831ec7&apiKey={config.ETHPLORER_API_KEY}&limit=1000'
         data = await self.fetch_api_request(url)
-        eth_account_data = {"eth_balance": data["ETH"]["balance"],
-                            }
+        deposits = [deposits.tx_id for deposit in deposits if
+                    deposit.network == "ETH" and deposit.token_name == "USDT_ERC20"]
+        deposits_sum = 0.0
+        for deposit in data['operations']:
+            if deposit['transactionHash'] not in deposits and deposit['to'] == self.eth_address:
+                await DepositService.create(deposit['transactionHash'], self.user_id, "ETH", "USDT_ERC20",
+                                            deposit['value'])
+                deposits_sum += float(deposit['value']) / pow(10, 6)
+        return deposits_sum
+
+    async def get_usdc_erc20_balance(self, deposits):
+        url = f'https://api.ethplorer.io/getAddressHistory/{self.eth_address}?type=transfer&token=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48&apiKey={config.ETHPLORER_API_KEY}&limit=1000'
+        data = await self.fetch_api_request(url)
+        deposits = [deposits.tx_id for deposit in deposits if
+                    deposit.network == "ETH" and deposit.token_name == "USDC_ERC20"]
+        deposits_sum = 0.0
+        for deposit in data['operations']:
+            if deposit['transactionHash'] not in deposits and deposit['to'] == self.eth_address:
+                await DepositService.create(deposit['transactionHash'], self.user_id, "ETH", "USDC_ERC20",
+                                            deposit['value'])
+                deposits_sum += float(deposit['value']) / pow(10, 6)
+        return deposits_sum
+
+    async def get_eth_balance(self, deposits):
+        # TODO (fetch eth deposits)
+        url = f''
 
     async def get_top_ups(self):
         user_deposits = await DepositService.get_by_user_id(self.user_id)
@@ -102,7 +126,9 @@ class CryptoApiManager:
                     "ltc_deposit": await self.get_ltc_balance(user_deposits),
                     "usdt_trc20_deposit": await self.get_usdt_trc20_balance(user_deposits),
                     "usdd_trc20_deposit": await self.get_usdd_trc20_balance(user_deposits),
-                    "trx_deposit": await self.get_trx_balance(user_deposits)}
+                    "trx_deposit": await self.get_trx_balance(user_deposits),
+                    "usdt_erc20_deposit": await self.get_usdt_erc20_balance(user_deposits),
+                    "usdc_erc20_deposit": await self.get_usdc_erc20_balance(user_deposits)}
         print(balances)
         # urls = {
         #     "btc_balance": f'https://blockchain.info/rawaddr/{self.btc_address}',
