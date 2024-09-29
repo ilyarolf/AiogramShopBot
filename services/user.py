@@ -70,7 +70,8 @@ class UserService:
     async def get_by_tgid(telegram_id: int) -> User:
         async with async_session_maker() as session:
             stmt = (
-                select(User).join(EthAccount, User.eth_account_id == EthAccount.id).join(TrxAccount, User.trx_account_id == TrxAccount.id)
+                select(User).join(EthAccount, User.eth_account_id == EthAccount.id).join(TrxAccount,
+                                                                                         User.trx_account_id == TrxAccount.id)
                 .where(User.telegram_id == telegram_id)
             )
             user_from_db = await session.execute(stmt)
@@ -101,7 +102,8 @@ class UserService:
     @staticmethod
     async def get_balances(telegram_id: int) -> dict:
         async with async_session_maker() as session:
-            stmt = select(User).join(EthAccount, User.eth_account_id==EthAccount.id).join(TrxAccount, User.trx_account_id == TrxAccount.id).where(
+            stmt = select(User).join(EthAccount, User.eth_account_id == EthAccount.id).join(TrxAccount,
+                                                                                            User.trx_account_id == TrxAccount.id).where(
                 User.telegram_id == telegram_id)
             user_balances = await session.execute(stmt)
             user_balances = user_balances.scalar()
@@ -132,13 +134,21 @@ class UserService:
             return user_addresses
 
     @staticmethod
-    async def update_crypto_balances(telegram_id: int, new_crypto_balances: dict):
+    async def update_crypto_balances(telegram_id: int, eth_account_id: int, trx_account_id: int,
+                                     new_crypto_balances: dict):
         async with async_session_maker() as session:
             stmt = update(User).where(User.telegram_id == telegram_id).values(
-                btc_balance=new_crypto_balances["btc_balance"],
-                ltc_balance=new_crypto_balances["ltc_balance"],
-                usdt_balance=new_crypto_balances["usdt_balance"],
+                btc_balance=new_crypto_balances["btc__deposit"],
+                ltc_balance=new_crypto_balances["ltc__deposit"]
             )
+            await session.execute(stmt)
+            stmt = update(EthAccount).where(EthAccount.id == eth_account_id).values(
+                usdt_balance=new_crypto_balances['usdt_erc20_deposit'],
+                usdc_balance=new_crypto_balances['usdc_erc20_deposit'])
+            await session.execute(stmt)
+            stmt = update(TrxAccount).where(TrxAccount.id == trx_account_id).values(
+                usdt_balance=new_crypto_balances['usdt_trc20_deposit'],
+                usdd_balance=new_crypto_balances['usdd_trc20_deposit'])
             await session.execute(stmt)
             await session.commit()
 

@@ -156,27 +156,25 @@ async def purchase_history(callback: CallbackQuery):
 
 async def refresh_balance(callback: CallbackQuery):
     telegram_id = callback.from_user.id
-    # if await UserService.can_refresh_balance(telegram_id):
-    if True:
+    if await UserService.can_refresh_balance(telegram_id):
+    # if True:
         await callback.answer(Localizator.get_text_from_key("balance_refreshing"))
-        old_crypto_balances = await UserService.get_balances(telegram_id)
         await UserService.create_last_balance_refresh_data(telegram_id)
         user = await UserService.get_by_tgid(telegram_id)
         addresses = await UserService.get_addresses(telegram_id)
-        new_crypto_balances = await CryptoApiManager(**addresses, user_id=user.id).get_top_ups()
+        new_crypto_deposits = await CryptoApiManager(**addresses, user_id=user.id).get_top_ups()
         crypto_prices = await CryptoApiManager.get_crypto_prices()
         deposit_usd_amount = 0.0
         bot_obj = callback.bot
-        if sum(new_crypto_balances.values()) > sum(old_crypto_balances.values()):
-            merged_deposit = {key: new_crypto_balances[key] - old_crypto_balances[key] for key in
-                              new_crypto_balances.keys()}
-            for balance_key, balance in merged_deposit.items():
+        if sum(new_crypto_deposits.values()) > 0:
+            for balance_key, balance in new_crypto_deposits.items():
                 balance_key = balance_key.split('_')[0]
                 crypto_balance_in_usd = balance * crypto_prices[balance_key]
                 deposit_usd_amount += crypto_balance_in_usd
-            await UserService.update_crypto_balances(telegram_id, new_crypto_balances)
+            await UserService.update_crypto_balances(telegram_id, user.eth_account_id,
+                                                     user.trx_account_id, new_crypto_deposits)
             await UserService.update_top_up_amount(telegram_id, deposit_usd_amount * 0.95)
-            await NotificationManager.new_deposit(old_crypto_balances, new_crypto_balances, deposit_usd_amount,
+            await NotificationManager.new_deposit(new_crypto_deposits, deposit_usd_amount,
                                                   telegram_id, bot_obj)
         await my_profile(callback)
     else:
