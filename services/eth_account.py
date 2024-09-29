@@ -26,3 +26,10 @@ class EthAccountService:
             session.add(eth_acc)
             await session.commit()
             return next_account_id
+
+    @staticmethod
+    async def get_by_id(id: int) -> EthAccount:
+        async with async_session_maker() as session:
+            stmt = select(EthAccount).where(EthAccount.id == id)
+            result = await session.execute(stmt)
+            return result.scalar_one()

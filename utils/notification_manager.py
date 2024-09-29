@@ -4,7 +4,9 @@ from typing import Union
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from services.eth_account import EthAccountService
 from services.subcategory import SubcategoryService
+from services.trx_account import TrxAccountService
 from services.user import UserService
 from config import ADMIN_ID_LIST
 from models.user import User
@@ -40,16 +42,15 @@ class NotificationManager:
         return user_button_builder.as_markup()
 
     @staticmethod
-    async def new_deposit(old_crypto_balances: dict, new_crypto_balances: dict, deposit_amount_usd, telegram_id: int,
+    async def new_deposit(new_crypto_balances: dict, deposit_amount_usd, telegram_id: int,
                           bot):
         deposit_amount_usd = round(deposit_amount_usd, 2)
-        merged_crypto_balances = [new_balance - old_balance for (new_balance, old_balance) in
-                                  zip(new_crypto_balances.values(),
-                                      old_crypto_balances.values())]
         merged_crypto_balances_keys = [key.split('_')[0] for key in new_crypto_balances.keys()]
-        merged_crypto_balances = zip(merged_crypto_balances_keys, merged_crypto_balances)
+        merged_crypto_balances = zip(merged_crypto_balances_keys, new_crypto_balances.values())
         user = await UserService.get_by_tgid(telegram_id)
         user = user.__dict__
+        trx_account = await TrxAccountService.get_by_id(user['trx_account_id'])
+        eth_account = await EthAccountService.get_by_id(user['eth_account_id'])
         username = user['telegram_username']
         user_button = await NotificationManager.make_user_button(username)
         if username:
@@ -66,8 +67,7 @@ class NotificationManager:
                     message += Localizator.get_text_from_key("usdt_deposit_notification_part").format(
                         value=value,
                         crypto_name=crypto_name.upper(),
-                        trx_address=user[
-                            'trx_address'])
+                        trx_address=trx_account.address)
                 else:
                     crypto_address = user[f'{crypto_name}_address']
                     message += Localizator.get_text_from_key("crypto_deposit_notification_part").format(
