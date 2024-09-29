@@ -66,7 +66,7 @@
   "top_up_balance_button": "Top Up balance",
   "purchase_history_button": "Purchase history",
   "refresh_balance_button": "Refresh balance",
-  "top_up_balance_msg": "<b>Deposit to the address the amount you want to top up the {bot_name}</b> \n\n<b>Important</b>\n<i>A unique BTC/LTC/USDT addresses is given for each deposit\nThe top up takes place within 5 minutes after the transfer</i>\n\n<b>Your BTC address\n</b><code>{btc_address}</code>\n<b>Your USDT,USDD TRC-20 address\n</b><code>{trx_address}</code>\n<b>Your USDT,USDC ERC-20 address\n</b><code>{eth_address}</code>\n<b>Your LTC address</b>\n<code>{ltc_address}</code>\n",
+  "top_up_balance_msg": "<b>Deposit to the address the amount you want to top up the {bot_name}</b> \n\n<b>Important</b>\n<i>A unique BTC/LTC/TRX/ETH addresses is given for each user\nThe top up takes place within 5 minutes after the transfer.\n\nAfter a successful balance refresh, the balance must change in your profile.</i>\n\n<b>Your {crypto_name} address\n</b><code>{addr}</code>",
   "purchase_history_item": "{subcategory_name} | Total Price: {total_price}$ | Quantity: {quantity} pcs",
   "no_purchases": "<b>You haven't had any purchases yet</b>",
   "purchases": "<b>Your purchases:</b>",
@@ -82,5 +82,12 @@
   "new_purchase_notification_with_username": "A new purchase by user with ID:{telegram_id} for the amount of ${total_price} for the purchase of a {quantity} pcs {subcategory_name}.",
   "new_items_message_update": "<b>\uD83D\uDCC5 Update {update_data}\n",
   "new_items_message_category": "\n\uD83D\uDCC1 Category {category}\n\n",
-  "new_items_message_subcategory": "\uD83D\uDCC4 Subcategory {subcategory_name} {items_len} pcs\n"
+  "new_items_message_subcategory": "\uD83D\uDCC4 Subcategory {subcategory_name} {items_len} pcs\n",
+  "usdt_trc20_top_up":"USDT TRC-20",
+  "usdd_trc20_top_up":"USDD TRC-20",
+  "usdt_erc20_top_up":"USDT ERC-20",
+  "usdc_trc20_top_up":"USDC ERC-20",
+  "btc_top_up":"BTC",
+  "ltc_top_up":"LTC",
+  "choose_top_up_method": "<b>Choose a top-up method:</b>"
 }

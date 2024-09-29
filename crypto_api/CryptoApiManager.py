@@ -135,6 +135,32 @@ class CryptoApiManager:
                     "usdt_erc20_deposit": await self.get_usdt_erc20_balance(user_deposits),
                     "usdc_erc20_deposit": await self.get_usdc_erc20_balance(user_deposits)}
         return balances
+
+    async def get_top_up_by_crypto_name(self, crypto_name: str):
+        user_deposits = await DepositService.get_by_user_id(self.user_id)
+
+        crypto_functions = {
+            "BTC": ("btc_deposit", self.get_btc_balance),
+            "LTC": ("ltc_deposit", self.get_ltc_balance),
+            "TRX_USDT": ("usdt_trc20_deposit", self.get_usdt_trc20_balance),
+            "TRX_USDD": ("usdd_trc20_deposit", self.get_usdd_trc20_balance),
+            "ETH_USDT": ("usdt_erc20_deposit", self.get_usdt_erc20_balance),
+            "ETH_USDC": ("usdc_erc20_deposit", self.get_usdc_erc20_balance),
+        }
+
+        if "_" in crypto_name:
+            base, token = crypto_name.split('_')
+        else:
+            base, token = crypto_name, None
+
+        key = f"{base}_{token}" if token else base
+        deposit_name, balance_func = crypto_functions.get(key, (None, None))
+
+        if deposit_name and balance_func:
+            return {deposit_name: await balance_func(user_deposits)}
+
+        raise ValueError(f"Unsupported crypto name: {crypto_name}")
+
     @staticmethod
     async def get_crypto_prices() -> dict[str, float]:
         # TODO("NEED API FOR USDD-TRC-20")
