@@ -3,10 +3,7 @@ from typing import Union
 
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
-from services.eth_account import EthAccountService
 from services.subcategory import SubcategoryService
-from services.trx_account import TrxAccountService
 from services.user import UserService
 from config import ADMIN_ID_LIST
 from models.user import User
@@ -48,9 +45,10 @@ class NotificationManager:
         merged_crypto_balances_keys = [key.split('_')[0] for key in new_crypto_balances.keys()]
         merged_crypto_balances = zip(merged_crypto_balances_keys, new_crypto_balances.values())
         user = await UserService.get_by_tgid(telegram_id)
+        #TODO("FIX")
+        trx_account = user.trx_account.address
+        eth_account = user.eth_account.address
         user = user.__dict__
-        trx_account = await TrxAccountService.get_by_id(user['trx_account_id'])
-        eth_account = await EthAccountService.get_by_id(user['eth_account_id'])
         username = user['telegram_username']
         user_button = await NotificationManager.make_user_button(username)
         if username:
