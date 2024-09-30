@@ -14,8 +14,7 @@ class CryptoApiManager:
         self.trx_address = trx_address.strip()
         self.eth_address = eth_address.strip()
         self.user_id = user_id
-        # self.min_timestamp = 0
-        self.min_timestamp = int((datetime.now() - timedelta(hours=6)).timestamp()) * 1000
+        self.min_timestamp = int((datetime.now() - timedelta(hours=24)).timestamp()) * 1000
 
     @staticmethod
     async def fetch_api_request(url: str) -> dict:
