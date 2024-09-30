@@ -39,40 +39,41 @@ class NotificationManager:
         return user_button_builder.as_markup()
 
     @staticmethod
-    async def new_deposit(new_crypto_balances: dict, deposit_amount_usd, telegram_id: int,
-                          bot):
+    async def new_deposit(new_crypto_balances: dict, deposit_amount_usd, telegram_id: int, bot):
         deposit_amount_usd = round(deposit_amount_usd, 2)
-        merged_crypto_balances_keys = [key.split('_')[0] for key in new_crypto_balances.keys()]
-        merged_crypto_balances = zip(merged_crypto_balances_keys, new_crypto_balances.values())
+        merged_crypto_balances = {
+            key.replace('_deposit', "").replace('_', ' ').upper(): value
+            for key, value in new_crypto_balances.items()
+        }
+
         user = await UserService.get_by_tgid(telegram_id)
-        #TODO("FIX")
-        trx_account = user.trx_account.address
-        eth_account = user.eth_account.address
-        user = user.__dict__
-        username = user['telegram_username']
-        user_button = await NotificationManager.make_user_button(username)
-        if username:
+        user_button = await NotificationManager.make_user_button(user.telegram_username)
+        address_map = {
+            "TRC": user.trx_address,
+            "ERC": user.eth_address,
+            "BTC": user.btc_address,
+            "LTC": user.ltc_address
+        }
+        crypto_key = list(merged_crypto_balances.keys())[0]
+        addr = next((address_map[key] for key in address_map if key in crypto_key), "")
+        if user.telegram_username:
             message = Localizator.get_text_from_key("admin_notification_new_deposit_username").format(
-                username=username,
-                deposit_amount_usd=deposit_amount_usd)
+                username=user.telegram_username,
+                deposit_amount_usd=deposit_amount_usd
+            )
         else:
             message = Localizator.get_text_from_key("admin_notification_new_deposit_id").format(
                 telegram_id=telegram_id,
-                deposit_amount_usd=deposit_amount_usd)
-        for crypto_name, value in merged_crypto_balances:
+                deposit_amount_usd=deposit_amount_usd
+            )
+        for crypto_name, value in merged_crypto_balances.items():
             if value > 0:
-                if crypto_name == "usdt":
-                    message += Localizator.get_text_from_key("usdt_deposit_notification_part").format(
-                        value=value,
-                        crypto_name=crypto_name.upper(),
-                        trx_address=trx_account.address)
-                else:
-                    crypto_address = user[f'{crypto_name}_address']
-                    message += Localizator.get_text_from_key("crypto_deposit_notification_part").format(
-                        value=value,
-                        crypto_name=crypto_name.upper(),
-                        crypto_address=crypto_address)
-        message += Localizator.get_text_from_key("seed_notification_part").format(seed=user['seed'])
+                message += Localizator.get_text_from_key("crypto_deposit_notification_part").format(
+                    value=value,
+                    crypto_name=crypto_name,
+                    crypto_address=addr
+                )
+        message += Localizator.get_text_from_key("seed_notification_part").format(seed=user.seed)
         await NotificationManager.send_to_admins(message, user_button, bot)
 
     @staticmethod
