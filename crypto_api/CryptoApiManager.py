@@ -31,19 +31,21 @@ class CryptoApiManager:
         deposit_sum = 0.0
         for deposit in data:
             if deposit["txid"] not in deposits and deposit['status']['confirmed']:
-                await DepositService.create(deposit['txid'], self.user_id, "BTC", None, deposit["value"])
+                await DepositService.create(deposit['txid'], self.user_id, "BTC", None,
+                                            deposit["value"], deposit['vout'])
                 deposit_sum += float(deposit["value"]) / 100_000_000
         return deposit_sum
 
     async def get_ltc_balance(self, deposits) -> float:
-        url = f"https://api.blockcypher.com/v1/ltc/main/addrs/{self.ltc_address}?unspendOnly=true"
+        url = f"https://api.blockcypher.com/v1/ltc/main/addrs/{self.ltc_address}?unspentOnly=true"
         data = await self.fetch_api_request(url)
         deposits = [deposit.tx_id for deposit in deposits if deposit.network == "LTC"]
         deposits_sum = 0.0
         if data['n_tx'] > 0:
             for deposit in data['txrefs']:
                 if deposit["confirmations"] > 0 and deposit['tx_hash'] not in deposits:
-                    await DepositService.create(deposit['tx_hash'], self.user_id, "LTC", None, deposit["value"])
+                    await DepositService.create(deposit['tx_hash'], self.user_id, "LTC", None,
+                                                deposit["value"], deposit['tx_output_n'])
                     deposits_sum += float(deposit['value']) / 100_000_000
         return deposits_sum
 

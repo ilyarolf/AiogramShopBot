@@ -18,7 +18,7 @@ class DepositService:
                 return int(last_user_id) + 1
 
     @staticmethod
-    async def create(tx_id, user_id, network, token_name, amount):
+    async def create(tx_id, user_id, network, token_name, amount, vout=None):
         async with async_session_maker() as session:
             next_deposit_id = await DepositService.get_next_user_id()
             dep = Deposit(id=next_deposit_id,
@@ -26,7 +26,8 @@ class DepositService:
                           tx_id=tx_id,
                           network=network,
                           token_name=token_name,
-                          amount=amount)
+                          amount=amount,
+                          vout=vout)
             session.add(dep)
             await session.commit()
             return next_deposit_id

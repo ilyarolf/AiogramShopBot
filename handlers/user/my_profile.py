@@ -167,8 +167,7 @@ async def refresh_balance(callback: CallbackQuery):
     telegram_id = callback.from_user.id
     unpacked_cb = MyProfileCallback.unpack(callback.data)
     crypto_info = unpacked_cb.args_for_action
-    # if await UserService.can_refresh_balance(telegram_id):
-    if True:
+    if await UserService.can_refresh_balance(telegram_id):
         await callback.answer(Localizator.get_text_from_key("balance_refreshing"))
         await UserService.create_last_balance_refresh_data(telegram_id)
         user = await UserService.get_by_tgid(telegram_id)
