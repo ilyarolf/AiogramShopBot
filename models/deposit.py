@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, Column, String, ForeignKey, Float
+from sqlalchemy import Integer, Column, String, ForeignKey, Boolean, BigInteger
 from sqlalchemy.orm import relationship, backref
 
 from models.base import Base
@@ -12,4 +12,6 @@ class Deposit(Base):
     user = relationship("User", backref=backref("users",lazy="joined"))
     network = Column(String, nullable=False)
     token_name = Column(String, nullable=True)
-    amount = Column(Float, nullable=False)
+    amount = Column(BigInteger, nullable=False)
+    is_withdrawn = Column(Boolean, default=False)
+    vout = Column(Integer, nullable=True)
