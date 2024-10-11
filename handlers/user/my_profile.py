@@ -64,13 +64,9 @@ async def my_profile(message: Union[Message, CallbackQuery]):
     top_up_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("top_up_balance_button"),
                                                callback_data=create_callback_profile(current_level + 1, "top_up"))
     purchase_history_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("purchase_history_button"),
-                                                         callback_data=create_callback_profile(current_level + 2,
+                                                         callback_data=create_callback_profile(current_level + 4,
                                                                                                "purchase_history"))
-    # update_balance = types.InlineKeyboardButton(text=Localizator.get_text_from_key("refresh_balance_button"),
-    #                                             callback_data=create_callback_profile(current_level + 3,
-    #                                                                                   "refresh_balance"))
     my_profile_builder = InlineKeyboardBuilder()
-    # my_profile_builder.add(top_up_button, purchase_history_button, update_balance)
     my_profile_builder.add(top_up_button, purchase_history_button)
     my_profile_builder.adjust(2)
     my_profile_markup = my_profile_builder.as_markup()
@@ -131,7 +127,7 @@ async def create_purchase_history_keyboard_builder(page: int, user_id: int):
         buy_id = order.id
         buy_item = await BuyItemService.get_buy_item_by_buy_id(buy_id)
         item = await ItemService.get_by_primary_key(buy_item.item_id)
-        item_from_history_callback = create_callback_profile(4, action="get_order",
+        item_from_history_callback = create_callback_profile(5, action="get_order",
                                                              args_for_action=str(buy_id))
         order_inline = types.InlineKeyboardButton(
             text=Localizator.get_text_from_key("purchase_history_item").format(subcategory_name=item.subcategory.name,
@@ -191,13 +187,13 @@ async def refresh_balance(callback: CallbackQuery):
 
 
 async def get_order_from_history(callback: CallbackQuery):
-    current_level = 4
+    current_level = 5
     buy_id = MyProfileCallback.unpack(callback.data).args_for_action
     items = await ItemService.get_items_by_buy_id(buy_id)
     message = await create_message_with_bought_items(items)
     back_builder = InlineKeyboardBuilder()
     back_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
-                                             callback_data=create_callback_profile(level=current_level - 2))
+                                             callback_data=create_callback_profile(level=current_level - 1))
     back_builder.add(back_button)
     await callback.message.edit_text(text=message, parse_mode=ParseMode.HTML, reply_markup=back_builder.as_markup())
 
@@ -240,9 +236,8 @@ async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback):
         1: top_up_balance,
         2: top_up_by_method,
         3: refresh_balance,
-
-        # 2: purchase_history,
-        # 4: get_order_from_history
+        4: purchase_history,
+        5: get_order_from_history
     }
 
     current_level_function = levels[current_level]
