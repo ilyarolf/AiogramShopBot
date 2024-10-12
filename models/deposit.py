@@ -14,4 +14,4 @@ class Deposit(Base):
     token_name = Column(String, nullable=True)
     amount = Column(BigInteger, nullable=False)
     is_withdrawn = Column(Boolean, default=False)
-    vout = Column(Integer, nullable=False)
+    vout = Column(Integer, nullable=True)
