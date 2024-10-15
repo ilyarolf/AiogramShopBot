@@ -43,12 +43,18 @@ class MyProfileConstants:
 async def get_my_profile_message(telegram_id: int):
     user = await UserService.get_by_tgid(telegram_id)
     btc_balance = user.btc_balance
-    usdt_balance = user.usdt_balance
+    usdt_trc20_balance = user.usdt_trc20_balance
+    usdd_trc20_balance = user.usdd_trc20_balance
+    usdt_erc20_balance = user.usdt_erc20_balance
+    usdc_erc20_balance = user.usdc_erc20_balance
     ltc_balance = user.ltc_balance
     usd_balance = round(user.top_up_amount - user.consume_records, 2)
     return Localizator.get_text_from_key("my_profile_msg").format(telegram_id=telegram_id,
                                                                   btc_balance=btc_balance,
-                                                                  usdt_balance=usdt_balance,
+                                                                  usdt_trc20_balance=usdt_trc20_balance,
+                                                                  usdd_trc20_balance=usdd_trc20_balance,
+                                                                  usdt_erc20_balance=usdt_erc20_balance,
+                                                                  usdc_erc20_balance=usdc_erc20_balance,
                                                                   ltc_balance=ltc_balance,
                                                                   usd_balance=usd_balance)
 
@@ -58,13 +64,10 @@ async def my_profile(message: Union[Message, CallbackQuery]):
     top_up_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("top_up_balance_button"),
                                                callback_data=create_callback_profile(current_level + 1, "top_up"))
     purchase_history_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("purchase_history_button"),
-                                                         callback_data=create_callback_profile(current_level + 2,
+                                                         callback_data=create_callback_profile(current_level + 4,
                                                                                                "purchase_history"))
-    update_balance = types.InlineKeyboardButton(text=Localizator.get_text_from_key("refresh_balance_button"),
-                                                callback_data=create_callback_profile(current_level + 3,
-                                                                                      "refresh_balance"))
     my_profile_builder = InlineKeyboardBuilder()
-    my_profile_builder.add(top_up_button, purchase_history_button, update_balance)
+    my_profile_builder.add(top_up_button, purchase_history_button)
     my_profile_builder.adjust(2)
     my_profile_markup = my_profile_builder.as_markup()
 
@@ -84,25 +87,34 @@ async def my_profile(message: Union[Message, CallbackQuery]):
 
 
 async def top_up_balance(callback: CallbackQuery):
-    telegram_id = callback.message.chat.id
-    user = await UserService.get_by_tgid(telegram_id)
     current_level = 1
-    btc_address = user.btc_address
-    trx_address = user.trx_address
-    ltc_address = user.ltc_address
     back_to_profile_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
                                                         callback_data=create_callback_profile(current_level - 1))
-    back_button_builder = InlineKeyboardBuilder()
-    back_button_builder.add(back_to_profile_button)
-    back_button_markup = back_button_builder.as_markup()
-    bot_entity = await callback.bot.get_me()
+    top_up_methods_builder = InlineKeyboardBuilder()
+    top_up_methods_builder.row(types.InlineKeyboardButton(text=Localizator.get_text_from_key("btc_top_up"),
+                                                          callback_data=create_callback_profile(current_level + 1,
+                                                                                                args_for_action="BTC")))
+    top_up_methods_builder.row(types.InlineKeyboardButton(text=Localizator.get_text_from_key("ltc_top_up"),
+                                                          callback_data=create_callback_profile(current_level + 1,
+                                                                                                args_for_action="LTC")))
+    top_up_methods_builder.row(types.InlineKeyboardButton(text=Localizator.get_text_from_key("usdt_trc20_top_up"),
+                                                          callback_data=create_callback_profile(current_level + 1,
+                                                                                                args_for_action="TRX_USDT")))
+    top_up_methods_builder.row(types.InlineKeyboardButton(text=Localizator.get_text_from_key("usdd_trc20_top_up"),
+                                                          callback_data=create_callback_profile(current_level + 1,
+                                                                                                args_for_action="TRX_USDD")))
+    top_up_methods_builder.row(types.InlineKeyboardButton(text=Localizator.get_text_from_key("usdt_erc20_top_up"),
+                                                          callback_data=create_callback_profile(current_level + 1,
+                                                                                                args_for_action="ETH_USDT")))
+    top_up_methods_builder.row(types.InlineKeyboardButton(text=Localizator.get_text_from_key("usdc_trc20_top_up"),
+                                                          callback_data=create_callback_profile(current_level + 1,
+                                                                                                args_for_action="ETH_USDC")))
+    top_up_methods_builder.row(back_to_profile_button)
+
     await callback.message.edit_text(
-        text=Localizator.get_text_from_key("top_up_balance_msg").format(bot_name=bot_entity.first_name,
-                                                                        btc_address=btc_address,
-                                                                        trx_address=trx_address,
-                                                                        ltc_address=ltc_address),
+        text=Localizator.get_text_from_key("choose_top_up_method"),
         parse_mode=ParseMode.HTML,
-        reply_markup=back_button_markup)
+        reply_markup=top_up_methods_builder.as_markup())
     await callback.answer()
 
 
@@ -115,7 +127,7 @@ async def create_purchase_history_keyboard_builder(page: int, user_id: int):
         buy_id = order.id
         buy_item = await BuyItemService.get_buy_item_by_buy_id(buy_id)
         item = await ItemService.get_by_primary_key(buy_item.item_id)
-        item_from_history_callback = create_callback_profile(4, action="get_order",
+        item_from_history_callback = create_callback_profile(5, action="get_order",
                                                              args_for_action=str(buy_id))
         order_inline = types.InlineKeyboardButton(
             text=Localizator.get_text_from_key("purchase_history_item").format(subcategory_name=item.subcategory.name,
@@ -141,32 +153,33 @@ async def purchase_history(callback: CallbackQuery):
                                          reply_markup=orders_markup_builder.as_markup(),
                                          parse_mode=ParseMode.HTML)
     else:
-        await callback.message.edit_text(Localizator.get_text_from_key("purchases"), reply_markup=orders_markup_builder.as_markup(),
+        await callback.message.edit_text(Localizator.get_text_from_key("purchases"),
+                                         reply_markup=orders_markup_builder.as_markup(),
                                          parse_mode=ParseMode.HTML)
     await callback.answer()
 
 
 async def refresh_balance(callback: CallbackQuery):
     telegram_id = callback.from_user.id
+    unpacked_cb = MyProfileCallback.unpack(callback.data)
+    crypto_info = unpacked_cb.args_for_action
     if await UserService.can_refresh_balance(telegram_id):
         await callback.answer(Localizator.get_text_from_key("balance_refreshing"))
-        old_crypto_balances = await UserService.get_balances(telegram_id)
         await UserService.create_last_balance_refresh_data(telegram_id)
+        user = await UserService.get_by_tgid(telegram_id)
         addresses = await UserService.get_addresses(telegram_id)
-        new_crypto_balances = await CryptoApiManager(**addresses).get_top_ups()
+        new_crypto_deposits = await CryptoApiManager(**addresses, user_id=user.id).get_top_up_by_crypto_name(crypto_info)
         crypto_prices = await CryptoApiManager.get_crypto_prices()
         deposit_usd_amount = 0.0
         bot_obj = callback.bot
-        if sum(new_crypto_balances.values()) > sum(old_crypto_balances.values()):
-            merged_deposit = {key: new_crypto_balances[key] - old_crypto_balances[key] for key in
-                              new_crypto_balances.keys()}
-            for balance_key, balance in merged_deposit.items():
+        if sum(new_crypto_deposits.values()) > 0:
+            for balance_key, balance in new_crypto_deposits.items():
                 balance_key = balance_key.split('_')[0]
                 crypto_balance_in_usd = balance * crypto_prices[balance_key]
                 deposit_usd_amount += crypto_balance_in_usd
-            await UserService.update_crypto_balances(telegram_id, new_crypto_balances)
+            await UserService.update_crypto_balances(telegram_id, new_crypto_deposits)
             await UserService.update_top_up_amount(telegram_id, deposit_usd_amount * 0.95)
-            await NotificationManager.new_deposit(old_crypto_balances, new_crypto_balances, deposit_usd_amount,
+            await NotificationManager.new_deposit(new_crypto_deposits, deposit_usd_amount,
                                                   telegram_id, bot_obj)
         await my_profile(callback)
     else:
@@ -174,15 +187,44 @@ async def refresh_balance(callback: CallbackQuery):
 
 
 async def get_order_from_history(callback: CallbackQuery):
-    current_level = 4
+    current_level = 5
     buy_id = MyProfileCallback.unpack(callback.data).args_for_action
     items = await ItemService.get_items_by_buy_id(buy_id)
     message = await create_message_with_bought_items(items)
     back_builder = InlineKeyboardBuilder()
     back_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
-                                             callback_data=create_callback_profile(level=current_level - 2))
+                                             callback_data=create_callback_profile(level=current_level - 1))
     back_builder.add(back_button)
     await callback.message.edit_text(text=message, parse_mode=ParseMode.HTML, reply_markup=back_builder.as_markup())
+
+
+async def top_up_by_method(callback: CallbackQuery):
+    unpacked_cb = MyProfileCallback.unpack(callback.data)
+    current_level = unpacked_cb.level
+    payment_method = unpacked_cb.args_for_action
+    addr = ""
+    user = await UserService.get_by_tgid(callback.from_user.id)
+    bot = await callback.bot.get_me()
+    if payment_method == "BTC":
+        addr = user.btc_address
+    elif payment_method == "LTC":
+        addr = user.ltc_address
+    elif "ETH" in payment_method :
+        addr = user.eth_address
+    elif "TRX" in payment_method:
+        addr = user.trx_address
+    msg = Localizator.get_text_from_key("top_up_balance_msg").format(bot_name=bot.first_name,
+                                                                     crypto_name=payment_method.split("_")[0],
+                                                                     addr=addr)
+    refresh_balance_builder = InlineKeyboardBuilder()
+    refresh_balance_builder.row(types.InlineKeyboardButton(text=Localizator.get_text_from_key("refresh_balance_button"),
+                                                           callback_data=create_callback_profile(current_level + 1,
+                                                                                                 args_for_action=payment_method)))
+    refresh_balance_builder.row(types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
+                                                           callback_data=create_callback_profile(
+                                                               level=current_level - 1)))
+    await callback.message.edit_text(text=msg, parse_mode=ParseMode.HTML,
+                                     reply_markup=refresh_balance_builder.as_markup())
 
 
 @my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())
@@ -192,9 +234,10 @@ async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback):
     levels = {
         0: my_profile,
         1: top_up_balance,
-        2: purchase_history,
+        2: top_up_by_method,
         3: refresh_balance,
-        4: get_order_from_history
+        4: purchase_history,
+        5: get_order_from_history
     }
 
     current_level_function = levels[current_level]

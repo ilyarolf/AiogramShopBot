@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func
+from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func, ForeignKey
+from sqlalchemy.orm import relationship, backref
 
 from models.base import Base
 
@@ -12,12 +13,16 @@ class User(Base):
     btc_address = Column(String, nullable=False, unique=True)
     ltc_address = Column(String, nullable=False, unique=True)
     trx_address = Column(String, nullable=False, unique=True)
+    eth_address = Column(String, nullable=False, unique=True)
     last_balance_refresh = Column(DateTime)
     top_up_amount = Column(Float, default=0.0)
     consume_records = Column(Float, default=0.0)
     btc_balance = Column(Float, nullable=False, default=0.0)
     ltc_balance = Column(Float, nullable=False, default=0.0)
-    usdt_balance = Column(Float, nullable=False, default=0.0)
+    usdt_trc20_balance = Column(Float, nullable=False, default=0.0)
+    usdd_trc20_balance = Column(Float, nullable=False, default=0.0)
+    usdt_erc20_balance = Column(Float, nullable=False, default=0.0)
+    usdc_erc20_balance = Column(Float, nullable=False, default=0.0)
     registered_at = Column(DateTime, default=func.now())
     seed = Column(String, nullable=False, unique=True)
     can_receive_messages = Column(Boolean, default=True)
