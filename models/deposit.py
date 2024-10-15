@@ -1,5 +1,4 @@
-from sqlalchemy import Integer, Column, String, ForeignKey, Boolean, BigInteger
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy import Integer, Column, String, ForeignKey, Boolean, BigInteger, DateTime, func
 
 from models.base import Base
 
@@ -14,3 +13,4 @@ class Deposit(Base):
     amount = Column(BigInteger, nullable=False)
     is_withdrawn = Column(Boolean, default=False)
     vout = Column(Integer, nullable=True)
+    deposit_datetime = Column(DateTime, default=func.now())
