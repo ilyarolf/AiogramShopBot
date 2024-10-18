@@ -1,7 +1,8 @@
 import json
 
-from typesDTO.itemDTO import ItemDTO
 from dataclasses import asdict
+
+from types.dto.itemDTO import ItemDTO
 
 
 class NewItemsGenerator:
