@@ -17,6 +17,7 @@ services:
       PAGE_ENTRIES : 8
       LANGUAGE: "en"
       MULTIBOT: "false"
+      ETHPLORER_API_KEY: "" # API key from Ethplorer
     ports:
       - "4040:4040"
       - "5000:5000" # ${WEBAPP_PORT}:${WEBAPP_PORT}

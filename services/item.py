@@ -75,6 +75,18 @@ class ItemService:
             return subcategories.scalars().all()
 
     @staticmethod
+    def get_maximum_page(category_id: int):
+        with session_maker() as session:
+            subquery = select(Item.subcategory_id).where(Item.category_id == category_id, Item.is_sold == 0)
+            stmt = select(func.count(distinct(subquery.c.subcategory_id)))
+            maximum_page = session.execute(stmt)
+            maximum_page = maximum_page.scalar_one()
+            if maximum_page % ItemService.items_per_page == 0:
+                return maximum_page / ItemService.items_per_page - 1
+            else:
+                return math.trunc(maximum_page / ItemService.items_per_page)
+
+    @staticmethod
     def get_price_by_subcategory(subcategory_id: int) -> float:
         with session_maker() as session:
             stmt = select(Item.price).join(Subcategory, Subcategory.id == Item.subcategory_id).where(
@@ -122,15 +134,3 @@ class ItemService:
             new_items = session.execute(stmt)
             new_items = new_items.scalars().all()
             return new_items
-
-    @staticmethod
-    def get_maximum_page(category_id: int):
-        with session_maker() as session:
-            subquery = select(Item.subcategory_id).where(Item.category_id == category_id, Item.is_sold == 0)
-            stmt = select(func.count(distinct(subquery.c.subcategory_id)))
-            maximum_page = session.execute(stmt)
-            maximum_page = maximum_page.scalar_one()
-            if maximum_page % ItemService.items_per_page == 0:
-                return maximum_page / ItemService.items_per_page - 1
-            else:
-                return math.trunc(maximum_page / ItemService.items_per_page)

@@ -203,8 +203,9 @@ async def send_restocking_message(callback: CallbackQuery):
 
 async def delete_category(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
-    delete_category_builder = await create_delete_entity_buttons(CategoryService.get_all_categories(
-        unpacked_callback.page),
+    delete_category_builder = await create_delete_entity_buttons(
+        CategoryService.get_all_categories(
+            unpacked_callback.page),
         "category")
     delete_category_builder = await add_pagination_buttons(delete_category_builder, callback.data,
                                                            CategoryService.get_maximum_page(), AdminCallback.unpack,

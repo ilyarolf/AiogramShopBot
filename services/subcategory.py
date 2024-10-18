@@ -36,6 +36,17 @@ class SubcategoryService:
             return subcategories
 
     @staticmethod
+    def get_maximum_page():
+        with session_maker() as session:
+            stmt = select(func.count(Subcategory.id)).distinct()
+            subcategories = session.execute(stmt)
+            subcategories_count = subcategories.scalar_one()
+            if subcategories_count % SubcategoryService.items_per_page == 0:
+                return subcategories_count / SubcategoryService.items_per_page - 1
+            else:
+                return math.trunc(subcategories_count / SubcategoryService.items_per_page)
+
+    @staticmethod
     def get_by_primary_key(subcategory_id) -> Subcategory:
         with session_maker() as session:
             stmt = select(Subcategory).where(Subcategory.id == subcategory_id)
@@ -55,14 +66,3 @@ class SubcategoryService:
                 subcategory = subcategory.scalar()
                 session.delete(subcategory)
                 session.commit()
-
-    @staticmethod
-    def get_maximum_page():
-        with session_maker() as session:
-            stmt = select(func.count(Subcategory.id)).distinct()
-            subcategories = session.execute(stmt)
-            subcategories_count = subcategories.scalar_one()
-            if subcategories_count % SubcategoryService.items_per_page == 0:
-                return subcategories_count / SubcategoryService.items_per_page - 1
-            else:
-                return math.trunc(subcategories_count / SubcategoryService.items_per_page)
