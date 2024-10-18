@@ -31,7 +31,7 @@ class CryptoApiManager:
         deposit_sum = 0.0
         for deposit in data:
             if deposit["txid"] not in deposits and deposit['status']['confirmed']:
-                await DepositService.create(deposit['txid'], self.user_id, "BTC", None,
+                DepositService.create(deposit['txid'], self.user_id, "BTC", None,
                                             deposit["value"], deposit['vout'])
                 deposit_sum += float(deposit["value"]) / 100_000_000
         return deposit_sum
@@ -44,7 +44,7 @@ class CryptoApiManager:
         if data['n_tx'] > 0:
             for deposit in data['txrefs']:
                 if deposit["confirmations"] > 0 and deposit['tx_hash'] not in deposits:
-                    await DepositService.create(deposit['tx_hash'], self.user_id, "LTC", None,
+                    DepositService.create(deposit['tx_hash'], self.user_id, "LTC", None,
                                                 deposit["value"], deposit['tx_output_n'])
                     deposits_sum += float(deposit['value']) / 100_000_000
         return deposits_sum
@@ -57,7 +57,7 @@ class CryptoApiManager:
         deposits_sum = 0.0
         for deposit in data['data']:
             if deposit['transaction_id'] not in deposits:
-                await DepositService.create(deposit['transaction_id'], self.user_id, "TRX",
+                DepositService.create(deposit['transaction_id'], self.user_id, "TRX",
                                             "USDT_TRC20", deposit['value'])
                 deposits_sum += float(deposit['value']) / pow(10, deposit['token_info']['decimals'])
         return deposits_sum
@@ -70,7 +70,7 @@ class CryptoApiManager:
         deposits_sum = 0.0
         for deposit in data['data']:
             if deposit['transaction_id'] not in deposits:
-                await DepositService.create(deposit['transaction_id'], self.user_id, "TRX",
+                DepositService.create(deposit['transaction_id'], self.user_id, "TRX",
                                             "USDD_TRC20", deposit['value'])
                 deposits_sum += float(deposit['value']) / pow(10, deposit['token_info']['decimals'])
         return deposits_sum
@@ -83,7 +83,7 @@ class CryptoApiManager:
         deposits_sum = 0.0
         for deposit in data['operations']:
             if deposit['transactionHash'] not in deposits and deposit['to'] == self.eth_address:
-                await DepositService.create(deposit['transactionHash'], self.user_id, "ETH", "USDT_ERC20",
+                DepositService.create(deposit['transactionHash'], self.user_id, "ETH", "USDT_ERC20",
                                             deposit['value'])
                 deposits_sum += float(deposit['value']) / pow(10, 6)
         return deposits_sum
@@ -96,13 +96,13 @@ class CryptoApiManager:
         deposits_sum = 0.0
         for deposit in data['operations']:
             if deposit['transactionHash'] not in deposits and deposit['to'] == self.eth_address:
-                await DepositService.create(deposit['transactionHash'], self.user_id, "ETH", "USDC_ERC20",
+                DepositService.create(deposit['transactionHash'], self.user_id, "ETH", "USDC_ERC20",
                                             deposit['value'])
                 deposits_sum += float(deposit['value']) / pow(10, 6)
         return deposits_sum
 
     async def get_top_ups(self):
-        user_deposits = await DepositService.get_by_user_id(self.user_id)
+        user_deposits = DepositService.get_by_user_id(self.user_id)
         balances = {"btc__deposit": await self.get_btc_balance(user_deposits),
                     "ltc__deposit": await self.get_ltc_balance(user_deposits),
                     "usdt_trc20_deposit": await self.get_usdt_trc20_balance(user_deposits),
@@ -112,7 +112,7 @@ class CryptoApiManager:
         return balances
 
     async def get_top_up_by_crypto_name(self, crypto_name: str):
-        user_deposits = await DepositService.get_by_user_id(self.user_id)
+        user_deposits = DepositService.get_by_user_id(self.user_id)
 
         crypto_functions = {
             "BTC": ("btc_deposit", self.get_btc_balance),

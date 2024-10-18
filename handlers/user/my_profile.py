@@ -177,8 +177,8 @@ async def refresh_balance(callback: CallbackQuery):
                 balance_key = balance_key.split('_')[0]
                 crypto_balance_in_usd = balance * crypto_prices[balance_key]
                 deposit_usd_amount += crypto_balance_in_usd
-            await UserService.update_crypto_balances(telegram_id, new_crypto_deposits)
-            await UserService.update_top_up_amount(telegram_id, deposit_usd_amount * 0.95)
+            UserService.update_crypto_balances(telegram_id, new_crypto_deposits)
+            UserService.update_top_up_amount(telegram_id, deposit_usd_amount * 0.95)
             await NotificationManager.new_deposit(new_crypto_deposits, deposit_usd_amount,
                                                   telegram_id, bot_obj)
         await my_profile(callback)
