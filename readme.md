@@ -58,7 +58,7 @@ Bitcoin, Litecoin, USDT TRC-20, which allows you to sell digital goods worldwide
 | SUPPORT_LINK              | A link to the Telegram profile that will be sent by the bot to the user when the “Help” button is pressed.                                                                                                                                                                                                                  | https://t.me/${YOUR_USERNAME_TG}                                    |
 | DB_NAME                   | The name of the SQLite database file.                                                                                                                                                                                                                                                                                       | database.db                                                         |
 | PAGE_ENTIRES              | The number of entries per page. Serves as a variable for pagination.                                                                                                                                                                                                                                                        | 8                                                                   |
-| LANGUAGE                  | The name of the .json file with the l10n localization. At the moment only English localization is supplied out of the box, but you can make your own if you create a file in the l10n folder with the same keys as in l10n/en.json.                                                                                         | "en"                                                                |
+| BOT_LANGUAGE              | The name of the .json file with the l10n localization. At the moment only English localization is supplied out of the box, but you can make your own if you create a file in the l10n folder with the same keys as in l10n/en.json.                                                                                         | "en"                                                                |
 | MULTIBOT                  | Experimental functionality, allows you to raise several bots in one process. And there will be one main bot, where you can create other bots with the command “/add $BOT_TOKEN”. Accepts string parameters “true” or “false”.                                                                                               | "false"                                                             |
 | DB_PASS                   | Only works in the feature/sqlalchemy-sqlcipher branch. The password that will be used to encrypt your SQLite database.                                                                                                                                                                                                      | No recommended value                                                |
 
@@ -98,7 +98,7 @@ SUPPORT_LINK = "https://t.me/your_username_123"
 DB_NAME = "db_file_name.db"
 NGROK_TOKEN = "NGROK_TOKEN_HERE"
 PAGE_ENTRIES = 8
-LANGUAGE = "en"
+BOT_LANGUAGE = "en"
 MULTIBOT = "false"
 ```
 
@@ -128,7 +128,7 @@ DB_NAME = "db_file_name.db"
 DB_PASS = "your_password_to_database"
 NGROK_TOKEN = "NGROK_TOKEN_HERE"
 PAGE_ENTRIES = 8
-LANGUAGE = "en"
+BOT_LANGUAGE = "en"
 MULTIBOT = "false"
 ```
 
