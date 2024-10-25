@@ -4,7 +4,7 @@ import config
 
 
 class Localizator:
-    localization_filename = f"./l10n/{config.LANGUAGE}.json"
+    localization_filename = f"./l10n/{config.BOT_LANGUAGE}.json"
 
     @staticmethod
     def get_text_from_key(key: str) -> str:
