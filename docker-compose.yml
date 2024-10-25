@@ -1,3 +1,4 @@
+version: "3.8"
 services:
   bot:
     build:
@@ -12,7 +13,7 @@ services:
       ADMIN_ID_LIST: "12345678,87654321" # Telegram ID's for admins;
       SUPPORT_LINK: "https://t.me/YourUsername"
       DB_NAME: "database.db" # Here your database name
-      PAGE_ENTRIES: 20 # Items per page
+      PAGE_ENTRIES: 8 # Items per page
       BOT_LANGUAGE: "en" # The name of your file from the l10n folder without the .json suffix
       MULTIBOT: "false" # Allows the use of a multibot
       ETHPLORER_API_KEY: "" # API key from Ethplorer
@@ -23,7 +24,7 @@ services:
       - 4040
       - 5000 # ${WEBAPP_PORT}
     volumes:
-      - ./AiogramShopBot:/bot/data
+      - /AiogramShopBot:/bot/data
     command: ["python", "-u", "run.py"]
 
 volumes:
