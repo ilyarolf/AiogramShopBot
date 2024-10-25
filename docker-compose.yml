@@ -15,7 +15,7 @@ services:
       DB_NAME: "database.db" # Here your database name
       DB_PASS: "1234567" # Here your database password
       PAGE_ENTRIES : 8
-      LANGUAGE: "en"
+      BOT_LANGUAGE: "en"
       MULTIBOT: "false"
       ETHPLORER_API_KEY: "" # API key from Ethplorer
     ports:

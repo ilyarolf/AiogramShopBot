@@ -17,6 +17,6 @@ ADMIN_ID_LIST = [int(admin_id) for admin_id in ADMIN_ID_LIST]
 SUPPORT_LINK = os.environ.get("SUPPORT_LINK")
 DB_NAME = os.environ.get("DB_NAME")
 PAGE_ENTRIES = int(os.environ.get("PAGE_ENTRIES"))
-LANGUAGE = os.environ.get("LANGUAGE")
+BOT_LANGUAGE = os.environ.get("BOT_LANGUAGE")
 MULTIBOT = os.environ.get("MULTIBOT", False) == 'true'
 ETHPLORER_API_KEY = os.environ.get("ETHPLORER_API_KEY")
