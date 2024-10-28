@@ -10,7 +10,6 @@ from config import SUPPORT_LINK
 from handlers.admin.admin import admin_router
 from handlers.user.all_categories import all_categories_router
 from handlers.user.cart import cart_router
-from handlers.user.checkout import checkout_router
 from handlers.user.my_profile import my_profile_router
 from multibot import main as main_multibot
 from services.user import UserService
@@ -38,7 +37,7 @@ async def start(message: types.message):
     cart_button = types.KeyboardButton(text=Localizator.get_text_from_key("cart"))
 
     keyboard = [[all_categories_button, my_profile_button], [faq_button, help_button],
-                [cart_button, checkout_button]]
+                [cart_button]]
     start_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, keyboard=keyboard)
 
     is_exist = await UserService.is_exist(user_telegram_id)
@@ -65,7 +64,7 @@ async def support(message: types.message):
 main_router.include_router(admin_router)
 main_router.include_router(my_profile_router)
 main_router.include_router(all_categories_router)
-main_router.include_router(checkout_router)
+#main_router.include_router(checkout_router)
 main_router.include_router(cart_router)
 
 if __name__ == '__main__':
