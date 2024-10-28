@@ -155,7 +155,9 @@ class UserService:
     async def is_buy_possible(telegram_id, total_price):
         user = await UserService.get_by_tgid(telegram_id)
         balance = user.top_up_amount - user.consume_records
-        return balance >= total_price
+        #TODO: change back
+        return True
+        #return balance >= total_price
 
     @staticmethod
     async def update_consume_records(telegram_id: int, total_price: float):

@@ -66,3 +66,13 @@ class SubcategoryService:
                 subcategory = subcategory.scalar()
                 await session.delete(subcategory)
                 await session.commit()
+
+    @staticmethod
+    async def get_name(subcategory_id) -> str:
+        async with async_session_maker() as session:
+            stmt = select(Subcategory.name).where(Subcategory.id == subcategory_id)
+            subcategory_name = await session.execute(stmt)
+            subcategory_name = subcategory_name.scalar()
+            if subcategory_name is None:
+                return ""
+        return subcategory_name
