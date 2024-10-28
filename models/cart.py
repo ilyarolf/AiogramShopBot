@@ -3,7 +3,7 @@
 # quantity, category, subcategory is stored because the unique item is not yet sold
 #
 # note that the item is NOT reserved or blocked so that the availability of the item
-# needs to be checked gain during checkout
+# needs to be checked again during checkout
 from typing import List
 
 from sqlalchemy import Column, Integer, ForeignKey, Float
