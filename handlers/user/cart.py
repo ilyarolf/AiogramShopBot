@@ -129,7 +129,7 @@ async def delete_cart_item(callback: CallbackQuery):
     delete_cart_item_confirmation = unpacked_callback_query.delete_cart_item_confirmation
 
     if delete_cart_item_confirmation:
-        await CartService.remove_from_cart(cart_item_id, cart_item_id)
+        await CartService.remove_from_cart(cart_item_id=cart_item_id)
         await callback.message.edit_text(Localizator.get_text_from_key("delete_cart_item_confirmation_text")
                                       , parse_mode=ParseMode.HTML)
 
@@ -181,7 +181,7 @@ def create_cart_content_string(cart_items: List[CartItem]) -> str:
 def get_checkout_buttons_inline_builder(callback):
     unpacked_cart_callback = CartCallback.unpack(callback.data)
     cart_checkout_inline_keyboard_builder = InlineKeyboardBuilder()
-    confirmation_checkout_callback = create_cart_callback(level=3)
+    confirmation_checkout_callback = create_cart_callback(level=3, purchase_confirmation=True)
     confirmation_button_checkout = types.InlineKeyboardButton(
         text=Localizator.get_text_from_key("admin_confirm"),
         callback_data=confirmation_checkout_callback)
@@ -215,7 +215,6 @@ async def checkout_processing(callback: CallbackQuery):
 async def buy_processing(callback: CallbackQuery):
     unpacked_callback = CartCallback.unpack(callback.data)
     purchase_confirmation = unpacked_callback.purchase_confirmation
-    cart_grand_total = unpacked_callback.cart_grand_total
     telegram_id = callback.from_user.id
 
     cart = await CartService.get_open_cart_by_user(telegram_id)
@@ -223,18 +222,21 @@ async def buy_processing(callback: CallbackQuery):
 
     is_in_stock = False
     out_of_stock_items = []
+    cart_grand_total = 0.0
 
     for cart_item in cart_items:
 
         subcategory_id = cart_item.subcategory_id
         quantity = cart_item.quantity
+        cart_grand_total += cart_item.a_piece_price * quantity
 
         item_is_in_stock = await ItemService.get_available_quantity(subcategory_id) >= quantity
         if item_is_in_stock:
-            is_in_stock: True
+            is_in_stock = True
         else:
-            is_in_stock: False
+            is_in_stock = False
             out_of_stock_items.append(cart_item)
+
     is_enough_money = await UserService.is_buy_possible(telegram_id, cart_grand_total)
 
     back_to_main_builder = InlineKeyboardBuilder()
@@ -246,22 +248,34 @@ async def buy_processing(callback: CallbackQuery):
     bot = callback.bot
     if purchase_confirmation and is_in_stock and is_enough_money:
 
+        user = await UserService.get_by_tgid(telegram_id)
         await UserService.update_consume_records(telegram_id, cart_grand_total)
+        message_total = ""
+
+        sold_cart_items = []
 
         for cart_item in cart_items:
 
+            # get yet unsold items to set them to sold when creating the new buy entity
             sold_items = await ItemService.get_bought_items(cart_item.subcategory_id, cart_item.quantity)
-            message = await create_message_with_bought_items(sold_items)
-            user = await UserService.get_by_tgid(telegram_id)
+            message_total += await create_message_with_bought_items(sold_items) + "\n"
             cart_item_total = cart_item.quantity * cart_item.a_piece_price
             new_buy_id = await BuyService.insert_new(user, cart_item.quantity, cart_item_total)
             await BuyItemService.insert_many(sold_items, new_buy_id)
             await ItemService.set_items_sold(sold_items)
-            await callback.message.edit_text(text=message, parse_mode=ParseMode.HTML)
-            await NotificationManager.new_buy(cart_item.subcategory_id, cart_item.quantity, cart_item_total, user, bot)
+            await CartService.remove_from_cart(cart_item_id=cart_item.id)
+            sold_cart_items.append(cart_item)
+
+        # notify admin
+
+        #await NotificationManager.new_buy(cart_item.subcategory_id, cart_item.quantity, cart_item_total, user, bot)
+        await NotificationManager.new_buy(sold_cart_items, user, bot)
+        # notify user
+        await callback.message.answer(text=message_total, parse_mode=ParseMode.HTML)
+        await CartService.close_cart(cart.id)
 
     elif purchase_confirmation is False:
-        await callback.message.edit_text(text=Localizator.get_text_from_key("admin_declined"),
+        await callback.message.edit_text(text=Localizator.get_text_from_key("purchase_confirmation_declined"),
                                          parse_mode=ParseMode.HTML,
                                          reply_markup=back_to_main_builder.as_markup())
     elif is_enough_money is False:
@@ -269,7 +283,13 @@ async def buy_processing(callback: CallbackQuery):
                                          parse_mode=ParseMode.HTML,
                                          reply_markup=back_to_main_builder.as_markup())
     elif is_in_stock is False:
-        await callback.message.edit_text(text=Localizator.get_text_from_key("out_of_stock"),
+
+        out_of_stock_message = Localizator.get_text_from_key("out_of_stock") + "\n\n"
+
+        for cart_item in out_of_stock_items:
+            out_of_stock_message += cart_item.subcategory_name + "\n"
+
+        await callback.message.edit_text(out_of_stock_message,
                                          parse_mode=ParseMode.HTML,
                                          reply_markup=back_to_main_builder.as_markup())
 
