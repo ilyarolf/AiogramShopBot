@@ -1,8 +1,11 @@
 import logging
-from typing import Union
+from typing import Union, List
 
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+
+import config
+from models.cart import CartItem
 from services.subcategory import SubcategoryService
 from services.user import UserService
 from config import ADMIN_ID_LIST
@@ -77,22 +80,35 @@ class NotificationManager:
         await NotificationManager.send_to_admins(message, user_button, bot)
 
     @staticmethod
-    async def new_buy(subcategory_id: int, quantity: int, total_price: float, user: User, bot):
-        subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
-        message = ""
+    #async def new_buy(subcategory_id: int, quantity: int, total_price: float, user: User, bot):
+    async def new_buy(sold_cart_items: List[CartItem], user: User, bot):
+
         username = user.telegram_username
         telegram_id = user.telegram_id
         user_button = await NotificationManager.make_user_button(username)
-        if username:
-            message += Localizator.get_text_from_key("new_purchase_notification_with_tgid").format(
-                username=username,
-                total_price=total_price,
-                quantity=quantity,
-                subcategory_name=subcategory.name)
-        else:
-            message += Localizator.get_text_from_key("new_purchase_notification_with_username").format(
-                telegram_id=telegram_id,
-                total_price=total_price,
-                quantity=quantity,
-                subcategory_name=subcategory.name)
+        cart_grand_total = 0.0
+        message = ""
+        line_max_width = 0
+
+        for cart_item in sold_cart_items:
+            subcategory = await SubcategoryService.get_by_primary_key(cart_item.subcategory_id)
+            line_max_width = max (line_max_width, len(str(subcategory)))
+            cart_item_total = cart_item.a_piece_price * cart_item.quantity
+            cart_grand_total += cart_item_total
+
+            if username:
+                message += Localizator.get_text_from_key("new_purchase_notification_with_tgid").format(
+                    username=username,
+                    total_price=cart_item_total,
+                    quantity=cart_item.quantity,
+                    subcategory_name=subcategory.name) + "\n"
+            else:
+                message += Localizator.get_text_from_key("new_purchase_notification_with_username").format(
+                    telegram_id=telegram_id,
+                    total_price=cart_item_total,
+                    quantity=cart_item.quantity,
+                    subcategory_name=subcategory.name) + "\n"
+        dashes = "-" * min(config.MAX_LINE_WITH, line_max_width)
+        message += dashes + "\n"
+        message += Localizator.get_text_from_key("cart_grand_total_string").format(cart_grand_total=cart_grand_total, cart_item_currency=config.CURRENCY)
         await NotificationManager.send_to_admins(message, user_button, bot)
