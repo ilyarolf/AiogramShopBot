@@ -5,6 +5,7 @@ from sqlalchemy import select, func, update, distinct
 import config
 from db import async_session_maker
 from models.buyItem import BuyItem
+from models.category import Category
 from models.item import Item
 from models.subcategory import Subcategory
 
@@ -67,10 +68,12 @@ class ItemService:
 
     @staticmethod
     async def get_unsold_subcategories_by_category(category_id: int, page) -> list[Item]:
-        async with async_session_maker() as session:
-            stmt = select(Item).join(Subcategory, Subcategory.id == Item.subcategory_id).where(
+        async with (async_session_maker() as session):
+            stmt = (select(Item, Category.name, Subcategory.name)
+                    .join(Subcategory, Subcategory.id == Item.subcategory_id)
+                    .join(Category, Category.id == category_id).where(
                 Item.category_id == category_id, Item.is_sold == 0).group_by(Subcategory.name).limit(
-                ItemService.items_per_page).offset(ItemService.items_per_page * page)
+                ItemService.items_per_page).offset(ItemService.items_per_page * page))
             subcategories = await session.execute(stmt)
             return subcategories.scalars().all()
 

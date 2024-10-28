@@ -1,6 +1,7 @@
 import math
 
 from sqlalchemy import select, func
+from sqlalchemy.orm import session
 
 import config
 from db import async_session_maker
@@ -66,4 +67,14 @@ class CategoryService:
                 return max_page / CategoryService.items_per_page - 1
             else:
                 return math.trunc(max_page / CategoryService.items_per_page)
+
+    @staticmethod
+    async def get_name(category_id) -> str:
+        async with async_session_maker() as session:
+            stmt = select(Category.name).where(Category.id == category_id)
+            category_name = await session.execute(stmt)
+            category_name = category_name.scalar()
+            if category_name is None:
+                return ""
+        return category_name
 
