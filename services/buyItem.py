@@ -25,4 +25,3 @@ class BuyItemService:
             stmt = select(BuyItem).where(BuyItem.buy_id == buy_id).limit(1)
             item_subcategory = await session.execute(stmt)
             return item_subcategory.scalar()
-
