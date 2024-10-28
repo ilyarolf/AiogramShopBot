@@ -7,8 +7,10 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from handlers.common.common import add_pagination_buttons
+from models.cart import CartItem
 from services.buy import BuyService
 from services.buyItem import BuyItemService
+from services.cart import CartService
 from services.category import CategoryService
 from services.item import ItemService
 from services.subcategory import SubcategoryService
@@ -27,7 +29,6 @@ class AllCategoriesCallback(CallbackData, prefix="all_categories"):
     total_price: float
     confirmation: bool
     page: int
-
 
 def create_callback_all_categories(level: int,
                                    category_id: int = -1,
@@ -127,15 +128,18 @@ async def show_subcategories_in_category(callback: CallbackQuery):
 async def select_quantity(callback: CallbackQuery):
     unpacked_callback = AllCategoriesCallback.unpack(callback.data)
     price = unpacked_callback.price
-    subcategory_id = unpacked_callback.subcategory_id
     category_id = unpacked_callback.category_id
+    subcategory_id = unpacked_callback.subcategory_id
     current_level = unpacked_callback.level
     description = await ItemService.get_description(subcategory_id)
     count_builder = InlineKeyboardBuilder()
     for i in range(1, 11):
-        count_button_callback = create_callback_all_categories(level=current_level + 1, category_id=category_id,
-                                                               subcategory_id=subcategory_id, price=price,
-                                                               quantity=i, total_price=price * i)
+        count_button_callback = create_callback_all_categories(level=current_level + 1
+                                                               , category_id=category_id
+                                                               , subcategory_id=subcategory_id
+                                                               , price=price
+                                                               , quantity=i
+                                                               , total_price=price * i)
         count_button_inline = types.InlineKeyboardButton(text=str(i), callback_data=count_button_callback)
         count_builder.add(count_button_inline)
     back_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
@@ -146,18 +150,18 @@ async def select_quantity(callback: CallbackQuery):
     subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
     await callback.message.edit_text(
         text=Localizator.get_text_from_key("select_quantity").format(subcategory_name=subcategory.name,
-                                                                     price=price,
-                                                                     description=description),
+                                                                    price=price,
+                                                                    description=description),
         reply_markup=count_builder.as_markup(),
         parse_mode=ParseMode.HTML)
 
 
-async def buy_confirmation(callback: CallbackQuery):
-    unpacked_callback = AllCategoriesCallback.unpack(callback.data)
+async def add_to_cart_confirmation(all_category_callback: CallbackQuery):
+    unpacked_callback = AllCategoriesCallback.unpack(all_category_callback.data)
     price = unpacked_callback.price
     total_price = unpacked_callback.total_price
-    subcategory_id = unpacked_callback.subcategory_id
     category_id = unpacked_callback.category_id
+    subcategory_id = unpacked_callback.subcategory_id
     current_level = unpacked_callback.level
     quantity = unpacked_callback.quantity
     description = await ItemService.get_description(subcategory_id)
@@ -188,7 +192,7 @@ async def buy_confirmation(callback: CallbackQuery):
     confirmation_builder.add(confirmation_button, decline_button, back_button)
     confirmation_builder.adjust(2)
     subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
-    await callback.message.edit_text(
+    await all_category_callback.message.edit_text(
         text=Localizator.get_text_from_key("buy_confirmation").format(subcategory_name=subcategory.name,
                                                                       price=price,
                                                                       description=description,
@@ -196,6 +200,20 @@ async def buy_confirmation(callback: CallbackQuery):
                                                                       total_price=total_price),
         reply_markup=confirmation_builder.as_markup(),
         parse_mode=ParseMode.HTML)
+
+
+async def add_to_cart(callback: AllCategoriesCallback):
+    unpacked_callback = AllCategoriesCallback.unpack(callback.data)
+    user_id = callback.from_user.id
+    cart = await CartService.get_or_create_cart(telegram_id=user_id)
+    cart_item = CartItem(category_id=unpacked_callback.category_id
+                         , subcategory_id=unpacked_callback.subcategory_id
+                         , quantity=unpacked_callback.quantity
+                         , a_piece_price=unpacked_callback.price)
+    await CartService.add_to_cart(cart_item, cart)
+    await callback.message.edit_text(text=Localizator.get_text_from_key("item_added_to_cart"))
+    print('lalala')
+    #await show_cart(cart)
 
 
 async def buy_processing(callback: CallbackQuery):
@@ -210,7 +228,7 @@ async def buy_processing(callback: CallbackQuery):
     back_to_main_builder = InlineKeyboardBuilder()
     back_to_main_callback = create_callback_all_categories(level=0)
     back_to_main_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("all_categories"),
-                                                     callback_data=back_to_main_callback)
+                                                    callback_data=back_to_main_callback)
     back_to_main_builder.add(back_to_main_button)
     bot = callback.bot
     if confirmation and is_in_stock and is_enough_money:
@@ -246,6 +264,9 @@ async def create_message_with_bought_items(bought_data: list):
     return message
 
 
+checkout_process_router = Router()
+
+
 @all_categories_router.callback_query(AllCategoriesCallback.filter(), IsUserExistFilter())
 async def navigate_categories(call: CallbackQuery, callback_data: AllCategoriesCallback):
     current_level = callback_data.level
@@ -254,8 +275,8 @@ async def navigate_categories(call: CallbackQuery, callback_data: AllCategoriesC
         0: all_categories,
         1: show_subcategories_in_category,
         2: select_quantity,
-        3: buy_confirmation,
-        4: buy_processing
+        3: add_to_cart_confirmation,
+        4: add_to_cart,
     }
 
     current_level_function = levels[current_level]
