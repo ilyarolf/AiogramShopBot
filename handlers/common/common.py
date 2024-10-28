@@ -27,3 +27,4 @@ async def add_pagination_buttons(keyboard_builder: InlineKeyboardBuilder, callba
     if back_button:
         keyboard_builder.row(back_button)
     return keyboard_builder
+
