@@ -20,3 +20,4 @@ BOT_LANGUAGE = os.environ.get("BOT_LANGUAGE")
 MULTIBOT = os.environ.get("MULTIBOT", False) == 'true'
 ETHPLORER_API_KEY = os.environ.get("ETHPLORER_API_KEY")
 CURRENCY = os.environ.get("CURRENCY")
+MAX_LINE_WITH = int(os.environ.get("MAX_LINE_WITH"))
