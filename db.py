@@ -16,8 +16,7 @@ from models.buy import Buy
 from models.buyItem import BuyItem
 from models.category import Category
 from models.subcategory import Subcategory
-from models.buyItem import Basket
-from models.deposit import Deposit
+remove from models.deposit import Deposit
 
 url = f"sqlite+aiosqlite:///data/{DB_NAME}"
 data_folder = Path("data")
