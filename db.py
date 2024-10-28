@@ -10,12 +10,13 @@ Imports of these models are needed to correctly create tables in the database.
 For more information see https://stackoverflow.com/questions/7478403/sqlalchemy-classes-across-files
 """
 from models.item import Item
+from models.cart import Cart, CartItem
 from models.user import User
 from models.buy import Buy
 from models.buyItem import BuyItem
 from models.category import Category
 from models.subcategory import Subcategory
-from models.deposit import Deposit
+remove from models.deposit import Deposit
 
 url = f"sqlite+aiosqlite:///data/{DB_NAME}"
 data_folder = Path("data")

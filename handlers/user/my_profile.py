@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from crypto_api.CryptoApiManager import CryptoApiManager
 from handlers.common.common import add_pagination_buttons
-from handlers.user.all_categories import create_message_with_bought_items
+#from handlers.user.all_categories import create_message_with_bought_items
 from services.buy import BuyService
 from services.buyItem import BuyItemService
 from services.item import ItemService
@@ -190,12 +190,12 @@ async def get_order_from_history(callback: CallbackQuery):
     current_level = 5
     buy_id = MyProfileCallback.unpack(callback.data).args_for_action
     items = await ItemService.get_items_by_buy_id(buy_id)
-    message = await create_message_with_bought_items(items)
+    #message = await create_message_with_bought_items(items)
     back_builder = InlineKeyboardBuilder()
     back_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
                                              callback_data=create_callback_profile(level=current_level - 1))
     back_builder.add(back_button)
-    await callback.message.edit_text(text=message, parse_mode=ParseMode.HTML, reply_markup=back_builder.as_markup())
+    #await callback.message.edit_text(text=message, parse_mode=ParseMode.HTML, reply_markup=back_builder.as_markup())
 
 
 async def top_up_by_method(callback: CallbackQuery):
