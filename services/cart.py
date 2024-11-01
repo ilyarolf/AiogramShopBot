@@ -60,7 +60,7 @@ class CartService:
 
 
     @staticmethod
-    async def remove_from_cart(cart_item_id: int, cart_id: int):
+    async def remove_from_cart(cart_item_id: int):
         async with async_session_maker() as db_session:
             stmt = select(CartItem, CartItem==cart_item_id)
             cart_item = await db_session.execute(stmt)
@@ -119,6 +119,7 @@ class CartService:
         all_cart_items = await CartService.get_all_cart_items(telegram_id=telegram_id)
         return len(all_cart_items)
 
+
     @staticmethod
     async def get_maximum_page(telegram_id: int) -> int:
         max_page = await CartService.get_all_cart_items_count(telegram_id)
@@ -127,9 +128,17 @@ class CartService:
         else:
             return math.trunc(max_page / CategoryService.items_per_page)
 
+
     @staticmethod
     async def get_cart_item_by_id(cart_item_id: int) -> CartItem:
         async with (async_session_maker() as session):
             stmnt = select(CartItem, CartItem.id==cart_item_id)
             cart_item = await session.execute(stmnt)
             return cart_item.scalar()
+
+
+    @staticmethod
+    async def close_cart(cart_id: int):
+        async with (async_session_maker() as db_session):
+            stmnt = update(Cart).where(Cart.id == cart_id).values(is_closed=True)
+            db_session.execute(stmnt)
