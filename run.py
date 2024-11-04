@@ -9,7 +9,7 @@ from bot import dp, main
 from db import get_db_session, close_db_session
 from multibot import main as main_multibot
 from handlers.admin.admin import admin_router
-# from handlers.user.all_categories import all_categories_router
+from handlers.user.all_categories import all_categories_router
 from handlers.user.my_profile import my_profile_router
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
@@ -56,7 +56,7 @@ async def support(message: types.message):
 
 main_router.include_router(admin_router)
 main_router.include_router(my_profile_router)
-# main_router.include_router(all_categories_router)
+main_router.include_router(all_categories_router)
 
 if __name__ == '__main__':
     if config.MULTIBOT:
