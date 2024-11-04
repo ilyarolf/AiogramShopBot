@@ -1,6 +1,8 @@
 import logging
 from typing import Union, List
 
+from typing import Union
+from db import get_db_session, close_db_session
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
@@ -48,8 +50,9 @@ class NotificationManager:
             key.replace('_deposit', "").replace('_', ' ').upper(): value
             for key, value in new_crypto_balances.items()
         }
-
-        user = await UserService.get_by_tgid(telegram_id)
+        session = await get_db_session()
+        user = await UserService.get_by_tgid(telegram_id, session)
+        await close_db_session(session)
         user_button = await NotificationManager.make_user_button(user.telegram_username)
         address_map = {
             "TRC": user.trx_address,
@@ -80,6 +83,11 @@ class NotificationManager:
         await NotificationManager.send_to_admins(message, user_button, bot)
 
     @staticmethod
+    async def new_buy(subcategory_id: int, quantity: int, total_price: float, user: User, bot):
+        session = await get_db_session()
+        subcategory = await SubcategoryService.get_by_primary_key(subcategory_id, session)
+        await close_db_session(session)
+        message = ""
     #async def new_buy(subcategory_id: int, quantity: int, total_price: float, user: User, bot):
     async def new_buy(sold_cart_items: List[CartItem], user: User, bot):
 
