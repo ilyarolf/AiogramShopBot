@@ -1,4 +1,5 @@
-from typing import Union
+import datetime
+from typing import Union, List
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,3 +41,12 @@ class DepositService:
         deposits = await session_execute(stmt, session)
         deposits = deposits.scalars().all()
         return deposits
+
+    @staticmethod
+    async def get_by_timedelta(timedelta_int: int, session: Union[AsyncSession, Session]) -> List[Deposit]:
+        current_time = datetime.datetime.now()
+        timedelta = datetime.timedelta(days=int(timedelta_int))
+        time_to_subtract = current_time - timedelta
+        stmt = select(Deposit).where(Deposit.deposit_datetime >= time_to_subtract)
+        deposits = await session_execute(stmt, session)
+        return deposits.scalars().all()
