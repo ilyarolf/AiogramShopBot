@@ -12,7 +12,7 @@ from models.base import Base
 if config.DB_ENCRYPTION:
     # Installing sqlcipher3 on windows has some difficulties,
     # so if you want to test the version with database encryption use Linux.
-    from sqlcipher import dbapi2 as sqlcipher
+    from sqlcipher3 import dbapi2 as sqlcipher
 """
 Imports of these models are needed to correctly create tables in the database.
 For more information see https://stackoverflow.com/questions/7478403/sqlalchemy-classes-across-files
