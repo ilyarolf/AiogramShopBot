@@ -12,7 +12,6 @@ from models.subcategory import Subcategory
 
 
 class SubcategoryService:
-    items_per_page = config.PAGE_ENTRIES
 
     @staticmethod
     async def get_or_create_one(subcategory_name: str, session: Union[AsyncSession, Session]) -> Subcategory:
@@ -29,9 +28,11 @@ class SubcategoryService:
             return subcategory
 
     @staticmethod
-    async def get_all(session: Union[AsyncSession, Session], page: int = 0) -> list[Subcategory]:
-        stmt = select(Subcategory).distinct().limit(SubcategoryService.items_per_page).offset(
-            page * SubcategoryService.items_per_page).group_by(Subcategory.name)
+    async def get_to_delete(session: Union[AsyncSession, Session], page: int = 0) -> list[Subcategory]:
+        stmt = select(Subcategory).join(Item,
+                                        Item.subcategory_id == Subcategory.id).where(
+            Item.is_sold == 0).distinct().limit(config.PAGE_ENTRIES).offset(
+            page * config.PAGE_ENTRIES).group_by(Subcategory.name)
         subcategories = await session_execute(stmt, session=session)
         subcategories = subcategories.scalars().all()
         return subcategories
@@ -45,6 +46,22 @@ class SubcategoryService:
             return subcategories_count / SubcategoryService.items_per_page - 1
         else:
             return math.trunc(subcategories_count / SubcategoryService.items_per_page)
+
+    @staticmethod
+    async def get_maximum_page_to_delete(session: Union[AsyncSession, Session]):
+        unique_categories_subquery = (
+            select(Subcategory.id)
+            .join(Item, Item.subcategory_id == Subcategory.id)
+            .filter(Item.is_sold == 0)
+            .distinct()
+        ).alias('unique_categories')
+        stmt = select(func.count()).select_from(unique_categories_subquery)
+        max_page = session_execute(stmt, session)
+        max_page = max_page.scalar_one()
+        if max_page % config.PAGE_ENTRIES == 0:
+            return max_page / config.PAGE_ENTRIES - 1
+        else:
+            return math.trunc(max_page / config.PAGE_ENTRIES)
 
     @staticmethod
     async def get_by_primary_key(subcategory_id: int, session: Union[AsyncSession, Session]) -> Subcategory:

@@ -9,6 +9,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 import config
 from models.cartItem import CartItem
 from services.subcategory import SubcategoryService
+from services.category import CategoryService
 from services.user import UserService
 from config import ADMIN_ID_LIST
 from models.user import User
@@ -83,9 +84,10 @@ class NotificationManager:
         await NotificationManager.send_to_admins(message, user_button, bot)
 
     @staticmethod
-    async def new_buy(subcategory_id: int, quantity: int, total_price: float, user: User, bot):
+    async def new_buy(category_id: int, subcategory_id: int, quantity: int, total_price: float, user: User, bot):
         session = await get_db_session()
         subcategory = await SubcategoryService.get_by_primary_key(subcategory_id, session)
+        category = await CategoryService.get_by_primary_key(category_id, session)
         await close_db_session(session)
         message = ""
     #async def new_buy(subcategory_id: int, quantity: int, total_price: float, user: User, bot):

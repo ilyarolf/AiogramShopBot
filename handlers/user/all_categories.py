@@ -9,6 +9,8 @@ from db import get_db_session, close_db_session
 from handlers.common.common import add_pagination_buttons
 from models.cartItem import CartItem
 from services.cart import CartService
+from services.buy import BuyService
+from services.buyItem import BuyItemService
 from services.category import CategoryService
 from services.item import ItemService
 from services.subcategory import SubcategoryService
@@ -70,8 +72,8 @@ async def create_subcategory_buttons(category_id: int, page: int = 0):
     items = await ItemService.get_unsold_subcategories_by_category(category_id, page, session)
     subcategories_builder = InlineKeyboardBuilder()
     for item in items:
-        subcategory_price = await ItemService.get_price_by_subcategory(item.subcategory_id, session)
-        available_quantity = await ItemService.get_available_quantity(item.subcategory_id, session)
+        subcategory_price = await ItemService.get_price_by_subcategory(item.subcategory_id, category_id, session)
+        available_quantity = await ItemService.get_available_quantity(item.subcategory_id, category_id, session)
         await close_db_session(session)
         subcategory_inline_button = create_callback_all_categories(level=current_level + 1,
                                                                    category_id=category_id,
@@ -139,7 +141,7 @@ async def select_quantity(callback: CallbackQuery):
     category_id = unpacked_callback.category_id
     current_level = unpacked_callback.level
     session = await get_db_session()
-    description = await ItemService.get_description(subcategory_id, session)
+    description = await ItemService.get_description(subcategory_id, category_id, session)
     count_builder = InlineKeyboardBuilder()
     for i in range(1, 11):
         count_button_callback = create_callback_all_categories(level=current_level + 1, category_id=category_id,
@@ -171,7 +173,7 @@ async def add_to_cart_confirmation(callback: CallbackQuery):
     current_level = unpacked_callback.level
     quantity = unpacked_callback.quantity
     session = await get_db_session()
-    description = await ItemService.get_description(subcategory_id, session)
+    description = await ItemService.get_description(subcategory_id, category_id, session)
     confirmation_builder = InlineKeyboardBuilder()
     confirm_button_callback = create_callback_all_categories(level=current_level + 1,
                                                              category_id=category_id,
