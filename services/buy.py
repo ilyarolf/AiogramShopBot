@@ -18,15 +18,6 @@ class BuyService:
     buys_per_page = config.PAGE_ENTRIES
 
     @staticmethod
-    async def execute_stmt(stmt, session: Union[AsyncSession, Session]):
-        if isinstance(session, AsyncSession):
-            query_result = await session.execute(stmt)
-            return query_result
-        else:
-            query_result = session.query(stmt)
-            return query_result
-
-    @staticmethod
     async def get_buys_by_buyer_id(buyer_id: int, page: int):
         async with async_session_maker() as session:
             stmt = select(Buy).where(Buy.buyer_id == buyer_id).limit(BuyService.buys_per_page).offset(
