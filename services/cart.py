@@ -141,4 +141,4 @@ class CartService:
     async def close_cart(cart_id: int):
         async with (async_session_maker() as db_session):
             stmnt = update(Cart).where(Cart.id == cart_id).values(is_closed=True)
-            db_session.execute(stmnt)
+            await db_session.execute(stmnt)
