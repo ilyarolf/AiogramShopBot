@@ -19,9 +19,7 @@ from utils.localizator import Localizator
 class AllCategoriesCallback(CallbackData, prefix="all_categories"):
     level: int
     category_id: int
-    category_name: str
     subcategory_id: int
-    subcategory_name: str
     price: float
     quantity: int
     total_price: float
@@ -30,24 +28,15 @@ class AllCategoriesCallback(CallbackData, prefix="all_categories"):
 
 def create_callback_all_categories(level: int,
                                    category_id: int = -1,
-                                   category_name: str = "",
                                    subcategory_id: int = -1,
-                                   subcategory_name: str = "",
                                    price: float = 0.0,
                                    total_price: float = 0.0,
                                    quantity: int = 0,
                                    confirmation: bool = False,
                                    page: int = 0):
-    return AllCategoriesCallback(level=level,
-                                 category_id=category_id,
-                                 category_name=category_name,
-                                 subcategory_id=subcategory_id,
-                                 subcategory_name=subcategory_name,
-                                 price=price,
+    return AllCategoriesCallback(level=level, category_id=category_id, subcategory_id=subcategory_id, price=price,
                                  total_price=total_price,
-                                 quantity=quantity,
-                                 confirmation=confirmation,
-                                 page=page).pack()
+                                 quantity=quantity, confirmation=confirmation, page=page).pack()
 
 
 all_categories_router = Router()
@@ -63,9 +52,7 @@ async def create_category_buttons(page: int):
     if categories:
         categories_builder = InlineKeyboardBuilder()
         for category in categories:
-            category_button_callback = create_callback_all_categories( level=1,
-                                                                       category_id=category.id,
-                                                                       category_name=category.name,)
+            category_button_callback = create_callback_all_categories(level=1, category_id=category.id)
             category_button = types.InlineKeyboardButton(text=category.name, callback_data=category_button_callback)
             categories_builder.add(category_button)
         categories_builder.adjust(2)
@@ -78,14 +65,10 @@ async def create_subcategory_buttons(category_id: int, page: int = 0):
     subcategories_builder = InlineKeyboardBuilder()
     for item in items:
         subcategory_price = await ItemService.get_price_by_subcategory(item.subcategory_id)
-        category_name = await CategoryService.get_name(category_id)
-        subcategory_name = await SubcategoryService.get_name(item.subcategory_id)
         available_quantity = await ItemService.get_available_quantity(item.subcategory_id)
         subcategory_inline_button = create_callback_all_categories(level=current_level + 1,
                                                                    category_id=category_id,
-                                                                   category_name=category_name,
                                                                    subcategory_id=item.subcategory_id,
-                                                                   subcategory_name=subcategory_name,
                                                                    price=subcategory_price)
         subcategories_builder.add(
             types.InlineKeyboardButton(
@@ -105,7 +88,7 @@ async def all_categories(message: Union[Message, CallbackQuery]):
             category_inline_buttons = await add_pagination_buttons(category_inline_buttons, zero_level_callback,
                                                                    CategoryService.get_maximum_page(),
                                                                    AllCategoriesCallback.unpack, None)
-            await message.answer(Localizator.get_text_from_key("cart"), parse_mode=ParseMode.HTML,
+            await message.answer(Localizator.get_text_from_key("all_categories"), parse_mode=ParseMode.HTML,
                                  reply_markup=category_inline_buttons.as_markup())
         else:
             await message.answer(Localizator.get_text_from_key("no_categories"), parse_mode=ParseMode.HTML)
@@ -141,22 +124,15 @@ async def show_subcategories_in_category(callback: CallbackQuery):
 async def select_quantity(callback: CallbackQuery):
     unpacked_callback = AllCategoriesCallback.unpack(callback.data)
     price = unpacked_callback.price
-    category_id = unpacked_callback.category_id
-    category_name = unpacked_callback.category_name
     subcategory_id = unpacked_callback.subcategory_id
-    subcategory_name = unpacked_callback.subcategory_name
+    category_id = unpacked_callback.category_id
     current_level = unpacked_callback.level
     description = await ItemService.get_description(subcategory_id)
     count_builder = InlineKeyboardBuilder()
     for i in range(1, 11):
-        count_button_callback = create_callback_all_categories(level=current_level + 1
-                                                               , category_id=category_id
-                                                               , category_name=category_name
-                                                               , subcategory_id=subcategory_id
-                                                               , subcategory_name=subcategory_name
-                                                               , price=price
-                                                               , quantity=i
-                                                               , total_price=price * i)
+        count_button_callback = create_callback_all_categories(level=current_level + 1, category_id=category_id,
+                                                               subcategory_id=subcategory_id, price=price,
+                                                               quantity=i, total_price=price * i)
         count_button_inline = types.InlineKeyboardButton(text=str(i), callback_data=count_button_callback)
         count_builder.add(count_button_inline)
     back_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
@@ -167,38 +143,32 @@ async def select_quantity(callback: CallbackQuery):
     subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
     await callback.message.edit_text(
         text=Localizator.get_text_from_key("select_quantity").format(subcategory_name=subcategory.name,
-                                                                    price=price,
-                                                                    description=description),
+                                                                     price=price,
+                                                                     description=description),
         reply_markup=count_builder.as_markup(),
         parse_mode=ParseMode.HTML)
 
 
-async def add_to_cart_confirmation(all_category_callback: CallbackQuery):
-    unpacked_callback = AllCategoriesCallback.unpack(all_category_callback.data)
+async def add_to_cart_confirmation(callback: CallbackQuery):
+    unpacked_callback = AllCategoriesCallback.unpack(callback.data)
     price = unpacked_callback.price
     total_price = unpacked_callback.total_price
-    category_id = unpacked_callback.category_id
-    category_name = unpacked_callback.category_name
     subcategory_id = unpacked_callback.subcategory_id
-    subcategory_name = unpacked_callback.subcategory_name
+    category_id = unpacked_callback.category_id
     current_level = unpacked_callback.level
     quantity = unpacked_callback.quantity
     description = await ItemService.get_description(subcategory_id)
     confirmation_builder = InlineKeyboardBuilder()
     confirm_button_callback = create_callback_all_categories(level=current_level + 1,
                                                              category_id=category_id,
-                                                             category_name=category_name,
                                                              subcategory_id=subcategory_id,
-                                                             subcategory_name=subcategory_name,
                                                              price=price,
                                                              total_price=total_price,
                                                              quantity=quantity,
                                                              confirmation=True)
     decline_button_callback = create_callback_all_categories(level=current_level + 1,
                                                              category_id=category_id,
-                                                             category_name=category_name,
                                                              subcategory_id=subcategory_id,
-                                                             subcategory_name=subcategory_name,
                                                              price=price,
                                                              total_price=total_price,
                                                              quantity=quantity,
@@ -210,14 +180,12 @@ async def add_to_cart_confirmation(all_category_callback: CallbackQuery):
     back_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
                                              callback_data=create_callback_all_categories(level=current_level - 1,
                                                                                           category_id=category_id,
-                                                                                          category_name=category_name,
                                                                                           subcategory_id=subcategory_id,
-                                                                                          subcategory_name=subcategory_name,
                                                                                           price=price))
     confirmation_builder.add(confirmation_button, decline_button, back_button)
     confirmation_builder.adjust(2)
     subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
-    await all_category_callback.message.edit_text(
+    await callback.message.edit_text(
         text=Localizator.get_text_from_key("buy_confirmation").format(subcategory_name=subcategory.name,
                                                                       price=price,
                                                                       description=description,
@@ -229,14 +197,13 @@ async def add_to_cart_confirmation(all_category_callback: CallbackQuery):
 
 async def add_to_cart(callback: AllCategoriesCallback):
     unpacked_callback = AllCategoriesCallback.unpack(callback.data)
+    category = await CategoryService.get_by_primary_key(unpacked_callback.category_id)
+    subcategory = await SubcategoryService.get_by_primary_key(unpacked_callback.subcategory_id)
     user_id = callback.from_user.id
     cart = await CartService.get_or_create_cart(telegram_id=user_id)
-    cart_item = CartItem(category_id=unpacked_callback.category_id
-                         , category_name=unpacked_callback.category_name
-                         , subcategory_id=unpacked_callback.subcategory_id
-                         , subcategory_name=unpacked_callback.subcategory_name
-                         , quantity=unpacked_callback.quantity
-                         , a_piece_price=unpacked_callback.price)
+    cart_item = CartItem(category_id=unpacked_callback.category_id, category_name=category.name,
+                         subcategory_id=unpacked_callback.subcategory_id, subcategory_name=subcategory.name,
+                         quantity=unpacked_callback.quantity, a_piece_price=unpacked_callback.price)
     await CartService.add_to_cart(cart_item, cart)
     await callback.message.edit_text(text=Localizator.get_text_from_key("item_added_to_cart"))
 
