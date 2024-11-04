@@ -12,7 +12,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from db import get_db_session, session_commit, close_db_session
+from db import get_db_session, close_db_session
 import config
 from crypto_api.CryptoApiManager import CryptoApiManager
 from handlers.common.common import add_pagination_buttons
@@ -350,7 +350,7 @@ async def confirm_and_delete(callback: CallbackQuery):
         subcategory = await SubcategoryService.get_by_primary_key(args_to_action, session)
         message_text = Localizator.get_text_from_key("admin_successfully_deleted").format(entity_name=subcategory.name,
                                                                                           entity_to_delete=entity_to_delete)
-        await ItemService.delete_with_subcategory_id(args_to_action,session)
+        await ItemService.delete_with_subcategory_id(args_to_action, session)
         await SubcategoryService.delete_if_not_used(args_to_action, session)
         await callback.message.edit_text(text=message_text,
                                          parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
@@ -404,7 +404,7 @@ async def balance_management(message: types.message, state: FSMContext):
     elif current_state == AdminStates.balance_value:
         await state.update_data(balance_value=message.text)
         state_data = await state.get_data()
-        session = get_db_session()
+        session = await get_db_session()
         msg = await UserService.balance_management(state_data, session)
         await close_db_session(session)
         await state.clear()
@@ -445,7 +445,8 @@ async def send_refund_menu(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
     refund_builder = await make_refund_markup(unpacked_callback.page)
     session = await get_db_session()
-    refund_builder = await add_pagination_buttons(refund_builder, callback.data, BuyService.get_max_refund_pages(session),
+    refund_builder = await add_pagination_buttons(refund_builder, callback.data,
+                                                  BuyService.get_max_refund_pages(session),
                                                   AdminCallback.unpack, AdminConstants.back_to_main_button)
     await close_db_session(session)
     await callback.message.edit_text(text=Localizator.get_text_from_key("admin_refund_menu"),
@@ -529,9 +530,10 @@ async def pick_statistics_timedelta(callback: CallbackQuery):
 async def get_statistics(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
     statistics_keyboard_builder = InlineKeyboardBuilder()
+    session = await get_db_session()
     if unpacked_callback.action == "users":
-        users, users_count = UserService.get_new_users_by_timedelta(unpacked_callback.args_to_action,
-                                                                    unpacked_callback.page)
+        users, users_count = await UserService.get_new_users_by_timedelta(unpacked_callback.args_to_action,
+                                                                          unpacked_callback.page, session)
         for user in users:
             if user.telegram_username:
                 user_button = types.InlineKeyboardButton(text=user.telegram_username,
@@ -540,7 +542,7 @@ async def get_statistics(callback: CallbackQuery):
         statistics_keyboard_builder.adjust(1)
         statistics_keyboard_builder = await add_pagination_buttons(statistics_keyboard_builder, callback.data,
                                                                    UserService.get_max_page_for_users_by_timedelta(
-                                                                       unpacked_callback.args_to_action),
+                                                                       unpacked_callback.args_to_action, session),
                                                                    AdminCallback.unpack, None)
         statistics_keyboard_builder.row(
             *[AdminConstants.back_to_main_button, await AdminConstants.get_back_button(unpacked_callback)])
@@ -553,7 +555,7 @@ async def get_statistics(callback: CallbackQuery):
         buttons = [back_button,
                    AdminConstants.back_to_main_button]
         statistics_keyboard_builder.add(*buttons)
-        buys = BuyService.get_new_buys_by_timedelta(unpacked_callback.args_to_action)
+        buys = await BuyService.get_new_buys_by_timedelta(unpacked_callback.args_to_action, session)
         total_profit = 0
         items_sold = 0
         for buy in buys:
@@ -571,7 +573,7 @@ async def get_statistics(callback: CallbackQuery):
         buttons = [back_button,
                    AdminConstants.back_to_main_button]
         statistics_keyboard_builder.add(*buttons)
-        deposits = DepositService.get_by_timedelta(unpacked_callback.args_to_action)
+        deposits = await DepositService.get_by_timedelta(unpacked_callback.args_to_action, session)
         btc_amount = 0.0
         ltc_amount = 0.0
         sol_amount = 0.0
@@ -644,8 +646,10 @@ async def wallet(callback: CallbackQuery):
 
 
 async def send_withdraw_crypto_menu(callback: CallbackQuery):
+    cb_builder = InlineKeyboardBuilder()
+    cb_builder.row(AdminConstants.back_to_main_button)
     await callback.message.edit_text(Localizator.get_text_from_key('choose_crypto_to_withdraw'),
-                                     parse_mode=ParseMode.HTML)
+                                     parse_mode=ParseMode.HTML, reply_markup=cb_builder.as_markup())
 
 
 async def add_items_menu(callback: CallbackQuery, state: FSMContext):

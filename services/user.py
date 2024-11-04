@@ -2,7 +2,7 @@ import datetime
 import math
 from typing import Union
 
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -11,6 +11,7 @@ from db import session_execute, session_commit
 
 from models.user import User
 from utils.CryptoAddressGenerator import CryptoAddressGenerator
+from utils.localizator import Localizator
 
 
 class UserService:
@@ -215,3 +216,32 @@ class UserService:
             can_receive_messages=new_value)
         await session_execute(stmt, session)
         await session_commit(session)
+
+    @staticmethod
+    async def get_by_id(user_id: int, session: Union[AsyncSession, Session]) -> User:
+        stmt = select(User).where(User.id == user_id)
+        user = await session_execute(stmt, session)
+        return user.scalar()
+
+    @staticmethod
+    async def get_user_entity(user_entity: Union[str, int], session: Union[AsyncSession, Session]) -> User:
+        stmt = select(User).where(or_(User.telegram_id == user_entity, User.telegram_username == user_entity))
+        user = await session_execute(stmt, session)
+        return user.scalar()
+
+    @staticmethod
+    async def balance_management(state_data: dict, session: Union[AsyncSession, Session]):
+        operation = state_data['operation']
+        user_entity = state_data['user_entity']
+        balance_value = state_data['balance_value']
+        user = await UserService.get_user_entity(user_entity, session)
+        if user is None:
+            return Localizator.get_text_from_key("credit_management_user_not_found")
+        elif operation == "plus":
+            await UserService.update_top_up_amount(user.telegram_id, float(balance_value), session)
+            return Localizator.get_text_from_key("credit_management_added_success").format(amount=balance_value,
+                                                                                           telegram_id=user.telegram_id)
+        elif operation == "minus":
+            await UserService.update_consume_records(user.telegram_id, float(balance_value), session)
+            return Localizator.get_text_from_key("credit_management_reduced_success").format(amount=balance_value,
+                                                                                             telegram_id=user.telegram_id)
