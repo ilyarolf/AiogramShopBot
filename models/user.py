@@ -9,7 +9,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     telegram_username = Column(String, unique=True)
-    telegram_id = Column(Integer, nullable=False)
+    telegram_id = Column(Integer, nullable=False, unique=True)
     btc_address = Column(String, nullable=False, unique=True)
     ltc_address = Column(String, nullable=False, unique=True)
     trx_address = Column(String, nullable=False, unique=True)
