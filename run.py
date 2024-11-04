@@ -25,6 +25,7 @@ async def start(message: types.message):
     my_profile_button = types.KeyboardButton(text=Localizator.get_text_from_key("my_profile"))
     faq_button = types.KeyboardButton(text=Localizator.get_text_from_key("faq"))
     help_button = types.KeyboardButton(text=Localizator.get_text_from_key("help"))
+    admin_menu_button = types.KeyboardButton(text=Localizator.get_text_from_key("admin_menu"))
     checkout_button = types.KeyboardButton(text=Localizator.get_text_from_key("checkout"))
 
     # TODO: insert item count here, these code lines are not correct yet
@@ -43,6 +44,10 @@ async def start(message: types.message):
         await UserService.update_receive_messages(user_telegram_id, True, session)
         await UserService.update_username(user_telegram_id, user_telegram_username, session)
     await close_db_session(session)
+    keyboard = [[all_categories_button, my_profile_button], [faq_button, help_button]]
+    if user_telegram_id in config.ADMIN_ID_LIST:
+        keyboard.append([admin_menu_button])
+    start_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, keyboard=keyboard)
     await message.answer(Localizator.get_text_from_key("start_message"), reply_markup=start_markup)
 
 

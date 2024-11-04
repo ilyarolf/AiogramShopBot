@@ -34,8 +34,9 @@ class CategoryService:
         return category.scalar()
 
     @staticmethod
-    async def get_all_categories(session: Union[AsyncSession, Session], page: int = 0):
-        stmt = select(Category).distinct().limit(config.PAGE_ENTRIES).offset(
+    async def get_to_delete(session: Union[AsyncSession, Session], page: int = 0):
+        stmt = select(Category).join(Item, Item.category_id == Category.id
+                                     ).where(Item.is_sold == 0).distinct().limit(config.PAGE_ENTRIES).offset(
             page * config.PAGE_ENTRIES).group_by(Category.name)
         categories = await session_execute(stmt, session)
         return categories.scalars().all()
