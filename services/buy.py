@@ -1,7 +1,10 @@
 import datetime
 import math
+from typing import Union
 
 from sqlalchemy import select, update, func
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 import config
 from db import async_session_maker
@@ -13,6 +16,15 @@ from utils.other_sql import RefundBuyDTO
 
 class BuyService:
     buys_per_page = config.PAGE_ENTRIES
+
+    @staticmethod
+    async def execute_stmt(stmt, session: Union[AsyncSession, Session]):
+        if isinstance(session, AsyncSession):
+            query_result = await session.execute(stmt)
+            return query_result
+        else:
+            query_result = session.query(stmt)
+            return query_result
 
     @staticmethod
     async def get_buys_by_buyer_id(buyer_id: int, page: int):
