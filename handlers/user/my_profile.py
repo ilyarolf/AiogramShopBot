@@ -44,20 +44,14 @@ async def get_my_profile_message(telegram_id: int):
     session = await get_db_session()
     user = await UserService.get_by_tgid(telegram_id, session)
     await close_db_session(session)
-    btc_balance = user.btc_balance
-    usdt_trc20_balance = user.usdt_trc20_balance
-    usdd_trc20_balance = user.usdd_trc20_balance
-    usdt_erc20_balance = user.usdt_erc20_balance
-    usdc_erc20_balance = user.usdc_erc20_balance
-    ltc_balance = user.ltc_balance
     usd_balance = round(user.top_up_amount - user.consume_records, 2)
     return Localizator.get_text_from_key("my_profile_msg").format(telegram_id=telegram_id,
-                                                                  btc_balance=btc_balance,
-                                                                  usdt_trc20_balance=usdt_trc20_balance,
-                                                                  usdd_trc20_balance=usdd_trc20_balance,
-                                                                  usdt_erc20_balance=usdt_erc20_balance,
-                                                                  usdc_erc20_balance=usdc_erc20_balance,
-                                                                  ltc_balance=ltc_balance,
+                                                                  btc_balance=user.btc_balance,
+                                                                  usdt_trc20_balance=user.usdt_trc20_balance,
+                                                                  usdd_trc20_balance=user.usdd_trc20_balance,
+                                                                  usdt_erc20_balance=user.usdt_erc20_balance,
+                                                                  usdc_erc20_balance=user.usdc_erc20_balance,
+                                                                  ltc_balance=user.ltc_balance,
                                                                   usd_balance=usd_balance)
 
 
@@ -171,7 +165,6 @@ async def refresh_balance(callback: CallbackQuery):
     crypto_info = unpacked_cb.args_for_action
     session = await get_db_session()
     if await UserService.can_refresh_balance(telegram_id, session):
-        await callback.answer(Localizator.get_text_from_key("balance_refreshing"))
         await UserService.create_last_balance_refresh_data(telegram_id, session)
         user = await UserService.get_by_tgid(telegram_id, session)
         addresses = await UserService.get_addresses(telegram_id, session)
@@ -185,11 +178,14 @@ async def refresh_balance(callback: CallbackQuery):
                 crypto_balance_in_usd = balance * crypto_prices[balance_key]
                 deposit_usd_amount += crypto_balance_in_usd
             await UserService.update_crypto_balances(telegram_id, new_crypto_deposits, session)
-            await UserService.update_top_up_amount(telegram_id, deposit_usd_amount * 0.95, session)
+            await UserService.update_top_up_amount(telegram_id, deposit_usd_amount, session)
             await close_db_session(session)
             await NotificationManager.new_deposit(new_crypto_deposits, deposit_usd_amount,
                                                   telegram_id, bot_obj)
-        await my_profile(callback)
+            await callback.answer(Localizator.get_text_from_key("balance_refreshed_successfully"), show_alert=True)
+            await my_profile(callback)
+        else:
+            await callback.answer(Localizator.get_text_from_key("balance_not_refreshed"), show_alert=True)
     else:
         await callback.answer(Localizator.get_text_from_key("balance_refresh_timeout"), show_alert=True)
 

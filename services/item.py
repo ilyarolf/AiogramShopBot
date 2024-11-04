@@ -21,20 +21,25 @@ class ItemService:
         return item.scalar()
 
     @staticmethod
-    async def get_available_quantity(subcategory_id: int, session: Union[AsyncSession, Session]) -> int:
-        stmt = select(func.count(Item.id)).where(Item.subcategory_id == subcategory_id, Item.is_sold == 0)
+    async def get_available_quantity(subcategory_id: int, category_id: int,
+                                     session: Union[AsyncSession, Session]) -> int:
+        stmt = select(func.count(Item.id)).where(Item.subcategory_id == subcategory_id,
+                                                 Item.is_sold == 0, Item.category_id == category_id)
         available_quantity = await session_execute(stmt, session)
         return available_quantity.scalar()
 
     @staticmethod
-    async def get_description(subcategory_id: int, session: Union[AsyncSession, Session]) -> str:
-        stmt = select(Item.description, Item.subcategory_id).where(Item.subcategory_id == subcategory_id).limit(1)
+    async def get_description(subcategory_id: int, category_id, session: Union[AsyncSession, Session]) -> str:
+        stmt = select(Item.description).where(Item.subcategory_id == subcategory_id,
+                                              Item.category_id == category_id).limit(1)
         description = await session_execute(stmt, session)
         return description.scalar()
 
     @staticmethod
-    async def get_bought_items(subcategory_id: int, quantity: int, session: Union[AsyncSession, Session]):
-        stmt = select(Item).where(Item.subcategory_id == subcategory_id, Item.is_sold == 0).limit(quantity)
+    async def get_bought_items(category_id: int, subcategory_id: int, quantity: int, session: Union[AsyncSession, Session]):
+        stmt = select(Item).where(Item.subcategory_id == subcategory_id,
+                                  Item.category_id == category_id,
+                                  Item.is_sold == 0).limit(quantity)
         result = await session_execute(stmt, session)
         bought_items = result.scalars().all()
         return list(bought_items)
@@ -78,8 +83,9 @@ class ItemService:
             return math.trunc(maximum_page / config.PAGE_ENTRIES)
 
     @staticmethod
-    async def get_price_by_subcategory(subcategory_id: int, session: Union[AsyncSession, Session]) -> float:
-        stmt = select(Item.price).where(Item.subcategory_id == subcategory_id)
+    async def get_price_by_subcategory(subcategory_id: int, category_id: int,
+                                       session: Union[AsyncSession, Session]) -> float:
+        stmt = select(Item.price).where(Item.subcategory_id == subcategory_id, Item.category_id == category_id)
         price = await session_execute(stmt, session)
         return price.scalar()
 
@@ -112,3 +118,10 @@ class ItemService:
         new_items = await session_execute(stmt, session)
         new_items = new_items.scalars().all()
         return new_items
+
+    @staticmethod
+    async def get_in_stock_items(session: Union[AsyncSession, Session]):
+        stmt = select(Item).where(Item.is_sold == 0)
+        items = await session_execute(stmt, session)
+        items = items.scalars().all()
+        return items

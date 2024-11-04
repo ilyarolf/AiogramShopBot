@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey
 from sqlalchemy.orm import relationship, backref
 
@@ -19,3 +21,12 @@ class Item(Base):
     is_sold = Column(Boolean, nullable=False, default=False)
     is_new = Column(Boolean, nullable=False, default=True)
     description = Column(String, nullable=False)
+
+
+@dataclass
+class ItemDTO:
+    category: str
+    subcategory: str
+    private_data: str
+    price: float
+    description: str

@@ -12,11 +12,12 @@ from services.deposit import DepositService
 
 
 class CryptoApiManager:
-    def __init__(self, btc_address, ltc_address, trx_address, eth_address, user_id):
+    def __init__(self, btc_address, ltc_address, trx_address, eth_address, sol_address, user_id):
         self.btc_address = btc_address.strip()
         self.ltc_address = ltc_address.strip()
         self.trx_address = trx_address.strip()
         self.eth_address = eth_address.strip().lower()
+        self.sol_address = sol_address.strip()
         self.user_id = user_id
         self.min_timestamp = int((datetime.now() - timedelta(hours=24)).timestamp()) * 1000
 
@@ -53,6 +54,24 @@ class CryptoApiManager:
                     deposits_sum += float(deposit['value']) / 100_000_000
         return deposits_sum
 
+    async def get_sol_balance(self, deposits, session: Union[AsyncSession, Session]) -> float:
+        url = f"https://api.solana.fm/v0/accounts/{self.sol_address}/transfers"
+        data = await self.fetch_api_request(url)
+        deposits = [deposit.tx_id for deposit in deposits if deposit.network == "SOL"]
+        deposits_sum = 0.0
+        if len(data['results']) > 0:
+            for deposit in data['results']:
+                if deposit['transactionHash'] not in deposits:
+                    for transfer in deposit['data']:
+                        if transfer['action'] == 'transfer' and transfer['destination'] == self.sol_address and \
+                                transfer[
+                                    'status'] == 'Successful' and transfer['token'] == '':
+                            await DepositService.create(session, deposit['transactionHash'], self.user_id, "SOL", None,
+                                                        transfer['amount'],
+                                                        transfer['instructionIndex'])
+                            deposits_sum += float(transfer['amount'] / 1_000_000_000)
+        return deposits_sum
+
     async def get_usdt_trc20_balance(self, deposits, session: Union[AsyncSession, Session]) -> float:
         url = f"https://api.trongrid.io/v1/accounts/{self.trx_address}/transactions/trc20?only_confirmed=true&min_timestamp={self.min_timestamp}&contract_address=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t&only_to=true"
         data = await self.fetch_api_request(url)
@@ -61,7 +80,7 @@ class CryptoApiManager:
         deposits_sum = 0.0
         for deposit in data['data']:
             if deposit['transaction_id'] not in deposits:
-                await DepositService.create(deposit['transaction_id'], self.user_id, "TRX",
+                await DepositService.create(session, deposit['transaction_id'], self.user_id, "TRX",
                                             "USDT_TRC20", deposit['value'])
                 deposits_sum += float(deposit['value']) / pow(10, deposit['token_info']['decimals'])
         return deposits_sum
@@ -112,6 +131,7 @@ class CryptoApiManager:
         crypto_functions = {
             "BTC": ("btc_deposit", self.get_btc_balance),
             "LTC": ("ltc_deposit", self.get_ltc_balance),
+            "SOL": ("sol_deposit", self.get_sol_balance),
             "TRX_USDT": ("usdt_trc20_deposit", self.get_usdt_trc20_balance),
             "TRX_USDD": ("usdd_trc20_deposit", self.get_usdd_trc20_balance),
             "ETH_USDT": ("usdt_erc20_deposit", self.get_usdt_erc20_balance),
@@ -139,7 +159,9 @@ class CryptoApiManager:
             "btc": 'https://api.kraken.com/0/public/Ticker?pair=BTCUSDT',
             "usdt": 'https://api.kraken.com/0/public/Ticker?pair=USDTUSD',
             "usdc": "https://api.kraken.com/0/public/Ticker?pair=USDCUSD",
-            "ltc": 'https://api.kraken.com/0/public/Ticker?pair=LTCUSD'
+            "ltc": 'https://api.kraken.com/0/public/Ticker?pair=LTCUSD',
+            "sol": "https://api.kraken.com/0/public/Ticker?pair=SOLUSD"
+
         }
         responses = (grequests.get(url) for url in urls.values())
         datas = grequests.map(responses)

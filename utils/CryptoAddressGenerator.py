@@ -1,5 +1,5 @@
 from bip_utils import Bip44Changes, Bip44Coins, Bip44, Bip39SeedGenerator, Bip84, Bip84Coins, Bip39MnemonicGenerator, \
-    Bip39WordsNum
+    Bip39WordsNum, Base58Encoder
 
 
 class CryptoAddressGenerator:
@@ -40,14 +40,26 @@ class CryptoAddressGenerator:
         bip44_addr_ctx = bip44_chg_ctx.AddressIndex(i).PublicKey().ToAddress()
         return bip44_addr_ctx, bip44_chg_ctx.AddressIndex(i).PrivateKey().ToWif()
 
+    def __generate_sol_pair(self) -> tuple:
+        bip44_def_ctx = Bip44.FromSeed(self.seed_bytes, Bip44Coins.SOLANA)
+        bip44_acc_ctx = bip44_def_ctx.Purpose().Coin().Account(0)
+        bip44_chg_ctx = bip44_acc_ctx.Change(Bip44Changes.CHAIN_EXT)
+        bip44_addr_ctx = bip44_chg_ctx.PublicKey().ToAddress()
+        pub_key = bip44_chg_ctx.PublicKey().RawCompressed().ToBytes()[1:]
+        priv_key = bip44_chg_ctx.PrivateKey().Raw().ToBytes()
+        phantom_wallet_private_key = Base58Encoder.Encode(priv_key + pub_key)
+        return bip44_addr_ctx, phantom_wallet_private_key
+
     def get_private_keys(self, i: int) -> dict:
         return {'btc': self.__generate_btc_pair(i)[1],
                 'ltc': self.__generate_ltc_pair(i)[1],
                 'trx': self.__generate_trx_pair(i)[1],
-                'eth': self.__generate_eth_pair(i)[1]}
+                'eth': self.__generate_eth_pair(i)[1],
+                'sol': self.__generate_sol_pair()[1]}
 
     def get_addresses(self, i: int):
         return {'btc': self.__generate_btc_pair(i)[0],
                 'ltc': self.__generate_ltc_pair(i)[0],
                 'trx': self.__generate_trx_pair(i)[0],
-                'eth': self.__generate_eth_pair(i)[0]}
+                'eth': self.__generate_eth_pair(i)[0],
+                'sol': self.__generate_sol_pair()[0]}

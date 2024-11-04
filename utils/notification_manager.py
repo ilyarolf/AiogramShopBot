@@ -4,6 +4,7 @@ from db import get_db_session, close_db_session
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from services.subcategory import SubcategoryService
+from services.category import CategoryService
 from services.user import UserService
 from config import ADMIN_ID_LIST
 from models.user import User
@@ -78,9 +79,10 @@ class NotificationManager:
         await NotificationManager.send_to_admins(message, user_button, bot)
 
     @staticmethod
-    async def new_buy(subcategory_id: int, quantity: int, total_price: float, user: User, bot):
+    async def new_buy(category_id: int, subcategory_id: int, quantity: int, total_price: float, user: User, bot):
         session = await get_db_session()
         subcategory = await SubcategoryService.get_by_primary_key(subcategory_id, session)
+        category = await CategoryService.get_by_primary_key(category_id, session)
         await close_db_session(session)
         message = ""
         username = user.telegram_username
@@ -91,11 +93,13 @@ class NotificationManager:
                 username=username,
                 total_price=total_price,
                 quantity=quantity,
-                subcategory_name=subcategory.name)
+                subcategory_name=subcategory.name,
+                category_name=category.name)
         else:
             message += Localizator.get_text_from_key("new_purchase_notification_with_username").format(
                 telegram_id=telegram_id,
                 total_price=total_price,
                 quantity=quantity,
-                subcategory_name=subcategory.name)
+                subcategory_name=subcategory.name,
+                category_name=category.name)
         await NotificationManager.send_to_admins(message, user_button, bot)
