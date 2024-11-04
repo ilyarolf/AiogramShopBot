@@ -46,7 +46,7 @@ class ItemService:
         for item in sold_items:
             stmt = update(Item).where(Item.id == item.id).values(is_sold=1)
             await session_execute(stmt, session)
-        await session.commit()
+        await session_commit(session)
 
     @staticmethod
     async def get_items_by_buy_id(buy_id: int, session: Union[AsyncSession, Session]) -> list:
