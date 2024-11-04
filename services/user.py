@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 import config
-from db import execute_stmt, session_commit
+from db import session_execute, session_commit
 
 from models.user import User
 from utils.CryptoAddressGenerator import CryptoAddressGenerator
@@ -18,13 +18,13 @@ class UserService:
     @staticmethod
     async def is_exist(telegram_id: int, session: Union[AsyncSession, Session]) -> bool:
         stmt = select(User).where(User.telegram_id == telegram_id)
-        is_exist = await execute_stmt(stmt, session)
+        is_exist = await session_execute(stmt, session)
         return is_exist.scalar() is not None
 
     @staticmethod
     async def get_next_user_id(session: Union[AsyncSession, Session]) -> int:
         stmt = select(User.id).order_by(User.id.desc()).limit(1)
-        last_user_id = await execute_stmt(stmt, session)
+        last_user_id = await session_execute(stmt, session)
         last_user_id = last_user_id.scalar()
         if last_user_id is None:
             return 0
@@ -54,20 +54,20 @@ class UserService:
         user_from_db = await UserService.get_by_tgid(telegram_id, session)
         if user_from_db and user_from_db.telegram_username != telegram_username:
             stmt = update(User).where(User.telegram_id == telegram_id).values(telegram_username=telegram_username)
-            await execute_stmt(stmt, session)
+            await session_execute(stmt, session)
             await session_commit(session)
 
     @staticmethod
     async def get_by_tgid(telegram_id: int, session: Union[AsyncSession, Session]) -> User:
         stmt = select(User).where(User.telegram_id == telegram_id)
-        user_from_db = await execute_stmt(stmt, session)
+        user_from_db = await session_execute(stmt, session)
         user_from_db = user_from_db.scalar()
         return user_from_db
 
     @staticmethod
     async def can_refresh_balance(telegram_id: int, session: Union[AsyncSession, Session]) -> bool:
         stmt = select(User.last_balance_refresh).where(User.telegram_id == telegram_id)
-        user_last_refresh = await execute_stmt(stmt, session)
+        user_last_refresh = await session_execute(stmt, session)
         user_last_refresh = user_last_refresh.scalar()
         if user_last_refresh is None:
             return True
@@ -80,13 +80,13 @@ class UserService:
         time = datetime.datetime.now()
         stmt = update(User).where(User.telegram_id == telegram_id).values(
             last_balance_refresh=time)
-        await execute_stmt(stmt, session)
+        await session_execute(stmt, session)
         await session_commit(session)
 
     @staticmethod
     async def get_balances(telegram_id: int, session: Union[AsyncSession, Session]) -> dict:
         stmt = select(User).where(User.telegram_id == telegram_id)
-        user_balances = await execute_stmt(stmt, session)
+        user_balances = await session_execute(stmt, session)
         user_balances = user_balances.scalar()
         user_balances = [user_balances.btc_balance, user_balances.ltc_balance,
                          user_balances.usdt_trc20_balance, user_balances.usdd_trc20_balance,
@@ -99,7 +99,7 @@ class UserService:
     @staticmethod
     async def get_addresses(telegram_id: int, session: Union[AsyncSession, Session]) -> dict:
         stmt = select(User).where(User.telegram_id == telegram_id)
-        user_addresses = await execute_stmt(stmt, session)
+        user_addresses = await session_execute(stmt, session)
         user_addresses = user_addresses.scalar()
         user_addresses = [user_addresses.btc_address, user_addresses.ltc_address,
                           user_addresses.trx_address, user_addresses.eth_address]
@@ -111,7 +111,7 @@ class UserService:
     async def update_crypto_balances(telegram_id: int, new_crypto_balances: dict,
                                      session: Union[AsyncSession, Session]):
         stmt = select(User).where(User.telegram_id == telegram_id)
-        result = await execute_stmt(stmt, session)
+        result = await session_execute(stmt, session)
         user = result.scalar()
         balance_fields_map = {
             "btc_deposit": "btc_balance",
@@ -131,17 +131,17 @@ class UserService:
 
         if update_values:
             stmt = update(User).where(User.telegram_id == telegram_id).values(**update_values)
-            await execute_stmt(stmt, session)
+            await session_execute(stmt, session)
             await session_commit(session)
 
     @staticmethod
     async def update_top_up_amount(telegram_id, deposit_amount, session: Union[AsyncSession, Session]):
         stmt = select(User.top_up_amount).where(User.telegram_id == telegram_id)
-        old_top_up_amount = await execute_stmt(stmt, session)
+        old_top_up_amount = await session_execute(stmt, session)
         old_top_up_amount = old_top_up_amount.scalar()
         stmt = update(User).where(User.telegram_id == telegram_id).values(
             top_up_amount=round(old_top_up_amount + deposit_amount, 2))
-        await execute_stmt(stmt, session)
+        await session_execute(stmt, session)
         await session_commit(session)
 
     @staticmethod
@@ -157,20 +157,20 @@ class UserService:
         old_consume_records = old_consume_records.scalar()
         stmt = update(User).where(User.telegram_id == telegram_id).values(
             consume_records=old_consume_records + total_price)
-        await execute_stmt(stmt, session)
+        await session_execute(stmt, session)
         await session_commit(session)
 
     @staticmethod
     async def get_users_tg_ids_for_sending(session: Union[AsyncSession, Session]):
         stmt = select(User.telegram_id).where(User.can_receive_messages == True)
-        user_ids = await execute_stmt(stmt, session)
+        user_ids = await session_execute(stmt, session)
         user_ids = user_ids.scalars().all()
         return user_ids
 
     @staticmethod
     async def get_all_users_count(session: Union[AsyncSession, Session]):
         stmt = func.count(User.id)
-        users_count = await execute_stmt(stmt, session)
+        users_count = await session_execute(stmt, session)
         return users_count.scalar()
 
     @staticmethod
@@ -179,7 +179,7 @@ class UserService:
         old_consume_records = await session.execute(stmt)
         old_consume_records = old_consume_records.scalar()
         stmt = update(User).where(User.id == user_id).values(consume_records=old_consume_records - total_price)
-        await execute_stmt(stmt, session)
+        await session_execute(stmt, session)
         await session_commit(session)
 
     @staticmethod
@@ -191,8 +191,8 @@ class UserService:
             config.PAGE_ENTRIES).offset(
             page * config.PAGE_ENTRIES)
         count_stmt = select(func.count(User.id)).where(User.registered_at >= time_to_subtract)
-        users = await execute_stmt(stmt, session)
-        users_count = await execute_stmt(count_stmt, session)
+        users = await session_execute(stmt, session)
+        users_count = await session_execute(count_stmt, session)
         return users.scalars().all(), users_count.scalar_one()
 
     @staticmethod
@@ -202,7 +202,7 @@ class UserService:
         time_to_subtract = current_time - one_day_interval
         stmt = select(func.count(User.id)).where(User.registered_at >= time_to_subtract,
                                                  User.telegram_username != None)
-        users = await execute_stmt(stmt, session)
+        users = await session_execute(stmt, session)
         users = users.scalar_one()
         if users % config.PAGE_ENTRIES == 0:
             return users / config.PAGE_ENTRIES - 1
@@ -213,5 +213,5 @@ class UserService:
     async def update_receive_messages(telegram_id, new_value, session: Union[AsyncSession, Session]):
         stmt = update(User).where(User.telegram_id == telegram_id).values(
             can_receive_messages=new_value)
-        await execute_stmt(stmt, session)
+        await session_execute(stmt, session)
         await session_commit(session)
