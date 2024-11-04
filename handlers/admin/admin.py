@@ -14,6 +14,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import config
+from db import get_db_session, close_db_session
 from handlers.common.common import add_pagination_buttons
 from services.buy import BuyService
 from services.category import CategoryService
@@ -126,10 +127,11 @@ async def confirm_and_send(callback: CallbackQuery):
     confirmed = AdminCallback.unpack(callback.data).action == "confirm"
     is_caption = callback.message.caption
     is_restocking = callback.message.text and callback.message.text.__contains__("📅 Update")
+    session = await get_db_session()
     if confirmed:
         counter = 0
-        users_count = await UserService.get_all_users_count()
-        telegram_ids = await UserService.get_users_tg_ids_for_sending()
+        users_count = await UserService.get_all_users_count(session)
+        telegram_ids = await UserService.get_users_tg_ids_for_sending(session)
         for telegram_id in telegram_ids:
             try:
                 await callback.message.copy_to(telegram_id, reply_markup=None)
@@ -138,9 +140,9 @@ async def confirm_and_send(callback: CallbackQuery):
             except TelegramForbiddenError as e:
                 logging.error(f"TelegramForbiddenError: {e.message}")
                 if "user is deactivated" in e.message.lower():
-                    await UserService.update_receive_messages(telegram_id, False)
+                    await UserService.update_receive_messages(telegram_id, False, session)
                 elif "bot was blocked by the user" in e.message.lower():
-                    await UserService.update_receive_messages(telegram_id, False)
+                    await UserService.update_receive_messages(telegram_id, False, session)
             except Exception as e:
                 logging.error(e)
         message_text = Localizator.get_text_from_key("admin_sending_result").format(counter=counter,
@@ -154,7 +156,8 @@ async def confirm_and_send(callback: CallbackQuery):
                 text=message_text,
                 parse_mode=ParseMode.HTML)
     if is_restocking:
-        await ItemService.set_items_not_new()
+        await ItemService.set_items_not_new(session)
+    await close_db_session(session)
 
 
 async def decline_action(callback: CallbackQuery):
@@ -204,7 +207,7 @@ async def send_restocking_message(callback: CallbackQuery):
 async def delete_category(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
     delete_category_builder = await create_delete_entity_buttons(
-        CategoryService.get_all_categories(
+        CategoryService.get_all_categories(session,
             unpacked_callback.page),
         "category")
     delete_category_builder = await add_pagination_buttons(delete_category_builder, callback.data,
