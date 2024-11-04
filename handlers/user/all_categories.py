@@ -70,8 +70,8 @@ async def create_subcategory_buttons(category_id: int, page: int = 0):
     items = await ItemService.get_unsold_subcategories_by_category(category_id, page, session)
     subcategories_builder = InlineKeyboardBuilder()
     for item in items:
-        subcategory_price = await ItemService.get_price_by_subcategory(item.subcategory_id, session)
-        available_quantity = await ItemService.get_available_quantity(item.subcategory_id, session)
+        subcategory_price = await ItemService.get_price_by_subcategory(item.subcategory_id, category_id, session)
+        available_quantity = await ItemService.get_available_quantity(item.subcategory_id, category_id, session)
         await close_db_session(session)
         subcategory_inline_button = create_callback_all_categories(level=current_level + 1,
                                                                    category_id=category_id,
@@ -139,7 +139,7 @@ async def select_quantity(callback: CallbackQuery):
     category_id = unpacked_callback.category_id
     current_level = unpacked_callback.level
     session = await get_db_session()
-    description = await ItemService.get_description(subcategory_id, session)
+    description = await ItemService.get_description(subcategory_id, category_id, session)
     count_builder = InlineKeyboardBuilder()
     for i in range(1, 11):
         count_button_callback = create_callback_all_categories(level=current_level + 1, category_id=category_id,
@@ -171,7 +171,7 @@ async def buy_confirmation(callback: CallbackQuery):
     current_level = unpacked_callback.level
     quantity = unpacked_callback.quantity
     session = await get_db_session()
-    description = await ItemService.get_description(subcategory_id, session)
+    description = await ItemService.get_description(subcategory_id, category_id, session)
     confirmation_builder = InlineKeyboardBuilder()
     confirm_button_callback = create_callback_all_categories(level=current_level + 1,
                                                              category_id=category_id,
@@ -215,10 +215,11 @@ async def buy_processing(callback: CallbackQuery):
     confirmation = unpacked_callback.confirmation
     total_price = unpacked_callback.total_price
     subcategory_id = unpacked_callback.subcategory_id
+    category_id = unpacked_callback.category_id
     quantity = unpacked_callback.quantity
     telegram_id = callback.from_user.id
     session = await get_db_session()
-    is_in_stock = await ItemService.get_available_quantity(subcategory_id, session) >= quantity
+    is_in_stock = await ItemService.get_available_quantity(subcategory_id, category_id, session) >= quantity
     is_enough_money = await UserService.is_buy_possible(telegram_id, total_price, session)
     back_to_main_builder = InlineKeyboardBuilder()
     back_to_main_callback = create_callback_all_categories(level=0)
@@ -228,7 +229,7 @@ async def buy_processing(callback: CallbackQuery):
     bot = callback.bot
     if confirmation and is_in_stock and is_enough_money:
         await UserService.update_consume_records(telegram_id, total_price, session)
-        sold_items = await ItemService.get_bought_items(subcategory_id, quantity, session)
+        sold_items = await ItemService.get_bought_items(category_id, subcategory_id, quantity, session)
         message = await create_message_with_bought_items(sold_items)
         user = await UserService.get_by_tgid(telegram_id, session)
         new_buy_id = await BuyService.insert_new(user, quantity, total_price, session)
@@ -236,7 +237,7 @@ async def buy_processing(callback: CallbackQuery):
         await ItemService.set_items_sold(sold_items, session)
         await close_db_session(session)
         await callback.message.edit_text(text=message, parse_mode=ParseMode.HTML)
-        await NotificationManager.new_buy(subcategory_id, quantity, total_price, user, bot)
+        await NotificationManager.new_buy(category_id, subcategory_id, quantity, total_price, user, bot)
     elif confirmation is False:
         await callback.message.edit_text(text=Localizator.get_text_from_key("admin_declined"),
                                          parse_mode=ParseMode.HTML,
