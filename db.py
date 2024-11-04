@@ -35,7 +35,7 @@ if config.DB_ENCRYPTION:
 else:
     url += f"sqlite+aiosqlite:///data/{DB_NAME}"
     engine = create_async_engine(url, echo=True)
-    session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=True)
+    session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 data_folder = Path("data")
 if data_folder.exists() is False:
