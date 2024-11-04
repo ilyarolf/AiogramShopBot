@@ -6,10 +6,11 @@ import config
 from config import SUPPORT_LINK
 import logging
 from bot import dp, main
+from db import get_db_session, close_db_session
 from multibot import main as main_multibot
-from handlers.admin.admin import admin_router
-from handlers.user.all_categories import all_categories_router
-from handlers.user.my_profile import my_profile_router
+# from handlers.admin.admin import admin_router
+# from handlers.user.all_categories import all_categories_router
+# from handlers.user.my_profile import my_profile_router
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator
@@ -28,12 +29,14 @@ async def start(message: types.message):
     start_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, keyboard=keyboard)
     user_telegram_id = message.chat.id
     user_telegram_username = message.from_user.username
-    is_exist = await UserService.is_exist(user_telegram_id)
+    session = await get_db_session()
+    is_exist = await UserService.is_exist(user_telegram_id, session)
     if is_exist is False:
-        await UserService.create(user_telegram_id, user_telegram_username)
+        await UserService.create(user_telegram_id, user_telegram_username, session)
     else:
-        await UserService.update_receive_messages(user_telegram_id, True)
-        await UserService.update_username(user_telegram_id, user_telegram_username)
+        await UserService.update_receive_messages(user_telegram_id, True, session)
+        await UserService.update_username(user_telegram_id, user_telegram_username, session)
+    await close_db_session(session)
     await message.answer(Localizator.get_text_from_key("start_message"), reply_markup=start_markup)
 
 
@@ -51,9 +54,9 @@ async def support(message: types.message):
     await message.answer(Localizator.get_text_from_key("help_string"), reply_markup=admin_keyboard_builder.as_markup())
 
 
-main_router.include_router(admin_router)
-main_router.include_router(my_profile_router)
-main_router.include_router(all_categories_router)
+# main_router.include_router(admin_router)
+# main_router.include_router(my_profile_router)
+# main_router.include_router(all_categories_router)
 
 if __name__ == '__main__':
     if config.MULTIBOT:
