@@ -14,6 +14,7 @@ TOKEN = os.environ.get("TOKEN")
 ADMIN_ID_LIST = os.environ.get("ADMIN_ID_LIST").split(',')
 ADMIN_ID_LIST = [int(admin_id) for admin_id in ADMIN_ID_LIST]
 SUPPORT_LINK = os.environ.get("SUPPORT_LINK")
+DB_ENCRYPTION = os.environ.get("DB_ENCRYPTION", False) == 'true'
 DB_NAME = os.environ.get("DB_NAME")
 PAGE_ENTRIES = int(os.environ.get("PAGE_ENTRIES"))
 BOT_LANGUAGE = os.environ.get("BOT_LANGUAGE")
