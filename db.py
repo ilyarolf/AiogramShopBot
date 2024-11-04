@@ -45,13 +45,20 @@ if data_folder.exists() is False:
     data_folder.mkdir()
 
 
-async def execute_stmt(stmt, session: Union[AsyncSession, Session]):
+async def session_execute(stmt, session: Union[AsyncSession, Session]):
     if isinstance(session, AsyncSession):
         query_result = await session.execute(stmt)
         return query_result
     else:
         query_result = session.execute(stmt)
         return query_result
+
+
+async def session_refresh(session: Union[AsyncSession, Session], instance: object) -> None:
+    if isinstance(session, AsyncSession):
+        await session.refresh(instance)
+    else:
+        session.refresh(instance)
 
 
 async def get_db_session() -> Union[AsyncSession, Session]:
