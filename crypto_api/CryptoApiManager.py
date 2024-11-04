@@ -1,8 +1,12 @@
 from datetime import datetime, timedelta
+from typing import Union
 
 import aiohttp
 import grequests
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
+from db import get_db_session, close_db_session
 import config
 from services.deposit import DepositService
 
@@ -24,19 +28,19 @@ class CryptoApiManager:
                     data = await response.json()
                     return data
 
-    async def get_btc_balance(self, deposits) -> float:
+    async def get_btc_balance(self, deposits, session: Union[AsyncSession, Session]) -> float:
         url = f'https://mempool.space/api/address/{self.btc_address}/utxo'
         data = await self.fetch_api_request(url)
         deposits = [deposit.tx_id for deposit in deposits if deposit.network == "BTC"]
         deposit_sum = 0.0
         for deposit in data:
             if deposit["txid"] not in deposits and deposit['status']['confirmed']:
-                await DepositService.create(deposit['txid'], self.user_id, "BTC", None,
+                await DepositService.create(session, deposit['txid'], self.user_id, "BTC", None,
                                             deposit["value"], deposit['vout'])
                 deposit_sum += float(deposit["value"]) / 100_000_000
         return deposit_sum
 
-    async def get_ltc_balance(self, deposits) -> float:
+    async def get_ltc_balance(self, deposits, session: Union[AsyncSession, Session]) -> float:
         url = f"https://api.blockcypher.com/v1/ltc/main/addrs/{self.ltc_address}?unspentOnly=true"
         data = await self.fetch_api_request(url)
         deposits = [deposit.tx_id for deposit in deposits if deposit.network == "LTC"]
@@ -49,7 +53,7 @@ class CryptoApiManager:
                     deposits_sum += float(deposit['value']) / 100_000_000
         return deposits_sum
 
-    async def get_usdt_trc20_balance(self, deposits) -> float:
+    async def get_usdt_trc20_balance(self, deposits, session: Union[AsyncSession, Session]) -> float:
         url = f"https://api.trongrid.io/v1/accounts/{self.trx_address}/transactions/trc20?only_confirmed=true&min_timestamp={self.min_timestamp}&contract_address=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t&only_to=true"
         data = await self.fetch_api_request(url)
         deposits = [deposit.tx_id for deposit in deposits if
@@ -62,7 +66,7 @@ class CryptoApiManager:
                 deposits_sum += float(deposit['value']) / pow(10, deposit['token_info']['decimals'])
         return deposits_sum
 
-    async def get_usdd_trc20_balance(self, deposits) -> float:
+    async def get_usdd_trc20_balance(self, deposits, session: Union[AsyncSession, Session]) -> float:
         url = f"https://api.trongrid.io/v1/accounts/{self.trx_address}/transactions/trc20?only_confirmed=true&min_timestamp={self.min_timestamp}&contract_address=TPYmHEhy5n8TCEfYGqW2rPxsghSfzghPDn&only_to=true"
         data = await self.fetch_api_request(url)
         deposits = [deposit.tx_id for deposit in deposits if
@@ -70,12 +74,12 @@ class CryptoApiManager:
         deposits_sum = 0.0
         for deposit in data['data']:
             if deposit['transaction_id'] not in deposits:
-                await DepositService.create(deposit['transaction_id'], self.user_id, "TRX",
+                await DepositService.create(session, deposit['transaction_id'], self.user_id, "TRX",
                                             "USDD_TRC20", deposit['value'])
                 deposits_sum += float(deposit['value']) / pow(10, deposit['token_info']['decimals'])
         return deposits_sum
 
-    async def get_usdt_erc20_balance(self, deposits) -> float:
+    async def get_usdt_erc20_balance(self, deposits, session: Union[AsyncSession, Session]) -> float:
         url = f'https://api.ethplorer.io/getAddressHistory/{self.eth_address}?type=transfer&token=0xdAC17F958D2ee523a2206206994597C13D831ec7&apiKey={config.ETHPLORER_API_KEY}&limit=1000'
         data = await self.fetch_api_request(url)
         deposits = [deposit.tx_id for deposit in deposits if
@@ -83,12 +87,12 @@ class CryptoApiManager:
         deposits_sum = 0.0
         for deposit in data['operations']:
             if deposit['transactionHash'] not in deposits and deposit['to'] == self.eth_address:
-                await DepositService.create(deposit['transactionHash'], self.user_id, "ETH", "USDT_ERC20",
+                await DepositService.create(session, deposit['transactionHash'], self.user_id, "ETH", "USDT_ERC20",
                                             deposit['value'])
                 deposits_sum += float(deposit['value']) / pow(10, 6)
         return deposits_sum
 
-    async def get_usdc_erc20_balance(self, deposits):
+    async def get_usdc_erc20_balance(self, deposits, session: Union[AsyncSession, Session]):
         url = f'https://api.ethplorer.io/getAddressHistory/{self.eth_address}?type=transfer&token=0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48&apiKey={config.ETHPLORER_API_KEY}&limit=1000'
         data = await self.fetch_api_request(url)
         deposits = [deposit.tx_id for deposit in deposits if
@@ -96,23 +100,14 @@ class CryptoApiManager:
         deposits_sum = 0.0
         for deposit in data['operations']:
             if deposit['transactionHash'] not in deposits and deposit['to'] == self.eth_address:
-                await DepositService.create(deposit['transactionHash'], self.user_id, "ETH", "USDC_ERC20",
+                await DepositService.create(session, deposit['transactionHash'], self.user_id, "ETH", "USDC_ERC20",
                                             deposit['value'])
                 deposits_sum += float(deposit['value']) / pow(10, 6)
         return deposits_sum
 
-    async def get_top_ups(self):
-        user_deposits = await DepositService.get_by_user_id(self.user_id)
-        balances = {"btc__deposit": await self.get_btc_balance(user_deposits),
-                    "ltc__deposit": await self.get_ltc_balance(user_deposits),
-                    "usdt_trc20_deposit": await self.get_usdt_trc20_balance(user_deposits),
-                    "usdd_trc20_deposit": await self.get_usdd_trc20_balance(user_deposits),
-                    "usdt_erc20_deposit": await self.get_usdt_erc20_balance(user_deposits),
-                    "usdc_erc20_deposit": await self.get_usdc_erc20_balance(user_deposits)}
-        return balances
-
     async def get_top_up_by_crypto_name(self, crypto_name: str):
-        user_deposits = await DepositService.get_by_user_id(self.user_id)
+        session = await get_db_session()
+        user_deposits = await DepositService.get_by_user_id(self.user_id, session)
 
         crypto_functions = {
             "BTC": ("btc_deposit", self.get_btc_balance),
@@ -132,8 +127,8 @@ class CryptoApiManager:
         deposit_name, balance_func = crypto_functions.get(key, (None, None))
 
         if deposit_name and balance_func:
-            return {deposit_name: await balance_func(user_deposits)}
-
+            return {deposit_name: await balance_func(user_deposits, session)}
+        await close_db_session(session)
         raise ValueError(f"Unsupported crypto name: {crypto_name}")
 
     @staticmethod
@@ -144,9 +139,7 @@ class CryptoApiManager:
             "btc": 'https://api.kraken.com/0/public/Ticker?pair=BTCUSDT',
             "usdt": 'https://api.kraken.com/0/public/Ticker?pair=USDTUSD',
             "usdc": "https://api.kraken.com/0/public/Ticker?pair=USDCUSD",
-            "ltc": 'https://api.kraken.com/0/public/Ticker?pair=LTCUSD',
-            "eth": 'https://api.kraken.com/0/public/Ticker?pair=ETHUSD',
-            "trx": "https://api.kraken.com/0/public/Ticker?pair=TRXUSD"
+            "ltc": 'https://api.kraken.com/0/public/Ticker?pair=LTCUSD'
         }
         responses = (grequests.get(url) for url in urls.values())
         datas = grequests.map(responses)
