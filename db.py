@@ -10,8 +10,9 @@ from config import DB_NAME
 from models.base import Base
 
 if config.DB_ENCRYPTION:
-    pass
-    # from sqlcipher import dbapi2 as sqlcipher
+    # Installing sqlcipher3 on windows has some difficulties,
+    # so if you want to test the version with database encryption use Linux.
+    from sqlcipher import dbapi2 as sqlcipher
 """
 Imports of these models are needed to correctly create tables in the database.
 For more information see https://stackoverflow.com/questions/7478403/sqlalchemy-classes-across-files
@@ -28,15 +29,13 @@ url = ""
 engine = None
 session_maker = None
 if config.DB_ENCRYPTION:
-    # url += f"sqlite+pysqlcipher://:{config.DB_PASS}@/data/{DB_NAME}"
-    url += f"sqlite+pysqlite:///{DB_NAME}"
-    # engine = create_engine(url, echo=True, module=sqlcipher)
-    engine = create_engine(url, echo=True)
-    session_maker = sessionmaker(engine)
+    url += f"sqlite+pysqlcipher://:{config.DB_PASS}@/data/{DB_NAME}"
+    engine = create_engine(url, echo=True, module=sqlcipher)
+    session_maker = sessionmaker(engine, expire_on_commit=False)
 else:
     url += f"sqlite+aiosqlite:///data/{DB_NAME}"
     engine = create_async_engine(url, echo=True)
-    session_maker = async_sessionmaker(engine, class_=AsyncSession)
+    session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=True)
 
 data_folder = Path("data")
 if data_folder.exists() is False:
