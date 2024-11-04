@@ -153,7 +153,7 @@ class UserService:
     @staticmethod
     async def update_consume_records(telegram_id: int, total_price: float, session: Union[AsyncSession, Session]):
         get_old_consume_records_stmt = select(User.consume_records).where(User.telegram_id == telegram_id)
-        old_consume_records = await session.execute(get_old_consume_records_stmt)
+        old_consume_records = await session_execute(get_old_consume_records_stmt, session)
         old_consume_records = old_consume_records.scalar()
         stmt = update(User).where(User.telegram_id == telegram_id).values(
             consume_records=old_consume_records + total_price)
@@ -176,7 +176,7 @@ class UserService:
     @staticmethod
     async def reduce_consume_records(user_id: int, total_price, session: Union[AsyncSession, Session]):
         stmt = select(User.consume_records).where(User.id == user_id)
-        old_consume_records = await session.execute(stmt)
+        old_consume_records = await session_execute(stmt, session)
         old_consume_records = old_consume_records.scalar()
         stmt = update(User).where(User.id == user_id).values(consume_records=old_consume_records - total_price)
         await session_execute(stmt, session)

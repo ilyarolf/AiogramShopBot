@@ -206,13 +206,16 @@ async def send_restocking_message(callback: CallbackQuery):
 
 async def delete_category(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
+    session = await get_db_session()
     delete_category_builder = await create_delete_entity_buttons(
         CategoryService.get_all_categories(session,
-            unpacked_callback.page),
+                                           unpacked_callback.page),
         "category")
     delete_category_builder = await add_pagination_buttons(delete_category_builder, callback.data,
-                                                           CategoryService.get_maximum_page(), AdminCallback.unpack,
+                                                           CategoryService.get_maximum_page(session),
+                                                           AdminCallback.unpack,
                                                            AdminConstants.back_to_main_button)
+    await close_db_session(session)
     await callback.message.edit_text(text=Localizator.get_text_from_key("admin_delete_category_msg"),
                                      parse_mode=ParseMode.HTML,
                                      reply_markup=delete_category_builder.as_markup())
@@ -234,13 +237,15 @@ async def create_delete_entity_buttons(get_all_entities_function,
 
 async def delete_subcategory(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
+    session = await get_db_session()
     delete_subcategory_builder = await create_delete_entity_buttons(
-        SubcategoryService.get_all(unpacked_callback.page),
+        SubcategoryService.get_all(session, unpacked_callback.page),
         "subcategory")
     delete_subcategory_builder = await add_pagination_buttons(delete_subcategory_builder, callback.data,
-                                                              SubcategoryService.get_maximum_page(),
+                                                              SubcategoryService.get_maximum_page(session),
                                                               AdminCallback.unpack,
                                                               AdminConstants.back_to_main_button)
+    await close_db_session(session)
     await callback.message.edit_text(text=Localizator.get_text_from_key("admin_delete_subcategory_msg"),
                                      parse_mode=ParseMode.HTML,
                                      reply_markup=delete_subcategory_builder.as_markup())
@@ -262,9 +267,10 @@ async def delete_confirmation(callback: CallbackQuery):
                                                 callback_data=decline_callback)
     delete_markup.add(confirm_button, decline_button)
     entity_to_delete = action.split('_')[-1]
+    session = await get_db_session()
     if entity_to_delete == "category":
         category_id = args_to_action
-        category = await CategoryService.get_by_primary_key(category_id)
+        category = await CategoryService.get_by_primary_key(category_id, session)
         await callback.message.edit_text(
             text=Localizator.get_text_from_key("admin_delete_category_confirmation").format(
                 category_name=category.name),
@@ -272,12 +278,13 @@ async def delete_confirmation(callback: CallbackQuery):
             reply_markup=delete_markup.as_markup())
     elif entity_to_delete == "subcategory":
         subcategory_id = args_to_action
-        subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
+        subcategory = await SubcategoryService.get_by_primary_key(subcategory_id, session)
         await callback.message.edit_text(
             text=Localizator.get_text_from_key("admin_delete_category_confirmation").format(
                 category_name=subcategory.name),
             parse_mode=ParseMode.HTML,
             reply_markup=delete_markup.as_markup())
+    await close_db_session(session)
 
 
 async def confirm_and_delete(callback: CallbackQuery):
@@ -286,28 +293,32 @@ async def confirm_and_delete(callback: CallbackQuery):
     entity_to_delete = unpacked_callback.action.split('_')[-1]
     back_to_main_builder = InlineKeyboardBuilder()
     back_to_main_builder.add(AdminConstants.back_to_main_button)
+    session = await get_db_session()
     if entity_to_delete == "category":
         # TODO("Implement cascade delete subcategories, items with subcategories by category")
-        category = await CategoryService.get_by_primary_key(args_to_action)
+        category = await CategoryService.get_by_primary_key(args_to_action, session)
         message_text = Localizator.get_text_from_key("admin_successfully_deleted").format(entity_name=category.name,
                                                                                           entity_to_delete=entity_to_delete)
-        await ItemService.delete_unsold_with_category_id(args_to_action)
+        await ItemService.delete_unsold_with_category_id(args_to_action, session)
         await callback.message.edit_text(text=message_text,
                                          parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
     elif entity_to_delete == "subcategory":
-        subcategory = await SubcategoryService.get_by_primary_key(args_to_action)
+        subcategory = await SubcategoryService.get_by_primary_key(args_to_action, session)
         message_text = Localizator.get_text_from_key("admin_successfully_deleted").format(entity_name=subcategory.name,
                                                                                           entity_to_delete=entity_to_delete)
-        await ItemService.delete_with_subcategory_id(args_to_action)
-        await SubcategoryService.delete_if_not_used(args_to_action)
+        await ItemService.delete_with_subcategory_id(args_to_action, session)
+        await SubcategoryService.delete_if_not_used(args_to_action, session)
         await callback.message.edit_text(text=message_text,
                                          parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
+    await close_db_session(session)
 
 
 async def make_refund_markup(page):
     refund_builder = InlineKeyboardBuilder()
-    not_refunded_buy_ids = await BuyService.get_not_refunded_buy_ids(page)
-    refund_data = await OtherSQLQuery.get_refund_data(not_refunded_buy_ids)
+    session = await get_db_session()
+    not_refunded_buy_ids = await BuyService.get_not_refunded_buy_ids(page, session)
+    refund_data = await OtherSQLQuery.get_refund_data(not_refunded_buy_ids, session)
+    await close_db_session(session)
     for buy in refund_data:
         if buy.telegram_username:
             refund_buy_button = types.InlineKeyboardButton(
@@ -335,8 +346,11 @@ async def make_refund_markup(page):
 async def send_refund_menu(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
     refund_builder = await make_refund_markup(unpacked_callback.page)
-    refund_builder = await add_pagination_buttons(refund_builder, callback.data, BuyService.get_max_refund_pages(),
+    session = await get_db_session()
+    refund_builder = await add_pagination_buttons(refund_builder, callback.data,
+                                                  BuyService.get_max_refund_pages(session),
                                                   AdminCallback.unpack, AdminConstants.back_to_main_button)
+    await close_db_session(session)
     await callback.message.edit_text(text=Localizator.get_text_from_key("admin_refund_menu"),
                                      reply_markup=refund_builder.as_markup(),
                                      parse_mode=ParseMode.HTML)
@@ -354,7 +368,9 @@ async def refund_confirmation(callback: CallbackQuery):
 
     confirmation_builder = InlineKeyboardBuilder()
     confirmation_builder.add(confirm_button, AdminConstants.decline_button, back_button)
-    refund_data = await OtherSQLQuery.get_refund_data_single(buy_id)
+    session = await get_db_session()
+    refund_data = await OtherSQLQuery.get_refund_data_single(buy_id, session)
+    await close_db_session(session)
     if refund_data.telegram_username:
         await callback.message.edit_text(
             text=Localizator.get_text_from_key("admin_refund_confirmation_by_username").format(
@@ -412,9 +428,11 @@ async def pick_statistics_timedelta(callback: CallbackQuery):
 async def get_statistics(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
     statistics_keyboard_builder = InlineKeyboardBuilder()
+    session = await get_db_session()
     if unpacked_callback.action == "users":
         users, users_count = await UserService.get_new_users_by_timedelta(unpacked_callback.args_to_action,
-                                                                          unpacked_callback.page)
+                                                                          unpacked_callback.page,
+                                                                          session)
         for user in users:
             if user.telegram_username:
                 user_button = types.InlineKeyboardButton(text=user.telegram_username,
@@ -423,7 +441,8 @@ async def get_statistics(callback: CallbackQuery):
         statistics_keyboard_builder.adjust(1)
         statistics_keyboard_builder = await add_pagination_buttons(statistics_keyboard_builder, callback.data,
                                                                    UserService.get_max_page_for_users_by_timedelta(
-                                                                       unpacked_callback.args_to_action),
+                                                                       unpacked_callback.args_to_action,
+                                                                       session),
                                                                    AdminCallback.unpack, None)
         statistics_keyboard_builder.row(
             *[AdminConstants.back_to_main_button, await AdminConstants.get_back_button(unpacked_callback)])
@@ -437,7 +456,7 @@ async def get_statistics(callback: CallbackQuery):
         buttons = [back_button,
                    AdminConstants.back_to_main_button]
         statistics_keyboard_builder.add(*buttons)
-        buys = await BuyService.get_new_buys_by_timedelta(unpacked_callback.args_to_action)
+        buys = await BuyService.get_new_buys_by_timedelta(unpacked_callback.args_to_action, session)
         total_profit = 0
         items_sold = 0
         for buy in buys:
@@ -450,6 +469,7 @@ async def get_statistics(callback: CallbackQuery):
                 buys_count=len(buys)),
             reply_markup=statistics_keyboard_builder.as_markup(),
             parse_mode=ParseMode.HTML)
+    await close_db_session(session)
 
 
 async def make_refund(callback: CallbackQuery):
@@ -457,8 +477,10 @@ async def make_refund(callback: CallbackQuery):
     buy_id = int(unpacked_callback.args_to_action)
     is_confirmed = unpacked_callback.action == "confirm_refund"
     if is_confirmed:
-        refund_data = await OtherSQLQuery.get_refund_data_single(buy_id)
-        await BuyService.refund(buy_id, refund_data)
+        session = await get_db_session()
+        refund_data = await OtherSQLQuery.get_refund_data_single(buy_id, session)
+        await BuyService.refund(buy_id, refund_data, session)
+        await close_db_session(session)
         bot = callback.bot
         await NotificationManager.send_refund_message(refund_data, bot)
         if refund_data.telegram_username:
@@ -470,7 +492,8 @@ async def make_refund(callback: CallbackQuery):
                     subcategory=refund_data.subcategory),
                 parse_mode=ParseMode.HTML)
         else:
-            await callback.message.edit_text(text=Localizator.get_text_from_key("admin_successfully_refunded_with_tgid").format(
+            await callback.message.edit_text(
+                text=Localizator.get_text_from_key("admin_successfully_refunded_with_tgid").format(
                     total_price=refund_data.total_price,
                     telegram_id=refund_data.telegram_id,
                     quantity=refund_data.quantity,
