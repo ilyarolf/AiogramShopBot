@@ -2,10 +2,7 @@ from dataclasses import dataclass
 from typing import Union
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
-
-from db import session_execute
+from db import session_execute, get_db_session
 from models.buy import Buy
 from models.buyItem import BuyItem
 from models.item import Item
@@ -26,36 +23,37 @@ class RefundBuyDTO:
 
 class OtherSQLQuery:
     @staticmethod
-    async def get_refund_data(buy_ids: Union[list[dict], int], session: Union[AsyncSession, Session]):
+    async def get_refund_data(buy_ids: Union[list[dict], int]):
         if isinstance(buy_ids, list):
             result_list = list()
             for buy_id in buy_ids:
-                result_list.append(await OtherSQLQuery.get_refund_data_single(buy_id, session))
+                result_list.append(await OtherSQLQuery.get_refund_data_single(buy_id))
             return result_list
         else:
-            return await OtherSQLQuery.get_refund_data_single(buy_ids, session)
+            return await OtherSQLQuery.get_refund_data_single(buy_ids)
 
     @staticmethod
-    async def get_refund_data_single(buy_id: int, session: Union[AsyncSession, Session]):
-        stmt = select(
-            User.telegram_username,
-            User.telegram_id,
-            User.id.label("user_id"),
-            Subcategory.name.label("subcategory"),
-            Buy.total_price,
-            Buy.quantity,
-            Buy.id.label("buy_id")
-        ).join(
-            BuyItem, BuyItem.buy_id == Buy.id
-        ).join(
-            User, User.id == Buy.buyer_id
-        ).join(
-            Item, Item.id == BuyItem.item_id
-        ).join(
-            Subcategory, Subcategory.id == Item.subcategory_id
-        ).where(
-            BuyItem.buy_id == buy_id
-        ).limit(1)
-        buy_items = await session_execute(stmt, session)
-        buy_items = buy_items.mappings().one()
-        return RefundBuyDTO(**buy_items)
+    async def get_refund_data_single(buy_id: int):
+        async with get_db_session() as session:
+            stmt = select(
+                User.telegram_username,
+                User.telegram_id,
+                User.id.label("user_id"),
+                Subcategory.name.label("subcategory"),
+                Buy.total_price,
+                Buy.quantity,
+                Buy.id.label("buy_id")
+            ).join(
+                BuyItem, BuyItem.buy_id == Buy.id
+            ).join(
+                User, User.id == Buy.buyer_id
+            ).join(
+                Item, Item.id == BuyItem.item_id
+            ).join(
+                Subcategory, Subcategory.id == Item.subcategory_id
+            ).where(
+                BuyItem.buy_id == buy_id
+            ).limit(1)
+            buy_items = await session_execute(stmt, session)
+            buy_items = buy_items.mappings().one()
+            return RefundBuyDTO(**buy_items)

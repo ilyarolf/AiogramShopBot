@@ -1,12 +1,9 @@
 import datetime
 import math
 from typing import Union
-
 from sqlalchemy import select, update, func, or_
-
 import config
 from db import session_execute, session_commit, get_db_session
-
 from models.user import User
 from utils.CryptoAddressGenerator import CryptoAddressGenerator
 from utils.localizator import Localizator

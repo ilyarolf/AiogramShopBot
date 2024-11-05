@@ -107,14 +107,12 @@ async def check_all_tables_exist(session: Union[AsyncSession, Session]):
         if isinstance(session, AsyncSession):
             result = await session.execute(text(sql_query))
             if result.scalar() is None:
-                await close_db_session(session)
                 return False
         else:
             result = session.execute(text(sql_query))
             if result.scalar() is None:
                 await close_db_session(session)
                 return False
-    await close_db_session(session)
     return True
 
 
