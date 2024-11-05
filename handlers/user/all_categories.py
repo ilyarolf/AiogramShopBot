@@ -12,7 +12,7 @@ from services.item import ItemService
 from services.subcategory import SubcategoryService
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
-from utils.localizator import Localizator
+from utils.localizator import Localizator, BotEntity
 from utils.notification_manager import NotificationManager
 
 
@@ -43,7 +43,8 @@ def create_callback_all_categories(level: int,
 all_categories_router = Router()
 
 
-@all_categories_router.message(F.text == Localizator.get_text_from_key("all_categories"), IsUserExistFilter())
+@all_categories_router.message(F.text == Localizator.get_text(BotEntity.USER, "all_categories"),
+                               IsUserExistFilter())
 async def all_categories_text_message(message: types.message):
     await all_categories(message)
 
@@ -71,9 +72,10 @@ async def create_subcategory_buttons(category_id: int, page: int = 0):
                                                                    subcategory_id=item.subcategory_id,
                                                                    price=subcategory_price)
         subcategories_builder.button(
-            text=Localizator.get_text_from_key("subcategory_button").format(subcategory_name=item.subcategory.name,
-                                                                            subcategory_price=subcategory_price,
-                                                                            available_quantity=available_quantity),
+            text=Localizator.get_text(BotEntity.USER, "subcategory_button").format(
+                subcategory_name=item.subcategory.name,
+                subcategory_price=subcategory_price,
+                available_quantity=available_quantity),
             callback_data=subcategory_inline_button)
     subcategories_builder.adjust(1)
     return subcategories_builder
@@ -87,10 +89,10 @@ async def all_categories(message: Union[Message, CallbackQuery]):
             category_inline_buttons = await add_pagination_buttons(category_inline_buttons, zero_level_callback,
                                                                    CategoryService.get_maximum_page(),
                                                                    AllCategoriesCallback.unpack, None)
-            await message.answer(Localizator.get_text_from_key("all_categories"),
+            await message.answer(Localizator.get_text(BotEntity.USER, "all_categories"),
                                  reply_markup=category_inline_buttons.as_markup())
         else:
-            await message.answer(Localizator.get_text_from_key("no_categories"))
+            await message.answer(Localizator.get_text(BotEntity.USER, "no_categories"))
     elif isinstance(message, CallbackQuery):
         callback = message
         unpacked_callback = AllCategoriesCallback.unpack(callback.data)
@@ -99,23 +101,24 @@ async def all_categories(message: Union[Message, CallbackQuery]):
             category_inline_buttons = await add_pagination_buttons(category_inline_buttons, callback.data,
                                                                    CategoryService.get_maximum_page(),
                                                                    AllCategoriesCallback.unpack, None)
-            await callback.message.edit_text(Localizator.get_text_from_key("all_categories"),
+            await callback.message.edit_text(Localizator.get_text(BotEntity.USER, "all_categories"),
                                              reply_markup=category_inline_buttons.as_markup())
         else:
-            await callback.message.edit_text(Localizator.get_text_from_key("no_categories"))
+            await callback.message.edit_text(Localizator.get_text(BotEntity.USER, "no_categories"))
 
 
 async def show_subcategories_in_category(callback: CallbackQuery):
     unpacked_callback = AllCategoriesCallback.unpack(callback.data)
     subcategory_buttons = await create_subcategory_buttons(unpacked_callback.category_id, page=unpacked_callback.page)
-    back_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("back_to_all_categories"),
-                                             callback_data=create_callback_all_categories(
-                                                 level=unpacked_callback.level - 1))
+    back_button = types.InlineKeyboardButton(
+        text=Localizator.get_text(BotEntity.USER, "back_to_all_categories"),
+        callback_data=create_callback_all_categories(
+            level=unpacked_callback.level - 1))
     subcategory_buttons = await add_pagination_buttons(subcategory_buttons, callback.data,
                                                        ItemService.get_maximum_page(unpacked_callback.category_id),
                                                        AllCategoriesCallback.unpack,
                                                        back_button)
-    await callback.message.edit_text(Localizator.get_text_from_key("subcategories"),
+    await callback.message.edit_text(Localizator.get_text(BotEntity.USER, "subcategories"),
                                      reply_markup=subcategory_buttons.as_markup())
 
 
@@ -135,7 +138,7 @@ async def select_quantity(callback: CallbackQuery):
                                                                                        quantity=i,
                                                                                        total_price=price * i))
     count_builder.adjust(3)
-    back_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
+    back_button = types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "back_button"),
                                              callback_data=create_callback_all_categories(level=current_level - 1,
                                                                                           category_id=category_id))
     count_builder.row(back_button)
@@ -143,11 +146,11 @@ async def select_quantity(callback: CallbackQuery):
     category = await CategoryService.get_by_primary_key(category_id)
     available_qty = await ItemService.get_available_quantity(subcategory_id, category_id)
     await callback.message.edit_text(
-        text=Localizator.get_text_from_key("select_quantity").format(category_name=category.name,
-                                                                     subcategory_name=subcategory.name,
-                                                                     price=price,
-                                                                     description=description,
-                                                                     quantity=available_qty),
+        text=Localizator.get_text(BotEntity.USER, "select_quantity").format(category_name=category.name,
+                                                                            subcategory_name=subcategory.name,
+                                                                            price=price,
+                                                                            description=description,
+                                                                            quantity=available_qty),
         reply_markup=count_builder.as_markup())
 
 
@@ -175,11 +178,11 @@ async def buy_confirmation(callback: CallbackQuery):
                                                              total_price=total_price,
                                                              quantity=quantity,
                                                              confirmation=False)
-    confirmation_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_confirm"),
+    confirmation_button = types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
                                                      callback_data=confirm_button_callback)
-    decline_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_decline"),
+    decline_button = types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
                                                 callback_data=decline_button_callback)
-    back_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
+    back_button = types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "back_button"),
                                              callback_data=create_callback_all_categories(level=current_level - 1,
                                                                                           category_id=category_id,
                                                                                           subcategory_id=subcategory_id,
@@ -189,12 +192,12 @@ async def buy_confirmation(callback: CallbackQuery):
     subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
     category = await CategoryService.get_by_primary_key(category_id)
     await callback.message.edit_text(
-        text=Localizator.get_text_from_key("buy_confirmation").format(category_name=category.name,
-                                                                      subcategory_name=subcategory.name,
-                                                                      price=price,
-                                                                      description=description,
-                                                                      quantity=quantity,
-                                                                      total_price=total_price),
+        text=Localizator.get_text(BotEntity.USER, "buy_confirmation").format(category_name=category.name,
+                                                                             subcategory_name=subcategory.name,
+                                                                             price=price,
+                                                                             description=description,
+                                                                             quantity=quantity,
+                                                                             total_price=total_price),
         reply_markup=confirmation_builder.as_markup())
 
 
@@ -210,8 +213,9 @@ async def buy_processing(callback: CallbackQuery):
     is_enough_money = await UserService.is_buy_possible(telegram_id, total_price)
     back_to_main_builder = InlineKeyboardBuilder()
     back_to_main_callback = create_callback_all_categories(level=0)
-    back_to_main_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("all_categories"),
-                                                     callback_data=back_to_main_callback)
+    back_to_main_button = types.InlineKeyboardButton(
+        text=Localizator.get_text(BotEntity.USER, "all_categories"),
+        callback_data=back_to_main_callback)
     back_to_main_builder.add(back_to_main_button)
     bot = callback.bot
     if confirmation and is_in_stock and is_enough_money:
@@ -225,13 +229,13 @@ async def buy_processing(callback: CallbackQuery):
         await callback.message.edit_text(text=message)
         await NotificationManager.new_buy(category_id, subcategory_id, quantity, total_price, user, bot)
     elif confirmation is False:
-        await callback.message.edit_text(text=Localizator.get_text_from_key("admin_declined"),
+        await callback.message.edit_text(text=Localizator.get_text(BotEntity.COMMON, "cancelled"),
                                          reply_markup=back_to_main_builder.as_markup())
     elif is_enough_money is False:
-        await callback.message.edit_text(text=Localizator.get_text_from_key("insufficient_funds"),
+        await callback.message.edit_text(text=Localizator.get_text(BotEntity.USER, "insufficient_funds"),
                                          reply_markup=back_to_main_builder.as_markup())
     elif is_in_stock is False:
-        await callback.message.edit_text(text=Localizator.get_text_from_key("out_of_stock"),
+        await callback.message.edit_text(text=Localizator.get_text(BotEntity.USER, "out_of_stock"),
                                          reply_markup=back_to_main_builder.as_markup())
 
 
@@ -239,7 +243,8 @@ async def create_message_with_bought_items(bought_data: list):
     message = "<b>"
     for count, item in enumerate(bought_data, start=1):
         private_data = item.private_data
-        message += Localizator.get_text_from_key("purchased_item").format(count=count, private_data=private_data)
+        message += Localizator.get_text(BotEntity.USER, "purchased_item").format(count=count,
+                                                                                 private_data=private_data)
     message += "</b>"
     return message
 
