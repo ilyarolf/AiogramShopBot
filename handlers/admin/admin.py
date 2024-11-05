@@ -4,7 +4,6 @@ import logging
 from typing import Union
 
 from aiogram import types, Router, F
-from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramForbiddenError
 from aiogram.filters import StateFilter
 from aiogram.filters.callback_data import CallbackData
@@ -12,7 +11,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from db import get_db_session, close_db_session
 import config
 from crypto_api.CryptoApiManager import CryptoApiManager
 from handlers.common.common import add_pagination_buttons
@@ -156,9 +154,8 @@ async def confirm_and_send(callback: CallbackQuery):
     is_restocking = callback.message.text and new_items_header in callback.message.text
     if confirmed:
         counter = 0
-        session = await get_db_session()
-        users_count = await UserService.get_all_users_count(session)
-        telegram_ids = await UserService.get_users_tg_ids_for_sending(session)
+        users_count = await UserService.get_all_users_count()
+        telegram_ids = await UserService.get_users_tg_ids_for_sending()
         for telegram_id in telegram_ids:
             try:
                 await callback.message.copy_to(telegram_id, reply_markup=None)
@@ -167,15 +164,14 @@ async def confirm_and_send(callback: CallbackQuery):
             except TelegramForbiddenError as e:
                 logging.error(f"TelegramForbiddenError: {e.message}")
                 if "user is deactivated" in e.message.lower():
-                    await UserService.update_receive_messages(telegram_id, False, session)
+                    await UserService.update_receive_messages(telegram_id, False)
                 elif "bot was blocked by the user" in e.message.lower():
-                    await UserService.update_receive_messages(telegram_id, False, session)
+                    await UserService.update_receive_messages(telegram_id, False)
             except Exception as e:
                 logging.error(e)
             finally:
                 if is_restocking is True:
-                    await ItemService.set_items_not_new(session)
-                await close_db_session(session)
+                    await ItemService.set_items_not_new()
         message_text = Localizator.get_text_from_key("admin_sending_result").format(counter=counter,
                                                                                     len=len(telegram_ids),
                                                                                     users_count=users_count)
@@ -245,11 +241,10 @@ async def receive_new_items_file(message: types.message, state: FSMContext):
 
 async def delete_category(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
-    session = await get_db_session()
     delete_category_builder = await create_delete_entity_buttons(
-        CategoryService.get_to_delete(session, unpacked_callback.page), "category")
+        CategoryService.get_to_delete(unpacked_callback.page), "category")
     delete_category_builder = await add_pagination_buttons(delete_category_builder, callback.data,
-                                                           CategoryService.get_maximum_page(session),
+                                                           CategoryService.get_maximum_page(),
                                                            AdminCallback.unpack,
                                                            AdminConstants.back_to_main_button)
     await callback.message.edit_text(text=Localizator.get_text_from_key("admin_delete_category"),
@@ -271,15 +266,13 @@ async def create_delete_entity_buttons(get_all_entities_function,
 
 async def delete_subcategory(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
-    session = await get_db_session()
     delete_subcategory_builder = await create_delete_entity_buttons(
-        SubcategoryService.get_to_delete(session, unpacked_callback.page),
+        SubcategoryService.get_to_delete(unpacked_callback.page),
         "subcategory")
     delete_subcategory_builder = await add_pagination_buttons(delete_subcategory_builder, callback.data,
-                                                              SubcategoryService.get_maximum_page_to_delete(session),
+                                                              SubcategoryService.get_maximum_page_to_delete(),
                                                               AdminCallback.unpack,
                                                               AdminConstants.back_to_main_button)
-    await close_db_session(session)
     await callback.message.edit_text(text=Localizator.get_text_from_key("admin_delete_subcategory"),
                                      reply_markup=delete_subcategory_builder.as_markup())
 
@@ -297,17 +290,16 @@ async def delete_confirmation(callback: CallbackQuery):
     )
     delete_markup.add(AdminConstants.decline_button)
     entity_to_delete = action.split('_')[-1]
-    session = await get_db_session()
     if entity_to_delete == "category":
         category_id = args_to_action
-        category = await CategoryService.get_by_primary_key(category_id, session)
+        category = await CategoryService.get_by_primary_key(category_id)
         await callback.message.edit_text(
             text=Localizator.get_text_from_key("admin_delete_category_confirmation").format(
                 category_name=category.name),
             reply_markup=delete_markup.as_markup())
     elif entity_to_delete == "subcategory":
         subcategory_id = args_to_action
-        subcategory = await SubcategoryService.get_by_primary_key(subcategory_id, session)
+        subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
         await callback.message.edit_text(
             text=Localizator.get_text_from_key("admin_delete_subcategory_confirmation").format(
                 subcategory_name=subcategory.name),
@@ -320,22 +312,20 @@ async def confirm_and_delete(callback: CallbackQuery):
     entity_to_delete = unpacked_callback.action.split('_')[-1]
     back_to_main_builder = InlineKeyboardBuilder()
     back_to_main_builder.add(AdminConstants.back_to_main_button)
-    session = await get_db_session()
     if entity_to_delete == "category":
         # TODO("Implement cascade delete subcategories, items with subcategories by category")
-        category = await CategoryService.get_by_primary_key(args_to_action, session)
+        category = await CategoryService.get_by_primary_key(args_to_action)
         message_text = Localizator.get_text_from_key("admin_successfully_deleted").format(entity_name=category.name,
                                                                                           entity_to_delete=entity_to_delete)
-        await ItemService.delete_unsold_with_category_id(args_to_action, session)
+        await ItemService.delete_unsold_with_category_id(args_to_action)
         await callback.message.edit_text(text=message_text, reply_markup=back_to_main_builder.as_markup())
     elif entity_to_delete == "subcategory":
-        subcategory = await SubcategoryService.get_by_primary_key(args_to_action, session)
+        subcategory = await SubcategoryService.get_by_primary_key(args_to_action)
         message_text = Localizator.get_text_from_key("admin_successfully_deleted").format(entity_name=subcategory.name,
                                                                                           entity_to_delete=entity_to_delete)
-        await ItemService.delete_with_subcategory_id(args_to_action, session)
-        await SubcategoryService.delete_if_not_used(args_to_action, session)
+        await ItemService.delete_with_subcategory_id(args_to_action)
+        await SubcategoryService.delete_if_not_used(args_to_action)
         await callback.message.edit_text(text=message_text, reply_markup=back_to_main_builder.as_markup())
-    await close_db_session(session)
 
 
 async def users_management(callback: CallbackQuery):
@@ -385,19 +375,15 @@ async def balance_management(message: types.message, state: FSMContext):
     elif current_state == AdminStates.balance_value:
         await state.update_data(balance_value=message.text)
         state_data = await state.get_data()
-        session = await get_db_session()
-        msg = await UserService.balance_management(state_data, session)
-        await close_db_session(session)
+        msg = await UserService.balance_management(state_data)
         await state.clear()
         await message.answer(text=msg)
 
 
 async def make_refund_markup(page):
     refund_builder = InlineKeyboardBuilder()
-    session = await get_db_session()
-    not_refunded_buy_ids = await BuyService.get_not_refunded_buy_ids(page, session)
-    refund_data = await OtherSQLQuery.get_refund_data(not_refunded_buy_ids, session)
-    await close_db_session(session)
+    not_refunded_buy_ids = await BuyService.get_not_refunded_buy_ids(page)
+    refund_data = await OtherSQLQuery.get_refund_data(not_refunded_buy_ids)
     for buy in refund_data:
         if buy.telegram_username:
             refund_buy_button = types.InlineKeyboardButton(
@@ -425,11 +411,9 @@ async def make_refund_markup(page):
 async def send_refund_menu(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
     refund_builder = await make_refund_markup(unpacked_callback.page)
-    session = await get_db_session()
     refund_builder = await add_pagination_buttons(refund_builder, callback.data,
-                                                  BuyService.get_max_refund_pages(session),
+                                                  BuyService.get_max_refund_pages(),
                                                   AdminCallback.unpack, AdminConstants.back_to_main_button)
-    await close_db_session(session)
     await callback.message.edit_text(text=Localizator.get_text_from_key("admin_refund_menu"),
                                      reply_markup=refund_builder.as_markup())
 
@@ -446,8 +430,7 @@ async def refund_confirmation(callback: CallbackQuery):
 
     confirmation_builder = InlineKeyboardBuilder()
     confirmation_builder.add(confirm_button, AdminConstants.decline_button, back_button)
-    session = await get_db_session()
-    refund_data = await OtherSQLQuery.get_refund_data_single(buy_id, session)
+    refund_data = await OtherSQLQuery.get_refund_data_single(buy_id)
     if refund_data.telegram_username:
         await callback.message.edit_text(
             text=Localizator.get_text_from_key("admin_refund_confirmation_by_username").format(
@@ -463,7 +446,6 @@ async def refund_confirmation(callback: CallbackQuery):
                 quantity=refund_data.quantity,
                 subcategory=refund_data.subcategory,
                 total_price=refund_data.total_price), reply_markup=confirmation_builder.as_markup())
-    await close_db_session(session)
 
 
 async def pick_statistics_entity(callback: CallbackQuery):
@@ -505,10 +487,9 @@ async def pick_statistics_timedelta(callback: CallbackQuery):
 async def get_statistics(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
     statistics_keyboard_builder = InlineKeyboardBuilder()
-    session = await get_db_session()
     if unpacked_callback.action == "users":
         users, users_count = await UserService.get_new_users_by_timedelta(unpacked_callback.args_to_action,
-                                                                          unpacked_callback.page, session)
+                                                                          unpacked_callback.page)
         for user in users:
             if user.telegram_username:
                 statistics_keyboard_builder.button(text=user.telegram_username,
@@ -516,7 +497,7 @@ async def get_statistics(callback: CallbackQuery):
         statistics_keyboard_builder.adjust(1)
         statistics_keyboard_builder = await add_pagination_buttons(statistics_keyboard_builder, callback.data,
                                                                    UserService.get_max_page_for_users_by_timedelta(
-                                                                       unpacked_callback.args_to_action, session),
+                                                                       unpacked_callback.args_to_action),
                                                                    AdminCallback.unpack, None)
         statistics_keyboard_builder.row(
             *[AdminConstants.back_to_main_button, await AdminConstants.get_back_button(unpacked_callback)])
@@ -529,7 +510,7 @@ async def get_statistics(callback: CallbackQuery):
         buttons = [back_button,
                    AdminConstants.back_to_main_button]
         statistics_keyboard_builder.add(*buttons)
-        buys = await BuyService.get_new_buys_by_timedelta(unpacked_callback.args_to_action, session)
+        buys = await BuyService.get_new_buys_by_timedelta(unpacked_callback.args_to_action)
         total_profit = 0
         items_sold = 0
         for buy in buys:
@@ -546,7 +527,7 @@ async def get_statistics(callback: CallbackQuery):
         buttons = [back_button,
                    AdminConstants.back_to_main_button]
         statistics_keyboard_builder.add(*buttons)
-        deposits = await DepositService.get_by_timedelta(unpacked_callback.args_to_action, session)
+        deposits = await DepositService.get_by_timedelta(unpacked_callback.args_to_action)
         btc_amount = 0.0
         ltc_amount = 0.0
         sol_amount = 0.0
@@ -578,10 +559,8 @@ async def make_refund(callback: CallbackQuery):
     buy_id = int(unpacked_callback.args_to_action)
     is_confirmed = unpacked_callback.action == "confirm_refund"
     if is_confirmed:
-        session = await get_db_session()
-        refund_data = await OtherSQLQuery.get_refund_data_single(buy_id, session)
-        await BuyService.refund(buy_id, refund_data, session)
-        await close_db_session(session)
+        refund_data = await OtherSQLQuery.get_refund_data_single(buy_id)
+        await BuyService.refund(buy_id, refund_data)
         bot = callback.bot
         await NotificationManager.send_refund_message(refund_data, bot)
         if refund_data.telegram_username:
@@ -664,9 +643,8 @@ async def add_item_txt_menu(message: Message, state: FSMContext):
     elif current_state == AdminStates.price:
         await state.update_data(price=message.text)
         state_data = await state.get_data()
-        session = await get_db_session()
-        category = await CategoryService.get_or_create_one(state_data['category_name'], session)
-        subcategory = await SubcategoryService.get_or_create_one(state_data['subcategory_name'], session)
+        category = await CategoryService.get_or_create_one(state_data['category_name'])
+        subcategory = await SubcategoryService.get_or_create_one(state_data['subcategory_name'])
         items_list = []
         if (len(state_data['private_data'].split("\n"))) > 1:
             splitted_private_data = state_data['private_data'].split("\n")
@@ -686,7 +664,7 @@ async def add_item_txt_menu(message: Message, state: FSMContext):
                 price=float(state_data['price']),
                 private_data=state_data['private_data']
             ))
-        await ItemService.add_many(items_list, session)
+        await ItemService.add_many(items_list)
         await state.clear()
         await message.answer(
             Localizator.get_text_from_key("admin_add_items_success").format(adding_result=len(items_list)))
