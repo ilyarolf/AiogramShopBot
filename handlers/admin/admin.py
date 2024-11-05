@@ -153,6 +153,7 @@ async def confirm_and_send(callback: CallbackQuery):
     new_items_header = HTMLTagsRemover.remove_html_tags(Localizator.get_text_from_key("new_items_message_update"))
     is_restocking = callback.message.text and new_items_header in callback.message.text
     if confirmed:
+        await callback.message.edit_reply_markup()
         counter = 0
         users_count = await UserService.get_all_users_count()
         telegram_ids = await UserService.get_users_tg_ids_for_sending()
@@ -532,6 +533,10 @@ async def get_statistics(callback: CallbackQuery):
         ltc_amount = 0.0
         sol_amount = 0.0
         usd_amount = 0.0
+        usdd_trc20_amount = 0.0
+        usdt_trc20_amount = 0.0
+        usdt_erc20_amount = 0.0
+        usdc_erc20_amount = 0.0
         for deposit in deposits:
             if deposit.network == "BTC":
                 btc_amount += deposit.amount / pow(10, 8)
@@ -540,9 +545,21 @@ async def get_statistics(callback: CallbackQuery):
             elif deposit.network == "SOL":
                 sol_amount += deposit.amount / pow(10, 9)
             elif deposit.token_name == "USDD_TRC20":
-                usd_amount += deposit.amount / pow(10, 18)
-            else:
-                usd_amount += deposit.amount / pow(10, 6)
+                divided_deposit = deposit.amount / pow(10, 18)
+                usd_amount += divided_deposit
+                usdd_trc20_amount += divided_deposit
+            elif deposit.token_name == "USDT_TRC20":
+                divided_amount = deposit.amount / pow(10, 6)
+                usd_amount += divided_amount
+                usdt_trc20_amount += divided_amount
+            elif deposit.token_name == "USDT_ERC20":
+                divided_amount = deposit.amount / pow(10, 6)
+                usd_amount += divided_amount
+                usdt_erc20_amount += divided_amount
+            elif deposit.token_name == "USDC_ERC20":
+                divided_amount = deposit.amount / pow(10, 6)
+                usd_amount += divided_amount
+                usdc_erc20_amount += divided_amount
         crypto_prices = await CryptoApiManager.get_crypto_prices()
         usd_amount += (btc_amount * crypto_prices['btc']) + (ltc_amount * crypto_prices['ltc']) + (
                 sol_amount * crypto_prices['sol'])
@@ -550,7 +567,9 @@ async def get_statistics(callback: CallbackQuery):
             text=Localizator.get_text_from_key("admin_deposits_statistics_msg").format(
                 timedelta=unpacked_callback.args_to_action, deposits_count=len(deposits),
                 btc_amount=btc_amount, ltc_amount=ltc_amount,
-                sol_amount=sol_amount, usd_amount="{:.2f}".format(usd_amount)),
+                sol_amount=sol_amount, usdt_trc20_amount=usdt_trc20_amount,
+                usdt_erc20_amount=usdt_erc20_amount, usdd_trc20_amount=usdd_trc20_amount,
+                usdc_erc20_amount=usdc_erc20_amount, usd_amount="{:.2f}".format(usd_amount)),
             reply_markup=statistics_keyboard_builder.as_markup())
 
 
