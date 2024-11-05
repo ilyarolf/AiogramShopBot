@@ -129,7 +129,7 @@ async def show_subcategories_in_category(callback: CallbackQuery):
                                                        AllCategoriesCallback.unpack,
                                                        back_button)
     await close_db_session(session)
-    await callback.message.edit_text(Localizator.get_text_from_key("admin_delete_subcategory_msg"),
+    await callback.message.edit_text(Localizator.get_text_from_key("subcategories"),
                                      reply_markup=subcategory_buttons.as_markup(),
                                      parse_mode=ParseMode.HTML)
 
@@ -155,11 +155,15 @@ async def select_quantity(callback: CallbackQuery):
     count_builder.add(back_button)
     count_builder.adjust(3)
     subcategory = await SubcategoryService.get_by_primary_key(subcategory_id, session)
+    category = await CategoryService.get_by_primary_key(category_id, session)
+    available_qty = await ItemService.get_available_quantity(subcategory_id, category_id, session)
     await close_db_session(session)
     await callback.message.edit_text(
-        text=Localizator.get_text_from_key("select_quantity").format(subcategory_name=subcategory.name,
+        text=Localizator.get_text_from_key("select_quantity").format(category_name=category.name,
+                                                                     subcategory_name=subcategory.name,
                                                                      price=price,
-                                                                     description=description),
+                                                                     description=description,
+                                                                     quantity=available_qty),
         reply_markup=count_builder.as_markup(),
         parse_mode=ParseMode.HTML)
 
@@ -201,9 +205,11 @@ async def add_to_cart_confirmation(callback: CallbackQuery):
     confirmation_builder.add(confirmation_button, decline_button, back_button)
     confirmation_builder.adjust(2)
     subcategory = await SubcategoryService.get_by_primary_key(subcategory_id, session)
+    category = await CategoryService.get_by_primary_key(category_id, session)
     await close_db_session(session)
     await callback.message.edit_text(
-        text=Localizator.get_text_from_key("buy_confirmation").format(subcategory_name=subcategory.name,
+        text=Localizator.get_text_from_key("buy_confirmation").format(category_name=category.name,
+                                                                      subcategory_name=subcategory.name,
                                                                       price=price,
                                                                       description=description,
                                                                       quantity=quantity,

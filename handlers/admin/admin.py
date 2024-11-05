@@ -234,7 +234,7 @@ async def receive_new_items_file(message: types.message, state: FSMContext):
         file_id = message.document.file_id
         file = await message.bot.get_file(file_id)
         await message.bot.download_file(file.file_path, file_name)
-        adding_result = NewItemsManager.add(file_name)
+        adding_result = await NewItemsManager.add(file_name)
         if isinstance(adding_result, BaseException):
             await message.answer(
                 text=Localizator.get_text_from_key("admin_add_items_err").format(adding_result=adding_result),
@@ -269,7 +269,7 @@ async def delete_category(callback: CallbackQuery):
 
 async def create_delete_entity_buttons(get_all_entities_function,
                                        entity_name):
-    entities = get_all_entities_function
+    entities = await get_all_entities_function
     delete_entity_builder = InlineKeyboardBuilder()
     for entity in entities:
         delete_entity_callback = create_admin_callback(level=10,

@@ -56,7 +56,7 @@ class SubcategoryService:
             .distinct()
         ).alias('unique_categories')
         stmt = select(func.count()).select_from(unique_categories_subquery)
-        max_page = session_execute(stmt, session)
+        max_page = await session_execute(stmt, session)
         max_page = max_page.scalar_one()
         if max_page % config.PAGE_ENTRIES == 0:
             return max_page / config.PAGE_ENTRIES - 1
