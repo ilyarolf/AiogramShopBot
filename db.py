@@ -80,13 +80,6 @@ async def session_refresh(session: Union[AsyncSession, Session], instance: objec
         session.refresh(instance)
 
 
-async def close_db_session(session: Union[AsyncSession, Session]) -> None:
-    if isinstance(session, AsyncSession):
-        await session.close()
-    else:
-        session.close()
-
-
 async def session_commit(session: Union[AsyncSession, Session]) -> None:
     if isinstance(session, AsyncSession):
         await session.commit()
@@ -111,7 +104,6 @@ async def check_all_tables_exist(session: Union[AsyncSession, Session]):
         else:
             result = session.execute(text(sql_query))
             if result.scalar() is None:
-                await close_db_session(session)
                 return False
     return True
 
