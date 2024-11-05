@@ -1,6 +1,5 @@
 import logging
 from typing import Union
-from db import get_db_session, close_db_session
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from services.subcategory import SubcategoryService
@@ -46,15 +45,14 @@ class NotificationManager:
             key.replace('_deposit', "").replace('_', ' ').upper(): value
             for key, value in new_crypto_balances.items()
         }
-        session = await get_db_session()
-        user = await UserService.get_by_tgid(telegram_id, session)
-        await close_db_session(session)
+        user = await UserService.get_by_tgid(telegram_id)
         user_button = await NotificationManager.make_user_button(user.telegram_username)
         address_map = {
             "TRC": user.trx_address,
             "ERC": user.eth_address,
             "BTC": user.btc_address,
-            "LTC": user.ltc_address
+            "LTC": user.ltc_address,
+            "SOL": user.sol_address
         }
         crypto_key = list(merged_crypto_balances.keys())[0]
         addr = next((address_map[key] for key in address_map if key in crypto_key), "")
@@ -80,10 +78,8 @@ class NotificationManager:
 
     @staticmethod
     async def new_buy(category_id: int, subcategory_id: int, quantity: int, total_price: float, user: User, bot):
-        session = await get_db_session()
-        subcategory = await SubcategoryService.get_by_primary_key(subcategory_id, session)
-        category = await CategoryService.get_by_primary_key(category_id, session)
-        await close_db_session(session)
+        subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
+        category = await CategoryService.get_by_primary_key(category_id)
         message = ""
         username = user.telegram_username
         telegram_id = user.telegram_id
