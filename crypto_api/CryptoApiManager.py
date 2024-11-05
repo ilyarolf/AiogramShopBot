@@ -49,7 +49,7 @@ class CryptoApiManager:
         if data['n_tx'] > 0:
             for deposit in data['txrefs']:
                 if deposit["confirmations"] > 0 and deposit['tx_hash'] not in deposits:
-                    await DepositService.create(deposit['tx_hash'], self.user_id, "LTC", None,
+                    await DepositService.create(session, deposit['tx_hash'], self.user_id, "LTC", None,
                                                 deposit["value"], deposit['tx_output_n'])
                     deposits_sum += float(deposit['value']) / 100_000_000
         return deposits_sum

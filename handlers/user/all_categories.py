@@ -57,9 +57,8 @@ async def create_category_buttons(page: int):
     if categories:
         categories_builder = InlineKeyboardBuilder()
         for category in categories:
-            category_button_callback = create_callback_all_categories(level=1, category_id=category.id)
-            category_button = types.InlineKeyboardButton(text=category.name, callback_data=category_button_callback)
-            categories_builder.add(category_button)
+            categories_builder.button(text=category.name,
+                                      callback_data=create_callback_all_categories(level=1, category_id=category.id))
         categories_builder.adjust(2)
         return categories_builder
 
@@ -77,12 +76,11 @@ async def create_subcategory_buttons(category_id: int, page: int = 0):
                                                                    category_id=category_id,
                                                                    subcategory_id=item.subcategory_id,
                                                                    price=subcategory_price)
-        subcategories_builder.add(
-            types.InlineKeyboardButton(
-                text=Localizator.get_text_from_key("subcategory_button").format(subcategory_name=item.subcategory.name,
-                                                                                subcategory_price=subcategory_price,
-                                                                                available_quantity=available_quantity),
-                callback_data=subcategory_inline_button))
+        subcategories_builder.button(
+            text=Localizator.get_text_from_key("subcategory_button").format(subcategory_name=item.subcategory.name,
+                                                                            subcategory_price=subcategory_price,
+                                                                            available_quantity=available_quantity),
+            callback_data=subcategory_inline_button)
     subcategories_builder.adjust(1)
     return subcategories_builder
 
@@ -123,7 +121,8 @@ async def show_subcategories_in_category(callback: CallbackQuery):
                                                  level=unpacked_callback.level - 1))
     session = await get_db_session()
     subcategory_buttons = await add_pagination_buttons(subcategory_buttons, callback.data,
-                                                       ItemService.get_maximum_page(unpacked_callback.category_id, session),
+                                                       ItemService.get_maximum_page(unpacked_callback.category_id,
+                                                                                    session),
                                                        AllCategoriesCallback.unpack,
                                                        back_button)
     await close_db_session(session)
@@ -141,16 +140,17 @@ async def select_quantity(callback: CallbackQuery):
     description = await ItemService.get_description(subcategory_id, category_id, session)
     count_builder = InlineKeyboardBuilder()
     for i in range(1, 11):
-        count_button_callback = create_callback_all_categories(level=current_level + 1, category_id=category_id,
-                                                               subcategory_id=subcategory_id, price=price,
-                                                               quantity=i, total_price=price * i)
-        count_button_inline = types.InlineKeyboardButton(text=str(i), callback_data=count_button_callback)
-        count_builder.add(count_button_inline)
+        count_builder.button(text=str(i), callback_data=create_callback_all_categories(level=current_level + 1,
+                                                                                       category_id=category_id,
+                                                                                       subcategory_id=subcategory_id,
+                                                                                       price=price,
+                                                                                       quantity=i,
+                                                                                       total_price=price * i))
+    count_builder.adjust(3)
     back_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
                                              callback_data=create_callback_all_categories(level=current_level - 1,
                                                                                           category_id=category_id))
-    count_builder.add(back_button)
-    count_builder.adjust(3)
+    count_builder.row(back_button)
     subcategory = await SubcategoryService.get_by_primary_key(subcategory_id, session)
     category = await CategoryService.get_by_primary_key(category_id, session)
     available_qty = await ItemService.get_available_quantity(subcategory_id, category_id, session)
