@@ -96,10 +96,10 @@ async def all_categories(message: Union[Message, CallbackQuery]):
             category_inline_buttons = await add_pagination_buttons(category_inline_buttons, zero_level_callback,
                                                                    CategoryService.get_maximum_page(session),
                                                                    AllCategoriesCallback.unpack, None)
-            await message.answer(Localizator.get_text_from_key("all_categories"), parse_mode=ParseMode.HTML,
+            await message.answer(Localizator.get_text_from_key("all_categories"),
                                  reply_markup=category_inline_buttons.as_markup())
         else:
-            await message.answer(Localizator.get_text_from_key("no_categories"), parse_mode=ParseMode.HTML)
+            await message.answer(Localizator.get_text_from_key("no_categories"))
     elif isinstance(message, CallbackQuery):
         callback = message
         unpacked_callback = AllCategoriesCallback.unpack(callback.data)
@@ -108,10 +108,10 @@ async def all_categories(message: Union[Message, CallbackQuery]):
             category_inline_buttons = await add_pagination_buttons(category_inline_buttons, callback.data,
                                                                    CategoryService.get_maximum_page(session),
                                                                    AllCategoriesCallback.unpack, None)
-            await callback.message.edit_text(Localizator.get_text_from_key("all_categories"), parse_mode=ParseMode.HTML,
+            await callback.message.edit_text(Localizator.get_text_from_key("all_categories"),
                                              reply_markup=category_inline_buttons.as_markup())
         else:
-            await callback.message.edit_text(Localizator.get_text_from_key("no_categories"), parse_mode=ParseMode.HTML)
+            await callback.message.edit_text(Localizator.get_text_from_key("no_categories"))
     await close_db_session(session)
 
 
@@ -128,8 +128,7 @@ async def show_subcategories_in_category(callback: CallbackQuery):
                                                        back_button)
     await close_db_session(session)
     await callback.message.edit_text(Localizator.get_text_from_key("subcategories"),
-                                     reply_markup=subcategory_buttons.as_markup(),
-                                     parse_mode=ParseMode.HTML)
+                                     reply_markup=subcategory_buttons.as_markup())
 
 
 async def select_quantity(callback: CallbackQuery):
@@ -162,8 +161,7 @@ async def select_quantity(callback: CallbackQuery):
                                                                      price=price,
                                                                      description=description,
                                                                      quantity=available_qty),
-        reply_markup=count_builder.as_markup(),
-        parse_mode=ParseMode.HTML)
+        reply_markup=count_builder.as_markup())
 
 
 async def buy_confirmation(callback: CallbackQuery):
@@ -212,8 +210,7 @@ async def buy_confirmation(callback: CallbackQuery):
                                                                       description=description,
                                                                       quantity=quantity,
                                                                       total_price=total_price),
-        reply_markup=confirmation_builder.as_markup(),
-        parse_mode=ParseMode.HTML)
+        reply_markup=confirmation_builder.as_markup())
 
 
 async def buy_processing(callback: CallbackQuery):
@@ -242,19 +239,16 @@ async def buy_processing(callback: CallbackQuery):
         await BuyItemService.insert_many(sold_items, new_buy_id, session)
         await ItemService.set_items_sold(sold_items, session)
         await close_db_session(session)
-        await callback.message.edit_text(text=message, parse_mode=ParseMode.HTML)
+        await callback.message.edit_text(text=message)
         await NotificationManager.new_buy(category_id, subcategory_id, quantity, total_price, user, bot)
     elif confirmation is False:
         await callback.message.edit_text(text=Localizator.get_text_from_key("admin_declined"),
-                                         parse_mode=ParseMode.HTML,
                                          reply_markup=back_to_main_builder.as_markup())
     elif is_enough_money is False:
         await callback.message.edit_text(text=Localizator.get_text_from_key("insufficient_funds"),
-                                         parse_mode=ParseMode.HTML,
                                          reply_markup=back_to_main_builder.as_markup())
     elif is_in_stock is False:
         await callback.message.edit_text(text=Localizator.get_text_from_key("out_of_stock"),
-                                         parse_mode=ParseMode.HTML,
                                          reply_markup=back_to_main_builder.as_markup())
 
 
