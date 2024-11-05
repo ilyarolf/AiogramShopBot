@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Union
 
@@ -42,6 +43,25 @@ if data_folder.exists() is False:
     data_folder.mkdir()
 
 
+@asynccontextmanager
+async def get_db_session() -> Union[AsyncSession, Session]:
+    session = None
+    try:
+        if config.DB_ENCRYPTION:
+            with session_maker() as sync_session:
+                session = sync_session
+                yield session
+        else:
+            async with session_maker() as async_session:
+                session = async_session
+                yield session
+    finally:
+        if isinstance(session, AsyncSession):
+            await session.close()
+        elif isinstance(session, Session):
+            session.close()
+
+
 async def session_execute(stmt, session: Union[AsyncSession, Session]):
     if isinstance(session, AsyncSession):
         query_result = await session.execute(stmt)
@@ -56,15 +76,6 @@ async def session_refresh(session: Union[AsyncSession, Session], instance: objec
         await session.refresh(instance)
     else:
         session.refresh(instance)
-
-
-async def get_db_session() -> Union[AsyncSession, Session]:
-    if config.DB_ENCRYPTION:
-        with session_maker() as sync_session:
-            return sync_session
-    else:
-        async with session_maker() as async_session:
-            return async_session
 
 
 async def close_db_session(session: Union[AsyncSession, Session]) -> None:
@@ -106,14 +117,14 @@ async def check_all_tables_exist(session: Union[AsyncSession, Session]):
 
 
 async def create_db_and_tables():
-    session = await get_db_session()
-    if await check_all_tables_exist(session):
-        pass
-    else:
-        if isinstance(session, AsyncSession):
-            async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.drop_all)
-                await conn.run_sync(Base.metadata.create_all)
+    async with get_db_session() as session:
+        if await check_all_tables_exist(session):
+            pass
         else:
-            Base.metadata.drop_all(bind=engine)
-            Base.metadata.create_all(bind=engine)
+            if isinstance(session, AsyncSession):
+                async with engine.begin() as conn:
+                    await conn.run_sync(Base.metadata.drop_all)
+                    await conn.run_sync(Base.metadata.create_all)
+            else:
+                Base.metadata.drop_all(bind=engine)
+                Base.metadata.create_all(bind=engine)

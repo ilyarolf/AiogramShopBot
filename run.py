@@ -6,7 +6,6 @@ import config
 from config import SUPPORT_LINK
 import logging
 from bot import dp, main
-from db import get_db_session, close_db_session
 from multibot import main as main_multibot
 from handlers.admin.admin import admin_router
 from handlers.user.all_categories import all_categories_router
@@ -28,14 +27,12 @@ async def start(message: types.message):
     admin_menu_button = types.KeyboardButton(text=Localizator.get_text_from_key("admin_menu"))
     user_telegram_id = message.chat.id
     user_telegram_username = message.from_user.username
-    session = await get_db_session()
-    is_exist = await UserService.is_exist(user_telegram_id, session)
+    is_exist = await UserService.is_exist(user_telegram_id)
     if is_exist is False:
-        await UserService.create(user_telegram_id, user_telegram_username, session)
+        await UserService.create(user_telegram_id, user_telegram_username)
     else:
-        await UserService.update_receive_messages(user_telegram_id, True, session)
-        await UserService.update_username(user_telegram_id, user_telegram_username, session)
-    await close_db_session(session)
+        await UserService.update_receive_messages(user_telegram_id, True)
+        await UserService.update_username(user_telegram_id, user_telegram_username)
     keyboard = [[all_categories_button, my_profile_button], [faq_button, help_button]]
     if user_telegram_id in config.ADMIN_ID_LIST:
         keyboard.append([admin_menu_button])
