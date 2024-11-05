@@ -98,10 +98,10 @@ async def all_categories(message: Union[Message, CallbackQuery]):
             category_inline_buttons = await add_pagination_buttons(category_inline_buttons, zero_level_callback,
                                                                    CategoryService.get_maximum_page(session),
                                                                    AllCategoriesCallback.unpack, None)
-            await message.answer(Localizator.get_text_from_key("all_categories"), parse_mode=ParseMode.HTML,
+            await message.answer(Localizator.get_text_from_key("all_categories"),
                                  reply_markup=category_inline_buttons.as_markup())
         else:
-            await message.answer(Localizator.get_text_from_key("no_categories"), parse_mode=ParseMode.HTML)
+            await message.answer(Localizator.get_text_from_key("no_categories"))
     elif isinstance(message, CallbackQuery):
         callback = message
         unpacked_callback = AllCategoriesCallback.unpack(callback.data)
@@ -110,10 +110,10 @@ async def all_categories(message: Union[Message, CallbackQuery]):
             category_inline_buttons = await add_pagination_buttons(category_inline_buttons, callback.data,
                                                                    CategoryService.get_maximum_page(session),
                                                                    AllCategoriesCallback.unpack, None)
-            await callback.message.edit_text(Localizator.get_text_from_key("all_categories"), parse_mode=ParseMode.HTML,
+            await callback.message.edit_text(Localizator.get_text_from_key("all_categories"),
                                              reply_markup=category_inline_buttons.as_markup())
         else:
-            await callback.message.edit_text(Localizator.get_text_from_key("no_categories"), parse_mode=ParseMode.HTML)
+            await callback.message.edit_text(Localizator.get_text_from_key("no_categories"))
     await close_db_session(session)
 
 
@@ -130,8 +130,7 @@ async def show_subcategories_in_category(callback: CallbackQuery):
                                                        back_button)
     await close_db_session(session)
     await callback.message.edit_text(Localizator.get_text_from_key("subcategories"),
-                                     reply_markup=subcategory_buttons.as_markup(),
-                                     parse_mode=ParseMode.HTML)
+                                     reply_markup=subcategory_buttons.as_markup())
 
 
 async def select_quantity(callback: CallbackQuery):
@@ -164,8 +163,7 @@ async def select_quantity(callback: CallbackQuery):
                                                                      price=price,
                                                                      description=description,
                                                                      quantity=available_qty),
-        reply_markup=count_builder.as_markup(),
-        parse_mode=ParseMode.HTML)
+        reply_markup=count_builder.as_markup())
 
 
 async def add_to_cart_confirmation(callback: CallbackQuery):
@@ -214,8 +212,7 @@ async def add_to_cart_confirmation(callback: CallbackQuery):
                                                                       description=description,
                                                                       quantity=quantity,
                                                                       total_price=total_price),
-        reply_markup=confirmation_builder.as_markup(),
-        parse_mode=ParseMode.HTML)
+        reply_markup=confirmation_builder.as_markup())
 
 
 async def add_to_cart(callback: AllCategoriesCallback):

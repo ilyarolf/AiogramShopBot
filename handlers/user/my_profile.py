@@ -70,14 +70,14 @@ async def my_profile(message: Union[Message, CallbackQuery]):
     if isinstance(message, Message):
         telegram_id = message.chat.id
         message_text = await get_my_profile_message(telegram_id)
-        await message.answer(message_text, parse_mode=ParseMode.HTML, reply_markup=my_profile_markup)
+        await message.answer(message_text, reply_markup=my_profile_markup)
     elif isinstance(message, CallbackQuery):
         callback = message
         telegram_id = callback.from_user.id
         message = await get_my_profile_message(telegram_id)
         raw_message_text = HTMLTagsRemover.remove_html_tags(message)
         if raw_message_text != callback.message.text:
-            await callback.message.edit_text(message, parse_mode=ParseMode.HTML, reply_markup=my_profile_markup)
+            await callback.message.edit_text(message, reply_markup=my_profile_markup)
         else:
             await callback.answer()
 
@@ -109,7 +109,6 @@ async def top_up_balance(callback: CallbackQuery):
 
     await callback.message.edit_text(
         text=Localizator.get_text_from_key("choose_top_up_method"),
-        parse_mode=ParseMode.HTML,
         reply_markup=top_up_methods_builder.as_markup())
     await callback.answer()
 
@@ -150,12 +149,10 @@ async def purchase_history(callback: CallbackQuery):
     await close_db_session(session)
     if orders_num == 0:
         await callback.message.edit_text(Localizator.get_text_from_key("no_purchases"),
-                                         reply_markup=orders_markup_builder.as_markup(),
-                                         parse_mode=ParseMode.HTML)
+                                         reply_markup=orders_markup_builder.as_markup())
     else:
         await callback.message.edit_text(Localizator.get_text_from_key("purchases"),
-                                         reply_markup=orders_markup_builder.as_markup(),
-                                         parse_mode=ParseMode.HTML)
+                                         reply_markup=orders_markup_builder.as_markup())
     await callback.answer()
 
 
@@ -168,7 +165,8 @@ async def refresh_balance(callback: CallbackQuery):
         await UserService.create_last_balance_refresh_data(telegram_id, session)
         user = await UserService.get_by_tgid(telegram_id, session)
         addresses = await UserService.get_addresses(telegram_id, session)
-        new_crypto_deposits = await CryptoApiManager(**addresses, user_id=user.id).get_top_up_by_crypto_name(crypto_info)
+        new_crypto_deposits = await CryptoApiManager(**addresses, user_id=user.id).get_top_up_by_crypto_name(
+            crypto_info)
         crypto_prices = await CryptoApiManager.get_crypto_prices()
         deposit_usd_amount = 0.0
         bot_obj = callback.bot
@@ -201,7 +199,7 @@ async def get_order_from_history(callback: CallbackQuery):
     back_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
                                              callback_data=create_callback_profile(level=current_level - 1))
     back_builder.add(back_button)
-    await callback.message.edit_text(text=message, parse_mode=ParseMode.HTML, reply_markup=back_builder.as_markup())
+    await callback.message.edit_text(text=message, reply_markup=back_builder.as_markup())
 
 
 async def top_up_by_method(callback: CallbackQuery):
@@ -217,7 +215,7 @@ async def top_up_by_method(callback: CallbackQuery):
         addr = user.btc_address
     elif payment_method == "LTC":
         addr = user.ltc_address
-    elif "ETH" in payment_method :
+    elif "ETH" in payment_method:
         addr = user.eth_address
     elif "TRX" in payment_method:
         addr = user.trx_address
@@ -231,8 +229,7 @@ async def top_up_by_method(callback: CallbackQuery):
     refresh_balance_builder.row(types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
                                                            callback_data=create_callback_profile(
                                                                level=current_level - 1)))
-    await callback.message.edit_text(text=msg, parse_mode=ParseMode.HTML,
-                                     reply_markup=refresh_balance_builder.as_markup())
+    await callback.message.edit_text(text=msg, reply_markup=refresh_balance_builder.as_markup())
 
 
 @my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())
