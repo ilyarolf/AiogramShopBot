@@ -121,6 +121,17 @@
     "usdc_trc20_top_up": "USDC TRC-20",
     "usdd_trc20_top_up": "USDD TRC-20",
     "usdt_erc20_top_up": "USDT ERC-20",
-    "usdt_trc20_top_up": "USDT TRC-20"
+    "usdt_trc20_top_up": "USDT TRC-20",
+    "cart": "\uD83D\uDED2 Warenkorb",
+    "cart_item_button": "{cart_item_subcategory_name} ({cart_item_quantity!s}) = {cart_item_total:.2f}{cart_item_currency!s} \uD83D\uDDD1",
+    "cart_line_item": "{cart_item_subcategory_name} ({cart_item_quantity!s}) = {cart_item_total:.2f}{cart_item_currency!s} \n",
+    "cart_grand_total_string": "Gesamtpreis: {cart_grand_total:.2f}{cart_item_currency!s} \n",
+    "cart_confirm_checkout_process": "Bestellung aufgeben?",
+    "no_cart_items": "Warenkorb ist noch leer",
+    "checkout": "\uD83E\uDD66 Kasse",
+    "delete_cart_item_confirmation": "Artikel aus dem Warenkorb entfernen?",
+    "delete_cart_item_confirmation_text": "Artikel aus dem Warenkorb entfernt!",
+    "item_added_to_cart": "Artikel wurde dem Warenkorb hinzugefügt",
+    "updated_cart": "Warenkorb aktualisiert"
   }
 }

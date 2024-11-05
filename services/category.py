@@ -67,7 +67,7 @@ class CategoryService:
 
     @staticmethod
     async def get_name(category_id) -> str:
-        async with async_session_maker() as session:
+        async with get_db_session() as session:
             stmt = select(Category.name).where(Category.id == category_id)
             category_name = await session.execute(stmt)
             category_name = category_name.scalar()
