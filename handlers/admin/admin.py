@@ -105,18 +105,19 @@ class AdminStates(StatesGroup):
 
 async def announcements(callback: CallbackQuery):
     cb_builder = InlineKeyboardBuilder()
-    cb_builder.row(types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_send_everyone"),
-                                              callback_data=create_admin_callback(
-                                                  level=2)))
-    cb_builder.row(types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_restocking"),
-                                              callback_data=create_admin_callback(
-                                                  level=3,
-                                                  args_to_action="new")))
-    cb_builder.row(types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_stock"),
-                                              callback_data=create_admin_callback(
-                                                  level=3,
-                                                  args_to_action="stock")))
+    cb_builder.button(text=Localizator.get_text_from_key("admin_send_everyone"),
+                      callback_data=create_admin_callback(
+                          level=2))
+    cb_builder.button(text=Localizator.get_text_from_key("admin_restocking"),
+                      callback_data=create_admin_callback(
+                          level=3,
+                          args_to_action="new"))
+    cb_builder.button(text=Localizator.get_text_from_key("admin_stock"),
+                      callback_data=create_admin_callback(
+                          level=3,
+                          args_to_action="stock"))
     cb_builder.row(AdminConstants.back_to_main_button)
+    cb_builder.adjust(1)
     await callback.message.edit_text(Localizator.get_text_from_key("admin_announcements"),
                                      reply_markup=cb_builder.as_markup())
 
@@ -206,15 +207,12 @@ async def inventory_management(callback: CallbackQuery):
 
 async def add_items(callback: CallbackQuery):
     keyboard_builder = InlineKeyboardBuilder()
-    keyboard_builder.add(
-        types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_add_items_json"),
-                                   callback_data=create_admin_callback(level=7, args_to_action="JSON")))
-    keyboard_builder.add(
-        types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_add_items_txt"),
-                                   callback_data=create_admin_callback(level=7, args_to_action="TXT")))
-    keyboard_builder.add(
-        types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_add_items_menu"),
-                                   callback_data=create_admin_callback(level=7, args_to_action="MENU")))
+    keyboard_builder.button(text=Localizator.get_text_from_key("admin_add_items_json"),
+                            callback_data=create_admin_callback(level=7, args_to_action="JSON"))
+    keyboard_builder.button(text=Localizator.get_text_from_key("admin_add_items_txt"),
+                            callback_data=create_admin_callback(level=7, args_to_action="TXT"))
+    keyboard_builder.button(text=Localizator.get_text_from_key("admin_add_items_menu"),
+                            callback_data=create_admin_callback(level=7, args_to_action="MENU"))
     keyboard_builder.adjust(2)
     keyboard_builder.row(AdminConstants.back_to_main_button)
     await callback.message.edit_text(text=Localizator.get_text_from_key("admin_add_items_msg"),
@@ -263,11 +261,10 @@ async def create_delete_entity_buttons(get_all_entities_function,
     entities = await get_all_entities_function
     delete_entity_builder = InlineKeyboardBuilder()
     for entity in entities:
-        delete_entity_callback = create_admin_callback(level=10,
-                                                       action=f"delete_{entity_name}",
-                                                       args_to_action=entity.id)
-        delete_entity_button = types.InlineKeyboardButton(text=entity.name, callback_data=delete_entity_callback)
-        delete_entity_builder.add(delete_entity_button)
+        delete_entity_builder.button(text=entity.name,
+                                     callback_data=create_admin_callback(level=10,
+                                                                         action=f"delete_{entity_name}",
+                                                                         args_to_action=entity.id))
     delete_entity_builder.adjust(1)
     return delete_entity_builder
 
@@ -292,15 +289,13 @@ async def delete_confirmation(callback: CallbackQuery):
     action = unpacked_callback.action
     args_to_action = unpacked_callback.args_to_action
     delete_markup = InlineKeyboardBuilder()
-    confirm_callback = create_admin_callback(level=11,
-                                             action=f"confirmed_{action}",
-                                             args_to_action=args_to_action)
-    confirm_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_confirm"),
-                                                callback_data=confirm_callback)
-    decline_callback = create_admin_callback(level=-1)
-    decline_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_decline"),
-                                                callback_data=decline_callback)
-    delete_markup.add(confirm_button, decline_button)
+    delete_markup.button(
+        text=Localizator.get_text_from_key("admin_confirm"),
+        callback_data=create_admin_callback(level=11,
+                                            action=f"confirmed_{action}",
+                                            args_to_action=args_to_action)
+    )
+    delete_markup.add(AdminConstants.decline_button)
     entity_to_delete = action.split('_')[-1]
     session = await get_db_session()
     if entity_to_delete == "category":
@@ -468,6 +463,7 @@ async def refund_confirmation(callback: CallbackQuery):
                 quantity=refund_data.quantity,
                 subcategory=refund_data.subcategory,
                 total_price=refund_data.total_price), reply_markup=confirmation_builder.as_markup())
+    await close_db_session(session)
 
 
 async def pick_statistics_entity(callback: CallbackQuery):
@@ -491,19 +487,16 @@ async def pick_statistics_entity(callback: CallbackQuery):
 
 async def pick_statistics_timedelta(callback: CallbackQuery):
     unpacked_callback = AdminCallback.unpack(callback.data)
-    one_day_cb = unpacked_callback.model_copy(
-        update={"args_to_action": '1', 'level': unpacked_callback.level + 1}).pack()
-    seven_days_cb = unpacked_callback.model_copy(
-        update={"args_to_action": '7', 'level': unpacked_callback.level + 1}).pack()
-    one_month_cb = unpacked_callback.model_copy(
-        update={"args_to_action": '30', 'level': unpacked_callback.level + 1}).pack()
     timedelta_buttons_builder = InlineKeyboardBuilder()
-    timedelta_buttons_builder.add(
-        types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_1_day"), callback_data=one_day_cb))
-    timedelta_buttons_builder.add(
-        types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_7_day"), callback_data=seven_days_cb))
-    timedelta_buttons_builder.add(
-        types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_30_day"), callback_data=one_month_cb))
+    timedelta_buttons_builder.button(text=Localizator.get_text_from_key("admin_1_day"),
+                                     callback_data=unpacked_callback.model_copy(
+                                         update={"args_to_action": '1', 'level': unpacked_callback.level + 1}).pack())
+    timedelta_buttons_builder.button(text=Localizator.get_text_from_key("admin_7_day"),
+                                     callback_data=unpacked_callback.model_copy(
+                                         update={"args_to_action": '7', 'level': unpacked_callback.level + 1}).pack())
+    timedelta_buttons_builder.button(text=Localizator.get_text_from_key("admin_30_day"),
+                                     callback_data=unpacked_callback.model_copy(
+                                         update={"args_to_action": '30', 'level': unpacked_callback.level + 1}).pack())
     timedelta_buttons_builder.row(await AdminConstants.get_back_button(unpacked_callback))
     await callback.message.edit_text(text=Localizator.get_text_from_key("admin_statistics_timedelta"),
                                      reply_markup=timedelta_buttons_builder.as_markup())
@@ -518,9 +511,8 @@ async def get_statistics(callback: CallbackQuery):
                                                                           unpacked_callback.page, session)
         for user in users:
             if user.telegram_username:
-                user_button = types.InlineKeyboardButton(text=user.telegram_username,
-                                                         url=f"t.me/{user.telegram_username}")
-                statistics_keyboard_builder.add(user_button)
+                statistics_keyboard_builder.button(text=user.telegram_username,
+                                                   url=f"t.me/{user.telegram_username}")
         statistics_keyboard_builder.adjust(1)
         statistics_keyboard_builder = await add_pagination_buttons(statistics_keyboard_builder, callback.data,
                                                                    UserService.get_max_page_for_users_by_timedelta(

@@ -45,6 +45,7 @@ class UserService:
             ltc_address=crypto_addresses['ltc'],
             trx_address=crypto_addresses['trx'],
             eth_address=crypto_addresses['eth'],
+            sol_address=crypto_addresses['sol'],
             seed=crypto_addr_gen.mnemonic_str
         )
         session.add(new_user)
@@ -103,8 +104,9 @@ class UserService:
         user_addresses = await session_execute(stmt, session)
         user_addresses = user_addresses.scalar()
         user_addresses = [user_addresses.btc_address, user_addresses.ltc_address,
-                          user_addresses.trx_address, user_addresses.eth_address]
-        keys = ["btc_address", "ltc_address", "trx_address", "eth_address"]
+                          user_addresses.trx_address, user_addresses.eth_address,
+                          user_addresses.sol_address]
+        keys = ["btc_address", "ltc_address", "trx_address", "eth_address", "sol_address"]
         user_addresses = dict(zip(keys, user_addresses))
         return user_addresses
 
@@ -117,6 +119,7 @@ class UserService:
         balance_fields_map = {
             "btc_deposit": "btc_balance",
             "ltc_deposit": "ltc_balance",
+            "sol_deposit": "sol_balance",
             "usdt_trc20_deposit": "usdt_trc20_balance",
             "usdd_trc20_deposit": "usdd_trc20_balance",
             "usdd_erc20_deposit": "usdd_erc20_balance",

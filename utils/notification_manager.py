@@ -59,7 +59,8 @@ class NotificationManager:
             "TRC": user.trx_address,
             "ERC": user.eth_address,
             "BTC": user.btc_address,
-            "LTC": user.ltc_address
+            "LTC": user.ltc_address,
+            "SOL": user.sol_address
         }
         crypto_key = list(merged_crypto_balances.keys())[0]
         addr = next((address_map[key] for key in address_map if key in crypto_key), "")
