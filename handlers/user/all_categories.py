@@ -4,18 +4,15 @@ from aiogram import types, Router, F
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+
 from handlers.common.common import add_pagination_buttons
 from models.cartItem import CartItem
 from services.cart import CartService
-from services.buy import BuyService
-from services.buyItem import BuyItemService
 from services.category import CategoryService
 from services.item import ItemService
 from services.subcategory import SubcategoryService
-from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator, BotEntity
-from utils.notification_manager import NotificationManager
 
 
 class AllCategoriesCallback(CallbackData, prefix="all_categories"):
@@ -173,7 +170,7 @@ async def add_to_cart_confirmation(callback: CallbackQuery):
                                                              total_price=total_price,
                                                              quantity=quantity,
                                                              confirmation=True)
-    decline_button_callback = create_callback_all_categories(level=current_level + 1,
+    decline_button_callback = create_callback_all_categories(level=1,
                                                              category_id=category_id,
                                                              subcategory_id=subcategory_id,
                                                              price=price,
@@ -213,7 +210,7 @@ async def add_to_cart(callback: AllCategoriesCallback):
                          subcategory_id=unpacked_callback.subcategory_id, subcategory_name=subcategory.name,
                          quantity=unpacked_callback.quantity, a_piece_price=unpacked_callback.price)
     await CartService.add_to_cart(cart_item, cart)
-    await callback.message.edit_text(text=Localizator.get_text_from_key("item_added_to_cart"))
+    await callback.message.edit_text(text=Localizator.get_text(BotEntity.USER, "item_added_to_cart"))
 
 
 @all_categories_router.callback_query(AllCategoriesCallback.filter(), IsUserExistFilter())

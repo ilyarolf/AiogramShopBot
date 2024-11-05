@@ -6,6 +6,7 @@ import config
 from config import SUPPORT_LINK
 import logging
 from bot import dp, main
+from handlers.user.cart import cart_router
 from multibot import main as main_multibot
 from handlers.admin.admin import admin_router
 from handlers.user.all_categories import all_categories_router
@@ -25,9 +26,8 @@ async def start(message: types.message):
     faq_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "faq"))
     help_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "help"))
     admin_menu_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.ADMIN, "menu"))
-    checkout_button = types.KeyboardButton(text=Localizator.get_text_from_key("checkout"))
     # TODO: insert item count here, these code lines are not correct yet
-    cart_button = types.KeyboardButton(text=Localizator.get_text_from_key("cart"))
+    cart_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "cart"))
 
     user_telegram_id = message.chat.id
     user_telegram_username = message.from_user.username
@@ -62,6 +62,7 @@ async def support(message: types.message):
 main_router.include_router(admin_router)
 main_router.include_router(my_profile_router)
 main_router.include_router(all_categories_router)
+main_router.include_router(cart_router)
 
 if __name__ == '__main__':
     if config.MULTIBOT:
