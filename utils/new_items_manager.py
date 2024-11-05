@@ -6,7 +6,7 @@ from services.item import ItemService
 from json import load
 from pathlib import Path
 from services.subcategory import SubcategoryService
-from utils.localizator import Localizator
+from utils.localizator import Localizator, BotEntity
 
 
 class NewItemsManager:
@@ -76,13 +76,14 @@ class NewItemsManager:
             filtered_items[category.name][item.subcategory].append(item)
         message = ""
         if is_update is True:
-            message += Localizator.get_text_from_key("new_items_message_update")
+            message += Localizator.get_text(BotEntity.ADMIN, "restocking_message_header")
         elif is_update is False:
-            message += Localizator.get_text_from_key("stock_items_message")
+            message += Localizator.get_text(BotEntity.ADMIN, "current_stock_header")
         for category, subcategory_item_dict in filtered_items.items():
-            message += Localizator.get_text_from_key("new_items_message_category").format(category=category)
+            message += Localizator.get_text(BotEntity.ADMIN, "restocking_message_category").format(
+                category=category)
             for subcategory, item in subcategory_item_dict.items():
-                message += Localizator.get_text_from_key("subcategory_button").format(
+                message += Localizator.get_text(BotEntity.USER, "subcategory_button").format(
                     subcategory_name=subcategory.name,
                     available_quantity=len(item),
                     subcategory_price=item[0].price) + "\n"

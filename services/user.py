@@ -6,7 +6,7 @@ import config
 from db import session_execute, session_commit, get_db_session
 from models.user import User
 from utils.CryptoAddressGenerator import CryptoAddressGenerator
-from utils.localizator import Localizator
+from utils.localizator import Localizator, BotEntity
 
 
 class UserService:
@@ -39,7 +39,7 @@ class UserService:
     @staticmethod
     async def update_username(telegram_id: int, telegram_username: str):
         async with get_db_session() as session:
-            user_from_db = await UserService.get_by_tgid(telegram_id, session)
+            user_from_db = await UserService.get_by_tgid(telegram_id)
             if user_from_db and user_from_db.telegram_username != telegram_username:
                 stmt = update(User).where(User.telegram_id == telegram_id).values(telegram_username=telegram_username)
                 await session_execute(stmt, session)
@@ -240,12 +240,14 @@ class UserService:
         balance_value = state_data['balance_value']
         user = await UserService.get_user_entity(user_entity)
         if user is None:
-            return Localizator.get_text_from_key("credit_management_user_not_found")
+            return Localizator.get_text(BotEntity.ADMIN, "credit_management_user_not_found")
         elif operation == "plus":
             await UserService.update_top_up_amount(user.telegram_id, float(balance_value))
-            return Localizator.get_text_from_key("credit_management_added_success").format(amount=balance_value,
-                                                                                           telegram_id=user.telegram_id)
+            return Localizator.get_text(BotEntity.ADMIN, "credit_management_added_success").format(
+                amount=balance_value,
+                telegram_id=user.telegram_id)
         elif operation == "minus":
             await UserService.update_consume_records(user.telegram_id, float(balance_value))
-            return Localizator.get_text_from_key("credit_management_reduced_success").format(amount=balance_value,
-                                                                                             telegram_id=user.telegram_id)
+            return Localizator.get_text(BotEntity.ADMIN, "credit_management_reduced_success").format(
+                amount=balance_value,
+                telegram_id=user.telegram_id)

@@ -12,16 +12,17 @@ from services.category import CategoryService
 from services.user import UserService
 from config import ADMIN_ID_LIST
 from models.user import User
-from utils.localizator import Localizator
+from utils.localizator import Localizator, BotEntity
 from utils.other_sql import RefundBuyDTO
 
 
 class NotificationManager:
     @staticmethod
     async def send_refund_message(refund_data: RefundBuyDTO, bot):
-        message = Localizator.get_text_from_key("user_notification_refund").format(total_price=refund_data.total_price,
-                                                                                   quantity=refund_data.quantity,
-                                                                                   subcategory=refund_data.subcategory)
+        message = Localizator.get_text(BotEntity.USER, "refund_notification").format(
+            total_price=refund_data.total_price,
+            quantity=refund_data.quantity,
+            subcategory=refund_data.subcategory)
         try:
             await bot.send_message(refund_data.telegram_id, f"<b>{message}</b>")
         except Exception as e:
@@ -62,23 +63,23 @@ class NotificationManager:
         crypto_key = list(merged_crypto_balances.keys())[0]
         addr = next((address_map[key] for key in address_map if key in crypto_key), "")
         if user.telegram_username:
-            message = Localizator.get_text_from_key("admin_notification_new_deposit_username").format(
+            message = Localizator.get_text(BotEntity.ADMIN, "notification_new_deposit_username").format(
                 username=user.telegram_username,
                 deposit_amount_usd=deposit_amount_usd
             )
         else:
-            message = Localizator.get_text_from_key("admin_notification_new_deposit_id").format(
+            message = Localizator.get_text(BotEntity.ADMIN, "notification_new_deposit_id").format(
                 telegram_id=telegram_id,
                 deposit_amount_usd=deposit_amount_usd
             )
         for crypto_name, value in merged_crypto_balances.items():
             if value > 0:
-                message += Localizator.get_text_from_key("crypto_deposit_notification_part").format(
+                message += Localizator.get_text(BotEntity.ADMIN, "notification_crypto_deposit").format(
                     value=value,
                     crypto_name=crypto_name,
                     crypto_address=addr
                 )
-        message += Localizator.get_text_from_key("seed_notification_part").format(seed=user.seed)
+        message += Localizator.get_text(BotEntity.ADMIN, "notification_seed").format(seed=user.seed)
         await NotificationManager.send_to_admins(message, user_button, bot)
 
     @staticmethod
