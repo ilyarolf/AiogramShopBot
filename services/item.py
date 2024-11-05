@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 import config
-from db import session_execute, session_commit
+from db import session_execute, session_commit, get_db_session
 from models.buyItem import BuyItem
 from models.category import Category
 from models.item import Item
@@ -92,22 +92,25 @@ class ItemService:
         return price.scalar()
 
     @staticmethod
-    async def set_items_not_new(session: Union[AsyncSession, Session]):
-        stmt = update(Item).where(Item.is_new == 1).values(is_new=0)
-        await session_execute(stmt, session)
-        await session_commit(session)
+    async def set_items_not_new():
+        async with get_db_session() as session:
+            stmt = update(Item).where(Item.is_new == 1).values(is_new=0)
+            await session_execute(stmt, session)
+            await session_commit(session)
 
     @staticmethod
-    async def delete_unsold_with_category_id(category_id: int, session: Union[AsyncSession, Session]):
-        stmt = delete(Item).where(Item.category_id == category_id, Item.is_sold == 0)
-        await session_execute(stmt, session)
-        await session_commit(session)
+    async def delete_unsold_with_category_id(category_id: int):
+        async with get_db_session() as session:
+            stmt = delete(Item).where(Item.category_id == category_id, Item.is_sold == 0)
+            await session_execute(stmt, session)
+            await session_commit(session)
 
     @staticmethod
-    async def delete_with_subcategory_id(subcategory_id, session: Union[AsyncSession, Session]):
-        stmt = delete(Item).where(Item.subcategory_id == subcategory_id, Item.is_sold == 0)
-        await session_execute(stmt, session)
-        await session_commit(session)
+    async def delete_with_subcategory_id(subcategory_id):
+        async with get_db_session() as session:
+            stmt = delete(Item).where(Item.subcategory_id == subcategory_id, Item.is_sold == 0)
+            await session_execute(stmt, session)
+            await session_commit(session)
 
     @staticmethod
     async def add_many(new_items: list[Item], session: Union[AsyncSession, Session]):
