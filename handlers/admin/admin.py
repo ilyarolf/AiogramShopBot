@@ -81,11 +81,10 @@ async def admin(message: Union[Message, CallbackQuery]):
                               callback_data=create_admin_callback(level=22))
     admin_menu_builder.adjust(2)
     if isinstance(message, Message):
-        await message.answer(Localizator.get_text_from_key("admin_menu"), parse_mode=ParseMode.HTML,
-                             reply_markup=admin_menu_builder.as_markup())
+        await message.answer(Localizator.get_text_from_key("admin_menu"), reply_markup=admin_menu_builder.as_markup())
     elif isinstance(message, CallbackQuery):
         callback = message
-        await callback.message.edit_text(Localizator.get_text_from_key("admin_menu"), parse_mode=ParseMode.HTML,
+        await callback.message.edit_text(Localizator.get_text_from_key("admin_menu"),
                                          reply_markup=admin_menu_builder.as_markup())
 
 
@@ -119,13 +118,12 @@ async def announcements(callback: CallbackQuery):
                                                   args_to_action="stock")))
     cb_builder.row(AdminConstants.back_to_main_button)
     await callback.message.edit_text(Localizator.get_text_from_key("admin_announcements"),
-                                     parse_mode=ParseMode.HTML, reply_markup=cb_builder.as_markup())
+                                     reply_markup=cb_builder.as_markup())
 
 
 async def send_everyone(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
-    await callback.message.edit_text(Localizator.get_text_from_key("admin_receive_msg_request"),
-                                     parse_mode=ParseMode.HTML)
+    await callback.message.edit_text(Localizator.get_text_from_key("admin_receive_msg_request"))
     await state.set_state(AdminStates.message_to_send)
 
 
@@ -143,12 +141,10 @@ async def send_generated_message(callback: CallbackQuery):
     await callback.answer()
     if unpacked_cb.args_to_action == "new":
         message = await NewItemsManager.generate_restocking_message()
-        await callback.message.answer(message, parse_mode=ParseMode.HTML,
-                                      reply_markup=AdminConstants.confirmation_builder.as_markup())
+        await callback.message.answer(message, reply_markup=AdminConstants.confirmation_builder.as_markup())
     else:
         message = await NewItemsManager.generate_in_stock_message()
-        await callback.message.answer(message, parse_mode=ParseMode.HTML,
-                                      reply_markup=AdminConstants.confirmation_builder.as_markup())
+        await callback.message.answer(message, reply_markup=AdminConstants.confirmation_builder.as_markup())
 
 
 async def confirm_and_send(callback: CallbackQuery):
@@ -184,16 +180,15 @@ async def confirm_and_send(callback: CallbackQuery):
                                                                                     users_count=users_count)
         if is_caption:
             await callback.message.delete()
-            await callback.message.answer(text=message_text, parse_mode=ParseMode.HTML)
+            await callback.message.answer(text=message_text)
         elif callback.message.text:
             await callback.message.edit_text(
-                text=message_text,
-                parse_mode=ParseMode.HTML)
+                text=message_text)
 
 
 async def decline_action(callback: CallbackQuery):
     await callback.message.delete()
-    await callback.message.answer(text=Localizator.get_text_from_key("admin_declined"), parse_mode=ParseMode.HTML)
+    await callback.message.answer(text=Localizator.get_text_from_key("admin_declined"))
 
 
 async def inventory_management(callback: CallbackQuery):
@@ -223,7 +218,7 @@ async def add_items(callback: CallbackQuery):
     keyboard_builder.adjust(2)
     keyboard_builder.row(AdminConstants.back_to_main_button)
     await callback.message.edit_text(text=Localizator.get_text_from_key("admin_add_items_msg"),
-                                     parse_mode=ParseMode.HTML, reply_markup=keyboard_builder.as_markup())
+                                     reply_markup=keyboard_builder.as_markup())
 
 
 @admin_router.message(AdminIdFilter(), F.document | F.text, StateFilter(AdminStates.new_items_file))
@@ -237,20 +232,17 @@ async def receive_new_items_file(message: types.message, state: FSMContext):
         adding_result = await NewItemsManager.add(file_name)
         if isinstance(adding_result, BaseException):
             await message.answer(
-                text=Localizator.get_text_from_key("admin_add_items_err").format(adding_result=adding_result),
-                parse_mode=ParseMode.HTML)
+                text=Localizator.get_text_from_key("admin_add_items_err").format(adding_result=adding_result))
             await state.clear()
         elif type(adding_result) is int:
             await message.answer(
-                text=Localizator.get_text_from_key("admin_add_items_success").format(adding_result=adding_result),
-                parse_mode=ParseMode.HTML)
+                text=Localizator.get_text_from_key("admin_add_items_success").format(adding_result=adding_result))
             await state.clear()
     elif message.text.lower() == "cancel":
         await state.clear()
-        await message.answer(Localizator.get_text_from_key("admin_add_items_cancel"), parse_mode=ParseMode.HTML)
+        await message.answer(Localizator.get_text_from_key("admin_add_items_cancel"))
     else:
-        await message.answer(text=Localizator.get_text_from_key("admin_add_items_msg"),
-                             parse_mode=ParseMode.HTML)
+        await message.answer(text=Localizator.get_text_from_key("admin_add_items_msg"))
 
 
 async def delete_category(callback: CallbackQuery):
@@ -263,7 +255,6 @@ async def delete_category(callback: CallbackQuery):
                                                            AdminCallback.unpack,
                                                            AdminConstants.back_to_main_button)
     await callback.message.edit_text(text=Localizator.get_text_from_key("admin_delete_category"),
-                                     parse_mode=ParseMode.HTML,
                                      reply_markup=delete_category_builder.as_markup())
 
 
@@ -293,7 +284,6 @@ async def delete_subcategory(callback: CallbackQuery):
                                                               AdminConstants.back_to_main_button)
     await close_db_session(session)
     await callback.message.edit_text(text=Localizator.get_text_from_key("admin_delete_subcategory"),
-                                     parse_mode=ParseMode.HTML,
                                      reply_markup=delete_subcategory_builder.as_markup())
 
 
@@ -319,7 +309,6 @@ async def delete_confirmation(callback: CallbackQuery):
         await callback.message.edit_text(
             text=Localizator.get_text_from_key("admin_delete_category_confirmation").format(
                 category_name=category.name),
-            parse_mode=ParseMode.HTML,
             reply_markup=delete_markup.as_markup())
     elif entity_to_delete == "subcategory":
         subcategory_id = args_to_action
@@ -327,7 +316,6 @@ async def delete_confirmation(callback: CallbackQuery):
         await callback.message.edit_text(
             text=Localizator.get_text_from_key("admin_delete_subcategory_confirmation").format(
                 subcategory_name=subcategory.name),
-            parse_mode=ParseMode.HTML,
             reply_markup=delete_markup.as_markup())
 
 
@@ -344,16 +332,14 @@ async def confirm_and_delete(callback: CallbackQuery):
         message_text = Localizator.get_text_from_key("admin_successfully_deleted").format(entity_name=category.name,
                                                                                           entity_to_delete=entity_to_delete)
         await ItemService.delete_unsold_with_category_id(args_to_action, session)
-        await callback.message.edit_text(text=message_text,
-                                         parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
+        await callback.message.edit_text(text=message_text, reply_markup=back_to_main_builder.as_markup())
     elif entity_to_delete == "subcategory":
         subcategory = await SubcategoryService.get_by_primary_key(args_to_action, session)
         message_text = Localizator.get_text_from_key("admin_successfully_deleted").format(entity_name=subcategory.name,
                                                                                           entity_to_delete=entity_to_delete)
         await ItemService.delete_with_subcategory_id(args_to_action, session)
         await SubcategoryService.delete_if_not_used(args_to_action, session)
-        await callback.message.edit_text(text=message_text,
-                                         parse_mode=ParseMode.HTML, reply_markup=back_to_main_builder.as_markup())
+        await callback.message.edit_text(text=message_text, reply_markup=back_to_main_builder.as_markup())
     await close_db_session(session)
 
 
@@ -450,8 +436,7 @@ async def send_refund_menu(callback: CallbackQuery):
                                                   AdminCallback.unpack, AdminConstants.back_to_main_button)
     await close_db_session(session)
     await callback.message.edit_text(text=Localizator.get_text_from_key("admin_refund_menu"),
-                                     reply_markup=refund_builder.as_markup(),
-                                     parse_mode=ParseMode.HTML)
+                                     reply_markup=refund_builder.as_markup())
 
 
 async def refund_confirmation(callback: CallbackQuery):
@@ -475,16 +460,14 @@ async def refund_confirmation(callback: CallbackQuery):
                 quantity=refund_data.quantity,
                 subcategory=refund_data.subcategory,
                 total_price=refund_data.total_price),
-            parse_mode=ParseMode.HTML,
             reply_markup=confirmation_builder.as_markup())
     else:
         await callback.message.edit_text(
-            text=Localizator.get_text_from_key("admin_refund_confirmation_by_username").format(
+            text=Localizator.get_text_from_key("admin_refund_confirmation_by_tgid").format(
                 telegram_id=refund_data.telegram_id,
                 quantity=refund_data.quantity,
                 subcategory=refund_data.subcategory,
-                total_price=refund_data.total_price), parse_mode=ParseMode.HTML,
-            reply_markup=confirmation_builder.as_markup())
+                total_price=refund_data.total_price), reply_markup=confirmation_builder.as_markup())
 
 
 async def pick_statistics_entity(callback: CallbackQuery):
@@ -503,8 +486,7 @@ async def pick_statistics_entity(callback: CallbackQuery):
                                                    callback_data=create_admin_callback(level=21)))
     buttons_builder.row(AdminConstants.back_to_main_button)
     await callback.message.edit_text(text=Localizator.get_text_from_key("admin_pick_statistics_entity"),
-                                     reply_markup=buttons_builder.as_markup(),
-                                     parse_mode=ParseMode.HTML)
+                                     reply_markup=buttons_builder.as_markup())
 
 
 async def pick_statistics_timedelta(callback: CallbackQuery):
@@ -524,7 +506,7 @@ async def pick_statistics_timedelta(callback: CallbackQuery):
         types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_30_day"), callback_data=one_month_cb))
     timedelta_buttons_builder.row(await AdminConstants.get_back_button(unpacked_callback))
     await callback.message.edit_text(text=Localizator.get_text_from_key("admin_statistics_timedelta"),
-                                     reply_markup=timedelta_buttons_builder.as_markup(), parse_mode=ParseMode.HTML)
+                                     reply_markup=timedelta_buttons_builder.as_markup())
 
 
 async def get_statistics(callback: CallbackQuery):
@@ -549,7 +531,7 @@ async def get_statistics(callback: CallbackQuery):
         await callback.message.edit_text(
             text=Localizator.get_text_from_key("admin_new_users_msg").format(users_count=users_count,
                                                                              timedelta=unpacked_callback.args_to_action),
-            reply_markup=statistics_keyboard_builder.as_markup(), parse_mode=ParseMode.HTML)
+            reply_markup=statistics_keyboard_builder.as_markup())
     elif unpacked_callback.action == "buys":
         back_button = await AdminConstants.get_back_button(unpacked_callback)
         buttons = [back_button,
@@ -566,8 +548,7 @@ async def get_statistics(callback: CallbackQuery):
                 timedelta=unpacked_callback.args_to_action,
                 total_profit=total_profit, items_sold=items_sold,
                 buys_count=len(buys)),
-            reply_markup=statistics_keyboard_builder.as_markup(),
-            parse_mode=ParseMode.HTML)
+            reply_markup=statistics_keyboard_builder.as_markup())
     elif unpacked_callback.action == "deposits":
         back_button = await AdminConstants.get_back_button(unpacked_callback)
         buttons = [back_button,
@@ -597,8 +578,7 @@ async def get_statistics(callback: CallbackQuery):
                 timedelta=unpacked_callback.args_to_action, deposits_count=len(deposits),
                 btc_amount=btc_amount, ltc_amount=ltc_amount,
                 sol_amount=sol_amount, usd_amount="{:.2f}".format(usd_amount)),
-            reply_markup=statistics_keyboard_builder.as_markup(),
-            parse_mode=ParseMode.HTML)
+            reply_markup=statistics_keyboard_builder.as_markup())
 
 
 async def make_refund(callback: CallbackQuery):
@@ -618,15 +598,14 @@ async def make_refund(callback: CallbackQuery):
                     total_price=refund_data.total_price,
                     telegram_username=refund_data.telegram_username,
                     quantity=refund_data.quantity,
-                    subcategory=refund_data.subcategory),
-                parse_mode=ParseMode.HTML)
+                    subcategory=refund_data.subcategory))
         else:
             await callback.message.edit_text(
                 text=Localizator.get_text_from_key("admin_successfully_refunded_with_tgid").format(
                     total_price=refund_data.total_price,
                     telegram_id=refund_data.telegram_id,
                     quantity=refund_data.quantity,
-                    subcategory=refund_data.subcategory), parse_mode=ParseMode.HTML)
+                    subcategory=refund_data.subcategory))
 
 
 async def send_db_file(callback: CallbackQuery):
@@ -649,7 +628,7 @@ async def send_withdraw_crypto_menu(callback: CallbackQuery):
     cb_builder = InlineKeyboardBuilder()
     cb_builder.row(AdminConstants.back_to_main_button)
     await callback.message.edit_text(Localizator.get_text_from_key('choose_crypto_to_withdraw'),
-                                     parse_mode=ParseMode.HTML, reply_markup=cb_builder.as_markup())
+                                     reply_markup=cb_builder.as_markup())
 
 
 async def add_items_menu(callback: CallbackQuery, state: FSMContext):
