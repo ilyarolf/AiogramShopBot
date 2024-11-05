@@ -53,8 +53,7 @@ async def start(message: types.message):
 
 @main_router.message(F.text == Localizator.get_text_from_key("faq"), IsUserExistFilter())
 async def faq(message: types.message):
-    faq_string = Localizator.get_text_from_key("faq_string")
-    await message.answer(faq_string, parse_mode='html')
+    await message.answer(Localizator.get_text_from_key("faq_string"))
 
 
 @main_router.message(F.text == Localizator.get_text_from_key("help"), IsUserExistFilter())

@@ -24,7 +24,7 @@ class NotificationManager:
                                                                                    quantity=refund_data.quantity,
                                                                                    subcategory=refund_data.subcategory)
         try:
-            await bot.send_message(refund_data.telegram_id, f"<b>{message}</b>", parse_mode="html")
+            await bot.send_message(refund_data.telegram_id, f"<b>{message}</b>")
         except Exception as e:
             logging.error(e)
 
@@ -32,7 +32,7 @@ class NotificationManager:
     async def send_to_admins(message: str, reply_markup: types.InlineKeyboardMarkup, bot):
         for admin_id in ADMIN_ID_LIST:
             try:
-                await bot.send_message(admin_id, f"<b>{message}</b>", parse_mode='html', reply_markup=reply_markup)
+                await bot.send_message(admin_id, f"<b>{message}</b>", reply_markup=reply_markup)
             except Exception as e:
                 logging.error(e)
 
