@@ -1,11 +1,9 @@
 from typing import Union
 
 from aiogram import types, Router, F
-from aiogram.enums import ParseMode
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from db import get_db_session, close_db_session
 from handlers.common.common import add_pagination_buttons
 from services.buy import BuyService
 from services.buyItem import BuyItemService
@@ -51,50 +49,43 @@ async def all_categories_text_message(message: types.message):
 
 
 async def create_category_buttons(page: int):
-    session = await get_db_session()
-    categories = await CategoryService.get_unsold(page, session)
-    await close_db_session(session)
+    categories = await CategoryService.get_unsold(page)
     if categories:
         categories_builder = InlineKeyboardBuilder()
         for category in categories:
-            category_button_callback = create_callback_all_categories(level=1, category_id=category.id)
-            category_button = types.InlineKeyboardButton(text=category.name, callback_data=category_button_callback)
-            categories_builder.add(category_button)
+            categories_builder.button(text=category.name,
+                                      callback_data=create_callback_all_categories(level=1, category_id=category.id))
         categories_builder.adjust(2)
         return categories_builder
 
 
 async def create_subcategory_buttons(category_id: int, page: int = 0):
     current_level = 1
-    session = await get_db_session()
-    items = await ItemService.get_unsold_subcategories_by_category(category_id, page, session)
+    items = await ItemService.get_unsold_subcategories_by_category(category_id, page)
     subcategories_builder = InlineKeyboardBuilder()
     for item in items:
-        subcategory_price = await ItemService.get_price_by_subcategory(item.subcategory_id, category_id, session)
-        available_quantity = await ItemService.get_available_quantity(item.subcategory_id, category_id, session)
-        await close_db_session(session)
+        subcategory_price = await ItemService.get_price_by_subcategory(item.subcategory_id, category_id)
+        available_quantity = await ItemService.get_available_quantity(item.subcategory_id, category_id)
         subcategory_inline_button = create_callback_all_categories(level=current_level + 1,
                                                                    category_id=category_id,
                                                                    subcategory_id=item.subcategory_id,
                                                                    price=subcategory_price)
-        subcategories_builder.add(
-            types.InlineKeyboardButton(
-                text=Localizator.get_text_from_key("subcategory_button").format(subcategory_name=item.subcategory.name,
-                                                                                subcategory_price=subcategory_price,
-                                                                                available_quantity=available_quantity),
-                callback_data=subcategory_inline_button))
+        subcategories_builder.button(
+            text=Localizator.get_text_from_key("subcategory_button").format(subcategory_name=item.subcategory.name,
+                                                                            subcategory_price=subcategory_price,
+                                                                            available_quantity=available_quantity),
+            callback_data=subcategory_inline_button)
     subcategories_builder.adjust(1)
     return subcategories_builder
 
 
 async def all_categories(message: Union[Message, CallbackQuery]):
-    session = await get_db_session()
     if isinstance(message, Message):
         category_inline_buttons = await create_category_buttons(0)
         zero_level_callback = create_callback_all_categories(0)
         if category_inline_buttons:
             category_inline_buttons = await add_pagination_buttons(category_inline_buttons, zero_level_callback,
-                                                                   CategoryService.get_maximum_page(session),
+                                                                   CategoryService.get_maximum_page(),
                                                                    AllCategoriesCallback.unpack, None)
             await message.answer(Localizator.get_text_from_key("all_categories"),
                                  reply_markup=category_inline_buttons.as_markup())
@@ -106,13 +97,12 @@ async def all_categories(message: Union[Message, CallbackQuery]):
         category_inline_buttons = await create_category_buttons(unpacked_callback.page)
         if category_inline_buttons:
             category_inline_buttons = await add_pagination_buttons(category_inline_buttons, callback.data,
-                                                                   CategoryService.get_maximum_page(session),
+                                                                   CategoryService.get_maximum_page(),
                                                                    AllCategoriesCallback.unpack, None)
             await callback.message.edit_text(Localizator.get_text_from_key("all_categories"),
                                              reply_markup=category_inline_buttons.as_markup())
         else:
             await callback.message.edit_text(Localizator.get_text_from_key("no_categories"))
-    await close_db_session(session)
 
 
 async def show_subcategories_in_category(callback: CallbackQuery):
@@ -121,12 +111,10 @@ async def show_subcategories_in_category(callback: CallbackQuery):
     back_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("back_to_all_categories"),
                                              callback_data=create_callback_all_categories(
                                                  level=unpacked_callback.level - 1))
-    session = await get_db_session()
     subcategory_buttons = await add_pagination_buttons(subcategory_buttons, callback.data,
-                                                       ItemService.get_maximum_page(unpacked_callback.category_id, session),
+                                                       ItemService.get_maximum_page(unpacked_callback.category_id),
                                                        AllCategoriesCallback.unpack,
                                                        back_button)
-    await close_db_session(session)
     await callback.message.edit_text(Localizator.get_text_from_key("subcategories"),
                                      reply_markup=subcategory_buttons.as_markup())
 
@@ -137,24 +125,23 @@ async def select_quantity(callback: CallbackQuery):
     subcategory_id = unpacked_callback.subcategory_id
     category_id = unpacked_callback.category_id
     current_level = unpacked_callback.level
-    session = await get_db_session()
-    description = await ItemService.get_description(subcategory_id, category_id, session)
+    description = await ItemService.get_description(subcategory_id, category_id)
     count_builder = InlineKeyboardBuilder()
     for i in range(1, 11):
-        count_button_callback = create_callback_all_categories(level=current_level + 1, category_id=category_id,
-                                                               subcategory_id=subcategory_id, price=price,
-                                                               quantity=i, total_price=price * i)
-        count_button_inline = types.InlineKeyboardButton(text=str(i), callback_data=count_button_callback)
-        count_builder.add(count_button_inline)
+        count_builder.button(text=str(i), callback_data=create_callback_all_categories(level=current_level + 1,
+                                                                                       category_id=category_id,
+                                                                                       subcategory_id=subcategory_id,
+                                                                                       price=price,
+                                                                                       quantity=i,
+                                                                                       total_price=price * i))
+    count_builder.adjust(3)
     back_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("admin_back_button"),
                                              callback_data=create_callback_all_categories(level=current_level - 1,
                                                                                           category_id=category_id))
-    count_builder.add(back_button)
-    count_builder.adjust(3)
-    subcategory = await SubcategoryService.get_by_primary_key(subcategory_id, session)
-    category = await CategoryService.get_by_primary_key(category_id, session)
-    available_qty = await ItemService.get_available_quantity(subcategory_id, category_id, session)
-    await close_db_session(session)
+    count_builder.row(back_button)
+    subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
+    category = await CategoryService.get_by_primary_key(category_id)
+    available_qty = await ItemService.get_available_quantity(subcategory_id, category_id)
     await callback.message.edit_text(
         text=Localizator.get_text_from_key("select_quantity").format(category_name=category.name,
                                                                      subcategory_name=subcategory.name,
@@ -172,8 +159,7 @@ async def buy_confirmation(callback: CallbackQuery):
     category_id = unpacked_callback.category_id
     current_level = unpacked_callback.level
     quantity = unpacked_callback.quantity
-    session = await get_db_session()
-    description = await ItemService.get_description(subcategory_id, category_id, session)
+    description = await ItemService.get_description(subcategory_id, category_id)
     confirmation_builder = InlineKeyboardBuilder()
     confirm_button_callback = create_callback_all_categories(level=current_level + 1,
                                                              category_id=category_id,
@@ -200,9 +186,8 @@ async def buy_confirmation(callback: CallbackQuery):
                                                                                           price=price))
     confirmation_builder.add(confirmation_button, decline_button, back_button)
     confirmation_builder.adjust(2)
-    subcategory = await SubcategoryService.get_by_primary_key(subcategory_id, session)
-    category = await CategoryService.get_by_primary_key(category_id, session)
-    await close_db_session(session)
+    subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
+    category = await CategoryService.get_by_primary_key(category_id)
     await callback.message.edit_text(
         text=Localizator.get_text_from_key("buy_confirmation").format(category_name=category.name,
                                                                       subcategory_name=subcategory.name,
@@ -221,9 +206,8 @@ async def buy_processing(callback: CallbackQuery):
     category_id = unpacked_callback.category_id
     quantity = unpacked_callback.quantity
     telegram_id = callback.from_user.id
-    session = await get_db_session()
-    is_in_stock = await ItemService.get_available_quantity(subcategory_id, category_id, session) >= quantity
-    is_enough_money = await UserService.is_buy_possible(telegram_id, total_price, session)
+    is_in_stock = await ItemService.get_available_quantity(subcategory_id, category_id) >= quantity
+    is_enough_money = await UserService.is_buy_possible(telegram_id, total_price)
     back_to_main_builder = InlineKeyboardBuilder()
     back_to_main_callback = create_callback_all_categories(level=0)
     back_to_main_button = types.InlineKeyboardButton(text=Localizator.get_text_from_key("all_categories"),
@@ -231,14 +215,13 @@ async def buy_processing(callback: CallbackQuery):
     back_to_main_builder.add(back_to_main_button)
     bot = callback.bot
     if confirmation and is_in_stock and is_enough_money:
-        await UserService.update_consume_records(telegram_id, total_price, session)
-        sold_items = await ItemService.get_bought_items(category_id, subcategory_id, quantity, session)
+        await UserService.update_consume_records(telegram_id, total_price)
+        sold_items = await ItemService.get_bought_items(category_id, subcategory_id, quantity)
         message = await create_message_with_bought_items(sold_items)
-        user = await UserService.get_by_tgid(telegram_id, session)
-        new_buy_id = await BuyService.insert_new(user, quantity, total_price, session)
-        await BuyItemService.insert_many(sold_items, new_buy_id, session)
-        await ItemService.set_items_sold(sold_items, session)
-        await close_db_session(session)
+        user = await UserService.get_by_tgid(telegram_id)
+        new_buy_id = await BuyService.insert_new(user, quantity, total_price)
+        await BuyItemService.insert_many(sold_items, new_buy_id)
+        await ItemService.set_items_sold(sold_items)
         await callback.message.edit_text(text=message)
         await NotificationManager.new_buy(category_id, subcategory_id, quantity, total_price, user, bot)
     elif confirmation is False:
