@@ -315,6 +315,7 @@ After each purchase, you will receive a message in the format:
 * BTC - bc1q2kv89q8yvf068xxw3x65gzfag98l9wnrda3x56
 * LTC - ltc1q0tuvm5vqn9le5zmhvhtp7z9p2eu6yvv24ey686
 * TRX - THzRw8UpTsEYBEG5CCbsCVnJzopSHFHJm6
+* SOL - Avm7VAqPrwpHteXKfDTRFjpj6swEzjmj3a2KQvVDvugK
 * ETH - 0xB49D720DE2630fA4C813d5B4c025706E25cF74fe
 * USDT ERC20 - 0xB49D720DE2630fA4C813d5B4c025706E25cF74fe
 * USDT BEP20 - 0xB49D720DE2630fA4C813d5B4c025706E25cF74fe
