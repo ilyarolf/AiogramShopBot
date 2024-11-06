@@ -64,7 +64,6 @@ async def support(message: types.message):
 main_router.include_router(admin_router)
 main_router.include_router(my_profile_router)
 main_router.include_router(all_categories_router)
-#main_router.include_router(checkout_router)
 main_router.include_router(cart_router)
 
 if __name__ == '__main__':
