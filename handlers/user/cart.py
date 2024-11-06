@@ -9,7 +9,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 import config
 from handlers.common.common import add_pagination_buttons
 from handlers.user.all_categories import create_callback_all_categories
-from models.cart import CartItem
+from models.cartItem import CartItem
 from services.buy import BuyService
 from services.buyItem import BuyItemService
 from services.cart import CartService
@@ -32,22 +32,12 @@ class CartCallback(CallbackData, prefix="cart"):
     cart_grand_total: float
 
 
-def create_cart_callback(level: int = 0
-                         , page: int = 0
-                         , cart_id: int = -1
-                         , cart_item_id: int = -1
-                         , telegram_id: int = -1
-                         , delete_cart_item_confirmation = False
-                         , purchase_confirmation = False
-                         , cart_grand_total = 0.0):
-    return (CartCallback(level=level
-                         , page=page
-                         , cart_id=cart_id
-                         , cart_item_id=cart_item_id
-                         , telegram_id=telegram_id
-                         , delete_cart_item_confirmation=delete_cart_item_confirmation
-                         , purchase_confirmation=purchase_confirmation
-                         , cart_grand_total=cart_grand_total)
+def create_cart_callback(level: int = 0, page: int = 0, cart_id: int = -1, cart_item_id: int = -1,
+                         telegram_id: int = -1, delete_cart_item_confirmation = False, purchase_confirmation = False,
+                         cart_grand_total = 0.0):
+    return (CartCallback(level=level, page=page, cart_id=cart_id, cart_item_id=cart_item_id, telegram_id=telegram_id,
+                         delete_cart_item_confirmation=delete_cart_item_confirmation,
+                         purchase_confirmation=purchase_confirmation, cart_grand_total=cart_grand_total)
             .pack())
 
 

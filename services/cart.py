@@ -6,7 +6,8 @@ from sqlalchemy import select, update, delete
 from sqlalchemy.orm import joinedload
 
 from db import async_session_maker
-from models.cart import Cart, CartItem
+from models.cart import Cart
+from models.cartItem import CartItem
 from services.category import CategoryService
 
 

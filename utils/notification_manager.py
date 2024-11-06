@@ -5,7 +5,7 @@ from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import config
-from models.cart import CartItem
+from models.cartItem import CartItem
 from services.subcategory import SubcategoryService
 from services.user import UserService
 from config import ADMIN_ID_LIST
