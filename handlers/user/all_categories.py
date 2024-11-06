@@ -7,7 +7,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from handlers.common.common import add_pagination_buttons
-from models.cart import CartItem
+from models.cartItem import CartItem
 from services.cart import CartService
 from services.category import CategoryService
 from services.item import ItemService

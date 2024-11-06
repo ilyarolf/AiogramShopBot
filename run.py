@@ -32,8 +32,6 @@ async def start(message: types.message):
     checkout_button = types.KeyboardButton(text=Localizator.get_text_from_key("checkout"))
 
     # TODO: insert item count here, these code lines are not correct yet
-    #product_count = await CartService.get_all_cart_items_count(user_telegram_id)
-    #cart_button_label = Localizator.get_text_from_key("cart") + " (" + str(product_count) + ")"
     cart_button = types.KeyboardButton(text=Localizator.get_text_from_key("cart"))
 
     keyboard = [[all_categories_button, my_profile_button], [faq_button, help_button],

@@ -69,10 +69,6 @@ class SubcategoryService:
 
     @staticmethod
     async def get_name(subcategory_id) -> str:
-        async with async_session_maker() as session:
-            stmt = select(Subcategory.name).where(Subcategory.id == subcategory_id)
-            subcategory_name = await session.execute(stmt)
-            subcategory_name = subcategory_name.scalar()
-            if subcategory_name is None:
-                return ""
+        subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
+        subcategory_name = subcategory.name
         return subcategory_name
