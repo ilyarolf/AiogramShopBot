@@ -2,8 +2,7 @@ from dataclasses import dataclass
 from typing import Union
 
 from sqlalchemy import select
-
-from db import async_session_maker
+from db import session_execute, get_db_session
 from models.buy import Buy
 from models.buyItem import BuyItem
 from models.item import Item
@@ -35,7 +34,7 @@ class OtherSQLQuery:
 
     @staticmethod
     async def get_refund_data_single(buy_id: int):
-        async with async_session_maker() as session:
+        async with get_db_session() as session:
             stmt = select(
                 User.telegram_username,
                 User.telegram_id,
@@ -55,6 +54,6 @@ class OtherSQLQuery:
             ).where(
                 BuyItem.buy_id == buy_id
             ).limit(1)
-            buy_items = await session.execute(stmt)
+            buy_items = await session_execute(stmt, session)
             buy_items = buy_items.mappings().one()
             return RefundBuyDTO(**buy_items)

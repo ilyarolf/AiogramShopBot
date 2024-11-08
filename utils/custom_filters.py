@@ -14,4 +14,5 @@ class AdminIdFilter(BaseFilter):
 class IsUserExistFilter(BaseFilter):
 
     async def __call__(self, message: types.message):
-        return await UserService.is_exist(message.from_user.id)
+        is_exist = await UserService.is_exist(message.from_user.id)
+        return is_exist
