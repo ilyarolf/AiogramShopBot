@@ -1,18 +1,17 @@
 from datetime import datetime, timedelta
-
 import aiohttp
 import grequests
-
 import config
 from services.deposit import DepositService
 
 
 class CryptoApiManager:
-    def __init__(self, btc_address, ltc_address, trx_address, eth_address, user_id):
+    def __init__(self, btc_address, ltc_address, trx_address, eth_address, sol_address, user_id):
         self.btc_address = btc_address.strip()
         self.ltc_address = ltc_address.strip()
         self.trx_address = trx_address.strip()
         self.eth_address = eth_address.strip().lower()
+        self.sol_address = sol_address.strip()
         self.user_id = user_id
         self.min_timestamp = int((datetime.now() - timedelta(hours=24)).timestamp()) * 1000
 
@@ -47,6 +46,24 @@ class CryptoApiManager:
                     await DepositService.create(deposit['tx_hash'], self.user_id, "LTC", None,
                                                 deposit["value"], deposit['tx_output_n'])
                     deposits_sum += float(deposit['value']) / 100_000_000
+        return deposits_sum
+
+    async def get_sol_balance(self, deposits) -> float:
+        url = f"https://api.solana.fm/v0/accounts/{self.sol_address}/transfers"
+        data = await self.fetch_api_request(url)
+        deposits = [deposit.tx_id for deposit in deposits if deposit.network == "SOL"]
+        deposits_sum = 0.0
+        if len(data['results']) > 0:
+            for deposit in data['results']:
+                if deposit['transactionHash'] not in deposits:
+                    for transfer in deposit['data']:
+                        if transfer['action'] == 'transfer' and transfer['destination'] == self.sol_address and \
+                                transfer[
+                                    'status'] == 'Successful' and transfer['token'] == '':
+                            await DepositService.create(deposit['transactionHash'], self.user_id, "SOL", None,
+                                                        transfer['amount'],
+                                                        transfer['instructionIndex'])
+                            deposits_sum += float(transfer['amount'] / 1_000_000_000)
         return deposits_sum
 
     async def get_usdt_trc20_balance(self, deposits) -> float:
@@ -101,22 +118,13 @@ class CryptoApiManager:
                 deposits_sum += float(deposit['value']) / pow(10, 6)
         return deposits_sum
 
-    async def get_top_ups(self):
-        user_deposits = await DepositService.get_by_user_id(self.user_id)
-        balances = {"btc__deposit": await self.get_btc_balance(user_deposits),
-                    "ltc__deposit": await self.get_ltc_balance(user_deposits),
-                    "usdt_trc20_deposit": await self.get_usdt_trc20_balance(user_deposits),
-                    "usdd_trc20_deposit": await self.get_usdd_trc20_balance(user_deposits),
-                    "usdt_erc20_deposit": await self.get_usdt_erc20_balance(user_deposits),
-                    "usdc_erc20_deposit": await self.get_usdc_erc20_balance(user_deposits)}
-        return balances
-
     async def get_top_up_by_crypto_name(self, crypto_name: str):
         user_deposits = await DepositService.get_by_user_id(self.user_id)
 
         crypto_functions = {
             "BTC": ("btc_deposit", self.get_btc_balance),
             "LTC": ("ltc_deposit", self.get_ltc_balance),
+            "SOL": ("sol_deposit", self.get_sol_balance),
             "TRX_USDT": ("usdt_trc20_deposit", self.get_usdt_trc20_balance),
             "TRX_USDD": ("usdd_trc20_deposit", self.get_usdd_trc20_balance),
             "ETH_USDT": ("usdt_erc20_deposit", self.get_usdt_erc20_balance),
@@ -133,7 +141,6 @@ class CryptoApiManager:
 
         if deposit_name and balance_func:
             return {deposit_name: await balance_func(user_deposits)}
-
         raise ValueError(f"Unsupported crypto name: {crypto_name}")
 
     @staticmethod
@@ -145,8 +152,8 @@ class CryptoApiManager:
             "usdt": 'https://api.kraken.com/0/public/Ticker?pair=USDTUSD',
             "usdc": "https://api.kraken.com/0/public/Ticker?pair=USDCUSD",
             "ltc": 'https://api.kraken.com/0/public/Ticker?pair=LTCUSD',
-            "eth": 'https://api.kraken.com/0/public/Ticker?pair=ETHUSD',
-            "trx": "https://api.kraken.com/0/public/Ticker?pair=TRXUSD"
+            "sol": "https://api.kraken.com/0/public/Ticker?pair=SOLUSD"
+
         }
         responses = (grequests.get(url) for url in urls.values())
         datas = grequests.map(responses)
