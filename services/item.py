@@ -9,7 +9,6 @@ from models.subcategory import Subcategory
 
 
 class ItemService:
-    items_per_page = config.PAGE_ENTRIES
 
     @staticmethod
     async def get_by_primary_key(item_id: int) -> Item:
