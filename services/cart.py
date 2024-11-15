@@ -63,13 +63,13 @@ class CartService:
                 quantity_update_stmt = (update(CartItem).where(CartItem.cart_id == cart.id)
                                         .values(quantity=CartItem.quantity + cart_item.quantity))
                 await session_execute(quantity_update_stmt, session)
-            await session.commit()
+            await session_commit(session)
 
     @staticmethod
     async def create_cart_item(cart_item: CartItem) -> int:
         async with get_db_session() as session:
             session.add(cart_item)
-            await session.commit()
-            await session.refresh(cart_item)
+            await session_commit(session)
+            await session_refresh(session, cart_item)
             return cart_item.id
 
