@@ -1,140 +1,75 @@
 import math
-from typing import List
-
 from sqlalchemy import select, update
-from sqlalchemy.orm import joinedload
-
 import config
-from db import get_db_session
+from db import get_db_session, session_execute, session_commit, session_refresh
 from models.cart import Cart
 from models.cartItem import CartItem
+from services.cartItem import CartItemService
+from services.user import UserService
 
 
 class CartService:
 
     @staticmethod
-    async def get_or_create_cart(telegram_id: int) -> Cart:
-        async with get_db_session() as db_session:
-            stmt = (select(Cart).join(
-                CartItem, CartItem.cart_id == Cart.id, isouter=True).where(
-                Cart.telegram_id == telegram_id, Cart.is_closed == 0).options(
-                joinedload(Cart.cart_items)))
-            cart = await db_session.execute(stmt)
+    async def get_or_create_cart(user_id: int) -> Cart:
+        async with get_db_session() as session:
+            stmt = select(Cart).where(Cart.user_id == user_id)
+            cart = await session_execute(stmt, session)
             cart = cart.scalar()
             if cart is None:
-                new_cart_obj = Cart(telegram_id=telegram_id, is_closed=False, cart_items=[])
-                db_session.add(new_cart_obj)
-                await db_session.commit()
-                await db_session.refresh(new_cart_obj)
+                new_cart_obj = Cart(user_id=user_id)
+                session.add(new_cart_obj)
+                await session_commit(session)
+                await session_refresh(session, new_cart_obj)
                 return new_cart_obj
             else:
                 return cart
 
-
     @staticmethod
     async def get_cart_by_primary_key(primary_key: int) -> Cart:
         async with get_db_session() as session:
-            stmt = select(Cart).join(
-                CartItem, Cart.id == CartItem.cart_id, isouter=True).where(
-                Cart.id == primary_key).options(
-                joinedload(Cart.cart_items))
-            cart = await session.execute(stmt)
+            stmt = select(Cart).where(Cart.id == primary_key)
+            cart = await session_execute(stmt, session)
             return cart.scalar()
 
-
     @staticmethod
-    async def get_open_cart_by_user(telegram_id: int) -> Cart:
+    async def get_cart_by_user_id(user_id: int) -> Cart:
         async with get_db_session() as session:
             stmt = select(Cart).join(
-                CartItem, Cart.id == CartItem.cart_id, isouter=True).where(
-                Cart.telegram_id == telegram_id, Cart.is_closed == 0).options(
-                joinedload(Cart.cart_items))
-            cart = await session.execute(stmt)
+                CartItem, Cart.id == CartItem.cart_id).where(Cart.user_id == user_id)
+            cart = await session_execute(stmt, session)
             return cart.scalar()
-
-
-    @staticmethod
-    async def get_all_cart_items(telegram_id: int) -> List[CartItem]:
-       cart = await CartService.get_or_create_cart(telegram_id=telegram_id)
-       return cart.cart_items
-
-
-    @staticmethod
-    async def remove_from_cart(cart_item_id: int):
-        async with get_db_session() as db_session:
-            stmt = select(CartItem, CartItem==cart_item_id)
-            cart_item = await db_session.execute(stmt)
-            cart_item = cart_item.scalar()
-
-            await db_session.delete(cart_item)
-            await db_session.commit()
-
 
     @staticmethod
     async def add_to_cart(cart_item: CartItem, cart: Cart):
-
-        async with (get_db_session() as db_session):
+        async with get_db_session() as session:
             # if there exists a cart with a cart_item with the same category and subcategory, increase the quantity
             # and if not, there is either no cart_item in the cart at all or no cart_item of the same (sub-)category
             get_old_cart_content_stmt = select(Cart).join(
-                CartItem, Cart.id == CartItem.cart_id, isouter=True).where(
+                CartItem, Cart.id == CartItem.cart_id).where(
                 Cart.id == cart.id,
-                CartItem.subcategory_id == cart_item.subcategory_id).options(
-                joinedload(Cart.cart_items))
-            old_cart_records = await db_session.execute(get_old_cart_content_stmt)
+                CartItem.subcategory_id == cart_item.subcategory_id)
+            old_cart_records = await session_execute(get_old_cart_content_stmt, session)
             old_cart_records = old_cart_records.scalar()
 
             if old_cart_records is None:
-                await CartService.create_cart_item(
-                    cart_item=CartItem(
-                        cart=cart, cart_id=cart.id, category_id=cart_item.category_id,
-                        category_name=cart_item.category_name, subcategory_id=cart_item.subcategory_id,
-                        subcategory_name=cart_item.subcategory_name, quantity=cart_item.quantity,
-                        a_piece_price=cart_item.a_piece_price))
+                await CartService.create_cart_item(CartItem(
+                    cart_id=cart.id,
+                    category_id=cart_item.category_id,
+                    subcategory_id=cart_item.subcategory_id,
+                    quantity=cart_item.quantity)
+                )
             elif old_cart_records is not None:
                 quantity_update_stmt = (update(CartItem).where(CartItem.cart_id == cart.id)
                                         .values(quantity=CartItem.quantity + cart_item.quantity))
-                await db_session.execute(quantity_update_stmt)
-                db_session.refresh(cart)
-                db_session.refresh(cart_item)
-            await db_session.commit()
-
+                await session_execute(quantity_update_stmt, session)
+            await session_commit(session)
 
     @staticmethod
     async def create_cart_item(cart_item: CartItem) -> int:
-
-        async with (get_db_session() as session):
+        async with get_db_session() as session:
             session.add(cart_item)
-            await session.commit()
-            await session.refresh(cart_item)
+            await session_commit(session)
+            await session_refresh(session, cart_item)
             return cart_item.id
 
-
-    @staticmethod
-    async def get_all_cart_items_count(telegram_id: int) -> int:
-        all_cart_items = await CartService.get_all_cart_items(telegram_id=telegram_id)
-        return len(all_cart_items)
-
-
-    @staticmethod
-    async def get_maximum_page(telegram_id: int) -> int:
-        max_page = await CartService.get_all_cart_items_count(telegram_id)
-        if max_page % config.PAGE_ENTRIES == 0:
-            return max_page / config.PAGE_ENTRIES - 1
-        else:
-            return math.trunc(max_page / config.PAGE_ENTRIES)
-
-
-    @staticmethod
-    async def get_cart_item_by_id(cart_item_id: int) -> CartItem:
-        async with (get_db_session() as session):
-            stmnt = select(CartItem, CartItem.id==cart_item_id)
-            cart_item = await session.execute(stmnt)
-            return cart_item.scalar()
-
-
-    @staticmethod
-    async def close_cart(cart_id: int):
-        async with (get_db_session() as db_session):
-            stmnt = update(Cart).where(Cart.id == cart_id).values(is_closed=True)
-            await db_session.execute(stmnt)
