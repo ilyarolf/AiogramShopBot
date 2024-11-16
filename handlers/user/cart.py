@@ -61,7 +61,7 @@ async def create_cart_item_buttons(telegram_id: int, page: int = 0):
                 subcategory_name=subcategory.name,
                 qty=cart_item.quantity,
                 total_price=cart_item.quantity * item_price,
-                currency_text=config.CURRENCY)
+                currency_sym=Localizator.get_currency_symbol())
             cart_builder.button(text=cart_button_text, callback_data=cart_button_callback)
         cart_button_checkout_callback = create_cart_callback(level=2, page=page, cart_id=cart.id)
         cart_builder.button(text=Localizator.get_text(BotEntity.USER, "checkout"),
@@ -135,12 +135,12 @@ async def create_cart_content_string(cart_items: List[CartItem]) -> str:
         line_item_total = price * cart_item.quantity
         cart_line_item = Localizator.get_text(BotEntity.USER, "cart_item_button").format(
             subcategory_name=subcategory.name, qty=cart_item.quantity,
-            total_price=line_item_total, currency_text=config.CURRENCY
+            total_price=line_item_total, currency_sym=Localizator.get_currency_symbol()
         )
         cart_grand_total += line_item_total
         cart_line_items_total += cart_line_item
     cart_line_items_total += Localizator.get_text(BotEntity.USER, "cart_grand_total_string").format(
-        cart_grand_total=cart_grand_total, currency_text=config.CURRENCY)
+        cart_grand_total=cart_grand_total, currency_sym=Localizator.get_currency_symbol())
     cart_line_items_total += "</b>"
     return cart_line_items_total
 

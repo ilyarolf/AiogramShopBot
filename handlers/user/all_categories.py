@@ -74,7 +74,8 @@ async def create_subcategory_buttons(category_id: int, page: int = 0):
             text=Localizator.get_text(BotEntity.USER, "subcategory_button").format(
                 subcategory_name=item.subcategory.name,
                 subcategory_price=subcategory_price,
-                available_quantity=available_quantity),
+                available_quantity=available_quantity,
+                currency_sym=Localizator.get_currency_symbol()),
             callback_data=subcategory_inline_button)
     subcategories_builder.adjust(1)
     return subcategories_builder
@@ -149,7 +150,8 @@ async def select_quantity(callback: CallbackQuery):
                                                                             subcategory_name=subcategory.name,
                                                                             price=price,
                                                                             description=description,
-                                                                            quantity=available_qty),
+                                                                            quantity=available_qty,
+                                                                            currency_sym=Localizator.get_currency_symbol()),
         reply_markup=count_builder.as_markup())
 
 
@@ -196,7 +198,8 @@ async def add_to_cart_confirmation(callback: CallbackQuery):
                                                                              price=price,
                                                                              description=description,
                                                                              quantity=quantity,
-                                                                             total_price=total_price),
+                                                                             total_price=total_price,
+                                                                             currency_sym=Localizator.get_currency_symbol()),
         reply_markup=confirmation_builder.as_markup())
 
 
@@ -204,7 +207,7 @@ async def add_to_cart(callback: CallbackQuery):
     unpacked_callback = AllCategoriesCallback.unpack(callback.data)
     user = await UserService.get_by_tgid(callback.from_user.id)
     cart = await CartService.get_or_create_cart(user.id)
-    cart_item = CartItem(category_id=unpacked_callback.category_id,subcategory_id=unpacked_callback.subcategory_id,
+    cart_item = CartItem(category_id=unpacked_callback.category_id, subcategory_id=unpacked_callback.subcategory_id,
                          quantity=unpacked_callback.quantity)
     await CartService.add_to_cart(cart_item, cart)
     await callback.message.edit_text(text=Localizator.get_text(BotEntity.USER, "item_added_to_cart"))
