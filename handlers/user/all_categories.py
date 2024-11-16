@@ -5,15 +5,14 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from handlers.common.common import add_pagination_buttons
-from services.buy import BuyService
-from services.buyItem import BuyItemService
+from models.cartItem import CartItem
+from services.cart import CartService
 from services.category import CategoryService
 from services.item import ItemService
 from services.subcategory import SubcategoryService
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator, BotEntity
-from utils.notification_manager import NotificationManager
 
 
 class AllCategoriesCallback(CallbackData, prefix="all_categories"):
@@ -154,7 +153,7 @@ async def select_quantity(callback: CallbackQuery):
         reply_markup=count_builder.as_markup())
 
 
-async def buy_confirmation(callback: CallbackQuery):
+async def add_to_cart_confirmation(callback: CallbackQuery):
     unpacked_callback = AllCategoriesCallback.unpack(callback.data)
     price = unpacked_callback.price
     total_price = unpacked_callback.total_price
@@ -171,7 +170,7 @@ async def buy_confirmation(callback: CallbackQuery):
                                                              total_price=total_price,
                                                              quantity=quantity,
                                                              confirmation=True)
-    decline_button_callback = create_callback_all_categories(level=current_level + 1,
+    decline_button_callback = create_callback_all_categories(level=1,
                                                              category_id=category_id,
                                                              subcategory_id=subcategory_id,
                                                              price=price,
@@ -201,52 +200,14 @@ async def buy_confirmation(callback: CallbackQuery):
         reply_markup=confirmation_builder.as_markup())
 
 
-async def buy_processing(callback: CallbackQuery):
+async def add_to_cart(callback: CallbackQuery):
     unpacked_callback = AllCategoriesCallback.unpack(callback.data)
-    confirmation = unpacked_callback.confirmation
-    total_price = unpacked_callback.total_price
-    subcategory_id = unpacked_callback.subcategory_id
-    category_id = unpacked_callback.category_id
-    quantity = unpacked_callback.quantity
-    telegram_id = callback.from_user.id
-    is_in_stock = await ItemService.get_available_quantity(subcategory_id, category_id) >= quantity
-    is_enough_money = await UserService.is_buy_possible(telegram_id, total_price)
-    back_to_main_builder = InlineKeyboardBuilder()
-    back_to_main_callback = create_callback_all_categories(level=0)
-    back_to_main_button = types.InlineKeyboardButton(
-        text=Localizator.get_text(BotEntity.USER, "all_categories"),
-        callback_data=back_to_main_callback)
-    back_to_main_builder.add(back_to_main_button)
-    bot = callback.bot
-    if confirmation and is_in_stock and is_enough_money:
-        await UserService.update_consume_records(telegram_id, total_price)
-        sold_items = await ItemService.get_bought_items(category_id, subcategory_id, quantity)
-        message = await create_message_with_bought_items(sold_items)
-        user = await UserService.get_by_tgid(telegram_id)
-        new_buy_id = await BuyService.insert_new(user, quantity, total_price)
-        await BuyItemService.insert_many(sold_items, new_buy_id)
-        await ItemService.set_items_sold(sold_items)
-        await callback.message.edit_text(text=message)
-        await NotificationManager.new_buy(category_id, subcategory_id, quantity, total_price, user, bot)
-    elif confirmation is False:
-        await callback.message.edit_text(text=Localizator.get_text(BotEntity.COMMON, "cancelled"),
-                                         reply_markup=back_to_main_builder.as_markup())
-    elif is_enough_money is False:
-        await callback.message.edit_text(text=Localizator.get_text(BotEntity.USER, "insufficient_funds"),
-                                         reply_markup=back_to_main_builder.as_markup())
-    elif is_in_stock is False:
-        await callback.message.edit_text(text=Localizator.get_text(BotEntity.USER, "out_of_stock"),
-                                         reply_markup=back_to_main_builder.as_markup())
-
-
-async def create_message_with_bought_items(bought_data: list):
-    message = "<b>"
-    for count, item in enumerate(bought_data, start=1):
-        private_data = item.private_data
-        message += Localizator.get_text(BotEntity.USER, "purchased_item").format(count=count,
-                                                                                 private_data=private_data)
-    message += "</b>"
-    return message
+    user = await UserService.get_by_tgid(callback.from_user.id)
+    cart = await CartService.get_or_create_cart(user.id)
+    cart_item = CartItem(category_id=unpacked_callback.category_id,subcategory_id=unpacked_callback.subcategory_id,
+                         quantity=unpacked_callback.quantity)
+    await CartService.add_to_cart(cart_item, cart)
+    await callback.message.edit_text(text=Localizator.get_text(BotEntity.USER, "item_added_to_cart"))
 
 
 @all_categories_router.callback_query(AllCategoriesCallback.filter(), IsUserExistFilter())
@@ -257,8 +218,8 @@ async def navigate_categories(call: CallbackQuery, callback_data: AllCategoriesC
         0: all_categories,
         1: show_subcategories_in_category,
         2: select_quantity,
-        3: buy_confirmation,
-        4: buy_processing
+        3: add_to_cart_confirmation,
+        4: add_to_cart,
     }
 
     current_level_function = levels[current_level]

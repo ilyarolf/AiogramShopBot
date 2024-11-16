@@ -64,3 +64,13 @@ class CategoryService:
                 return max_page / config.PAGE_ENTRIES - 1
             else:
                 return math.trunc(max_page / config.PAGE_ENTRIES)
+
+    @staticmethod
+    async def get_name(category_id) -> str:
+        async with get_db_session() as session:
+            stmt = select(Category.name).where(Category.id == category_id)
+            category_name = await session.execute(stmt)
+            category_name = category_name.scalar()
+            if category_name is None:
+                return ""
+        return category_name

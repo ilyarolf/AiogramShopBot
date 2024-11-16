@@ -1,5 +1,8 @@
 from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func, ForeignKey
 from sqlalchemy.orm import relationship, backref
+from enum import unique
+
+from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func
 
 from models.base import Base
 
