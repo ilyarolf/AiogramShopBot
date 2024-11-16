@@ -79,19 +79,6 @@ class CryptoApiManager:
                 deposits_sum += float(deposit['value']) / pow(10, deposit['token_info']['decimals'])
         return deposits_sum
 
-    async def get_usdd_trc20_balance(self, deposits) -> float:
-        url = f"https://api.trongrid.io/v1/accounts/{self.trx_address}/transactions/trc20?only_confirmed=true&min_timestamp={self.min_timestamp}&contract_address=TPYmHEhy5n8TCEfYGqW2rPxsghSfzghPDn&only_to=true"
-        data = await self.fetch_api_request(url)
-        deposits = [deposit.tx_id for deposit in deposits if
-                    deposit.network == "TRX" and deposit.token_name == "USDD_TRC20"]
-        deposits_sum = 0.0
-        for deposit in data['data']:
-            if deposit['transaction_id'] not in deposits:
-                await DepositService.create(deposit['transaction_id'], self.user_id, "TRX",
-                                            "USDD_TRC20", deposit['value'])
-                deposits_sum += float(deposit['value']) / pow(10, deposit['token_info']['decimals'])
-        return deposits_sum
-
     async def get_usdt_erc20_balance(self, deposits) -> float:
         url = f'https://api.ethplorer.io/getAddressHistory/{self.eth_address}?type=transfer&token=0xdAC17F958D2ee523a2206206994597C13D831ec7&apiKey={config.ETHPLORER_API_KEY}&limit=1000'
         data = await self.fetch_api_request(url)
@@ -126,7 +113,6 @@ class CryptoApiManager:
             "LTC": ("ltc_deposit", self.get_ltc_balance),
             "SOL": ("sol_deposit", self.get_sol_balance),
             "TRX_USDT": ("usdt_trc20_deposit", self.get_usdt_trc20_balance),
-            "TRX_USDD": ("usdd_trc20_deposit", self.get_usdd_trc20_balance),
             "ETH_USDT": ("usdt_erc20_deposit", self.get_usdt_erc20_balance),
             "ETH_USDC": ("usdc_erc20_deposit", self.get_usdc_erc20_balance),
         }
@@ -148,18 +134,17 @@ class CryptoApiManager:
         # TODO("NEED API FOR USDD-TRC-20")
         usd_crypto_prices = {}
         urls = {
-            "btc": 'https://api.kraken.com/0/public/Ticker?pair=BTCUSDT',
-            "usdt": 'https://api.kraken.com/0/public/Ticker?pair=USDTUSD',
-            "usdc": "https://api.kraken.com/0/public/Ticker?pair=USDCUSD",
-            "ltc": 'https://api.kraken.com/0/public/Ticker?pair=LTCUSD',
-            "sol": "https://api.kraken.com/0/public/Ticker?pair=SOLUSD"
+            "btc": f'https://api.kraken.com/0/public/Ticker?pair=BTC{config.CURRENCY.value}',
+            "usdt": f'https://api.kraken.com/0/public/Ticker?pair=USDT{config.CURRENCY.value}',
+            "usdc": f"https://api.kraken.com/0/public/Ticker?pair=USDC{config.CURRENCY.value}",
+            "ltc": f'https://api.kraken.com/0/public/Ticker?pair=LTC{config.CURRENCY.value}',
+            "sol": f"https://api.kraken.com/0/public/Ticker?pair=SOL{config.CURRENCY.value}"
 
         }
         responses = (grequests.get(url) for url in urls.values())
         datas = grequests.map(responses)
         for symbol, data in zip(urls.keys(), datas):
             data = data.json()
-            price = float(next(iter(data['result'].values()))['l'][1])
+            price = float(next(iter(data['result'].values()))['c'][0])
             usd_crypto_prices[symbol] = price
-        usd_crypto_prices["usdd"] = 1.0  # 1USDD=1USD
         return usd_crypto_prices

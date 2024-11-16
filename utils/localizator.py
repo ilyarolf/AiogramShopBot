@@ -22,3 +22,11 @@ class Localizator:
                 return json.loads(f.read())["user"][key]
             else:
                 return json.loads(f.read())["common"][key]
+
+    @staticmethod
+    def get_currency_symbol():
+        return Localizator.get_text(BotEntity.COMMON, f"{config.CURRENCY.value.lower()}_symbol")
+
+    @staticmethod
+    def get_currency_text():
+        return Localizator.get_text(BotEntity.COMMON, f"{config.CURRENCY.value.lower()}_text")

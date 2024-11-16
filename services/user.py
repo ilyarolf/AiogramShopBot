@@ -247,9 +247,11 @@ class UserService:
             await UserService.update_top_up_amount(user.telegram_id, float(balance_value))
             return Localizator.get_text(BotEntity.ADMIN, "credit_management_added_success").format(
                 amount=balance_value,
-                telegram_id=user.telegram_id)
+                telegram_id=user.telegram_id,
+                currency_text=Localizator.get_currency_text())
         elif operation == "minus":
             await UserService.update_consume_records(user.telegram_id, float(balance_value))
             return Localizator.get_text(BotEntity.ADMIN, "credit_management_reduced_success").format(
                 amount=balance_value,
-                telegram_id=user.telegram_id)
+                telegram_id=user.telegram_id,
+                currency_text=Localizator.get_currency_text())
