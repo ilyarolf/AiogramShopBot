@@ -19,7 +19,6 @@ services:
       MULTIBOT: "false" # Allows the use of a multibot
       ETHPLORER_API_KEY: "" # API key from Ethplorer
       CURRENCY: "USD" # fiat currency
-      MAX_LINE_WITH: 40
 
     ports:
       - "4040:4040"
