@@ -51,7 +51,7 @@ class AdminConstants:
                                                callback_data=create_admin_callback(level=-1, action="cancel"))
     confirmation_builder.add(cancel_button, confirmation_button)
     back_to_main_button = types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.ADMIN,
-                                                                                        "back_to_menu"),
+                                                                               "back_to_menu"),
                                                      callback_data=create_admin_callback(level=0))
 
     @staticmethod
@@ -153,7 +153,7 @@ async def confirm_and_send(callback: CallbackQuery):
     confirmed = AdminCallback.unpack(callback.data).action == "confirm"
     is_caption = callback.message.caption
     new_items_header = HTMLTagsRemover.remove_html_tags(Localizator.get_text(BotEntity.ADMIN,
-                                                                                      "restocking_message_header"))
+                                                                             "restocking_message_header"))
     is_restocking = callback.message.text and new_items_header in callback.message.text
     if confirmed:
         await callback.message.edit_reply_markup()
@@ -195,13 +195,13 @@ async def decline_action(callback: CallbackQuery):
 async def inventory_management(callback: CallbackQuery):
     cb_builder = InlineKeyboardBuilder()
     cb_builder.row(types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.ADMIN,
-                                                                                 "add_items"),
+                                                                        "add_items"),
                                               callback_data=create_admin_callback(level=6)))
     cb_builder.row(types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.ADMIN,
-                                                                                 "delete_category"),
+                                                                        "delete_category"),
                                               callback_data=create_admin_callback(level=8)))
     cb_builder.row(types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.ADMIN,
-                                                                                 "delete_subcategory"),
+                                                                        "delete_subcategory"),
                                               callback_data=create_admin_callback(level=9)))
     cb_builder.row(AdminConstants.back_to_main_button)
     await callback.message.edit_text(text=Localizator.get_text(BotEntity.ADMIN, "inventory_management"),
@@ -385,9 +385,13 @@ async def balance_management(message: types.message, state: FSMContext):
         operation = await state.get_data()
         operation = operation['operation']
         if operation == 'plus':
-            await message.answer(Localizator.get_text(BotEntity.ADMIN, "credit_management_plus_operation"))
+            await message.answer(Localizator.get_text(BotEntity.ADMIN, "credit_management_plus_operation").format(
+                currency_text=Localizator.get_currency_text()
+            ))
         elif operation == 'minus':
-            await message.answer(Localizator.get_text(BotEntity.ADMIN, "credit_management_minus_operation"))
+            await message.answer(Localizator.get_text(BotEntity.ADMIN, "credit_management_minus_operation").format(
+                currency_text=Localizator.get_currency_text()
+            ))
     elif current_state == AdminStates.balance_value:
         await state.update_data(balance_value=message.text)
         state_data = await state.get_data()
@@ -540,7 +544,7 @@ async def get_statistics(callback: CallbackQuery):
             text=Localizator.get_text(BotEntity.ADMIN, "sales_statistics").format(
                 timedelta=unpacked_callback.args_to_action,
                 total_profit=total_profit, items_sold=items_sold,
-                buys_count=len(buys)),
+                buys_count=len(buys), currency_sym=Localizator.get_currency_symbol()),
             reply_markup=statistics_keyboard_builder.as_markup())
     elif unpacked_callback.action == "deposits":
         back_button = await AdminConstants.get_back_button(unpacked_callback)
@@ -551,8 +555,7 @@ async def get_statistics(callback: CallbackQuery):
         btc_amount = 0.0
         ltc_amount = 0.0
         sol_amount = 0.0
-        usd_amount = 0.0
-        usdd_trc20_amount = 0.0
+        fiat_amount = 0.0
         usdt_trc20_amount = 0.0
         usdt_erc20_amount = 0.0
         usdc_erc20_amount = 0.0
@@ -563,32 +566,28 @@ async def get_statistics(callback: CallbackQuery):
                 ltc_amount += deposit.amount / pow(10, 8)
             elif deposit.network == "SOL":
                 sol_amount += deposit.amount / pow(10, 9)
-            elif deposit.token_name == "USDD_TRC20":
-                divided_deposit = deposit.amount / pow(10, 18)
-                usd_amount += divided_deposit
-                usdd_trc20_amount += divided_deposit
             elif deposit.token_name == "USDT_TRC20":
                 divided_amount = deposit.amount / pow(10, 6)
-                usd_amount += divided_amount
+                fiat_amount += divided_amount
                 usdt_trc20_amount += divided_amount
             elif deposit.token_name == "USDT_ERC20":
                 divided_amount = deposit.amount / pow(10, 6)
-                usd_amount += divided_amount
+                fiat_amount += divided_amount
                 usdt_erc20_amount += divided_amount
             elif deposit.token_name == "USDC_ERC20":
                 divided_amount = deposit.amount / pow(10, 6)
-                usd_amount += divided_amount
+                fiat_amount += divided_amount
                 usdc_erc20_amount += divided_amount
         crypto_prices = await CryptoApiManager.get_crypto_prices()
-        usd_amount += (btc_amount * crypto_prices['btc']) + (ltc_amount * crypto_prices['ltc']) + (
+        fiat_amount += (btc_amount * crypto_prices['btc']) + (ltc_amount * crypto_prices['ltc']) + (
                 sol_amount * crypto_prices['sol'])
         await callback.message.edit_text(
             text=Localizator.get_text(BotEntity.ADMIN, "deposits_statistics_msg").format(
                 timedelta=unpacked_callback.args_to_action, deposits_count=len(deposits),
                 btc_amount=btc_amount, ltc_amount=ltc_amount,
                 sol_amount=sol_amount, usdt_trc20_amount=usdt_trc20_amount,
-                usdt_erc20_amount=usdt_erc20_amount, usdd_trc20_amount=usdd_trc20_amount,
-                usdc_erc20_amount=usdc_erc20_amount, usd_amount="{:.2f}".format(usd_amount)),
+                usdt_erc20_amount=usdt_erc20_amount, usdc_erc20_amount=usdc_erc20_amount, fiat_amount=fiat_amount,
+                currency_text=Localizator.get_currency_text()),
             reply_markup=statistics_keyboard_builder.as_markup())
 
 
@@ -607,14 +606,16 @@ async def make_refund(callback: CallbackQuery):
                     total_price=refund_data.total_price,
                     telegram_username=refund_data.telegram_username,
                     quantity=refund_data.quantity,
-                    subcategory=refund_data.subcategory))
+                    subcategory=refund_data.subcategory),
+                currency_sym=Localizator.get_currency_symbol())
         else:
             await callback.message.edit_text(
                 text=Localizator.get_text(BotEntity.ADMIN, "successfully_refunded_with_tgid").format(
                     total_price=refund_data.total_price,
                     telegram_id=refund_data.telegram_id,
                     quantity=refund_data.quantity,
-                    subcategory=refund_data.subcategory))
+                    subcategory=refund_data.subcategory,
+                    currency_sym=Localizator.get_currency_symbol()))
 
 
 async def send_db_file(callback: CallbackQuery):
@@ -678,7 +679,8 @@ async def add_item_txt_menu(message: Message, state: FSMContext):
     elif current_state == AdminStates.private_data:
         await state.update_data(private_data=message.text)
         await state.set_state(AdminStates.price)
-        await message.answer(Localizator.get_text(BotEntity.ADMIN, "add_items_price"))
+        await message.answer(Localizator.get_text(BotEntity.ADMIN, "add_items_price").format(
+            currency_text=Localizator.get_currency_text()))
     elif current_state == AdminStates.price:
         await state.update_data(price=message.text)
         state_data = await state.get_data()
