@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 import os
-
+from models.currency import Currency
 from ngrok_executor import start_ngrok
 
 load_dotenv()
@@ -21,4 +21,4 @@ PAGE_ENTRIES = int(os.environ.get("PAGE_ENTRIES"))
 BOT_LANGUAGE = os.environ.get("BOT_LANGUAGE")
 MULTIBOT = os.environ.get("MULTIBOT", False) == 'true'
 ETHPLORER_API_KEY = os.environ.get("ETHPLORER_API_KEY")
-CURRENCY = os.environ.get("CURRENCY")
+CURRENCY = Currency.from_string(os.environ.get("CURRENCY"))

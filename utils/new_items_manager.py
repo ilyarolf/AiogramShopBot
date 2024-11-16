@@ -74,7 +74,7 @@ class NewItemsManager:
             if item.subcategory not in filtered_items[category.name]:
                 filtered_items[category.name][item.subcategory] = []
             filtered_items[category.name][item.subcategory].append(item)
-        message = ""
+        message = "<b>"
         if is_update is True:
             message += Localizator.get_text(BotEntity.ADMIN, "restocking_message_header")
         elif is_update is False:
@@ -86,6 +86,7 @@ class NewItemsManager:
                 message += Localizator.get_text(BotEntity.USER, "subcategory_button").format(
                     subcategory_name=subcategory.name,
                     available_quantity=len(item),
-                    subcategory_price=item[0].price) + "\n"
+                    subcategory_price=item[0].price,
+                    currency_sym=Localizator.get_currency_symbol()) + "\n"
         message += "</b>"
         return message
