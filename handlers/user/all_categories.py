@@ -7,14 +7,12 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from handlers.common.common import add_pagination_buttons
 from models.cartItem import CartItem
 from services.cart import CartService
-from services.buy import BuyService
-from services.buyItem import BuyItemService
 from services.category import CategoryService
 from services.item import ItemService
 from services.subcategory import SubcategoryService
+from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator, BotEntity
-from utils.notification_manager import NotificationManager
 
 
 class AllCategoriesCallback(CallbackData, prefix="all_categories"):
@@ -202,15 +200,12 @@ async def add_to_cart_confirmation(callback: CallbackQuery):
         reply_markup=confirmation_builder.as_markup())
 
 
-async def add_to_cart(callback: AllCategoriesCallback):
+async def add_to_cart(callback: CallbackQuery):
     unpacked_callback = AllCategoriesCallback.unpack(callback.data)
-    category = await CategoryService.get_by_primary_key(unpacked_callback.category_id)
-    subcategory = await SubcategoryService.get_by_primary_key(unpacked_callback.subcategory_id)
-    user_id = callback.from_user.id
-    cart = await CartService.get_or_create_cart(telegram_id=user_id)
-    cart_item = CartItem(category_id=unpacked_callback.category_id, category_name=category.name,
-                         subcategory_id=unpacked_callback.subcategory_id, subcategory_name=subcategory.name,
-                         quantity=unpacked_callback.quantity, a_piece_price=unpacked_callback.price)
+    user = await UserService.get_by_tgid(callback.from_user.id)
+    cart = await CartService.get_or_create_cart(user.id)
+    cart_item = CartItem(category_id=unpacked_callback.category_id,subcategory_id=unpacked_callback.subcategory_id,
+                         quantity=unpacked_callback.quantity)
     await CartService.add_to_cart(cart_item, cart)
     await callback.message.edit_text(text=Localizator.get_text(BotEntity.USER, "item_added_to_cart"))
 

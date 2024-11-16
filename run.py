@@ -11,6 +11,7 @@ from multibot import main as main_multibot
 from handlers.admin.admin import admin_router
 from handlers.user.all_categories import all_categories_router
 from handlers.user.my_profile import my_profile_router
+from services.cart import CartService
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator, BotEntity
@@ -33,7 +34,8 @@ async def start(message: types.message):
     user_telegram_username = message.from_user.username
     is_exist = await UserService.is_exist(user_telegram_id)
     if is_exist is False:
-        await UserService.create(user_telegram_id, user_telegram_username)
+        user_id = await UserService.create(user_telegram_id, user_telegram_username)
+        await CartService.get_or_create_cart(user_id)
     else:
         await UserService.update_receive_messages(user_telegram_id, True)
         await UserService.update_username(user_telegram_id, user_telegram_username)
