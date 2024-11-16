@@ -3,7 +3,7 @@ import math
 from typing import Union
 from sqlalchemy import select, update, func, or_
 import config
-from db import session_execute, session_commit, get_db_session
+from db import session_execute, session_commit, get_db_session, session_refresh
 from models.user import User
 from utils.CryptoAddressGenerator import CryptoAddressGenerator
 from utils.localizator import Localizator, BotEntity
@@ -19,7 +19,7 @@ class UserService:
             return is_exist.scalar() is not None
 
     @staticmethod
-    async def create(telegram_id: int, telegram_username: str):
+    async def create(telegram_id: int, telegram_username: str) -> int:
         async with get_db_session() as session:
             crypto_addr_gen = CryptoAddressGenerator()
             crypto_addresses = crypto_addr_gen.get_addresses(i=0)
@@ -35,6 +35,8 @@ class UserService:
             )
             session.add(new_user)
             await session_commit(session)
+            await session_refresh(session, new_user)
+            return new_user.id
 
     @staticmethod
     async def update_username(telegram_id: int, telegram_username: str):

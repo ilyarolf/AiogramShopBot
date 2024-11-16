@@ -3,6 +3,7 @@ from sqlalchemy import select, func, update, distinct, delete
 import config
 from db import session_execute, session_commit, get_db_session
 from models.buyItem import BuyItem
+from models.category import Category
 from models.item import Item
 from models.subcategory import Subcategory
 

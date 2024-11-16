@@ -1,7 +1,11 @@
 import logging
+from typing import List
 from typing import Union
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+import config
+from models.cartItem import CartItem
+from services.item import ItemService
 from services.subcategory import SubcategoryService
 from services.category import CategoryService
 from services.user import UserService
@@ -78,25 +82,36 @@ class NotificationManager:
         await NotificationManager.send_to_admins(message, user_button, bot)
 
     @staticmethod
-    async def new_buy(category_id: int, subcategory_id: int, quantity: int, total_price: float, user: User, bot):
-        subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
-        category = await CategoryService.get_by_primary_key(category_id)
-        message = ""
+    async def new_buy(sold_cart_items: List[CartItem], user: User, bot):
         username = user.telegram_username
         telegram_id = user.telegram_id
         user_button = await NotificationManager.make_user_button(username)
-        if username:
-            message += Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_tgid").format(
-                username=username,
-                total_price=total_price,
-                quantity=quantity,
-                subcategory_name=subcategory.name,
-                category_name=category.name)
-        else:
-            message += Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_username").format(
-                telegram_id=telegram_id,
-                total_price=total_price,
-                quantity=quantity,
-                subcategory_name=subcategory.name,
-                category_name=category.name)
+        cart_grand_total = 0.0
+        message = ""
+        line_max_width = 0
+
+        for cart_item in sold_cart_items:
+            price = await ItemService.get_price_by_subcategory(cart_item.subcategory_id, cart_item.category_id)
+            category = await CategoryService.get_by_primary_key(cart_item.category_id)
+            subcategory = await SubcategoryService.get_by_primary_key(cart_item.subcategory_id)
+            line_max_width = max(line_max_width, len(str(subcategory)))
+            cart_item_total = price * cart_item.quantity
+            cart_grand_total += cart_item_total
+
+            if username:
+                message += Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_tgid").format(
+                    username=username,
+                    total_price=cart_item_total,
+                    quantity=cart_item.quantity,
+                    category_name=category.name,
+                    subcategory_name=subcategory.name) + "\n"
+            else:
+                message += Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_username").format(
+                    telegram_id=telegram_id,
+                    total_price=cart_item_total,
+                    quantity=cart_item.quantity,
+                    category_name=category.name,
+                    subcategory_name=subcategory.name) + "\n"
+        message += Localizator.get_text(BotEntity.USER, "cart_grand_total_string").format(
+            cart_grand_total=cart_grand_total, currency_text=config.CURRENCY)
         await NotificationManager.send_to_admins(message, user_button, bot)

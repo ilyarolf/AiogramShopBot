@@ -6,6 +6,7 @@ from sqlalchemy.orm import relationship, backref
 from models.base import Base
 
 
+# Item is a unique good which can only be sold once
 class Item(Base):
     __tablename__ = 'items'
 
