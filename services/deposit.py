@@ -3,6 +3,8 @@ from typing import List
 from sqlalchemy import select
 from db import session_execute, session_commit, session_refresh, get_db_session
 from models.deposit import Deposit
+from models.user import UserDTO
+from repositories.deposit import DepositRepository
 
 
 class DepositService:
@@ -38,3 +40,7 @@ class DepositService:
             stmt = select(Deposit).where(Deposit.deposit_datetime >= time_to_subtract)
             deposits = await session_execute(stmt, session)
             return deposits.scalars().all()
+
+    @staticmethod
+    async def get_by_user_dto(user_dto: UserDTO):
+        await DepositRepository.get_by_user_dto(user_dto)

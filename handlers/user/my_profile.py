@@ -5,6 +5,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from crypto_api.CryptoApiManager import CryptoApiManager
 from handlers.common.common import add_pagination_buttons
 from handlers.user.cart import create_message_with_bought_items
+from models.cryptocurrency import Cryptocurrency
+from models.user import UserDTO
 from services.buy import BuyService
 from services.buyItem import BuyItemService
 from services.item import ItemService
@@ -39,10 +41,10 @@ class MyProfileConstants:
         callback_data=create_callback_profile(level=0))
 
 
-async def get_my_profile_message(telegram_id: int):
-    user = await UserService.get_by_tgid(telegram_id)
+async def get_my_profile_message(user_dto: UserDTO):
+    user = await UserService.get(user_dto)
     fiat_balance = round(user.top_up_amount - user.consume_records, 2)
-    return Localizator.get_text(BotEntity.USER, "my_profile_msg").format(telegram_id=telegram_id,
+    return Localizator.get_text(BotEntity.USER, "my_profile_msg").format(telegram_id=user.telegram_id,
                                                                          btc_balance=user.btc_balance,
                                                                          ltc_balance=user.ltc_balance,
                                                                          sol_balance=user.sol_balance,
@@ -67,15 +69,13 @@ async def my_profile(message: Message | CallbackQuery):
     my_profile_builder.add(top_up_button, purchase_history_button)
     my_profile_builder.adjust(2)
     my_profile_markup = my_profile_builder.as_markup()
-
+    user_dto = UserDTO(telegram_id=message.from_user.id)
     if isinstance(message, Message):
-        telegram_id = message.chat.id
-        message_text = await get_my_profile_message(telegram_id)
+        message_text = await get_my_profile_message(user_dto)
         await message.answer(message_text, reply_markup=my_profile_markup)
     elif isinstance(message, CallbackQuery):
         callback = message
-        telegram_id = callback.from_user.id
-        message = await get_my_profile_message(telegram_id)
+        message = await get_my_profile_message(user_dto)
         raw_message_text = HTMLTagsRemover.remove_html_tags(message)
         if raw_message_text != callback.message.text:
             await callback.message.edit_text(message, reply_markup=my_profile_markup)
@@ -91,22 +91,22 @@ async def top_up_balance(callback: CallbackQuery):
     top_up_methods_builder = InlineKeyboardBuilder()
     top_up_methods_builder.button(text=Localizator.get_text(BotEntity.COMMON, "btc_top_up"),
                                   callback_data=create_callback_profile(current_level + 1,
-                                                                        args_for_action="BTC"))
+                                                                        args_for_action=Cryptocurrency.BTC.value))
     top_up_methods_builder.button(text=Localizator.get_text(BotEntity.COMMON, "ltc_top_up"),
                                   callback_data=create_callback_profile(current_level + 1,
-                                                                        args_for_action="LTC"))
+                                                                        args_for_action=Cryptocurrency.LTC.value))
     top_up_methods_builder.button(text=Localizator.get_text(BotEntity.COMMON, "sol_top_up"),
                                   callback_data=create_callback_profile(current_level + 1,
-                                                                        args_for_action="SOL"))
+                                                                        args_for_action=Cryptocurrency.SOL.value))
     top_up_methods_builder.button(text=Localizator.get_text(BotEntity.USER, "usdt_trc20_top_up"),
                                   callback_data=create_callback_profile(current_level + 1,
-                                                                        args_for_action="TRX_USDT"))
+                                                                        args_for_action=Cryptocurrency.TRX_USDT.value))
     top_up_methods_builder.button(text=Localizator.get_text(BotEntity.USER, "usdt_erc20_top_up"),
                                   callback_data=create_callback_profile(current_level + 1,
-                                                                        args_for_action="ETH_USDT"))
+                                                                        args_for_action=Cryptocurrency.ETH_USDT.value))
     top_up_methods_builder.button(text=Localizator.get_text(BotEntity.USER, "usdc_erc20_top_up"),
                                   callback_data=create_callback_profile(current_level + 1,
-                                                                        args_for_action="ETH_USDC"))
+                                                                        args_for_action=Cryptocurrency.ETH_USDC.value))
     top_up_methods_builder.row(back_to_profile_button)
     top_up_methods_builder.adjust(1)
     await callback.message.edit_text(
@@ -139,8 +139,7 @@ async def create_purchase_history_keyboard_builder(page: int, user_id: int):
 
 async def purchase_history(callback: CallbackQuery):
     unpacked_callback = MyProfileCallback.unpack(callback.data)
-    telegram_id = callback.message.chat.id
-    user = await UserService.get_by_tgid(telegram_id)
+    user = await UserService.get(UserDTO(telegram_id=callback.from_user.id))
     orders_markup_builder, orders_num = await create_purchase_history_keyboard_builder(unpacked_callback.page, user.id)
     orders_markup_builder = await add_pagination_buttons(orders_markup_builder, callback.data,
                                                          BuyService.get_max_page_purchase_history(user.id),
@@ -155,35 +154,35 @@ async def purchase_history(callback: CallbackQuery):
 
 
 async def refresh_balance(callback: CallbackQuery):
-    telegram_id = callback.from_user.id
     unpacked_cb = MyProfileCallback.unpack(callback.data)
-    crypto_info = unpacked_cb.args_for_action
-    if await UserService.can_refresh_balance(telegram_id):
-        await UserService.create_last_balance_refresh_data(telegram_id)
-        user = await UserService.get_by_tgid(telegram_id)
-        addresses = await UserService.get_addresses(telegram_id)
-        new_crypto_deposits = await CryptoApiManager(**addresses, user_id=user.id).get_top_up_by_crypto_name(
-            crypto_info)
-        crypto_prices = await CryptoApiManager.get_crypto_prices()
-        deposit_usd_amount = 0.0
-        bot_obj = callback.bot
-        if sum(new_crypto_deposits.values()) > 0:
-            for balance_key, balance in new_crypto_deposits.items():
-                balance_key = balance_key.split('_')[0]
-                crypto_balance_in_usd = balance * crypto_prices[balance_key]
-                deposit_usd_amount += crypto_balance_in_usd
-            await UserService.update_crypto_balances(telegram_id, new_crypto_deposits)
-            await UserService.update_top_up_amount(telegram_id, deposit_usd_amount)
-            await NotificationManager.new_deposit(new_crypto_deposits, deposit_usd_amount,
-                                                  telegram_id, bot_obj)
-            await callback.answer(Localizator.get_text(BotEntity.USER, "balance_refreshed_successfully"),
-                                  show_alert=True)
-            await my_profile(callback)
-        else:
-            await callback.answer(Localizator.get_text(BotEntity.USER, "balance_not_refreshed"),
-                                  show_alert=True)
-    else:
-        await callback.answer(Localizator.get_text(BotEntity.USER, "balance_refresh_timeout"), show_alert=True)
+    cryptocurrency = Cryptocurrency(unpacked_cb.args_for_action)
+    await UserService.refresh_balance(UserDTO(telegram_id=callback.from_user.id), cryptocurrency)
+    # if await UserService.can_refresh_balance(telegram_id):
+    #     await UserService.create_last_balance_refresh_data(telegram_id)
+    #     user = await UserService.get_by_tgid(telegram_id)
+    #     addresses = await UserService.get_addresses(telegram_id)
+    #     new_crypto_deposits = await CryptoApiManager(**addresses, user_id=user.id).get_top_up_by_crypto_name(
+    #         crypto_info)
+    #     crypto_prices = await CryptoApiManager.get_crypto_prices()
+    #     deposit_usd_amount = 0.0
+    #     bot_obj = callback.bot
+    #     if sum(new_crypto_deposits.values()) > 0:
+    #         for balance_key, balance in new_crypto_deposits.items():
+    #             balance_key = balance_key.split('_')[0]
+    #             crypto_balance_in_usd = balance * crypto_prices[balance_key]
+    #             deposit_usd_amount += crypto_balance_in_usd
+    #         await UserService.update_crypto_balances(telegram_id, new_crypto_deposits)
+    #         await UserService.update_top_up_amount(telegram_id, deposit_usd_amount)
+    #         await NotificationManager.new_deposit(new_crypto_deposits, deposit_usd_amount,
+    #                                               telegram_id, bot_obj)
+    #         await callback.answer(Localizator.get_text(BotEntity.USER, "balance_refreshed_successfully"),
+    #                               show_alert=True)
+    #         await my_profile(callback)
+    #     else:
+    #         await callback.answer(Localizator.get_text(BotEntity.USER, "balance_not_refreshed"),
+    #                               show_alert=True)
+    # else:
+    #     await callback.answer(Localizator.get_text(BotEntity.USER, "balance_refresh_timeout"), show_alert=True)
 
 
 async def get_order_from_history(callback: CallbackQuery):
@@ -202,7 +201,7 @@ async def top_up_by_method(callback: CallbackQuery):
     current_level = unpacked_cb.level
     payment_method = unpacked_cb.args_for_action
     addr = ""
-    user = await UserService.get_by_tgid(callback.from_user.id)
+    user = await UserService.get(UserDTO(telegram_id=callback.from_user.id))
     bot = await callback.bot.get_me()
     if payment_method == "BTC":
         addr = user.btc_address
