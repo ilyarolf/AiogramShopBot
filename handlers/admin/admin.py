@@ -410,7 +410,8 @@ async def make_refund_markup(page):
                 text=Localizator.get_text(BotEntity.ADMIN, "refund_by_username").format(
                     telegram_username=buy.telegram_username,
                     total_price=buy.total_price,
-                    subcategory=buy.subcategory),
+                    subcategory=buy.subcategory,
+                    currency_sym=Localizator.get_currency_symbol()),
                 callback_data=create_admin_callback(level=16,
                                                     action="make_refund",
                                                     args_to_action=buy.buy_id))
@@ -419,7 +420,8 @@ async def make_refund_markup(page):
                 text=Localizator.get_text(BotEntity.ADMIN, "refund_by_tgid").format(
                     telegram_id=buy.telegram_id,
                     total_price=buy.total_price,
-                    subcategory=buy.subcategory),
+                    subcategory=buy.subcategory,
+                    currency_sym=Localizator.get_currency_symbol()),
                 callback_data=create_admin_callback(level=16,
                                                     action="make_refund",
                                                     args_to_action=buy.buy_id))
@@ -457,7 +459,8 @@ async def refund_confirmation(callback: CallbackQuery):
                 telegram_username=refund_data.telegram_username,
                 quantity=refund_data.quantity,
                 subcategory=refund_data.subcategory,
-                total_price=refund_data.total_price),
+                total_price=refund_data.total_price,
+                currency_sym=Localizator.get_currency_symbol()),
             reply_markup=confirmation_builder.as_markup())
     else:
         await callback.message.edit_text(
@@ -465,7 +468,8 @@ async def refund_confirmation(callback: CallbackQuery):
                 telegram_id=refund_data.telegram_id,
                 quantity=refund_data.quantity,
                 subcategory=refund_data.subcategory,
-                total_price=refund_data.total_price), reply_markup=confirmation_builder.as_markup())
+                total_price=refund_data.total_price,
+                currency_sym=Localizator.get_currency_symbol()), reply_markup=confirmation_builder.as_markup())
 
 
 async def pick_statistics_entity(callback: CallbackQuery):
@@ -606,8 +610,8 @@ async def make_refund(callback: CallbackQuery):
                     total_price=refund_data.total_price,
                     telegram_username=refund_data.telegram_username,
                     quantity=refund_data.quantity,
-                    subcategory=refund_data.subcategory),
-                currency_sym=Localizator.get_currency_symbol())
+                    subcategory=refund_data.subcategory,
+                    currency_sym=Localizator.get_currency_symbol()))
         else:
             await callback.message.edit_text(
                 text=Localizator.get_text(BotEntity.ADMIN, "successfully_refunded_with_tgid").format(

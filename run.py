@@ -1,3 +1,5 @@
+# grequests monkey patching, more info at https://github.com/gevent/gevent/issues/1016
+import grequests
 from aiogram import types, F, Router
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
