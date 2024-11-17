@@ -1,12 +1,9 @@
-from typing import Union, List
-
+from typing import List
 from aiogram import types, F, Router
 from aiogram.enums import ParseMode
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
-import config
 from handlers.common.common import add_pagination_buttons
 from handlers.user.all_categories import create_callback_all_categories
 from models.cartItem import CartItem
@@ -70,7 +67,7 @@ async def create_cart_item_buttons(telegram_id: int, page: int = 0):
         return cart_builder
 
 
-async def show_cart(message: Union[Message, CallbackQuery]):
+async def show_cart(message: Message | CallbackQuery):
     telegram_id = message.from_user.id
     user = await UserService.get_by_tgid(message.from_user.id)
     cart_items = len(await CartItemService.get_all_items_by_user_id(user.id))

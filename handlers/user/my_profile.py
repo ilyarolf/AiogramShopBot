@@ -1,10 +1,7 @@
-from typing import Union
-
 from aiogram import types, Router, F
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
 from crypto_api.CryptoApiManager import CryptoApiManager
 from handlers.common.common import add_pagination_buttons
 from handlers.user.cart import create_message_with_bought_items
@@ -23,7 +20,7 @@ my_profile_router = Router()
 class MyProfileCallback(CallbackData, prefix="my_profile"):
     level: int
     action: str
-    args_for_action: Union[int, str]
+    args_for_action: int | str
     page: int
 
 
@@ -57,7 +54,7 @@ async def get_my_profile_message(telegram_id: int):
                                                                          currency_sym=Localizator.get_currency_symbol())
 
 
-async def my_profile(message: Union[Message, CallbackQuery]):
+async def my_profile(message: Message | CallbackQuery):
     current_level = 0
     top_up_button = types.InlineKeyboardButton(
         text=Localizator.get_text(BotEntity.USER, "top_up_balance_button"),
