@@ -107,7 +107,7 @@ async def top_up_balance(callback: CallbackQuery):
     top_up_methods_builder.button(text=Localizator.get_text(BotEntity.USER, "usdt_erc20_top_up"),
                                   callback_data=create_callback_profile(current_level + 1,
                                                                         args_for_action="ETH_USDT"))
-    top_up_methods_builder.button(text=Localizator.get_text(BotEntity.USER, "usdc_trc20_top_up"),
+    top_up_methods_builder.button(text=Localizator.get_text(BotEntity.USER, "usdc_erc20_top_up"),
                                   callback_data=create_callback_profile(current_level + 1,
                                                                         args_for_action="ETH_USDC"))
     top_up_methods_builder.row(back_to_profile_button)
