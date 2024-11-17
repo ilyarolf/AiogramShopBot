@@ -1,8 +1,6 @@
 import asyncio
 import inspect
 import logging
-from typing import Union
-
 from aiogram import types, Router, F
 from aiogram.exceptions import TelegramForbiddenError
 from aiogram.filters import StateFilter
@@ -32,7 +30,7 @@ from utils.tags_remover import HTMLTagsRemover
 class AdminCallback(CallbackData, prefix="admin"):
     level: int
     action: str
-    args_to_action: Union[str, int]
+    args_to_action: str | int
     page: int
 
 
@@ -66,7 +64,7 @@ async def admin_command_handler(message: types.message):
     await admin(message)
 
 
-async def admin(message: Union[Message, CallbackQuery]):
+async def admin(message: Message | CallbackQuery):
     admin_menu_builder = InlineKeyboardBuilder()
     admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "announcements"),
                               callback_data=create_admin_callback(level=1))
@@ -530,8 +528,9 @@ async def get_statistics(callback: CallbackQuery):
         statistics_keyboard_builder.row(
             *[AdminConstants.back_to_main_button, await AdminConstants.get_back_button(unpacked_callback)])
         await callback.message.edit_text(
-            text=Localizator.get_text(BotEntity.ADMIN, "new_users_msg").format(users_count=users_count,
-                                                                               timedelta=unpacked_callback.args_to_action),
+            text=Localizator.get_text(BotEntity.ADMIN, "new_users_msg").format(
+                users_count=users_count,
+                timedelta=unpacked_callback.args_to_action),
             reply_markup=statistics_keyboard_builder.as_markup())
     elif unpacked_callback.action == "buys":
         back_button = await AdminConstants.get_back_button(unpacked_callback)
