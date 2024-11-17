@@ -1,6 +1,5 @@
 import datetime
 import math
-from typing import Union
 from sqlalchemy import select, update, func, or_
 import config
 from db import session_execute, session_commit, get_db_session, session_refresh
@@ -162,7 +161,7 @@ class UserService:
     @staticmethod
     async def get_users_tg_ids_for_sending():
         async with get_db_session() as session:
-            stmt = select(User.telegram_id).where(User.can_receive_messages == True)
+            stmt = select(User.telegram_id).where(User.can_receive_messages is True)
             user_ids = await session_execute(stmt, session)
             user_ids = user_ids.scalars().all()
             return user_ids
@@ -190,7 +189,7 @@ class UserService:
             current_time = datetime.datetime.now()
             one_day_interval = datetime.timedelta(days=int(timedelta_int))
             time_to_subtract = current_time - one_day_interval
-            stmt = select(User).where(User.registered_at >= time_to_subtract, User.telegram_username != None).limit(
+            stmt = select(User).where(User.registered_at >= time_to_subtract, User.telegram_username is not None).limit(
                 config.PAGE_ENTRIES).offset(
                 page * config.PAGE_ENTRIES)
             count_stmt = select(func.count(User.id)).where(User.registered_at >= time_to_subtract)
@@ -205,7 +204,7 @@ class UserService:
             one_day_interval = datetime.timedelta(days=int(timedelta_int))
             time_to_subtract = current_time - one_day_interval
             stmt = select(func.count(User.id)).where(User.registered_at >= time_to_subtract,
-                                                     User.telegram_username != None)
+                                                     User.telegram_username is not None)
             users = await session_execute(stmt, session)
             users = users.scalar_one()
             if users % config.PAGE_ENTRIES == 0:
@@ -229,7 +228,7 @@ class UserService:
             return user.scalar()
 
     @staticmethod
-    async def get_user_entity(user_entity: Union[str, int]) -> User:
+    async def get_user_entity(user_entity: str | int) -> User:
         async with get_db_session() as session:
             stmt = select(User).where(or_(User.telegram_id == user_entity, User.telegram_username == user_entity))
             user = await session_execute(stmt, session)

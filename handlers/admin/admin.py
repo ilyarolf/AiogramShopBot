@@ -1,8 +1,6 @@
 import asyncio
 import inspect
 import logging
-from typing import Union
-
 from aiogram import types, Router, F
 from aiogram.exceptions import TelegramForbiddenError
 from aiogram.filters import StateFilter
@@ -32,7 +30,7 @@ from utils.tags_remover import HTMLTagsRemover
 class AdminCallback(CallbackData, prefix="admin"):
     level: int
     action: str
-    args_to_action: Union[str, int]
+    args_to_action: str | int
     page: int
 
 
@@ -66,7 +64,7 @@ async def admin_command_handler(message: types.message):
     await admin(message)
 
 
-async def admin(message: Union[Message, CallbackQuery]):
+async def admin(message: Message | CallbackQuery):
     admin_menu_builder = InlineKeyboardBuilder()
     admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "announcements"),
                               callback_data=create_admin_callback(level=1))
@@ -410,7 +408,8 @@ async def make_refund_markup(page):
                 text=Localizator.get_text(BotEntity.ADMIN, "refund_by_username").format(
                     telegram_username=buy.telegram_username,
                     total_price=buy.total_price,
-                    subcategory=buy.subcategory),
+                    subcategory=buy.subcategory,
+                    currency_sym=Localizator.get_currency_symbol()),
                 callback_data=create_admin_callback(level=16,
                                                     action="make_refund",
                                                     args_to_action=buy.buy_id))
@@ -419,7 +418,8 @@ async def make_refund_markup(page):
                 text=Localizator.get_text(BotEntity.ADMIN, "refund_by_tgid").format(
                     telegram_id=buy.telegram_id,
                     total_price=buy.total_price,
-                    subcategory=buy.subcategory),
+                    subcategory=buy.subcategory,
+                    currency_sym=Localizator.get_currency_symbol()),
                 callback_data=create_admin_callback(level=16,
                                                     action="make_refund",
                                                     args_to_action=buy.buy_id))
@@ -457,7 +457,8 @@ async def refund_confirmation(callback: CallbackQuery):
                 telegram_username=refund_data.telegram_username,
                 quantity=refund_data.quantity,
                 subcategory=refund_data.subcategory,
-                total_price=refund_data.total_price),
+                total_price=refund_data.total_price,
+                currency_sym=Localizator.get_currency_symbol()),
             reply_markup=confirmation_builder.as_markup())
     else:
         await callback.message.edit_text(
@@ -465,7 +466,8 @@ async def refund_confirmation(callback: CallbackQuery):
                 telegram_id=refund_data.telegram_id,
                 quantity=refund_data.quantity,
                 subcategory=refund_data.subcategory,
-                total_price=refund_data.total_price), reply_markup=confirmation_builder.as_markup())
+                total_price=refund_data.total_price,
+                currency_sym=Localizator.get_currency_symbol()), reply_markup=confirmation_builder.as_markup())
 
 
 async def pick_statistics_entity(callback: CallbackQuery):
@@ -526,8 +528,9 @@ async def get_statistics(callback: CallbackQuery):
         statistics_keyboard_builder.row(
             *[AdminConstants.back_to_main_button, await AdminConstants.get_back_button(unpacked_callback)])
         await callback.message.edit_text(
-            text=Localizator.get_text(BotEntity.ADMIN, "new_users_msg").format(users_count=users_count,
-                                                                               timedelta=unpacked_callback.args_to_action),
+            text=Localizator.get_text(BotEntity.ADMIN, "new_users_msg").format(
+                users_count=users_count,
+                timedelta=unpacked_callback.args_to_action),
             reply_markup=statistics_keyboard_builder.as_markup())
     elif unpacked_callback.action == "buys":
         back_button = await AdminConstants.get_back_button(unpacked_callback)
@@ -606,8 +609,8 @@ async def make_refund(callback: CallbackQuery):
                     total_price=refund_data.total_price,
                     telegram_username=refund_data.telegram_username,
                     quantity=refund_data.quantity,
-                    subcategory=refund_data.subcategory),
-                currency_sym=Localizator.get_currency_symbol())
+                    subcategory=refund_data.subcategory,
+                    currency_sym=Localizator.get_currency_symbol()))
         else:
             await callback.message.edit_text(
                 text=Localizator.get_text(BotEntity.ADMIN, "successfully_refunded_with_tgid").format(
