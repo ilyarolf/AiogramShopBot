@@ -57,7 +57,7 @@
     "restocking": "🔄 Restocking Message",
     "restocking_message_category": "\n📦 {category}\n",
     "restocking_message_header": "🆕 New Stock Alert! 🆕\n",
-    "sales_statistics": "📊 <b>Sales statistics for the last {timedelta} days.\n\uD83D\uDCB0 Total profit: {currency_sym}{total_profit}\n\uD83D\uDECD\uFE0F Items sold: {items_sold}\n\uD83D\uDCBC Total buys: {buys_count}</b>",
+    "sales_statistics": "📊 <b>Sales statistics for the last {timedelta} days.\n\uD83D\uDCB0 Total profit: {currency_sym}{total_profit:.2f}\n\uD83D\uDECD\uFE0F Items sold: {items_sold}\n\uD83D\uDCBC Total buys: {buys_count}</b>",
     "send_everyone": "📢 Send to Everyone",
     "sending_result": "✅ <b>Message sent to {counter} out of {len} active users.\nTotal users:{users_count}</b>",
     "sending_started": "🚀 Sending started",
