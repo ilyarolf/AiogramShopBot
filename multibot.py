@@ -1,11 +1,8 @@
 import logging
 import sys
-from typing import Any, Dict, Union
-
+from typing import Any, Dict
 from aiohttp import web
-
 import config
-
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
@@ -19,7 +16,6 @@ from aiogram.webhook.aiohttp_server import (
     TokenBasedRequestHandler,
     setup_application,
 )
-
 from db import create_db_and_tables
 from utils.custom_filters import AdminIdFilter
 
@@ -36,7 +32,7 @@ OTHER_BOTS_PATH = "/webhook/bot/{bot_token}"
 OTHER_BOTS_URL = f"{BASE_URL}{OTHER_BOTS_PATH}"
 
 
-def is_bot_token(value: str) -> Union[bool, Dict[str, Any]]:
+def is_bot_token(value: str) -> bool | Dict[str, Any]:
     try:
         validate_token(value)
     except TokenValidationError:

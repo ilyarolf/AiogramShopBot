@@ -1,7 +1,5 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Union
-
 from sqlalchemy import event, Engine, text, create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import sessionmaker, Session
@@ -46,7 +44,7 @@ if data_folder.exists() is False:
 
 
 @asynccontextmanager
-async def get_db_session() -> Union[AsyncSession, Session]:
+async def get_db_session() -> AsyncSession | Session:
     session = None
     try:
         if config.DB_ENCRYPTION:
@@ -64,7 +62,7 @@ async def get_db_session() -> Union[AsyncSession, Session]:
             session.close()
 
 
-async def session_execute(stmt, session: Union[AsyncSession, Session]):
+async def session_execute(stmt, session: AsyncSession | Session):
     if isinstance(session, AsyncSession):
         query_result = await session.execute(stmt)
         return query_result
@@ -73,14 +71,14 @@ async def session_execute(stmt, session: Union[AsyncSession, Session]):
         return query_result
 
 
-async def session_refresh(session: Union[AsyncSession, Session], instance: object) -> None:
+async def session_refresh(session: AsyncSession | Session, instance: object) -> None:
     if isinstance(session, AsyncSession):
         await session.refresh(instance)
     else:
         session.refresh(instance)
 
 
-async def session_commit(session: Union[AsyncSession, Session]) -> None:
+async def session_commit(session: AsyncSession | Session) -> None:
     if isinstance(session, AsyncSession):
         await session.commit()
     else:
@@ -94,7 +92,7 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor.close()
 
 
-async def check_all_tables_exist(session: Union[AsyncSession, Session]):
+async def check_all_tables_exist(session: AsyncSession | Session):
     for table in Base.metadata.tables.values():
         sql_query = f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table.name}';"
         if isinstance(session, AsyncSession):

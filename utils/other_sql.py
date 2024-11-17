@@ -1,6 +1,4 @@
 from dataclasses import dataclass
-from typing import Union
-
 from sqlalchemy import select
 from db import session_execute, get_db_session
 from models.buy import Buy
@@ -23,7 +21,7 @@ class RefundBuyDTO:
 
 class OtherSQLQuery:
     @staticmethod
-    async def get_refund_data(buy_ids: Union[list[dict], int]):
+    async def get_refund_data(buy_ids: list[dict] | int):
         if isinstance(buy_ids, list):
             result_list = list()
             for buy_id in buy_ids:

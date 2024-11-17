@@ -1,9 +1,7 @@
 import logging
 from typing import List
-from typing import Union
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-import config
 from models.cartItem import CartItem
 from services.item import ItemService
 from services.subcategory import SubcategoryService
@@ -37,9 +35,9 @@ class NotificationManager:
                 logging.error(e)
 
     @staticmethod
-    async def make_user_button(username: Union[str, None]):
+    async def make_user_button(username: str | None):
         user_button_builder = InlineKeyboardBuilder()
-        if isinstance(username, str):
+        if username:
             user_button_inline = types.InlineKeyboardButton(text=username, url=f"https://t.me/{username}")
             user_button_builder.add(user_button_inline)
         return user_button_builder.as_markup()
