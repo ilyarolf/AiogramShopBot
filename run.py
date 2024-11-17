@@ -8,12 +8,12 @@ import config
 from config import SUPPORT_LINK
 import logging
 from bot import dp, main
-from handlers.user.cart import cart_router
+from models.user import UserDTO
 from multibot import main as main_multibot
-from handlers.admin.admin import admin_router
-from handlers.user.all_categories import all_categories_router
+# from handlers.user.cart import cart_router
+# from handlers.admin.admin import admin_router
+# from handlers.user.all_categories import all_categories_router
 from handlers.user.my_profile import my_profile_router
-from services.cart import CartService
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator, BotEntity
@@ -31,19 +31,14 @@ async def start(message: types.message):
     admin_menu_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.ADMIN, "menu"))
     # TODO: insert item count here, these code lines are not correct yet
     cart_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "cart"))
-
-    user_telegram_id = message.chat.id
-    user_telegram_username = message.from_user.username
-    is_exist = await UserService.is_exist(user_telegram_id)
-    if is_exist is False:
-        user_id = await UserService.create(user_telegram_id, user_telegram_username)
-        await CartService.get_or_create_cart(user_id)
-    else:
-        await UserService.update_receive_messages(user_telegram_id, True)
-        await UserService.update_username(user_telegram_id, user_telegram_username)
+    telegram_id = message.from_user.id
+    await UserService.create_if_not_exist(UserDTO(
+        telegram_username=message.from_user.username,
+        telegram_id=telegram_id
+    ))
     keyboard = [[all_categories_button, my_profile_button], [faq_button, help_button],
                 [cart_button]]
-    if user_telegram_id in config.ADMIN_ID_LIST:
+    if telegram_id in config.ADMIN_ID_LIST:
         keyboard.append([admin_menu_button])
     start_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, keyboard=keyboard)
     await message.answer(Localizator.get_text(BotEntity.COMMON, "start_message"), reply_markup=start_markup)
@@ -63,10 +58,10 @@ async def support(message: types.message):
                          reply_markup=admin_keyboard_builder.as_markup())
 
 
-main_router.include_router(admin_router)
+# main_router.include_router(admin_router)
 main_router.include_router(my_profile_router)
-main_router.include_router(all_categories_router)
-main_router.include_router(cart_router)
+# main_router.include_router(all_categories_router)
+# main_router.include_router(cart_router)
 
 if __name__ == '__main__':
     if config.MULTIBOT:
