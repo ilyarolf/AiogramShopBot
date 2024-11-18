@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import aiohttp
 import config
-from models.cryptocurrency import Cryptocurrency
+from enums.cryptocurrency import Cryptocurrency
 from models.user import UserDTO
 from services.deposit import DepositService
 
@@ -127,10 +127,10 @@ class CryptoApiManager:
     @staticmethod
     async def get_crypto_prices(cryptocurrency: Cryptocurrency) -> float:
         match cryptocurrency:
-            case cryptocurrency.TRX_USDT | cryptocurrency.ETH_USDT:
+            case cryptocurrency.USDT_TRC20 | cryptocurrency.USDT_ERC20:
                 url = f'https://api.kraken.com/0/public/Ticker?pair=USDT{config.CURRENCY.value}'
                 response_json = await CryptoApiManager.fetch_api_request(url)
-            case cryptocurrency.ETH_USDC:
+            case cryptocurrency.USDC_ERC20:
                 url = f"https://api.kraken.com/0/public/Ticker?pair=USDC{config.CURRENCY.value}"
                 response_json = await CryptoApiManager.fetch_api_request(url)
             case _:
@@ -148,9 +148,9 @@ class CryptoApiManager:
                 return await CryptoApiManager.get_new_ltc_deposits(user_dto, deposits)
             case Cryptocurrency.SOL:
                 return await CryptoApiManager.get_sol_balance(user_dto, deposits)
-            case Cryptocurrency.TRX_USDT:
+            case Cryptocurrency.USDT_TRC20:
                 return await CryptoApiManager.get_usdt_trc20_balance(user_dto, deposits)
-            case Cryptocurrency.ETH_USDT:
+            case Cryptocurrency.USDT_ERC20:
                 return await CryptoApiManager.get_usdt_erc20_balance(user_dto, deposits)
-            case Cryptocurrency.ETH_USDC:
+            case Cryptocurrency.USDC_ERC20:
                 return await CryptoApiManager.get_usdc_erc20_balance(user_dto, deposits)

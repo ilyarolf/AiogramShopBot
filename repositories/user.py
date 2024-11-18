@@ -41,6 +41,3 @@ class UserRepository:
             await session_refresh(session, user)
             return user.id
 
-    @staticmethod
-    async def create_last_balance_refresh_data(user_dto: UserDTO):
-        pass

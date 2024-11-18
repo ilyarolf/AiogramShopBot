@@ -1,15 +1,11 @@
 from datetime import datetime
-import math
-from sqlalchemy import select, update, func, or_
-import config
 from crypto_api.CryptoApiManager import CryptoApiManager
-from db import session_execute, session_commit, get_db_session, session_refresh
-from models.cryptocurrency import Cryptocurrency
+from enums.cryptocurrency import Cryptocurrency
+from enums.user import UserResponse
 from models.user import User, UserDTO
 from repositories.user import UserRepository
+from services.NotificationService import NotifcationService
 from services.cart import CartService
-from utils.CryptoAddressGenerator import CryptoAddressGenerator
-from utils.localizator import Localizator, BotEntity
 
 
 class UserService:
@@ -278,16 +274,25 @@ class UserService:
 
     @staticmethod
     async def refresh_balance(user_dto: UserDTO, cryptocurrency: Cryptocurrency):
-        user = await UserRepository.get_by_tgid(user_dto)
+        user_dto = UserDTO.model_validate(await UserRepository.get_by_tgid(user_dto), from_attributes=True)
         now_time = datetime.now()
-        if user.last_balance_refresh is None or (
-                user.last_balance_refresh is not None and (now_time - user.last_balance_refresh).total_seconds() > 30):
+        if user_dto.last_balance_refresh is None or (
+                user_dto.last_balance_refresh is not None and (now_time - user_dto.last_balance_refresh).total_seconds() > 30):
             user_dto.last_balance_refresh = now_time
             await UserRepository.update(user_dto)
             deposits_amount = await CryptoApiManager.get_new_deposits_amount(user_dto, cryptocurrency)
             if deposits_amount > 0:
                 crypto_price = await CryptoApiManager.get_crypto_prices(cryptocurrency)
                 fiat_amount = deposits_amount * crypto_price
-
+                new_crypto_balance = getattr(user_dto, cryptocurrency.get_balance_field()) + deposits_amount
+                setattr(user_dto, cryptocurrency.get_balance_field(), new_crypto_balance)
+                user_dto.top_up_amount = user_dto.top_up_amount + fiat_amount
+                await UserRepository.update(user_dto)
+                await NotifcationService.new_deposit(deposits_amount, cryptocurrency, fiat_amount, user_dto)
+                return UserResponse.BALANCE_REFRESHED
+            else:
+                return UserResponse.BALANCE_NOT_REFRESHED
+        else:
+            return UserResponse.BALANCE_REFRESH_COOLDOWN
 
 

@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 import os
-from models.currency import Currency
+from enums.currency import Currency
 from ngrok_executor import start_ngrok
 
 load_dotenv()

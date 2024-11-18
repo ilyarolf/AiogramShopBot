@@ -43,4 +43,4 @@ class DepositService:
 
     @staticmethod
     async def get_by_user_dto(user_dto: UserDTO):
-        await DepositRepository.get_by_user_dto(user_dto)
+        return await DepositRepository.get_by_user_dto(user_dto)
