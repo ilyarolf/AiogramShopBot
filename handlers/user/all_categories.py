@@ -24,39 +24,6 @@ async def all_categories_text_message(message: types.message):
     await all_categories(message)
 
 
-# async def create_category_buttons(page: int):
-#     categories = await CategoryService.get_unsold(page)
-#     if categories:
-#         categories_builder = InlineKeyboardBuilder()
-#         for category in categories:
-#             categories_builder.button(text=category.name,
-#                                       callback_data=create_callback_all_categories(level=1, category_id=category.id))
-#         categories_builder.adjust(2)
-#         return categories_builder
-
-
-# async def create_subcategory_buttons(category_id: int, page: int = 0):
-#     current_level = 1
-#     items = await ItemService.get_unsold_subcategories_by_category(category_id, page)
-#     subcategories_builder = InlineKeyboardBuilder()
-#     for item in items:
-#         subcategory_price = await ItemService.get_price_by_subcategory(item.subcategory_id, category_id)
-#         available_quantity = await ItemService.get_available_quantity(item.subcategory_id, category_id)
-#         subcategory_inline_button = create_callback_all_categories(level=current_level + 1,
-#                                                                    category_id=category_id,
-#                                                                    subcategory_id=item.subcategory_id,
-#                                                                    price=subcategory_price)
-#         subcategories_builder.button(
-#             text=Localizator.get_text(BotEntity.USER, "subcategory_button").format(
-#                 subcategory_name=item.subcategory.name,
-#                 subcategory_price=subcategory_price,
-#                 available_quantity=available_quantity,
-#                 currency_sym=Localizator.get_currency_symbol()),
-#             callback_data=subcategory_inline_button)
-#     subcategories_builder.adjust(1)
-#     return subcategories_builder
-
-
 async def all_categories(message: Message | CallbackQuery):
     if isinstance(message, Message):
         category_buttons = await CategoryService.get_buttons(AllCategoriesCallback.create(0))

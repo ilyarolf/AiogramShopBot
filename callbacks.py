@@ -23,3 +23,14 @@ class AllCategoriesCallback(CallbackData, prefix="all_categories"):
         return AllCategoriesCallback(level=level, category_id=category_id, subcategory_id=subcategory_id, price=price,
                                      total_price=total_price,
                                      quantity=quantity, confirmation=confirmation, page=page)
+
+
+class MyProfileCallback(CallbackData, prefix="my_profile"):
+    level: int
+    action: str
+    args_for_action: int | str
+    page: int
+
+    @staticmethod
+    def create(level: int, action: str = "", args_for_action="", page=0):
+        return MyProfileCallback(level=level, action=action, args_for_action=args_for_action, page=page).pack()

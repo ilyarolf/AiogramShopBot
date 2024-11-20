@@ -1,3 +1,6 @@
+from datetime import datetime
+
+from pydantic import BaseModel
 from sqlalchemy import Column, Integer, Float, DateTime, Boolean, ForeignKey, func
 from sqlalchemy.orm import relationship
 
@@ -14,3 +17,12 @@ class Buy(Base):
     total_price = Column(Float, nullable=False)
     buy_datetime = Column(DateTime, default=func.now())
     is_refunded = Column(Boolean, default=False)
+
+
+class BuyDTO(BaseModel):
+    id: int | None = None
+    buyer_id: int | None = None
+    quantity: int | None = None
+    total_price: float | None = None
+    buy_datetime: datetime | None = None
+    is_refunded: bool | None = None
