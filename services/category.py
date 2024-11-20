@@ -1,25 +1,13 @@
-import math
-
-from aiogram.filters.callback_data import CallbackData
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy import select, func
 import config
 from handlers.common.common import add_pagination_buttons
+from handlers.user.all_categories import AllCategoriesCallback
+from handlers.user.constants import UserConstants
 from models.category import Category
 from models.item import Item
 from db import session_commit, session_execute, session_refresh, get_db_session
 from repositories.category import CategoryRepository
-
-
-class AllCategoriesCallback(CallbackData, prefix="all_categories"):
-    level: int
-    category_id: int
-    subcategory_id: int
-    price: float
-    quantity: int
-    total_price: float
-    confirmation: bool
-    page: int
 
 
 class CategoryService:
@@ -75,29 +63,15 @@ class CategoryService:
         return category_name
 
     @staticmethod
-    def create_callback_all_categories(level: int,
-                                       category_id: int = -1,
-                                       subcategory_id: int = -1,
-                                       price: float = 0.0,
-                                       total_price: float = 0.0,
-                                       quantity: int = 0,
-                                       confirmation: bool = False,
-                                       page: int = 0):
-        return AllCategoriesCallback(level=level, category_id=category_id, subcategory_id=subcategory_id, price=price,
-                                     total_price=total_price,
-                                     quantity=quantity, confirmation=confirmation, page=page).pack()
-
-    @staticmethod
-    async def get_buttons(page: int) -> InlineKeyboardBuilder:
-        categories = await CategoryRepository.get(page)
+    async def get_buttons(unpacked_cb: AllCategoriesCallback) -> InlineKeyboardBuilder:
+        categories = await CategoryRepository.get(unpacked_cb.page)
         categories_builder = InlineKeyboardBuilder()
         [categories_builder.button(text=category.name,
-                                   callback_data=CategoryService.create_callback_all_categories(
+                                   callback_data=AllCategoriesCallback.create(
                                        level=1,
                                        category_id=category.id)) for category in categories]
         categories_builder.adjust(2)
-        zero_level_cb = CategoryService.create_callback_all_categories(0)
-        categories_builder = await add_pagination_buttons(categories_builder, zero_level_cb,
+        categories_builder = await add_pagination_buttons(categories_builder, unpacked_cb,
                                                           CategoryRepository.get_maximum_page(),
-                                                          AllCategoriesCallback.unpack, None)
+                                                          UserConstants.get_back_button(unpacked_cb))
         return categories_builder
