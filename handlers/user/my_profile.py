@@ -4,7 +4,7 @@ from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from enums.user import UserResponse
 from handlers.common.common import add_pagination_buttons
-from handlers.user.cart import create_message_with_bought_items
+# from handlers.user.cart import create_message_with_bought_items
 from enums.cryptocurrency import Cryptocurrency
 from models.user import UserDTO
 from services.buy import BuyService
@@ -170,14 +170,15 @@ async def refresh_balance(callback: CallbackQuery):
 
 
 async def get_order_from_history(callback: CallbackQuery):
-    current_level = 5
-    buy_id = MyProfileCallback.unpack(callback.data).args_for_action
-    items = await ItemService.get_items_by_buy_id(buy_id)
-    message = await create_message_with_bought_items(items)
-    back_builder = InlineKeyboardBuilder()
-    back_builder.button(text=Localizator.get_text(BotEntity.COMMON, "back_button"),
-                        callback_data=create_callback_profile(level=current_level - 1))
-    await callback.message.edit_text(text=message, reply_markup=back_builder.as_markup())
+    pass
+    # current_level = 5
+    # buy_id = MyProfileCallback.unpack(callback.data).args_for_action
+    # items = await ItemService.get_items_by_buy_id(buy_id)
+    # message = await create_message_with_bought_items(items)
+    # back_builder = InlineKeyboardBuilder()
+    # back_builder.button(text=Localizator.get_text(BotEntity.COMMON, "back_button"),
+    #                     callback_data=create_callback_profile(level=current_level - 1))
+    # await callback.message.edit_text(text=message, reply_markup=back_builder.as_markup())
 
 
 async def top_up_by_method(callback: CallbackQuery):

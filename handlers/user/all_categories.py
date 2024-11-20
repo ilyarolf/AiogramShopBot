@@ -1,28 +1,18 @@
 from aiogram import types, Router, F
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import Message, CallbackQuery
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-from handlers.common.common import add_pagination_buttons
-from models.cartItem import CartItem
-from services.cart import CartService
+
+from callbacks import AllCategoriesCallback
+# from aiogram.utils.keyboard import InlineKeyboardBuilder
+# from handlers.common.common import add_pagination_buttons
+# from models.cartItem import CartItem
+# from services.cart import CartService
 from services.category import CategoryService
-from services.item import ItemService
+# from services.item import ItemService
 from services.subcategory import SubcategoryService
-from services.user import UserService
+# from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator, BotEntity
-
-
-class AllCategoriesCallback(CallbackData, prefix="all_categories"):
-    level: int
-    category_id: int
-    subcategory_id: int
-    price: float
-    quantity: int
-    total_price: float
-    confirmation: bool
-    page: int
-
 
 all_categories_router = Router()
 
@@ -68,8 +58,8 @@ async def all_categories_text_message(message: types.message):
 
 async def all_categories(message: Message | CallbackQuery):
     if isinstance(message, Message):
-        category_buttons = await CategoryService.get_buttons(0)
-        if category_buttons:
+        category_buttons = await CategoryService.get_buttons(AllCategoriesCallback.create(0))
+        if len(category_buttons.as_markup().inline_keyboard) > 0:
             await message.answer(Localizator.get_text(BotEntity.USER, "all_categories"),
                                  reply_markup=category_buttons.as_markup())
         else:
@@ -77,27 +67,19 @@ async def all_categories(message: Message | CallbackQuery):
     elif isinstance(message, CallbackQuery):
         callback = message
         unpacked_callback = AllCategoriesCallback.unpack(callback.data)
-        category_buttons = await CategoryService.get_buttons(unpacked_callback.page)
-        if category_buttons:
+        category_buttons = await CategoryService.get_buttons(unpacked_callback)
+        if len(category_buttons.as_markup().inline_keyboard) > 0:
             await callback.message.edit_text(Localizator.get_text(BotEntity.USER, "all_categories"),
                                              reply_markup=category_buttons.as_markup())
         else:
             await callback.message.edit_text(Localizator.get_text(BotEntity.USER, "no_categories"))
 
 
-# async def show_subcategories_in_category(callback: CallbackQuery):
-#     unpacked_callback = AllCategoriesCallback.unpack(callback.data)
-#     subcategory_buttons = await create_subcategory_buttons(unpacked_callback.category_id, page=unpacked_callback.page)
-#     back_button = types.InlineKeyboardButton(
-#         text=Localizator.get_text(BotEntity.USER, "back_to_all_categories"),
-#         callback_data=create_callback_all_categories(
-#             level=unpacked_callback.level - 1))
-#     subcategory_buttons = await add_pagination_buttons(subcategory_buttons, callback.data,
-#                                                        ItemService.get_maximum_page(unpacked_callback.category_id),
-#                                                        AllCategoriesCallback.unpack,
-#                                                        back_button)
-#     await callback.message.edit_text(Localizator.get_text(BotEntity.USER, "subcategories"),
-#                                      reply_markup=subcategory_buttons.as_markup())
+async def show_subcategories_in_category(callback: CallbackQuery):
+    unpacked_callback = AllCategoriesCallback.unpack(callback.data)
+    subcategory_buttons = await SubcategoryService.get_buttons(unpacked_callback)
+    await callback.message.edit_text(Localizator.get_text(BotEntity.USER, "subcategories"),
+                                     reply_markup=subcategory_buttons.as_markup())
 
 
 # async def select_quantity(callback: CallbackQuery):
@@ -199,7 +181,7 @@ async def navigate_categories(call: CallbackQuery, callback_data: AllCategoriesC
 
     levels = {
         0: all_categories,
-        # 1: show_subcategories_in_category,
+        1: show_subcategories_in_category,
         # 2: select_quantity,
         # 3: add_to_cart_confirmation,
         # 4: add_to_cart,

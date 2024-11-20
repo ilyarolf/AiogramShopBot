@@ -4,7 +4,7 @@ from enums.cryptocurrency import Cryptocurrency
 from enums.user import UserResponse
 from models.user import User, UserDTO
 from repositories.user import UserRepository
-from services.NotificationService import NotifcationService
+from services.notification import NotifcationService
 from services.cart import CartService
 
 
