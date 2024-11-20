@@ -1,9 +1,15 @@
 import math
 from sqlalchemy import select, update
 import config
+from callbacks import AllCategoriesCallback
 from db import get_db_session, session_execute, session_commit, session_refresh
 from models.cart import Cart
-from models.cartItem import CartItem
+from models.cartItem import CartItem, CartItemDTO
+from models.user import UserDTO
+from repositories.cart import CartRepository
+from repositories.user import UserRepository
+
+
 # from services.cartItem import CartItemService
 # from services.user import UserService
 
@@ -41,35 +47,13 @@ class CartService:
             return cart.scalar()
 
     @staticmethod
-    async def add_to_cart(cart_item: CartItem, cart: Cart):
-        async with get_db_session() as session:
-            # if there exists a cart with a cart_item with the same category and subcategory, increase the quantity
-            # and if not, there is either no cart_item in the cart at all or no cart_item of the same (sub-)category
-            get_old_cart_content_stmt = select(Cart).join(
-                CartItem, Cart.id == CartItem.cart_id).where(
-                Cart.id == cart.id,
-                CartItem.subcategory_id == cart_item.subcategory_id)
-            old_cart_records = await session_execute(get_old_cart_content_stmt, session)
-            old_cart_records = old_cart_records.scalar()
-
-            if old_cart_records is None:
-                await CartService.create_cart_item(CartItem(
-                    cart_id=cart.id,
-                    category_id=cart_item.category_id,
-                    subcategory_id=cart_item.subcategory_id,
-                    quantity=cart_item.quantity)
-                )
-            elif old_cart_records is not None:
-                quantity_update_stmt = (update(CartItem).where(CartItem.cart_id == cart.id)
-                                        .values(quantity=CartItem.quantity + cart_item.quantity))
-                await session_execute(quantity_update_stmt, session)
-            await session_commit(session)
-
-    @staticmethod
-    async def create_cart_item(cart_item: CartItem) -> int:
-        async with get_db_session() as session:
-            session.add(cart_item)
-            await session_commit(session)
-            await session_refresh(session, cart_item)
-            return cart_item.id
-
+    async def add_to_cart(unpacked_cb: AllCategoriesCallback, telegram_id: int):
+        user = await UserRepository.get_by_tgid(UserDTO(telegram_id=telegram_id))
+        cart = await CartRepository.get_or_create(user.id)
+        cart_item = CartItemDTO(
+            category_id=unpacked_cb.category_id,
+            subcategory_id=unpacked_cb.subcategory_id,
+            quantity=unpacked_cb.quantity,
+            cart_id=cart.id
+        )
+        await CartRepository.add_to_cart(cart_item, cart)

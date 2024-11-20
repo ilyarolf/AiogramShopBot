@@ -30,6 +30,6 @@ async def add_pagination_buttons(keyboard_builder: InlineKeyboardBuilder, unpack
             types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "pagination_last"),
                                        callback_data=last_page_callback.pack()))
     keyboard_builder.row(*buttons)
-    if len(buttons) > 0:
+    if back_button:
         keyboard_builder.row(back_button)
     return keyboard_builder

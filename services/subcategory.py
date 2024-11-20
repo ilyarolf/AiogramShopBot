@@ -1,5 +1,6 @@
 import math
 
+from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy import select, func, delete
 import config
@@ -9,6 +10,7 @@ from handlers.common.common import add_pagination_buttons
 from handlers.user.constants import UserConstants
 from models.item import Item
 from models.subcategory import Subcategory
+from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
 from services.category import CategoryService
@@ -97,18 +99,17 @@ class SubcategoryService:
         subcategories = await SubcategoryRepository.get_paginated_by_category_id(unpacked_cb.category_id,
                                                                                  unpacked_cb.page)
         for subcategory in subcategories:
-            price = await ItemRepository.get_price(unpacked_cb.category_id, subcategory.id)
+            item = await ItemRepository.get_single(unpacked_cb.category_id, subcategory.id)
             available_qty = await ItemRepository.get_available_qty(unpacked_cb.category_id, subcategory.id)
             kb_builder.button(text=Localizator.get_text(BotEntity.USER, "subcategory_button").format(
                 subcategory_name=subcategory.name,
-                subcategory_price=price,
+                subcategory_price=item.price,
                 available_quantity=available_qty,
                 currency_sym=Localizator.get_currency_symbol()),
                 callback_data=AllCategoriesCallback.create(
-                    2,
+                    unpacked_cb.level + 1,
                     unpacked_cb.category_id,
-                    subcategory.id,
-                    price
+                    subcategory.id
                 )
             )
         kb_builder.adjust(1)
@@ -116,3 +117,59 @@ class SubcategoryService:
                                                   SubcategoryRepository.max_page(unpacked_cb.category_id),
                                                   UserConstants.get_back_button(unpacked_cb))
         return kb_builder
+
+    @staticmethod
+    async def get_select_quantity_buttons(unpacked_cb: AllCategoriesCallback) -> tuple[str, InlineKeyboardBuilder]:
+        item = await ItemRepository.get_single(unpacked_cb.category_id, unpacked_cb.subcategory_id)
+        subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.subcategory_id)
+        category = await CategoryRepository.get_by_id(unpacked_cb.category_id)
+        available_qty = await ItemRepository.get_available_qty(unpacked_cb.category_id, unpacked_cb.subcategory_id)
+        message_text = Localizator.get_text(BotEntity.USER, "select_quantity").format(
+            category_name=category.name,
+            subcategory_name=subcategory.name,
+            price=item.price,
+            description=item.description,
+            quantity=available_qty,
+            currency_sym=Localizator.get_currency_symbol()
+        )
+        kb_builder = InlineKeyboardBuilder()
+        for i in range(1, 11):
+            kb_builder.button(text=str(i), callback_data=AllCategoriesCallback.create(
+                unpacked_cb.level + 1,
+                item.category_id,
+                item.subcategory_id,
+                quantity=i
+            ))
+        kb_builder.adjust(3)
+        kb_builder.row(UserConstants.get_back_button(unpacked_cb))
+        return message_text, kb_builder
+
+    @staticmethod
+    async def get_add_to_cart_buttons(unpacked_cb: AllCategoriesCallback) -> tuple[str, InlineKeyboardBuilder]:
+        item = await ItemRepository.get_single(unpacked_cb.category_id, unpacked_cb.subcategory_id)
+        category = await CategoryRepository.get_by_id(unpacked_cb.category_id)
+        subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.subcategory_id)
+        message_text = Localizator.get_text(BotEntity.USER, "buy_confirmation").format(
+            category_name=category.name,
+            subcategory_name=subcategory.name,
+            price=item.price,
+            description=item.description,
+            quantity=unpacked_cb.quantity,
+            total_price=item.price * unpacked_cb.quantity,
+            currency_sym=Localizator.get_currency_symbol())
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
+                          callback_data=AllCategoriesCallback.create(
+                              unpacked_cb.level + 1,
+                              unpacked_cb.category_id,
+                              unpacked_cb.subcategory_id,
+                              quantity=unpacked_cb.quantity,
+                              confirmation=True
+                          ))
+        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
+                          callback_data=AllCategoriesCallback.create(
+                              1,
+                              unpacked_cb.category_id
+                          ))
+        kb_builder.row(UserConstants.get_back_button(unpacked_cb))
+        return message_text, kb_builder
