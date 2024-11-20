@@ -141,9 +141,9 @@ async def purchase_history(callback: CallbackQuery):
     unpacked_callback = MyProfileCallback.unpack(callback.data)
     user = await UserService.get(UserDTO(telegram_id=callback.from_user.id))
     orders_markup_builder, orders_num = await create_purchase_history_keyboard_builder(unpacked_callback.page, user.id)
-    orders_markup_builder = await add_pagination_buttons(orders_markup_builder, callback.data,
+    orders_markup_builder = await add_pagination_buttons(orders_markup_builder, unpacked_callback,
                                                          BuyService.get_max_page_purchase_history(user.id),
-                                                         MyProfileCallback.unpack, MyProfileConstants.back_to_main_menu)
+                                                         MyProfileConstants.back_to_main_menu)
     if orders_num == 0:
         await callback.message.edit_text(Localizator.get_text(BotEntity.USER, "no_purchases"),
                                          reply_markup=orders_markup_builder.as_markup())

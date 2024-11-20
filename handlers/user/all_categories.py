@@ -3,6 +3,7 @@ from aiogram.filters.callback_data import CallbackData
 from aiogram.types import Message, CallbackQuery
 
 from callbacks import AllCategoriesCallback
+from services.cart import CartService
 # from aiogram.utils.keyboard import InlineKeyboardBuilder
 # from handlers.common.common import add_pagination_buttons
 # from models.cartItem import CartItem
@@ -82,97 +83,22 @@ async def show_subcategories_in_category(callback: CallbackQuery):
                                      reply_markup=subcategory_buttons.as_markup())
 
 
-# async def select_quantity(callback: CallbackQuery):
-#     unpacked_callback = AllCategoriesCallback.unpack(callback.data)
-#     price = unpacked_callback.price
-#     subcategory_id = unpacked_callback.subcategory_id
-#     category_id = unpacked_callback.category_id
-#     current_level = unpacked_callback.level
-#     description = await ItemService.get_description(subcategory_id, category_id)
-#     count_builder = InlineKeyboardBuilder()
-#     for i in range(1, 11):
-#         count_builder.button(text=str(i), callback_data=create_callback_all_categories(level=current_level + 1,
-#                                                                                        category_id=category_id,
-#                                                                                        subcategory_id=subcategory_id,
-#                                                                                        price=price,
-#                                                                                        quantity=i,
-#                                                                                        total_price=price * i))
-#     count_builder.adjust(3)
-#     back_button = types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "back_button"),
-#                                              callback_data=create_callback_all_categories(level=current_level - 1,
-#                                                                                           category_id=category_id))
-#     count_builder.row(back_button)
-#     subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
-#     category = await CategoryService.get_by_primary_key(category_id)
-#     available_qty = await ItemService.get_available_quantity(subcategory_id, category_id)
-#     await callback.message.edit_text(
-#         text=Localizator.get_text(BotEntity.USER, "select_quantity").format(
-#             category_name=category.name,
-#             subcategory_name=subcategory.name,
-#             price=price,
-#             description=description,
-#             quantity=available_qty,
-#             currency_sym=Localizator.get_currency_symbol()),
-#         reply_markup=count_builder.as_markup())
+async def select_quantity(callback: CallbackQuery):
+    unpacked_callback = AllCategoriesCallback.unpack(callback.data)
+    message_text, kb_builder = await SubcategoryService.get_select_quantity_buttons(unpacked_callback)
+    await callback.message.edit_text(message_text, reply_markup=kb_builder.as_markup())
 
 
-# async def add_to_cart_confirmation(callback: CallbackQuery):
-#     unpacked_callback = AllCategoriesCallback.unpack(callback.data)
-#     price = unpacked_callback.price
-#     total_price = unpacked_callback.total_price
-#     subcategory_id = unpacked_callback.subcategory_id
-#     category_id = unpacked_callback.category_id
-#     current_level = unpacked_callback.level
-#     quantity = unpacked_callback.quantity
-#     description = await ItemService.get_description(subcategory_id, category_id)
-#     confirmation_builder = InlineKeyboardBuilder()
-#     confirm_button_callback = create_callback_all_categories(level=current_level + 1,
-#                                                              category_id=category_id,
-#                                                              subcategory_id=subcategory_id,
-#                                                              price=price,
-#                                                              total_price=total_price,
-#                                                              quantity=quantity,
-#                                                              confirmation=True)
-#     decline_button_callback = create_callback_all_categories(level=1,
-#                                                              category_id=category_id,
-#                                                              subcategory_id=subcategory_id,
-#                                                              price=price,
-#                                                              total_price=total_price,
-#                                                              quantity=quantity,
-#                                                              confirmation=False)
-#     confirmation_button = types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
-#                                                      callback_data=confirm_button_callback)
-#     decline_button = types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
-#                                                 callback_data=decline_button_callback)
-#     back_button = types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "back_button"),
-#                                              callback_data=create_callback_all_categories(level=current_level - 1,
-#                                                                                           category_id=category_id,
-#                                                                                           subcategory_id=subcategory_id,
-#                                                                                           price=price))
-#     confirmation_builder.add(confirmation_button, decline_button, back_button)
-#     confirmation_builder.adjust(2)
-#     subcategory = await SubcategoryService.get_by_primary_key(subcategory_id)
-#     category = await CategoryService.get_by_primary_key(category_id)
-#     await callback.message.edit_text(
-#         text=Localizator.get_text(BotEntity.USER, "buy_confirmation").format(
-#             category_name=category.name,
-#             subcategory_name=subcategory.name,
-#             price=price,
-#             description=description,
-#             quantity=quantity,
-#             total_price=total_price,
-#             currency_sym=Localizator.get_currency_symbol()),
-#         reply_markup=confirmation_builder.as_markup())
+async def add_to_cart_confirmation(callback: CallbackQuery):
+    unpacked_callback = AllCategoriesCallback.unpack(callback.data)
+    message_text, kb_builder = await SubcategoryService.get_add_to_cart_buttons(unpacked_callback)
+    await callback.message.edit_text(text=message_text, reply_markup=kb_builder.as_markup())
 
 
-# async def add_to_cart(callback: CallbackQuery):
-#     unpacked_callback = AllCategoriesCallback.unpack(callback.data)
-#     user = await UserService.get_by_tgid(callback.from_user.id)
-#     cart = await CartService.get_or_create_cart(user.id)
-#     cart_item = CartItem(category_id=unpacked_callback.category_id, subcategory_id=unpacked_callback.subcategory_id,
-#                          quantity=unpacked_callback.quantity)
-#     await CartService.add_to_cart(cart_item, cart)
-#     await callback.message.edit_text(text=Localizator.get_text(BotEntity.USER, "item_added_to_cart"))
+async def add_to_cart(callback: CallbackQuery):
+    unpacked_callback = AllCategoriesCallback.unpack(callback.data)
+    await CartService.add_to_cart(unpacked_callback, callback.from_user.id)
+    await callback.message.edit_text(text=Localizator.get_text(BotEntity.USER, "item_added_to_cart"))
 
 
 @all_categories_router.callback_query(AllCategoriesCallback.filter(), IsUserExistFilter())
@@ -182,9 +108,9 @@ async def navigate_categories(call: CallbackQuery, callback_data: AllCategoriesC
     levels = {
         0: all_categories,
         1: show_subcategories_in_category,
-        # 2: select_quantity,
-        # 3: add_to_cart_confirmation,
-        # 4: add_to_cart,
+        2: select_quantity,
+        3: add_to_cart_confirmation,
+        4: add_to_cart
     }
 
     current_level_function = levels[current_level]

@@ -13,7 +13,8 @@ class SubcategoryRepository:
     async def get_paginated_by_category_id(category_id: int, page: int) -> list[SubcategoryDTO]:
         stmt = (select(Subcategory)
                 .join(Item, Item.subcategory_id == Subcategory.id)
-                .where(Item.category_id == category_id, Item.is_sold is False)
+                .where(Item.category_id == category_id, Item.is_sold == False)
+                .distinct()
                 .limit(config.PAGE_ENTRIES)
                 .offset(page * config.PAGE_ENTRIES))
         async with get_db_session() as session:
@@ -23,10 +24,11 @@ class SubcategoryRepository:
 
     @staticmethod
     async def max_page(category_id: int) -> int:
-        subquery = (select(Subcategory)
-                    .join(Item.subcategory_id == Subcategory.id)
+        subquery = (select(Subcategory.id)
+                    .join(Item, Item.subcategory_id == Subcategory.id)
                     .where(Item.category_id == category_id,
-                           Item.is_sold == False).distinct())
+                           Item.is_sold == False)
+                    .distinct())
         stmt = select(func.count(subquery))
         async with get_db_session() as session:
             maximum_page = await session_execute(stmt, session)
@@ -35,3 +37,11 @@ class SubcategoryRepository:
                 return maximum_page / config.PAGE_ENTRIES - 1
             else:
                 return math.trunc(maximum_page / config.PAGE_ENTRIES)
+
+    @staticmethod
+    async def get_by_id(subcategory_id: int) -> SubcategoryDTO:
+        stmt = select(Subcategory).where(Subcategory.id == subcategory_id)
+        async with get_db_session() as session:
+            subcategory = await session_execute(stmt, session)
+            return SubcategoryDTO.model_validate(subcategory.scalar(), from_attributes=True)
+

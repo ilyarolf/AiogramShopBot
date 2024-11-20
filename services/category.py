@@ -73,5 +73,5 @@ class CategoryService:
         categories_builder.adjust(2)
         categories_builder = await add_pagination_buttons(categories_builder, unpacked_cb,
                                                           CategoryRepository.get_maximum_page(),
-                                                          UserConstants.get_back_button(unpacked_cb))
+                                                          None)
         return categories_builder

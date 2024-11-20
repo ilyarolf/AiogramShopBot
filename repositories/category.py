@@ -17,7 +17,7 @@ class CategoryRepository:
         async with get_db_session() as session:
             category_names = await session_execute(stmt, session)
             categories = category_names.scalars().all()
-            return [CategoryDTO.model_validate(category) for category in categories]
+            return [CategoryDTO.model_validate(category, from_attributes=True) for category in categories]
 
     @staticmethod
     async def get_maximum_page() -> int:
@@ -35,3 +35,10 @@ class CategoryRepository:
                 return max_page / config.PAGE_ENTRIES - 1
             else:
                 return math.trunc(max_page / config.PAGE_ENTRIES)
+
+    @staticmethod
+    async def get_by_id(category_id: int):
+        stmt = select(Category).where(Category.id == category_id)
+        async with get_db_session() as session:
+            category = await session_execute(stmt, session)
+            return CategoryDTO.model_validate(category.scalar(), from_attributes=True)
