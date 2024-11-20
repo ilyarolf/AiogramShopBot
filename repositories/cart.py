@@ -3,7 +3,7 @@ from sqlalchemy import select, update
 from db import get_db_session, session_execute, session_commit, session_refresh
 from models.cart import Cart, CartDTO
 from models.cartItem import CartItemDTO, CartItem
-from repositories.CartItemRepository import CartItemRepository
+from repositories.cartItem import CartItemRepository
 
 
 class CartRepository:
