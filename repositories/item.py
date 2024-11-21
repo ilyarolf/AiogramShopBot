@@ -38,3 +38,10 @@ class ItemRepository:
             item = await session_execute(stmt, session)
             return ItemDTO.model_validate(item.scalar(), from_attributes=True)
 
+    @staticmethod
+    async def get_by_id(item_id: int):
+        stmt = select(Item).where(Item.id == item_id)
+        async with get_db_session() as session:
+            item = await session_execute(stmt, session)
+            return ItemDTO.model_validate(item.scalar(), from_attributes=True)
+

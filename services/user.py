@@ -10,6 +10,9 @@ from enums.user import UserResponse
 from handlers.user.constants import UserConstants
 from models.user import User, UserDTO
 from repositories.buy import BuyRepository
+from repositories.buyItem import BuyItemRepository
+from repositories.item import ItemRepository
+from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
 from services.notification import NotifcationService
 from services.cart import CartService
@@ -353,6 +356,24 @@ class UserService:
         return msg_text, kb_builder
 
     @staticmethod
-    async def get_purchase_history_buttons(unpacked_callback: MyProfileCallback, telegram_id: int):
+    async def get_purchase_history_buttons(unpacked_callback: MyProfileCallback, telegram_id: int) -> tuple[str, InlineKeyboardBuilder]:
         user = await UserRepository.get_by_tgid(UserDTO(telegram_id=telegram_id))
         buys = await BuyRepository.get_by_buyer_id(user.id, unpacked_callback.page)
+        kb_builder = InlineKeyboardBuilder()
+        for buy in buys:
+            buy_item = await BuyItemRepository.get_single_by_buy_id(buy.id)
+            item = await ItemRepository.get_by_id(buy_item.id)
+            subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id)
+            kb_builder.button(text=Localizator.get_text(BotEntity.USER, "purchase_history_item").format(
+                subcategory_name=subcategory.name,
+                total_price=buy.total_price,
+                quantity=buy.quantity,
+                currency_sym=Localizator.get_currency_symbol()),
+                callback_data=MyProfileCallback.create(
+                    unpacked_callback.level + 1,
+                    args_for_action=buy.id
+                ))
+        if len(kb_builder.as_markup().inline_keyboard) == 0:
+            return Localizator.get_text(BotEntity.USER, "no_purchases"), kb_builder
+        else:
+            return Localizator.get_text(BotEntity.USER, "purchases"), kb_builder
