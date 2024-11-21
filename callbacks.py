@@ -1,8 +1,15 @@
 from aiogram.filters.callback_data import CallbackData
 
-
-class AllCategoriesCallback(CallbackData, prefix="all_categories"):
+class BaseCallback(CallbackData, prefix="base"):
     level: int
+
+    def back_button_cb(self):
+        level = self.level - 1
+        self.level = level
+        return self.create(**self.model_dump())
+
+
+class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
     category_id: int
     subcategory_id: int
     price: float
@@ -25,8 +32,7 @@ class AllCategoriesCallback(CallbackData, prefix="all_categories"):
                                      quantity=quantity, confirmation=confirmation, page=page)
 
 
-class MyProfileCallback(CallbackData, prefix="my_profile"):
-    level: int
+class MyProfileCallback(BaseCallback, prefix="my_profile"):
     action: str
     args_for_action: int | str
     page: int
