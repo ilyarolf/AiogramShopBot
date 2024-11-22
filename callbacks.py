@@ -22,7 +22,7 @@ class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
                total_price: float = 0.0,
                quantity: int = 0,
                confirmation: bool = False,
-               page: int = 0):
+               page: int = 0) -> 'AllCategoriesCallback':
         return AllCategoriesCallback(level=level, category_id=category_id, subcategory_id=subcategory_id, price=price,
                                      total_price=total_price,
                                      quantity=quantity, confirmation=confirmation, page=page)
@@ -34,5 +34,5 @@ class MyProfileCallback(BaseCallback, prefix="my_profile"):
     page: int
 
     @staticmethod
-    def create(level: int, action: str = "", args_for_action="", page=0):
-        return MyProfileCallback(level=level, action=action, args_for_action=args_for_action, page=page).pack()
+    def create(level: int, action: str = "", args_for_action="", page=0) -> 'MyProfileCallback':
+        return MyProfileCallback(level=level, action=action, args_for_action=args_for_action, page=page)

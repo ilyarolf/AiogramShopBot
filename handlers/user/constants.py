@@ -17,4 +17,4 @@ class UserConstants:
             unpacked_callback.level = lvl
         return types.InlineKeyboardButton(
             text=Localizator.get_text(BotEntity.COMMON, "back_button"),
-            callback_data=unpacked_callback.create(**unpacked_callback.model_dump()))
+            callback_data=unpacked_callback.create(**unpacked_callback.model_dump()).pack())

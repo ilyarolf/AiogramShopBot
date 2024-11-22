@@ -1,6 +1,7 @@
 from datetime import datetime
+from typing import Tuple
 
-from aiogram.types import InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardMarkup, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from callbacks import MyProfileCallback
@@ -284,8 +285,10 @@ class UserService:
         return await UserRepository.get_by_tgid(user_dto)
 
     @staticmethod
-    async def refresh_balance(user_dto: UserDTO, cryptocurrency: Cryptocurrency):
-        user_dto = UserDTO.model_validate(await UserRepository.get_by_tgid(user_dto), from_attributes=True)
+    async def refresh_balance(callback: CallbackQuery):
+        user_dto = UserDTO.model_validate(await UserRepository.get_by_tgid(UserDTO(telegram_id=callback.from_user.id)),
+                                          from_attributes=True)
+        cryptocurrency = Cryptocurrency(MyProfileCallback.unpack(callback.data).args_for_action)
         now_time = datetime.now()
         if user_dto.last_balance_refresh is None or (
                 user_dto.last_balance_refresh is not None and (
@@ -330,7 +333,8 @@ class UserService:
         return message, kb_builder
 
     @staticmethod
-    async def get_top_up_buttons(unpacked_cb: MyProfileCallback) -> tuple[str, InlineKeyboardBuilder]:
+    async def get_top_up_buttons(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
+        unpacked_cb = MyProfileCallback.unpack(callback.data)
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "btc_top_up"),
                           callback_data=MyProfileCallback.create(unpacked_cb.level + 1,
@@ -356,9 +360,11 @@ class UserService:
         return msg_text, kb_builder
 
     @staticmethod
-    async def get_purchase_history_buttons(unpacked_callback: MyProfileCallback, telegram_id: int) -> tuple[str, InlineKeyboardBuilder]:
+    async def get_purchase_history_buttons(callback: CallbackQuery, telegram_id: int) \
+            -> tuple[str, InlineKeyboardBuilder]:
+        unpacked_cb = MyProfileCallback.unpack(callback.data)
         user = await UserRepository.get_by_tgid(UserDTO(telegram_id=telegram_id))
-        buys = await BuyRepository.get_by_buyer_id(user.id, unpacked_callback.page)
+        buys = await BuyRepository.get_by_buyer_id(user.id, unpacked_cb.page)
         kb_builder = InlineKeyboardBuilder()
         for buy in buys:
             buy_item = await BuyItemRepository.get_single_by_buy_id(buy.id)
@@ -370,12 +376,30 @@ class UserService:
                 quantity=buy.quantity,
                 currency_sym=Localizator.get_currency_symbol()),
                 callback_data=MyProfileCallback.create(
-                    unpacked_callback.level + 1,
+                    unpacked_cb.level + 1,
                     args_for_action=buy.id
                 ))
         kb_builder.adjust(1)
-        kb_builder.row(UserConstants.get_back_button(unpacked_callback, 0))
+        kb_builder.row(UserConstants.get_back_button(unpacked_cb, 0))
         if len(kb_builder.as_markup().inline_keyboard) > 1:
             return Localizator.get_text(BotEntity.USER, "purchases"), kb_builder
         else:
             return Localizator.get_text(BotEntity.USER, "no_purchases"), kb_builder
+
+    @staticmethod
+    async def get_top_up_by_msg(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
+        unpacked_cb = MyProfileCallback.unpack(callback.data)
+        payment_method = Cryptocurrency(unpacked_cb.args_for_action)
+        user = await UserService.get(UserDTO(telegram_id=callback.from_user.id))
+        addr = getattr(user, payment_method.get_address_field())
+        bot = await callback.bot.get_me()
+        msg = Localizator.get_text(BotEntity.USER, "top_up_balance_msg").format(
+            bot_name=bot.first_name,
+            crypto_name=payment_method.value.replace('_', ' '),
+            addr=addr)
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.button(text=Localizator.get_text(BotEntity.USER, "refresh_balance_button"),
+                          callback_data=MyProfileCallback.create(unpacked_cb.level + 1,
+                                                                 args_for_action=payment_method.value))
+        kb_builder.row(UserConstants.get_back_button(unpacked_cb))
+        return msg, kb_builder
