@@ -1,12 +1,8 @@
 from aiogram.filters.callback_data import CallbackData
 
+
 class BaseCallback(CallbackData, prefix="base"):
     level: int
-
-    def back_button_cb(self):
-        level = self.level - 1
-        self.level = level
-        return self.create(**self.model_dump())
 
 
 class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
