@@ -27,7 +27,7 @@ async def my_profile_text_message(message: types.message):
 class MyProfileConstants:
     back_to_main_menu = types.InlineKeyboardButton(
         text=Localizator.get_text(BotEntity.USER, "back_to_my_profile"),
-        callback_data=MyProfileCallback.create(level=0))
+        callback_data=MyProfileCallback.create(level=0).pack())
 
 
 async def my_profile(message: Message | CallbackQuery):
@@ -41,46 +41,19 @@ async def my_profile(message: Message | CallbackQuery):
 
 
 async def top_up_balance(callback: CallbackQuery):
-    unpacked_cb = MyProfileCallback.unpack(callback.data)
-    msg_text, kb_builder = await UserService.get_top_up_buttons(unpacked_cb)
+    msg_text, kb_builder = await UserService.get_top_up_buttons(callback)
     await callback.message.edit_text(
         text=msg_text,
         reply_markup=kb_builder.as_markup())
 
 
-async def create_purchase_history_keyboard_builder(page: int, user_id: int):
-    # TODO (refactoring)
-    orders_markup_builder = InlineKeyboardBuilder()
-    orders = await BuyService.get_buys_by_buyer_id(user_id, page)
-    for order in orders:
-        quantity = order.quantity
-        total_price = order.total_price
-        buy_id = order.id
-        buy_item = await BuyItemService.get_buy_item_by_buy_id(buy_id)
-        item = await ItemService.get_by_primary_key(buy_item.item_id)
-        item_from_history_callback = MyProfileCallback.create(5, action="get_order",
-                                                              args_for_action=str(buy_id))
-        orders_markup_builder.button(
-            text=Localizator.get_text(BotEntity.USER, "purchase_history_item").format(
-                subcategory_name=item.subcategory.name,
-                total_price=total_price,
-                quantity=quantity,
-                currency_sym=Localizator.get_currency_symbol()),
-            callback_data=item_from_history_callback)
-    orders_markup_builder.adjust(1)
-    return orders_markup_builder, len(orders)
-
-
 async def purchase_history(callback: CallbackQuery):
-    unpacked_callback = MyProfileCallback.unpack(callback.data)
-    msg_text, kb_builder = await UserService.get_purchase_history_buttons(unpacked_callback, callback.from_user.id)
+    msg_text, kb_builder = await UserService.get_purchase_history_buttons(callback, callback.from_user.id)
     await callback.message.edit_text(text=msg_text, reply_markup=kb_builder.as_markup())
 
 
 async def refresh_balance(callback: CallbackQuery):
-    unpacked_cb = MyProfileCallback.unpack(callback.data)
-    cryptocurrency = Cryptocurrency(unpacked_cb.args_for_action)
-    response = await UserService.refresh_balance(UserDTO(telegram_id=callback.from_user.id), cryptocurrency)
+    response = await UserService.refresh_balance(callback)
     match response:
         case UserResponse.BALANCE_REFRESHED:
             await callback.answer(Localizator.get_text(BotEntity.USER, "balance_refreshed_successfully"),
@@ -106,24 +79,10 @@ async def get_order_from_history(callback: CallbackQuery):
 
 
 async def top_up_by_method(callback: CallbackQuery):
-    unpacked_cb = MyProfileCallback.unpack(callback.data)
-    current_level = unpacked_cb.level
-    payment_method = Cryptocurrency(unpacked_cb.args_for_action)
-    user = await UserService.get(UserDTO(telegram_id=callback.from_user.id))
+    msg, kb_builder = await UserService.get_top_up_by_msg(callback)
     bot = await callback.bot.get_me()
-    addr = getattr(user, payment_method.get_address_field())
-    msg = Localizator.get_text(BotEntity.USER, "top_up_balance_msg").format(
-        bot_name=bot.first_name,
-        crypto_name=payment_method.value.replace('_', ' '),
-        addr=addr)
-    refresh_balance_builder = InlineKeyboardBuilder()
-    refresh_balance_builder.button(text=Localizator.get_text(BotEntity.USER, "refresh_balance_button"),
-                                   callback_data=MyProfileCallback.create(current_level + 1,
-                                                                          args_for_action=payment_method.value))
-    refresh_balance_builder.button(text=Localizator.get_text(BotEntity.COMMON, "back_button"),
-                                   callback_data=MyProfileCallback.create(
-                                       level=current_level - 1))
-    await callback.message.edit_text(text=msg, reply_markup=refresh_balance_builder.as_markup())
+    msg.format(bot_name=bot.first_name)
+    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
 @my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())
