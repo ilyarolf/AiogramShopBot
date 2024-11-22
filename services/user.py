@@ -374,8 +374,8 @@ class UserService:
                     args_for_action=buy.id
                 ))
         kb_builder.adjust(1)
-        kb_builder.row(UserConstants.get_back_button(unpacked_callback))
-        if len(kb_builder.as_markup().inline_keyboard) == 0:
-            return Localizator.get_text(BotEntity.USER, "no_purchases"), kb_builder
-        else:
+        kb_builder.row(UserConstants.get_back_button(unpacked_callback, 0))
+        if len(kb_builder.as_markup().inline_keyboard) > 1:
             return Localizator.get_text(BotEntity.USER, "purchases"), kb_builder
+        else:
+            return Localizator.get_text(BotEntity.USER, "no_purchases"), kb_builder
