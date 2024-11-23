@@ -1,3 +1,4 @@
+from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy import select, func
 import config
@@ -63,7 +64,11 @@ class CategoryService:
         return category_name
 
     @staticmethod
-    async def get_buttons(unpacked_cb: AllCategoriesCallback) -> InlineKeyboardBuilder:
+    async def get_buttons(callback: CallbackQuery | None = None) -> InlineKeyboardBuilder:
+        if callback is None:
+            unpacked_cb = AllCategoriesCallback.create(0)
+        else:
+            unpacked_cb = AllCategoriesCallback.unpack(callback.data)
         categories = await CategoryRepository.get(unpacked_cb.page)
         categories_builder = InlineKeyboardBuilder()
         [categories_builder.button(text=category.name,

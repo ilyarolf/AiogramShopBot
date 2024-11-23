@@ -26,7 +26,7 @@ async def all_categories_text_message(message: types.message):
 
 async def all_categories(message: Message | CallbackQuery):
     if isinstance(message, Message):
-        category_buttons = await CategoryService.get_buttons(AllCategoriesCallback.create(0))
+        category_buttons = await CategoryService.get_buttons()
         if len(category_buttons.as_markup().inline_keyboard) > 0:
             await message.answer(Localizator.get_text(BotEntity.USER, "all_categories"),
                                  reply_markup=category_buttons.as_markup())
@@ -34,8 +34,7 @@ async def all_categories(message: Message | CallbackQuery):
             await message.answer(Localizator.get_text(BotEntity.USER, "no_categories"))
     elif isinstance(message, CallbackQuery):
         callback = message
-        unpacked_callback = AllCategoriesCallback.unpack(callback.data)
-        category_buttons = await CategoryService.get_buttons(unpacked_callback)
+        category_buttons = await CategoryService.get_buttons(callback)
         if len(category_buttons.as_markup().inline_keyboard) > 0:
             await callback.message.edit_text(Localizator.get_text(BotEntity.USER, "all_categories"),
                                              reply_markup=category_buttons.as_markup())
@@ -44,27 +43,23 @@ async def all_categories(message: Message | CallbackQuery):
 
 
 async def show_subcategories_in_category(callback: CallbackQuery):
-    unpacked_callback = AllCategoriesCallback.unpack(callback.data)
-    subcategory_buttons = await SubcategoryService.get_buttons(unpacked_callback)
+    subcategory_buttons = await SubcategoryService.get_buttons(callback)
     await callback.message.edit_text(Localizator.get_text(BotEntity.USER, "subcategories"),
                                      reply_markup=subcategory_buttons.as_markup())
 
 
 async def select_quantity(callback: CallbackQuery):
-    unpacked_callback = AllCategoriesCallback.unpack(callback.data)
-    message_text, kb_builder = await SubcategoryService.get_select_quantity_buttons(unpacked_callback)
+    message_text, kb_builder = await SubcategoryService.get_select_quantity_buttons(callback)
     await callback.message.edit_text(message_text, reply_markup=kb_builder.as_markup())
 
 
 async def add_to_cart_confirmation(callback: CallbackQuery):
-    unpacked_callback = AllCategoriesCallback.unpack(callback.data)
-    message_text, kb_builder = await SubcategoryService.get_add_to_cart_buttons(unpacked_callback)
+    message_text, kb_builder = await SubcategoryService.get_add_to_cart_buttons(callback)
     await callback.message.edit_text(text=message_text, reply_markup=kb_builder.as_markup())
 
 
 async def add_to_cart(callback: CallbackQuery):
-    unpacked_callback = AllCategoriesCallback.unpack(callback.data)
-    await CartService.add_to_cart(unpacked_callback, callback.from_user.id)
+    await CartService.add_to_cart(callback)
     await callback.message.edit_text(text=Localizator.get_text(BotEntity.USER, "item_added_to_cart"))
 
 

@@ -42,9 +42,7 @@ async def my_profile(message: Message | CallbackQuery):
 
 async def top_up_balance(callback: CallbackQuery):
     msg_text, kb_builder = await UserService.get_top_up_buttons(callback)
-    await callback.message.edit_text(
-        text=msg_text,
-        reply_markup=kb_builder.as_markup())
+    await callback.message.edit_text(text=msg_text, reply_markup=kb_builder.as_markup())
 
 
 async def purchase_history(callback: CallbackQuery):
@@ -53,17 +51,15 @@ async def purchase_history(callback: CallbackQuery):
 
 
 async def refresh_balance(callback: CallbackQuery):
-    response = await UserService.refresh_balance(callback)
+    msg, response = await UserService.refresh_balance(callback)
     match response:
         case UserResponse.BALANCE_REFRESHED:
-            await callback.answer(Localizator.get_text(BotEntity.USER, "balance_refreshed_successfully"),
-                                  show_alert=True)
+            await callback.answer(msg, show_alert=True)
             await my_profile(callback)
         case UserResponse.BALANCE_NOT_REFRESHED:
-            await callback.answer(Localizator.get_text(BotEntity.USER, "balance_not_refreshed"),
-                                  show_alert=True)
+            await callback.answer(msg, show_alert=True)
         case UserResponse.BALANCE_REFRESH_COOLDOWN:
-            await callback.answer(Localizator.get_text(BotEntity.USER, "balance_refresh_timeout"), show_alert=True)
+            await callback.answer(msg, show_alert=True)
 
 
 async def get_order_from_history(callback: CallbackQuery):
@@ -80,8 +76,6 @@ async def get_order_from_history(callback: CallbackQuery):
 
 async def top_up_by_method(callback: CallbackQuery):
     msg, kb_builder = await UserService.get_top_up_by_msg(callback)
-    bot = await callback.bot.get_me()
-    msg.format(bot_name=bot.first_name)
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
