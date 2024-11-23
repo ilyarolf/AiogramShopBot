@@ -1,6 +1,6 @@
 import math
 
-from aiogram.types import InlineKeyboardMarkup
+from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy import select, func, delete
 import config
@@ -13,7 +13,6 @@ from models.subcategory import Subcategory
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
-from services.category import CategoryService
 from utils.localizator import Localizator, BotEntity
 
 
@@ -94,7 +93,8 @@ class SubcategoryService:
 
     # new methods________________
     @staticmethod
-    async def get_buttons(unpacked_cb: AllCategoriesCallback) -> InlineKeyboardBuilder:
+    async def get_buttons(callback: CallbackQuery) -> InlineKeyboardBuilder:
+        unpacked_cb = AllCategoriesCallback.unpack(callback.data)
         kb_builder = InlineKeyboardBuilder()
         subcategories = await SubcategoryRepository.get_paginated_by_category_id(unpacked_cb.category_id,
                                                                                  unpacked_cb.page)
@@ -119,7 +119,8 @@ class SubcategoryService:
         return kb_builder
 
     @staticmethod
-    async def get_select_quantity_buttons(unpacked_cb: AllCategoriesCallback) -> tuple[str, InlineKeyboardBuilder]:
+    async def get_select_quantity_buttons(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
+        unpacked_cb = AllCategoriesCallback.unpack(callback.data)
         item = await ItemRepository.get_single(unpacked_cb.category_id, unpacked_cb.subcategory_id)
         subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.subcategory_id)
         category = await CategoryRepository.get_by_id(unpacked_cb.category_id)
@@ -145,7 +146,8 @@ class SubcategoryService:
         return message_text, kb_builder
 
     @staticmethod
-    async def get_add_to_cart_buttons(unpacked_cb: AllCategoriesCallback) -> tuple[str, InlineKeyboardBuilder]:
+    async def get_add_to_cart_buttons(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
+        unpacked_cb = AllCategoriesCallback.unpack(callback.data)
         item = await ItemRepository.get_single(unpacked_cb.category_id, unpacked_cb.subcategory_id)
         category = await CategoryRepository.get_by_id(unpacked_cb.category_id)
         subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.subcategory_id)

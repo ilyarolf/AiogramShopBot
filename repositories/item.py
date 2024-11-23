@@ -1,6 +1,6 @@
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 
-from db import get_db_session, session_execute
+from db import get_db_session, session_execute, session_commit
 from models.item import Item, ItemDTO
 
 
@@ -45,3 +45,19 @@ class ItemRepository:
             item = await session_execute(stmt, session)
             return ItemDTO.model_validate(item.scalar(), from_attributes=True)
 
+    @staticmethod
+    async def get_purchased_items(category_id: int, subcategory_id: int, quantity: int) -> list[ItemDTO]:
+        stmt = (select(Item)
+                .where(Item.category_id == category_id, Item.subcategory_id == subcategory_id,
+                       Item.is_sold == False).limit(quantity))
+        async with get_db_session() as session:
+            items = await session_execute(stmt, session)
+            return [ItemDTO.model_validate(item, from_attributes=True) for item in items.scalars().all()]
+
+    @staticmethod
+    async def update(item_dto_list: list[ItemDTO]):
+        async with get_db_session() as session:
+            for item in item_dto_list:
+                stmt = update(Item).where(Item.id == item.id).values(**item.model_dump())
+                await session_execute(stmt, session)
+            await session_commit(session)

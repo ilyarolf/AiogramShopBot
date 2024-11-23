@@ -13,3 +13,7 @@ class BuyRepository:
         async with get_db_session() as session:
             buys = await session_execute(stmt, session)
             return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]
+
+    @classmethod
+    async def create(id, quantity, total_price):
+        pass

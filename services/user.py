@@ -285,7 +285,7 @@ class UserService:
         return await UserRepository.get_by_tgid(user_dto)
 
     @staticmethod
-    async def refresh_balance(callback: CallbackQuery):
+    async def refresh_balance(callback: CallbackQuery) -> tuple[str, UserResponse]:
         user_dto = UserDTO.model_validate(await UserRepository.get_by_tgid(UserDTO(telegram_id=callback.from_user.id)),
                                           from_attributes=True)
         cryptocurrency = Cryptocurrency(MyProfileCallback.unpack(callback.data).args_for_action)
@@ -304,11 +304,14 @@ class UserService:
                 user_dto.top_up_amount = user_dto.top_up_amount + fiat_amount
                 await UserRepository.update(user_dto)
                 await NotifcationService.new_deposit(deposits_amount, cryptocurrency, fiat_amount, user_dto)
-                return UserResponse.BALANCE_REFRESHED
+                return (Localizator.get_text(BotEntity.USER, "balance_refreshed_successfully"),
+                        UserResponse.BALANCE_REFRESHED)
             else:
-                return UserResponse.BALANCE_NOT_REFRESHED
+                return (Localizator.get_text(BotEntity.USER, "balance_not_refreshed"),
+                        UserResponse.BALANCE_NOT_REFRESHED)
         else:
-            return UserResponse.BALANCE_REFRESH_COOLDOWN
+            return (Localizator.get_text(BotEntity.USER, "balance_refresh_timeout"),
+                    UserResponse.BALANCE_REFRESH_COOLDOWN)
 
     @staticmethod
     async def get_my_profile_buttons(user_dto: UserDTO) -> tuple[str, InlineKeyboardBuilder]:
