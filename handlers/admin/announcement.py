@@ -11,7 +11,7 @@ from utils.custom_filters import AdminIdFilter
 from utils.localizator import BotEntity, Localizator
 from utils.new_items_manager import NewItemsManager
 
-admin_announcement_router = Router()
+announcement_router = Router()
 
 
 class AdminAnnouncementStates(StatesGroup):
@@ -36,7 +36,7 @@ async def send_everyone(callback: CallbackQuery, state: FSMContext):
     await state.set_state(AdminAnnouncementStates.announcement_msg)
 
 
-@admin_announcement_router.message(AdminIdFilter(), StateFilter(AdminAnnouncementStates.announcement_msg))
+@announcement_router.message(AdminIdFilter(), StateFilter(AdminAnnouncementStates.announcement_msg))
 async def receive_admin_message(message: Message, state: FSMContext):
     await state.clear()
     if message.text == "cancel":
@@ -65,9 +65,9 @@ async def send_confirmation(callback: CallbackQuery):
         await callback.message.edit_text(text=msg)
 
 
-@admin_announcement_router.callback_query(AdminIdFilter(), AdminAnnouncementCallback.filter())
-async def admin_announcement_navigation(callback: CallbackQuery, state: FSMContext,
-                                        callback_data: AdminAnnouncementCallback):
+@announcement_router.callback_query(AdminIdFilter(), AdminAnnouncementCallback.filter())
+async def announcement_navigation(callback: CallbackQuery, state: FSMContext,
+                                  callback_data: AdminAnnouncementCallback):
     current_level = callback_data.level
 
     levels = {
