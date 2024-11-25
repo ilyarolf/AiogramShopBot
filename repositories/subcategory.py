@@ -45,3 +45,13 @@ class SubcategoryRepository:
             subcategory = await session_execute(stmt, session)
             return SubcategoryDTO.model_validate(subcategory.scalar(), from_attributes=True)
 
+    @staticmethod
+    async def get_to_delete(page: int) -> list[SubcategoryDTO]:
+        stmt = select(Subcategory).join(Item,
+                                        Item.subcategory_id == Subcategory.id).where(
+            Item.is_sold == 0).distinct().limit(config.PAGE_ENTRIES).offset(
+            page * config.PAGE_ENTRIES).group_by(Subcategory.name)
+        async with get_db_session() as session:
+            subcategories = await session_execute(stmt, session=session)
+            return [SubcategoryDTO.model_validate(subcategory, from_attributes=True) for subcategory in
+                    subcategories.scalars().all()]

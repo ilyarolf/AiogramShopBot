@@ -11,7 +11,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 # import config
 from callbacks import AdminMenuCallback, AdminAnnouncementCallback
-from handlers.admin.announcement import admin_announcement_router
+from handlers.admin.announcement import announcement_router
 # from crypto_api.CryptoApiManager import CryptoApiManager
 # from handlers.common.common import add_pagination_buttons
 # from models.item import Item
@@ -23,12 +23,13 @@ from handlers.admin.announcement import admin_announcement_router
 # from services.user import UserService
 from utils.custom_filters import AdminIdFilter
 from utils.localizator import Localizator, BotEntity
+
 # from utils.new_items_manager import NewItemsManager
 # from utils.other_sql import OtherSQLQuery
 # from utils.tags_remover import HTMLTagsRemover
 
 admin_router = Router()
-admin_router.include_router(admin_announcement_router)
+admin_router.include_router(announcement_router)
 
 
 @admin_router.message(F.text == Localizator.get_text(BotEntity.ADMIN, "menu"), AdminIdFilter())
@@ -71,8 +72,6 @@ class AdminStates(StatesGroup):
     private_data = State()
     user_entity = State()
     balance_value = State()
-
-
 
 
 # async def send_everyone(callback: CallbackQuery, state: FSMContext):

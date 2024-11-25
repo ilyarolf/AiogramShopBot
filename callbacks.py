@@ -79,3 +79,31 @@ class AdminAnnouncementCallback(BaseCallback, prefix="admin_announcement"):
     @staticmethod
     def create(level: int):
         return AdminAnnouncementCallback(level=level, announcement_type=AnnouncementType.FROM_RECEIVING_MESSAGE)
+
+
+class AddType(IntEnum):
+    JSON = 1
+    TXT = 2
+    MENU = 3
+
+
+class EntityType(IntEnum):
+    CATEGORY = 1
+    SUBCATEGORY = 2
+    ITEM = 3
+
+
+class AdminInventoryManagementCallback(BaseCallback, "admin_inventory_management"):
+    add_type: AddType | None
+    entity_type: EntityType | None
+    entity_id: int | None
+    page: int | None
+
+    @staticmethod
+    def create(level: int, add_type: AddType | None = None, entity_type: EntityType | None = None,
+               entity_id: int | None = None, page: int = 0):
+        return AdminInventoryManagementCallback(level=level,
+                                                add_type=add_type,
+                                                entity_type=entity_type,
+                                                entity_id=entity_id,
+                                                page=page)

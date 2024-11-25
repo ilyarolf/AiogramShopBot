@@ -42,3 +42,13 @@ class CategoryRepository:
         async with get_db_session() as session:
             category = await session_execute(stmt, session)
             return CategoryDTO.model_validate(category.scalar(), from_attributes=True)
+
+    @staticmethod
+    async def get_to_delete(page: int) -> list[CategoryDTO]:
+        stmt = select(Category).join(Item, Item.category_id == Category.id
+                                     ).where(Item.is_sold == 0).distinct().limit(config.PAGE_ENTRIES).offset(
+            page * config.PAGE_ENTRIES).group_by(Category.name)
+        async with get_db_session() as session:
+            categories = await session_execute(stmt, session)
+            return [CategoryDTO.model_validate(category, from_attributes=True) for category in
+                    categories.scalars().all()]
