@@ -2,9 +2,8 @@ from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy import select, func
 import config
+from callbacks import AllCategoriesCallback
 from handlers.common.common import add_pagination_buttons
-from handlers.user.all_categories import AllCategoriesCallback
-from handlers.user.constants import UserConstants
 from models.category import Category
 from models.item import Item
 from db import session_commit, session_execute, session_refresh, get_db_session

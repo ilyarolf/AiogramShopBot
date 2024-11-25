@@ -1,11 +1,20 @@
 import datetime
 import math
+
+from aiogram.types import CallbackQuery
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy import select, update, func
 import config
+from callbacks import MyProfileCallback
 from db import session_execute, session_commit, session_refresh, get_db_session
+from handlers.user.constants import UserConstants
 from models.buy import Buy
 from models.user import User
+from repositories.buy import BuyRepository
+from repositories.item import ItemRepository
+from services.message import MessageService
 from services.user import UserService
+from utils.localizator import Localizator, BotEntity
 from utils.other_sql import RefundBuyDTO
 
 
@@ -75,3 +84,12 @@ class BuyService:
             stmt = select(Buy).where(Buy.buy_datetime >= time_to_subtract)
             buys = await session_execute(stmt, session)
             return buys.scalars().all()
+
+    @staticmethod
+    async def get_purchase(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
+        unpacked_cb = MyProfileCallback.unpack(callback.data)
+        items = await ItemRepository.get_by_buy_id(unpacked_cb.args_for_action)
+        msg = MessageService.create_message_with_bought_items(items)
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.row(UserConstants.get_back_button(unpacked_cb))
+        return msg, kb_builder

@@ -38,8 +38,7 @@ class MyProfileCallback(BaseCallback, prefix="my_profile"):
         return MyProfileCallback(level=level, action=action, args_for_action=args_for_action, page=page)
 
 
-class CartCallback(CallbackData, prefix="cart"):
-    level: int
+class CartCallback(BaseCallback, prefix="cart"):
     page: int
     cart_id: int
     cart_item_id: int

@@ -8,7 +8,7 @@ from callbacks import AllCategoriesCallback
 from db import session_commit, session_execute, session_refresh, get_db_session
 from handlers.common.common import add_pagination_buttons
 from handlers.user.constants import UserConstants
-from models.item import Item
+from models.item import Item, ItemDTO
 from models.subcategory import Subcategory
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
@@ -100,7 +100,8 @@ class SubcategoryService:
                                                                                  unpacked_cb.page)
         for subcategory in subcategories:
             item = await ItemRepository.get_single(unpacked_cb.category_id, subcategory.id)
-            available_qty = await ItemRepository.get_available_qty(unpacked_cb.category_id, subcategory.id)
+            available_qty = await ItemRepository.get_available_qty(ItemDTO(category_id=unpacked_cb.category_id,
+                                                                           subcategory_id=subcategory.id))
             kb_builder.button(text=Localizator.get_text(BotEntity.USER, "subcategory_button").format(
                 subcategory_name=subcategory.name,
                 subcategory_price=item.price,
@@ -124,7 +125,7 @@ class SubcategoryService:
         item = await ItemRepository.get_single(unpacked_cb.category_id, unpacked_cb.subcategory_id)
         subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.subcategory_id)
         category = await CategoryRepository.get_by_id(unpacked_cb.category_id)
-        available_qty = await ItemRepository.get_available_qty(unpacked_cb.category_id, unpacked_cb.subcategory_id)
+        available_qty = await ItemRepository.get_available_qty(item)
         message_text = Localizator.get_text(BotEntity.USER, "select_quantity").format(
             category_name=category.name,
             subcategory_name=subcategory.name,
