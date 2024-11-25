@@ -1,3 +1,5 @@
+from enum import Enum
+
 from aiogram.filters.callback_data import CallbackData
 
 
@@ -53,3 +55,27 @@ class CartCallback(BaseCallback, prefix="cart"):
         return CartCallback(level=level, page=page, cart_id=cart_id, cart_item_id=cart_item_id,
                             delete_cart_item_confirmation=delete_cart_item_confirmation,
                             purchase_confirmation=purchase_confirmation, cart_grand_total=cart_grand_total)
+
+
+class AdminMenuCallback(BaseCallback, prefix="admin_menu"):
+    action: str
+    args_to_action: str | int
+    page: int
+
+    @staticmethod
+    def create(level: int, action: str = "", args_to_action: str = "", page: int = 0):
+        return AdminMenuCallback(level=level, action=action, args_to_action=args_to_action, page=page)
+
+
+class AnnouncementType(Enum):
+    RESTOCKING = 1
+    CURRENT_STOCK = 2
+    FROM_RECEIVING_MESSAGE = 3
+
+
+class AdminAnnouncementCallback(BaseCallback, prefix="admin_announcement"):
+    announcement_type: AnnouncementType
+
+    @staticmethod
+    def create(level: int):
+        return AdminAnnouncementCallback(level=level, announcement_type=AnnouncementType.FROM_RECEIVING_MESSAGE)

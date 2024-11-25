@@ -73,3 +73,11 @@ class ItemRepository:
         async with get_db_session() as session:
             result = await session_execute(stmt, session)
             return [ItemDTO.model_validate(item, from_attributes=True) for item in result.scalars().all()]
+
+    @staticmethod
+    async def set_not_new():
+        stmt = update(Item).values(is_new=False)
+        async with get_db_session() as session:
+            await session_execute(stmt, session)
+            await session_commit(session)
+

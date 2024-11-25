@@ -1,4 +1,4 @@
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
 from db import get_db_session, session_commit, session_execute, session_refresh
 
 from models.user import UserDTO, User
@@ -41,3 +41,16 @@ class UserRepository:
             await session_refresh(session, user)
             return user.id
 
+    @staticmethod
+    async def get_active() -> list[UserDTO]:
+        stmt = select(User).where(User.can_receive_messages == True)
+        async with get_db_session() as session:
+            users = await session_execute(stmt, session)
+            return [UserDTO.model_validate(user, from_attributes=True) for user in users.scalars().all()]
+
+    @staticmethod
+    async def get_all_count() -> int:
+        stmt = func.count(User.id)
+        async with get_db_session() as session:
+            users_count = await session_execute(stmt, session)
+            return users_count.scalar_one()
