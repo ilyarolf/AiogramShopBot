@@ -1,9 +1,6 @@
 from datetime import datetime
-from typing import Tuple
-
-from aiogram.types import InlineKeyboardMarkup, CallbackQuery
+from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
 from callbacks import MyProfileCallback
 from crypto_api.CryptoApiManager import CryptoApiManager
 from enums.cryptocurrency import Cryptocurrency
@@ -15,7 +12,7 @@ from repositories.buyItem import BuyItemRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
-from services.notification import NotifcationService
+from services.notification import NotificationService
 from services.cart import CartService
 from utils.localizator import Localizator, BotEntity
 
@@ -303,7 +300,7 @@ class UserService:
                 setattr(user_dto, cryptocurrency.get_balance_field(), new_crypto_balance)
                 user_dto.top_up_amount = user_dto.top_up_amount + fiat_amount
                 await UserRepository.update(user_dto)
-                await NotifcationService.new_deposit(deposits_amount, cryptocurrency, fiat_amount, user_dto)
+                await NotificationService.new_deposit(deposits_amount, cryptocurrency, fiat_amount, user_dto)
                 return (Localizator.get_text(BotEntity.USER, "balance_refreshed_successfully"),
                         UserResponse.BALANCE_REFRESHED)
             else:

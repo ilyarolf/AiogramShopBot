@@ -1,7 +1,7 @@
 from sqlalchemy import select
 
 import config
-from db import get_db_session, session_execute
+from db import get_db_session, session_execute, session_commit, session_refresh
 from models.buy import Buy, BuyDTO
 
 
@@ -14,6 +14,11 @@ class BuyRepository:
             buys = await session_execute(stmt, session)
             return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]
 
-    @classmethod
-    async def create(id, quantity, total_price):
-        pass
+    @staticmethod
+    async def create(buy_dto: BuyDTO) -> int:
+        async with get_db_session() as session:
+            buy = Buy(**buy_dto.model_dump())
+            session.add(buy)
+            await session_commit(session)
+            await session_refresh(session, buy)
+            return buy.id

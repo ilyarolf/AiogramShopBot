@@ -1,17 +1,9 @@
 from aiogram import types, Router, F
-from aiogram.filters.callback_data import CallbackData
 from aiogram.types import Message, CallbackQuery
-
 from callbacks import AllCategoriesCallback
 from services.cart import CartService
-# from aiogram.utils.keyboard import InlineKeyboardBuilder
-# from handlers.common.common import add_pagination_buttons
-# from models.cartItem import CartItem
-# from services.cart import CartService
 from services.category import CategoryService
-# from services.item import ItemService
 from services.subcategory import SubcategoryService
-# from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator, BotEntity
 

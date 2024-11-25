@@ -7,11 +7,11 @@ from utils.CryptoAddressGenerator import CryptoAddressGenerator
 
 class UserRepository:
     @staticmethod
-    async def get_by_tgid(user_dto: UserDTO) -> User | None:
+    async def get_by_tgid(user_dto: UserDTO) -> UserDTO | None:
         stmt = select(User).where(User.telegram_id == user_dto.telegram_id)
         async with get_db_session() as session:
             user = await session_execute(stmt, session)
-            return user.scalar()
+            return UserDTO.model_validate(user.scalar(), from_attributes=True)
 
     @staticmethod
     async def update(user_dto: UserDTO) -> None:
