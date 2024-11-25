@@ -30,23 +30,6 @@ from utils.localizator import Localizator, BotEntity
 admin_router = Router()
 admin_router.include_router(admin_announcement_router)
 
-class AdminConstants:
-    back_to_main_button = types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.ADMIN,
-                                                                               "back_to_menu"),
-                                                     callback_data=AdminMenuCallback(level=0).pack())
-    # confirmation_builder = InlineKeyboardBuilder()
-    # confirmation_button = types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
-    #                                                  callback_data=create_admin_callback(level=4, action="confirm"))
-    # cancel_button = types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
-    #                                            callback_data=create_admin_callback(level=-1, action="cancel"))
-    # confirmation_builder.add(cancel_button, confirmation_button)
-
-    # @staticmethod
-    # async def get_back_button(unpacked_callback: AdminCallback) -> types.InlineKeyboardButton:
-    #     new_callback = unpacked_callback.model_copy(update={"level": unpacked_callback.level - 1})
-    #     return types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "back_button"),
-    #                                       callback_data=new_callback.pack())
-
 
 @admin_router.message(F.text == Localizator.get_text(BotEntity.ADMIN, "menu"), AdminIdFilter())
 async def admin_command_handler(message: types.message):
