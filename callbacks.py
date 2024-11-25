@@ -93,11 +93,12 @@ class EntityType(IntEnum):
     ITEM = 3
 
 
-class AdminInventoryManagementCallback(BaseCallback, "admin_inventory_management"):
+class AdminInventoryManagementCallback(BaseCallback, prefix="admin_inventory_management"):
     add_type: AddType | None
     entity_type: EntityType | None
     entity_id: int | None
     page: int | None
+    confirmation: bool
 
     @staticmethod
     def create(level: int, add_type: AddType | None = None, entity_type: EntityType | None = None,
@@ -106,4 +107,5 @@ class AdminInventoryManagementCallback(BaseCallback, "admin_inventory_management
                                                 add_type=add_type,
                                                 entity_type=entity_type,
                                                 entity_id=entity_id,
-                                                page=page)
+                                                page=page,
+                                                confirmation=False)

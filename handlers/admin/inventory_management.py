@@ -22,12 +22,18 @@ async def add_items(callback: CallbackQuery):
 
 
 async def delete_entity(callback: CallbackQuery):
-    msg, kb_builder = await AdminService.get_delete_entity_menu(callback)
-    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+    unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
+    if unpacked_cb.entity_id is not None:
+        msg, kb_builder = await AdminService.delete_confirmation(callback)
+        await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup)
+    else:
+        msg, kb_builder = await AdminService.get_delete_entity_menu(callback)
+        await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
 async def confirm_delete(callback: CallbackQuery):
-    pass
+    msg, kb_builder = await AdminService.delete_entity(callback)
+    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
 @inventory_management.callback_query(AdminIdFilter(), AdminInventoryManagementCallback.filter())

@@ -19,6 +19,7 @@ class AdminAnnouncementStates(StatesGroup):
 
 
 class AdminAnnouncementsConstants:
+    # TODO(move to constants)
     confirmation_builder = InlineKeyboardBuilder()
     confirmation_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
                                 callback_data=AdminAnnouncementCallback.create(3))

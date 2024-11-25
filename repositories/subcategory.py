@@ -55,3 +55,20 @@ class SubcategoryRepository:
             subcategories = await session_execute(stmt, session=session)
             return [SubcategoryDTO.model_validate(subcategory, from_attributes=True) for subcategory in
                     subcategories.scalars().all()]
+
+    @staticmethod
+    async def get_maximum_page_to_delete() -> int:
+        unique_categories_subquery = (
+            select(Subcategory.id)
+            .join(Item, Item.subcategory_id == Subcategory.id)
+            .filter(Item.is_sold == 0)
+            .distinct()
+        ).alias('unique_categories')
+        stmt = select(func.count()).select_from(unique_categories_subquery)
+        async with get_db_session() as session:
+            max_page = await session_execute(stmt, session)
+            max_page = max_page.scalar_one()
+            if max_page % config.PAGE_ENTRIES == 0:
+                return max_page / config.PAGE_ENTRIES - 1
+            else:
+                return math.trunc(max_page / config.PAGE_ENTRIES)
