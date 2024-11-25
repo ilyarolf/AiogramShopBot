@@ -62,8 +62,7 @@ async def send_confirmation(callback: CallbackQuery):
         await callback.message.delete()
         await callback.message.answer(text=msg)
     elif callback.message.text:
-        await callback.message.edit_text(
-            text=msg)
+        await callback.message.edit_text(text=msg)
 
 
 @admin_announcement_router.callback_query(AdminIdFilter(), AdminAnnouncementCallback.filter())

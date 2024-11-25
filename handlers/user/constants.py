@@ -1,6 +1,6 @@
 from aiogram import types
 
-from callbacks import AllCategoriesCallback, MyProfileCallback, BaseCallback
+from callbacks import AllCategoriesCallback, BaseCallback
 from utils.localizator import Localizator, BotEntity
 
 

@@ -2,9 +2,11 @@
 import grequests
 from aiogram import types, F, Router
 from aiogram.filters import Command
+from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import config
+from callbacks import AdminAnnouncementCallback
 from config import SUPPORT_LINK
 import logging
 from bot import dp, main
@@ -62,6 +64,11 @@ main_router.include_router(admin_router)
 main_router.include_router(my_profile_router)
 main_router.include_router(all_categories_router)
 main_router.include_router(cart_router)
+
+# @main_router.callback_query()
+# async def qwerty(callback: CallbackQuery):
+#     AdminAnnouncementCallback.unpack(callback.data)
+#     print(callback.data)
 
 if __name__ == '__main__':
     if config.MULTIBOT:

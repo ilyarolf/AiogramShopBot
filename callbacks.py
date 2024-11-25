@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum
 
 from aiogram.filters.callback_data import CallbackData
 
@@ -67,7 +67,7 @@ class AdminMenuCallback(BaseCallback, prefix="admin_menu"):
         return AdminMenuCallback(level=level, action=action, args_to_action=args_to_action, page=page)
 
 
-class AnnouncementType(Enum):
+class AnnouncementType(IntEnum):
     RESTOCKING = 1
     CURRENT_STOCK = 2
     FROM_RECEIVING_MESSAGE = 3

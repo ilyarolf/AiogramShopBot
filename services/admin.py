@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from callbacks import AdminAnnouncementCallback, AnnouncementType
-from handlers.admin.admin import AdminConstants
+from handlers.admin.constants import AdminConstants
 from repositories.item import ItemRepository
 from repositories.user import UserRepository
 from utils.localizator import Localizator, BotEntity
