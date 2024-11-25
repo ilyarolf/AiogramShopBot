@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy import select, func
@@ -8,6 +10,7 @@ from models.category import Category
 from models.item import Item
 from db import session_commit, session_execute, session_refresh, get_db_session
 from repositories.category import CategoryRepository
+from utils.localizator import Localizator, BotEntity
 
 
 class CategoryService:
@@ -63,7 +66,7 @@ class CategoryService:
         return category_name
 
     @staticmethod
-    async def get_buttons(callback: CallbackQuery | None = None) -> InlineKeyboardBuilder:
+    async def get_buttons(callback: CallbackQuery | None = None) -> tuple[str, InlineKeyboardBuilder]:
         if callback is None:
             unpacked_cb = AllCategoriesCallback.create(0)
         else:
@@ -78,4 +81,7 @@ class CategoryService:
         categories_builder = await add_pagination_buttons(categories_builder, unpacked_cb,
                                                           CategoryRepository.get_maximum_page(),
                                                           None)
-        return categories_builder
+        if len(categories_builder.as_markup().inline_keyboard) == 0:
+            return Localizator.get_text(BotEntity.USER, "no_categories"), categories_builder
+        else:
+            return Localizator.get_text(BotEntity.USER, "all_categories"), categories_builder

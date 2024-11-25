@@ -1,4 +1,5 @@
 import math
+from typing import Tuple
 
 from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -93,7 +94,7 @@ class SubcategoryService:
 
     # new methods________________
     @staticmethod
-    async def get_buttons(callback: CallbackQuery) -> InlineKeyboardBuilder:
+    async def get_buttons(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
         unpacked_cb = AllCategoriesCallback.unpack(callback.data)
         kb_builder = InlineKeyboardBuilder()
         subcategories = await SubcategoryRepository.get_paginated_by_category_id(unpacked_cb.category_id,
@@ -117,7 +118,7 @@ class SubcategoryService:
         kb_builder = await add_pagination_buttons(kb_builder, unpacked_cb,
                                                   SubcategoryRepository.max_page(unpacked_cb.category_id),
                                                   UserConstants.get_back_button(unpacked_cb))
-        return kb_builder
+        return Localizator.get_text(BotEntity.USER, "subcategories"), kb_builder
 
     @staticmethod
     async def get_select_quantity_buttons(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
