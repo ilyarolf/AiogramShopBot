@@ -11,7 +11,7 @@ from bot import dp, main
 from models.user import UserDTO
 from multibot import main as main_multibot
 from handlers.user.cart import cart_router
-# from handlers.admin.admin import admin_router
+from handlers.admin.admin import admin_router
 from handlers.user.all_categories import all_categories_router
 from handlers.user.my_profile import my_profile_router
 from services.user import UserService
@@ -58,7 +58,7 @@ async def support(message: types.message):
                          reply_markup=admin_keyboard_builder.as_markup())
 
 
-# main_router.include_router(admin_router)
+main_router.include_router(admin_router)
 main_router.include_router(my_profile_router)
 main_router.include_router(all_categories_router)
 main_router.include_router(cart_router)
