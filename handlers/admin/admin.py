@@ -10,8 +10,9 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 # import config
-from callbacks import AdminMenuCallback, AdminAnnouncementCallback
+from callbacks import AdminMenuCallback, AdminAnnouncementCallback, AdminInventoryManagementCallback
 from handlers.admin.announcement import announcement_router
+from handlers.admin.inventory_management import inventory_management
 # from crypto_api.CryptoApiManager import CryptoApiManager
 # from handlers.common.common import add_pagination_buttons
 # from models.item import Item
@@ -30,6 +31,7 @@ from utils.localizator import Localizator, BotEntity
 
 admin_router = Router()
 admin_router.include_router(announcement_router)
+admin_router.include_router(inventory_management)
 
 
 @admin_router.message(F.text == Localizator.get_text(BotEntity.ADMIN, "menu"), AdminIdFilter())
@@ -42,7 +44,7 @@ async def admin(message: Message | CallbackQuery):
     admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "announcements"),
                               callback_data=AdminAnnouncementCallback.create(level=0))
     admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "inventory_management"),
-                              callback_data=AdminMenuCallback.create(level=5))
+                              callback_data=AdminInventoryManagementCallback.create(level=0))
     admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "user_management"),
                               callback_data=AdminMenuCallback.create(level=12))
     admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "statistics"),

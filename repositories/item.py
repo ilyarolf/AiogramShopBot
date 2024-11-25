@@ -1,4 +1,4 @@
-from sqlalchemy import select, func, update
+from sqlalchemy import select, func, update, delete
 
 from db import get_db_session, session_execute, session_commit
 from models.buyItem import BuyItem, BuyItemDTO
@@ -77,6 +77,20 @@ class ItemRepository:
     @staticmethod
     async def set_not_new():
         stmt = update(Item).values(is_new=False)
+        async with get_db_session() as session:
+            await session_execute(stmt, session)
+            await session_commit(session)
+
+    @staticmethod
+    async def delete_unsold_by_category_id(entity_id: int):
+        stmt = delete(Item).where(Item.category_id == entity_id, Item.is_sold == False)
+        async with get_db_session() as session:
+            await session_execute(stmt, session)
+            await session_commit(session)
+
+    @staticmethod
+    async def delete_unsold_by_subcategory_id(entity_id: int):
+        stmt = delete(Item).where(Item.subcategory_id == entity_id, Item.is_sold == False)
         async with get_db_session() as session:
             await session_execute(stmt, session)
             await session_commit(session)
