@@ -3,7 +3,7 @@ import math
 from sqlalchemy import select, func
 
 import config
-from db import get_db_session, session_execute
+from db import get_db_session, session_execute, session_commit, session_refresh
 from models.item import Item
 from models.subcategory import Subcategory, SubcategoryDTO
 
@@ -72,3 +72,19 @@ class SubcategoryRepository:
                 return max_page / config.PAGE_ENTRIES - 1
             else:
                 return math.trunc(max_page / config.PAGE_ENTRIES)
+
+    @staticmethod
+    async def get_or_create(subcategory_name: str):
+        stmt = select(Subcategory).where(Subcategory.name == subcategory_name)
+        async with get_db_session() as session:
+            subcategory = await session_execute(stmt, session)
+            subcategory = subcategory.scalar()
+            if subcategory is None:
+                new_category_obj = Subcategory(name=subcategory_name)
+                session.add(new_category_obj)
+                await session_commit(session)
+                await session_refresh(session, new_category_obj)
+                return new_category_obj
+            else:
+                return subcategory
+

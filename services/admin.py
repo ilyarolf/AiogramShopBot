@@ -1,10 +1,11 @@
 import asyncio
 import logging
 from aiogram.exceptions import TelegramForbiddenError
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from callbacks import AdminAnnouncementCallback, AnnouncementType, AdminInventoryManagementCallback, EntityType, AddType
-from handlers.admin.constants import AdminConstants, InventoryManagementConstants
+from handlers.admin.constants import AdminConstants, InventoryManagementConstants, AdminInventoryManagementStates
 from handlers.common.common import add_pagination_buttons
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
@@ -155,3 +156,18 @@ class AdminService:
                 return Localizator.get_text(BotEntity.ADMIN, "successfully_deleted").format(
                     entity_name=subcategory.name,
                     entity_to_delete=unpacked_cb.entity_type.name.capitalize()), kb_builder
+
+    @staticmethod
+    async def get_add_item_msg(callback: CallbackQuery, state: FSMContext):
+        unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
+        await state.update_data(add_type=unpacked_cb.add_type.value)
+        await state.set_state()
+        match unpacked_cb.add_type:
+            case AddType.JSON:
+                await state.set_state(AdminInventoryManagementStates.document)
+                return Localizator.get_text(BotEntity.ADMIN, "add_items_json_msg")
+            case AddType.TXT:
+                await state.set_state(AdminInventoryManagementStates.document)
+                return Localizator.get_text(BotEntity.ADMIN, "add_items_txt_msg")
+            case AddType.MENU:
+                return Localizator.get_text(BotEntity.ADMIN, "add_items_category")

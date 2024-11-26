@@ -1,6 +1,8 @@
 from aiogram import types
+from aiogram.fsm.state import StatesGroup, State
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from callbacks import AdminMenuCallback, AdminInventoryManagementCallback
+from callbacks import AdminMenuCallback, AdminInventoryManagementCallback, AdminAnnouncementCallback
 from utils.localizator import Localizator, BotEntity
 
 
@@ -15,3 +17,24 @@ class InventoryManagementConstants:
                                                                                         "inventory_management"),
                                                               callback_data=AdminInventoryManagementCallback.create(
                                                                   level=0).pack())
+
+
+class AdminAnnouncementsConstants:
+    # TODO(move to constants)
+    confirmation_builder = InlineKeyboardBuilder()
+    confirmation_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
+                                callback_data=AdminAnnouncementCallback.create(3))
+    confirmation_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
+                                callback_data=AdminAnnouncementCallback.create(0))
+
+
+class AdminInventoryManagementStates(StatesGroup):
+    document = State()
+    category = State()
+    subcategory = State()
+    price = State()
+    description = State()
+
+
+class AdminAnnouncementStates(StatesGroup):
+    announcement_msg = State()

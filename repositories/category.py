@@ -3,7 +3,7 @@ import math
 from sqlalchemy import select, func
 
 import config
-from db import get_db_session, session_execute
+from db import get_db_session, session_execute, session_commit, session_refresh
 from models.category import Category, CategoryDTO
 from models.item import Item
 
@@ -52,3 +52,18 @@ class CategoryRepository:
             categories = await session_execute(stmt, session)
             return [CategoryDTO.model_validate(category, from_attributes=True) for category in
                     categories.scalars().all()]
+
+    @staticmethod
+    async def get_or_create(category_name: str):
+        stmt = select(Category).where(Category.name == category_name)
+        async with get_db_session() as session:
+            category = await session_execute(stmt, session)
+            category = category.scalar()
+            if category is None:
+                new_category_obj = Category(name=category_name)
+                session.add(new_category_obj)
+                await session_commit(session)
+                await session_refresh(session, new_category_obj)
+                return new_category_obj
+            else:
+                return category

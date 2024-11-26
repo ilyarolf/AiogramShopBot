@@ -20,21 +20,6 @@ from utils.localizator import Localizator, BotEntity
 class SubcategoryService:
 
     @staticmethod
-    async def get_or_create_one(subcategory_name: str) -> Subcategory:
-        async with get_db_session() as session:
-            stmt = select(Subcategory).where(Subcategory.name == subcategory_name)
-            subcategory = await session_execute(stmt, session)
-            subcategory = subcategory.scalar()
-            if subcategory is None:
-                new_category_obj = Subcategory(name=subcategory_name)
-                session.add(new_category_obj)
-                await session_commit(session)
-                await session_refresh(session, new_category_obj)
-                return new_category_obj
-            else:
-                return subcategory
-
-    @staticmethod
     async def get_to_delete(page: int = 0) -> list[Subcategory]:
         async with get_db_session() as session:
             stmt = select(Subcategory).join(Item,
