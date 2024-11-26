@@ -2,29 +2,15 @@ import inspect
 from aiogram import Router
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import CallbackQuery, Message
-from aiogram.utils.keyboard import InlineKeyboardBuilder
 from callbacks import AdminAnnouncementCallback, AnnouncementType
+from handlers.admin.constants import AdminAnnouncementStates, AdminAnnouncementsConstants
 from services.admin import AdminService
 from utils.custom_filters import AdminIdFilter
 from utils.localizator import BotEntity, Localizator
 from utils.new_items_manager import NewItemsManager
 
 announcement_router = Router()
-
-
-class AdminAnnouncementStates(StatesGroup):
-    announcement_msg = State()
-
-
-class AdminAnnouncementsConstants:
-    # TODO(move to constants)
-    confirmation_builder = InlineKeyboardBuilder()
-    confirmation_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
-                                callback_data=AdminAnnouncementCallback.create(3))
-    confirmation_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
-                                callback_data=AdminAnnouncementCallback.create(0))
 
 
 async def announcement_menu(callback: CallbackQuery):

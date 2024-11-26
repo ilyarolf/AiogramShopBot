@@ -95,3 +95,9 @@ class ItemRepository:
             await session_execute(stmt, session)
             await session_commit(session)
 
+    @staticmethod
+    async def add_many(items: list[ItemDTO]):
+        async with get_db_session() as session:
+            [session.add(Item(**item.model_dump())) for item in items]
+            await session_commit(session)
+
