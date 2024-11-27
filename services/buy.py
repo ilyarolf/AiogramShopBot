@@ -57,23 +57,13 @@ class BuyService:
             return not_refunded_buys.scalars().all()
 
     @staticmethod
-    async def refund(buy_id: int, refund_data: RefundBuyDTO):
-        await UserService.reduce_consume_records(refund_data.user_id, refund_data.total_price)
-        async with get_db_session() as session:
-            stmt = update(Buy).where(Buy.id == buy_id).values(is_refunded=True)
-            await session_execute(stmt, session)
-            await session_commit(session)
-
-    @staticmethod
-    async def get_max_refund_pages():
-        async with get_db_session() as session:
-            stmt = select(func.count(Buy.id)).where(Buy.is_refunded == 0)
-            not_refunded_buys = await session_execute(stmt, session)
-            not_refunded_buys = not_refunded_buys.scalar_one()
-            if not_refunded_buys % config.PAGE_ENTRIES == 0:
-                return not_refunded_buys / config.PAGE_ENTRIES - 1
-            else:
-                return math.trunc(not_refunded_buys / config.PAGE_ENTRIES)
+    async def refund(buy_id: int):
+        pass
+        # await UserService.reduce_consume_records(refund_data.user_id, refund_data.total_price)
+        # async with get_db_session() as session:
+        #     stmt = update(Buy).where(Buy.id == buy_id).values(is_refunded=True)
+        #     await session_execute(stmt, session)
+        #     await session_commit(session)
 
     @staticmethod
     async def get_new_buys_by_timedelta(timedelta_int):

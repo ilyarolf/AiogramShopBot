@@ -79,65 +79,6 @@ class AdminStates(StatesGroup):
     balance_value = State()
 
 
-# async def users_management(callback: CallbackQuery):
-#     cb_builder = InlineKeyboardBuilder()
-#     cb_builder.row(types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.ADMIN, "credit_management"),
-#                                               callback_data=create_admin_callback(level=13)))
-#     cb_builder.row(types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.ADMIN, "make_refund"),
-#                                               callback_data=create_admin_callback(level=15)))
-#     cb_builder.row(AdminConstants.back_to_main_button)
-#     await callback.message.edit_text(text=Localizator.get_text(BotEntity.ADMIN, "user_management"),
-#                                      reply_markup=cb_builder.as_markup())
-
-
-# async def credit_management(callback: CallbackQuery):
-#     cb_builder = InlineKeyboardBuilder()
-#     cb_builder.row(
-#         types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.ADMIN, "credit_management_add_balance"),
-#                                    callback_data=create_admin_callback(level=14, action="plus")))
-#     cb_builder.row(types.InlineKeyboardButton(
-#         text=Localizator.get_text(BotEntity.ADMIN, "credit_management_reduce_balance"),
-#         callback_data=create_admin_callback(level=14, action="minus")))
-#     cb_builder.row(AdminConstants.back_to_main_button)
-#     await callback.message.edit_text(text=Localizator.get_text(BotEntity.ADMIN, "credit_management"),
-#                                      reply_markup=cb_builder.as_markup())
-
-
-# async def balance_operation(callback: CallbackQuery, state: FSMContext):
-#     unpacked_cb = AdminCallback.unpack(callback.data)
-#     await state.update_data(operation=unpacked_cb.action)
-#     await state.set_state(AdminStates.user_entity)
-#     await callback.message.edit_text(
-#         Localizator.get_text(BotEntity.ADMIN, "credit_management_request_user_entity"))
-
-
-# @admin_router.message(AdminIdFilter(), F.text, StateFilter(AdminStates.user_entity, AdminStates.balance_value))
-# async def balance_management(message: types.message, state: FSMContext):
-#     current_state = await state.get_state()
-#     if message.text == "cancel":
-#         await state.clear()
-#         await message.answer(Localizator.get_text(BotEntity.COMMON, "cancelled"))
-#     elif current_state == AdminStates.user_entity:
-#         await state.update_data(user_entity=message.text)
-#         await state.set_state(AdminStates.balance_value)
-#         operation = await state.get_data()
-#         operation = operation['operation']
-#         if operation == 'plus':
-#             await message.answer(Localizator.get_text(BotEntity.ADMIN, "credit_management_plus_operation").format(
-#                 currency_text=Localizator.get_currency_text()
-#             ))
-#         elif operation == 'minus':
-#             await message.answer(Localizator.get_text(BotEntity.ADMIN, "credit_management_minus_operation").format(
-#                 currency_text=Localizator.get_currency_text()
-#             ))
-#     elif current_state == AdminStates.balance_value:
-#         await state.update_data(balance_value=message.text)
-#         state_data = await state.get_data()
-#         msg = await UserService.balance_management(state_data)
-#         await state.clear()
-#         await message.answer(text=msg)
-
-
 # async def make_refund_markup(page):
 #     refund_builder = InlineKeyboardBuilder()
 #     not_refunded_buy_ids = await BuyService.get_not_refunded_buy_ids(page)

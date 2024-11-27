@@ -26,3 +26,12 @@ class BuyDTO(BaseModel):
     total_price: float | None = None
     buy_datetime: datetime | None = None
     is_refunded: bool | None = None
+
+
+class RefundDTO(BaseModel):
+    telegram_username: str | None = None
+    telegram_id: int | None = None
+    subcategory_name: str | None = None
+    total_price: float | None = None
+    quantity: int | None = None
+    buy_id: int | None = None
