@@ -32,3 +32,8 @@ class AdminInventoryManagementStates(StatesGroup):
 
 class AdminAnnouncementStates(StatesGroup):
     announcement_msg = State()
+
+
+class UserManagementStates(StatesGroup):
+    balance_amount = State()
+    user_entity = State()

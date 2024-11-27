@@ -1,11 +1,14 @@
 import asyncio
 import logging
+from typing import Tuple
+
 from aiogram.exceptions import TelegramForbiddenError
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from callbacks import AdminAnnouncementCallback, AnnouncementType, AdminInventoryManagementCallback, EntityType, AddType
-from handlers.admin.constants import AdminConstants, AdminInventoryManagementStates
+from callbacks import AdminAnnouncementCallback, AnnouncementType, AdminInventoryManagementCallback, EntityType, \
+    AddType, UserManagementCallback, UserManagementOperation
+from handlers.admin.constants import AdminConstants, AdminInventoryManagementStates, UserManagementStates
 from handlers.common.common import add_pagination_buttons
 from models.item import ItemDTO
 from repositories.category import CategoryRepository
@@ -214,3 +217,76 @@ class AdminService:
             await ItemRepository.add_many(items_list)
             await state.clear()
             return Localizator.get_text(BotEntity.ADMIN, "add_items_success").format(adding_result=len(items_list))
+
+    @staticmethod
+    async def get_user_management_menu() -> tuple[str, InlineKeyboardBuilder]:
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "credit_management"),
+                          callback_data=UserManagementCallback.create(1))
+        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "make_refund"),
+                          callback_data=UserManagementCallback.create(2))
+        kb_builder.adjust(1)
+        kb_builder.row(AdminConstants.back_to_main_button)
+        return Localizator.get_text(BotEntity.ADMIN, "user_management"), kb_builder
+
+    @staticmethod
+    async def get_credit_management_menu(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
+        unpacked_cb = UserManagementCallback.unpack(callback.data)
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "credit_management_add_balance"),
+                          callback_data=UserManagementCallback.create(1, UserManagementOperation.ADD_BALANCE))
+        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "credit_management_reduce_balance"),
+                          callback_data=UserManagementCallback.create(1, UserManagementOperation.REDUCE_BALANCE))
+        kb_builder.row(unpacked_cb.get_back_button())
+        return Localizator.get_text(BotEntity.ADMIN, "credit_management"), kb_builder
+
+    @staticmethod
+    async def request_user_entity(callback: CallbackQuery, state: FSMContext):
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
+                          callback_data=UserManagementCallback.create(0))
+        await state.set_state(UserManagementStates.user_entity)
+        unpacked_cb = UserManagementCallback.unpack(callback.data)
+        await state.update_data(operation=unpacked_cb.operation.value)
+        return Localizator.get_text(BotEntity.ADMIN, "credit_management_request_user_entity"), kb_builder
+
+    @staticmethod
+    async def request_balance_amount(message: Message, state: FSMContext) -> tuple[str, InlineKeyboardBuilder]:
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
+                          callback_data=UserManagementCallback.create(0))
+        await state.update_data(user_entity=message.text)
+        await state.set_state(UserManagementStates.balance_amount)
+        data = await state.get_data()
+        operation = UserManagementOperation(int(data['operation']))
+        match operation:
+            case UserManagementOperation.ADD_BALANCE:
+                return Localizator.get_text(BotEntity.ADMIN, "credit_management_plus_operation").format(
+                    currency_text=Localizator.get_currency_text()), kb_builder
+            case UserManagementOperation.REDUCE_BALANCE:
+                return Localizator.get_text(BotEntity.ADMIN, "credit_management_minus_operation").format(
+                    currency_text=Localizator.get_currency_text()), kb_builder
+
+    @staticmethod
+    async def balance_management(message: Message, state: FSMContext) -> str:
+        data = await state.get_data()
+        await state.clear()
+        user = await UserRepository.get_user_entity(data['user_entity'])
+        operation = UserManagementOperation(int(data['operation']))
+        if user is None:
+            return Localizator.get_text(BotEntity.ADMIN, "credit_management_user_not_found")
+        elif operation == UserManagementOperation.ADD_BALANCE:
+            user.top_up_amount += float(message.text)
+            await UserRepository.update(user)
+            return Localizator.get_text(BotEntity.ADMIN, "credit_management_added_success").format(
+                            amount=message.text,
+                            telegram_id=user.telegram_id,
+                            currency_text=Localizator.get_currency_text())
+        else:
+            user.consume_records += float(message.text)
+            await UserRepository.update(user)
+            return Localizator.get_text(BotEntity.ADMIN, "credit_management_reduced_success").format(
+                            amount=message.text,
+                            telegram_id=user.telegram_id,
+                            currency_text=Localizator.get_currency_text())
+
