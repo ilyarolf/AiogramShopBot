@@ -11,6 +11,7 @@ from callbacks import AdminAnnouncementCallback, AnnouncementType, AdminInventor
 from handlers.admin.constants import AdminConstants, AdminInventoryManagementStates, UserManagementStates
 from handlers.common.common import add_pagination_buttons
 from models.item import ItemDTO
+from repositories.buy import BuyRepository
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
@@ -279,14 +280,42 @@ class AdminService:
             user.top_up_amount += float(message.text)
             await UserRepository.update(user)
             return Localizator.get_text(BotEntity.ADMIN, "credit_management_added_success").format(
-                            amount=message.text,
-                            telegram_id=user.telegram_id,
-                            currency_text=Localizator.get_currency_text())
+                amount=message.text,
+                telegram_id=user.telegram_id,
+                currency_text=Localizator.get_currency_text())
         else:
             user.consume_records += float(message.text)
             await UserRepository.update(user)
             return Localizator.get_text(BotEntity.ADMIN, "credit_management_reduced_success").format(
-                            amount=message.text,
-                            telegram_id=user.telegram_id,
-                            currency_text=Localizator.get_currency_text())
+                amount=message.text,
+                telegram_id=user.telegram_id,
+                currency_text=Localizator.get_currency_text())
 
+    @staticmethod
+    async def get_refund_menu(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
+        unpacked_cb = UserManagementCallback.unpack(callback.data)
+        kb_builder = InlineKeyboardBuilder()
+        refund_data = await BuyRepository.get_refund_data(unpacked_cb.page)
+        for refund_item in refund_data:
+            callback = UserManagementCallback.create(
+                unpacked_cb.level + 1,
+                UserManagementOperation.REFUND,
+                buy_id=refund_item.buy_id)
+            if refund_item.telegram_username:
+                kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "refund_by_username").format(
+                    telegram_username=refund_item.telegram_username,
+                    total_price=refund_item.total_price,
+                    subcategory=refund_item.subcategory_name,
+                    currency_sym=Localizator.get_currency_symbol()),
+                    callback_data=callback)
+            else:
+                kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "refund_by_username").format(
+                    telegram_id=refund_item.telegram_id,
+                    total_price=refund_item.total_price,
+                    subcategory=refund_item.subcategory_name,
+                    currency_sym=Localizator.get_currency_symbol()),
+                    callback_data=callback)
+        kb_builder.adjust(1)
+        kb_builder = await add_pagination_buttons(kb_builder, unpacked_cb,
+                                                  BuyRepository.get_max_refund_page(), unpacked_cb.get_back_button(0))
+        return Localizator.get_text(BotEntity.ADMIN, "refund_menu"), kb_builder

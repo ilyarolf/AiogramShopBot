@@ -8,6 +8,7 @@ from aiogram.types import CallbackQuery, Message
 from callbacks import UserManagementCallback
 from handlers.admin.constants import UserManagementStates
 from services.admin import AdminService
+from services.buy import BuyService
 from utils.custom_filters import AdminIdFilter
 
 user_management = Router()
@@ -42,6 +43,18 @@ async def balance_management(message: Message, state: FSMContext):
             await message.answer(text=msg)
 
 
+async def refund_buy(callback: CallbackQuery):
+    msg, kb_builder = await AdminService.get_refund_menu(callback)
+    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+
+
+async def refund_confirmation(callback: CallbackQuery):
+    unpacked_cb = UserManagementCallback.unpack(callback.data)
+    if unpacked_cb.confirmation:
+        msg, kb_builder = await BuyService.refund()
+    else:
+        msg, kb_builder = await AdminService.refund_confirmation(callback)
+
 @user_management.callback_query(AdminIdFilter(), UserManagementCallback.filter())
 async def inventory_management_navigation(callback: CallbackQuery, state: FSMContext,
                                           callback_data: UserManagementCallback):
@@ -50,8 +63,8 @@ async def inventory_management_navigation(callback: CallbackQuery, state: FSMCon
     levels = {
         0: user_management_menu,
         1: credit_management,
-        # 2: delete_entity,
-        # 3: confirm_delete
+        2: refund_buy,
+        3: refund_confirmation
     }
     current_level_function = levels[current_level]
     if inspect.getfullargspec(current_level_function).annotations.get("state") == FSMContext:
