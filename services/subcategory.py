@@ -102,7 +102,7 @@ class SubcategoryService:
         kb_builder.adjust(1)
         kb_builder = await add_pagination_buttons(kb_builder, unpacked_cb,
                                                   SubcategoryRepository.max_page(unpacked_cb.category_id),
-                                                  UserConstants.get_back_button(unpacked_cb))
+                                                  unpacked_cb.get_back_button())
         return Localizator.get_text(BotEntity.USER, "subcategories"), kb_builder
 
     @staticmethod
@@ -129,7 +129,7 @@ class SubcategoryService:
                 quantity=i
             ))
         kb_builder.adjust(3)
-        kb_builder.row(UserConstants.get_back_button(unpacked_cb))
+        kb_builder.row(unpacked_cb.get_back_button())
         return message_text, kb_builder
 
     @staticmethod
@@ -160,5 +160,5 @@ class SubcategoryService:
                               1,
                               unpacked_cb.category_id
                           ))
-        kb_builder.row(UserConstants.get_back_button(unpacked_cb))
+        kb_builder.row(unpacked_cb.get_back_button())
         return message_text, kb_builder

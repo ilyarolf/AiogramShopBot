@@ -11,7 +11,11 @@ class UserRepository:
         stmt = select(User).where(User.telegram_id == user_dto.telegram_id)
         async with get_db_session() as session:
             user = await session_execute(stmt, session)
-            return UserDTO.model_validate(user.scalar(), from_attributes=True)
+            user = user.scalar()
+            if user is not None:
+                return UserDTO.model_validate(user, from_attributes=True)
+            else:
+                return user
 
     @staticmethod
     async def update(user_dto: UserDTO) -> None:

@@ -91,5 +91,5 @@ class BuyService:
         items = await ItemRepository.get_by_buy_id(unpacked_cb.args_for_action)
         msg = MessageService.create_message_with_bought_items(items)
         kb_builder = InlineKeyboardBuilder()
-        kb_builder.row(UserConstants.get_back_button(unpacked_cb))
+        kb_builder.row(unpacked_cb.get_back_button())
         return msg, kb_builder

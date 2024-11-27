@@ -14,7 +14,8 @@ from utils.custom_filters import AdminIdFilter
 inventory_management = Router()
 
 
-async def inventory_management_menu(callback: CallbackQuery):
+async def inventory_management_menu(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
     msg, kb_builder = await AdminService.get_inventory_management_menu()
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
@@ -22,31 +23,36 @@ async def inventory_management_menu(callback: CallbackQuery):
 async def add_items(callback: CallbackQuery, state: FSMContext):
     unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
     if unpacked_cb.add_type is None:
-        msg, kb_builder = await AdminService.get_add_items_type()
+        msg, kb_builder = await AdminService.get_add_items_type(callback)
         await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
     else:
-        msg = await AdminService.get_add_item_msg(callback, state)
-        await callback.message.edit_text(text=msg)
+        msg, kb_builder = await AdminService.get_add_item_msg(callback, state)
+        await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
 async def delete_entity(callback: CallbackQuery):
-    unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
-    if unpacked_cb.entity_id is not None:
-        msg, kb_builder = await AdminService.delete_confirmation(callback)
-        await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup)
-    else:
-        msg, kb_builder = await AdminService.get_delete_entity_menu(callback)
-        await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
-
-
-async def confirm_delete(callback: CallbackQuery):
-    msg, kb_builder = await AdminService.delete_entity(callback)
+    msg, kb_builder = await AdminService.get_delete_entity_menu(callback)
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
-@inventory_management.message(AdminIdFilter(), F.text, StateFilter(AdminInventoryManagementStates.category))
+async def confirm_delete(callback: CallbackQuery):
+    unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
+    if unpacked_cb.confirmation is False:
+        msg, kb_builder = await AdminService.delete_confirmation(callback)
+        await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+    else:
+        msg, kb_builder = await AdminService.delete_entity(callback)
+        await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+
+
+@inventory_management.message(AdminIdFilter(), F.text, StateFilter(AdminInventoryManagementStates.category,
+                                                                   AdminInventoryManagementStates.subcategory,
+                                                                   AdminInventoryManagementStates.price,
+                                                                   AdminInventoryManagementStates.description,
+                                                                   AdminInventoryManagementStates.private_data))
 async def add_items_menu(message: Message, state: FSMContext):
-    pass
+    msg = await AdminService.add_item_menu(message, state)
+    await message.answer(text=msg)
 
 
 @inventory_management.message(AdminIdFilter(), F.document, StateFilter(AdminInventoryManagementStates.document))
@@ -60,6 +66,10 @@ async def add_items_document(message: Message, state: FSMContext):
     msg = await ItemService.add_items(file_name, add_type)
     await message.answer(text=msg)
     await state.clear()
+
+# @inventory_management.callback_query()
+# async def test(callback: CallbackQuery):
+#     print(callback.data)
 
 
 @inventory_management.callback_query(AdminIdFilter(), AdminInventoryManagementCallback.filter())

@@ -1,10 +1,23 @@
 from enum import IntEnum
 
+from aiogram import types
 from aiogram.filters.callback_data import CallbackData
+
+from utils.localizator import Localizator, BotEntity
 
 
 class BaseCallback(CallbackData, prefix="base"):
     level: int
+
+    def get_back_button(self, lvl: int | None = None):
+        cb_copy = self.__copy__()
+        if lvl is None:
+            cb_copy.level = cb_copy.level - 1
+        else:
+            cb_copy.level = lvl
+        return types.InlineKeyboardButton(
+            text=Localizator.get_text(BotEntity.COMMON, "back_button"),
+            callback_data=cb_copy.create(**cb_copy.model_dump()).pack())
 
 
 class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
@@ -102,10 +115,10 @@ class AdminInventoryManagementCallback(BaseCallback, prefix="admin_inventory_man
 
     @staticmethod
     def create(level: int, add_type: AddType | None = None, entity_type: EntityType | None = None,
-               entity_id: int | None = None, page: int = 0):
+               entity_id: int | None = None, page: int = 0, confirmation: bool = False):
         return AdminInventoryManagementCallback(level=level,
                                                 add_type=add_type,
                                                 entity_type=entity_type,
                                                 entity_id=entity_id,
                                                 page=page,
-                                                confirmation=False)
+                                                confirmation=confirmation)

@@ -12,13 +12,6 @@ class AdminConstants:
                                                      callback_data=AdminMenuCallback.create(level=0).pack())
 
 
-class InventoryManagementConstants:
-    back_to_inventory_management = types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.ADMIN,
-                                                                                        "inventory_management"),
-                                                              callback_data=AdminInventoryManagementCallback.create(
-                                                                  level=0).pack())
-
-
 class AdminAnnouncementsConstants:
     # TODO(move to constants)
     confirmation_builder = InlineKeyboardBuilder()
@@ -34,6 +27,7 @@ class AdminInventoryManagementStates(StatesGroup):
     subcategory = State()
     price = State()
     description = State()
+    private_data = State()
 
 
 class AdminAnnouncementStates(StatesGroup):
