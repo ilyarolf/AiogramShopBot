@@ -110,7 +110,7 @@ class AdminInventoryManagementCallback(BaseCallback, prefix="admin_inventory_man
     add_type: AddType | None
     entity_type: EntityType | None
     entity_id: int | None
-    page: int | None
+    page: int
     confirmation: bool
 
     @staticmethod
@@ -122,3 +122,22 @@ class AdminInventoryManagementCallback(BaseCallback, prefix="admin_inventory_man
                                                 entity_id=entity_id,
                                                 page=page,
                                                 confirmation=confirmation)
+
+
+class UserManagementOperation(IntEnum):
+    REFUND = 1
+    ADD_BALANCE = 2
+    REDUCE_BALANCE = 3
+
+
+class UserManagementCallback(BaseCallback, prefix="user_management"):
+    operation: UserManagementOperation | None
+    page: int
+    confirmation: bool
+    buy_id: int | None
+
+    @staticmethod
+    def create(level: int, operation: UserManagementOperation | None = None, page: int = 0, confirmation: bool = False,
+               buy_id: int | None = None):
+        return UserManagementCallback(level=level, operation=operation, page=page, confirmation=confirmation,
+                                      buy_id=buy_id)

@@ -1,4 +1,4 @@
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, or_
 from db import get_db_session, session_commit, session_execute, session_refresh
 
 from models.user import UserDTO, User
@@ -58,3 +58,15 @@ class UserRepository:
         async with get_db_session() as session:
             users_count = await session_execute(stmt, session)
             return users_count.scalar_one()
+
+    @staticmethod
+    async def get_user_entity(user_entity: int | str) -> UserDTO | None:
+        stmt = select(User).where(or_(User.telegram_id == user_entity, User.telegram_username == user_entity))
+        async with get_db_session() as session:
+            user = await session_execute(stmt, session)
+            user = user.scalar()
+            if user is None:
+                return user
+            else:
+                return UserDTO.model_validate(user, from_attributes=True)
+
