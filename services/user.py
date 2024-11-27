@@ -9,6 +9,7 @@ from handlers.user.constants import UserConstants
 from models.user import User, UserDTO
 from repositories.buy import BuyRepository
 from repositories.buyItem import BuyItemRepository
+from repositories.cart import CartRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
@@ -270,7 +271,7 @@ class UserService:
         match user:
             case None:
                 user_id = await UserRepository.create(user_dto)
-                await CartService.get_or_create_cart(user_id)
+                await CartRepository.get_or_create(user_id)
             case _:
                 update_user_dto = UserDTO(**user.__dict__)
                 update_user_dto.can_receive_messages = True
@@ -355,7 +356,7 @@ class UserService:
                           callback_data=MyProfileCallback.create(unpacked_cb.level + 1,
                                                                  args_for_action=Cryptocurrency.USDC_ERC20.value))
         kb_builder.adjust(1)
-        kb_builder.row(UserConstants.get_back_button(unpacked_cb))
+        kb_builder.row(unpacked_cb.get_back_button())
         msg_text = Localizator.get_text(BotEntity.USER, "choose_top_up_method")
         return msg_text, kb_builder
 
@@ -380,7 +381,7 @@ class UserService:
                     args_for_action=buy.id
                 ))
         kb_builder.adjust(1)
-        kb_builder.row(UserConstants.get_back_button(unpacked_cb, 0))
+        kb_builder.row(unpacked_cb.get_back_button(0))
         if len(kb_builder.as_markup().inline_keyboard) > 1:
             return Localizator.get_text(BotEntity.USER, "purchases"), kb_builder
         else:
@@ -401,5 +402,5 @@ class UserService:
         kb_builder.button(text=Localizator.get_text(BotEntity.USER, "refresh_balance_button"),
                           callback_data=MyProfileCallback.create(unpacked_cb.level + 1,
                                                                  args_for_action=payment_method.value))
-        kb_builder.row(UserConstants.get_back_button(unpacked_cb))
+        kb_builder.row(unpacked_cb.get_back_button())
         return msg, kb_builder

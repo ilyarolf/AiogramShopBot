@@ -185,13 +185,13 @@ class CartService:
             await NotificationService.new_buy(sold_items, user)
             return msg, kb_builder
         elif unpacked_cb.purchase_confirmation is False:
-            kb_builder.row(UserConstants.get_back_button(unpacked_cb, 0))
+            kb_builder.row(unpacked_cb.get_back_button(0))
             return Localizator.get_text(BotEntity.USER, "purchase_confirmation_declined"), kb_builder
         elif is_enough_money is False:
-            kb_builder.row(UserConstants.get_back_button(unpacked_cb, 0))
+            kb_builder.row(unpacked_cb.get_back_button(0))
             return Localizator.get_text(BotEntity.USER, "insufficient_funds"), kb_builder
         elif len(out_of_stock) > 0:
-            kb_builder.row(UserConstants.get_back_button(unpacked_cb, 0))
+            kb_builder.row(unpacked_cb.get_back_button(0))
             msg = Localizator.get_text(BotEntity.USER, "out_of_stock")
             for item in out_of_stock:
                 subcategory = await SubcategoryService.get_by_primary_key(item.subcategory_id)
