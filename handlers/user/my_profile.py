@@ -1,12 +1,13 @@
 from aiogram import types, Router, F
 from aiogram.types import CallbackQuery, Message
 from callbacks import MyProfileCallback
+from enums.bot_entity import BotEntity
 from enums.user import UserResponse
 from models.user import UserDTO
 from services.buy import BuyService
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
-from utils.localizator import Localizator, BotEntity
+from utils.localizator import Localizator
 
 my_profile_router = Router()
 

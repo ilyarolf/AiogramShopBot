@@ -1,8 +1,8 @@
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from callbacks import AllCategoriesCallback, CartCallback
+from enums.bot_entity import BotEntity
 from handlers.common.common import add_pagination_buttons
-from handlers.user.constants import UserConstants
 from models.buy import BuyDTO
 from models.buyItem import BuyItemDTO
 from models.cartItem import CartItemDTO
@@ -18,40 +18,10 @@ from repositories.user import UserRepository
 from services.message import MessageService
 from services.notification import NotificationService
 from services.subcategory import SubcategoryService
-from utils.localizator import Localizator, BotEntity
+from utils.localizator import Localizator
 
 
 class CartService:
-
-    # @staticmethod
-    # async def get_or_create_cart(user_id: int) -> Cart:
-    #     async with get_db_session() as session:
-    #         stmt = select(Cart).where(Cart.user_id == user_id)
-    #         cart = await session_execute(stmt, session)
-    #         cart = cart.scalar()
-    #         if cart is None:
-    #             new_cart_obj = Cart(user_id=user_id)
-    #             session.add(new_cart_obj)
-    #             await session_commit(session)
-    #             await session_refresh(session, new_cart_obj)
-    #             return new_cart_obj
-    #         else:
-    #             return cart
-    #
-    # @staticmethod
-    # async def get_cart_by_primary_key(primary_key: int) -> Cart:
-    #     async with get_db_session() as session:
-    #         stmt = select(Cart).where(Cart.id == primary_key)
-    #         cart = await session_execute(stmt, session)
-    #         return cart.scalar()
-    #
-    # @staticmethod
-    # async def get_cart_by_user_id(user_id: int) -> Cart:
-    #     async with get_db_session() as session:
-    #         stmt = select(Cart).join(
-    #             CartItem, Cart.id == CartItem.cart_id).where(Cart.user_id == user_id)
-    #         cart = await session_execute(stmt, session)
-    #         return cart.scalar()
 
     @staticmethod
     async def add_to_cart(callback: CallbackQuery):

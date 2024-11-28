@@ -4,10 +4,11 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from callbacks import AdminAnnouncementCallback, AnnouncementType
+from enums.bot_entity import BotEntity
 from handlers.admin.constants import AdminAnnouncementStates, AdminAnnouncementsConstants
 from services.admin import AdminService
 from utils.custom_filters import AdminIdFilter
-from utils.localizator import BotEntity, Localizator
+from utils.localizator import Localizator
 from utils.new_items_manager import NewItemsManager
 
 announcement_router = Router()

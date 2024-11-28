@@ -1,5 +1,6 @@
+from enums.bot_entity import BotEntity
 from models.item import ItemDTO
-from utils.localizator import BotEntity, Localizator
+from utils.localizator import Localizator
 
 
 class MessageService:

@@ -1,7 +1,8 @@
 from aiogram import types
 
 from callbacks import AllCategoriesCallback
-from utils.localizator import Localizator, BotEntity
+from enums.bot_entity import BotEntity
+from utils.localizator import Localizator
 
 
 class UserConstants:

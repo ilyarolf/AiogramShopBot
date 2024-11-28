@@ -5,6 +5,7 @@ from aiogram.enums import ParseMode
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from config import ADMIN_ID_LIST, TOKEN
+from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
 from models.buy import RefundDTO
 from models.cartItem import CartItemDTO
@@ -12,7 +13,7 @@ from models.user import UserDTO
 from services.category import CategoryService
 from services.item import ItemService
 from services.subcategory import SubcategoryService
-from utils.localizator import Localizator, BotEntity
+from utils.localizator import Localizator
 
 
 class NotificationService:

@@ -1,11 +1,12 @@
 from aiogram import types, Router, F
 from aiogram.types import Message, CallbackQuery
 from callbacks import AllCategoriesCallback
+from enums.bot_entity import BotEntity
 from services.cart import CartService
 from services.category import CategoryService
 from services.subcategory import SubcategoryService
 from utils.custom_filters import IsUserExistFilter
-from utils.localizator import Localizator, BotEntity
+from utils.localizator import Localizator
 
 all_categories_router = Router()
 
