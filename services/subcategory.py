@@ -1,14 +1,9 @@
-import math
 from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from sqlalchemy import select, func, delete
-import config
 from callbacks import AllCategoriesCallback
-from db import session_commit, session_execute, get_db_session
 from enums.bot_entity import BotEntity
 from handlers.common.common import add_pagination_buttons
-from models.item import Item, ItemDTO
-from models.subcategory import Subcategory
+from models.item import ItemDTO
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
@@ -17,65 +12,6 @@ from utils.localizator import Localizator
 
 class SubcategoryService:
 
-    @staticmethod
-    async def get_to_delete(page: int = 0) -> list[Subcategory]:
-        async with get_db_session() as session:
-            stmt = select(Subcategory).join(Item,
-                                            Item.subcategory_id == Subcategory.id).where(
-                Item.is_sold == 0).distinct().limit(config.PAGE_ENTRIES).offset(
-                page * config.PAGE_ENTRIES).group_by(Subcategory.name)
-            subcategories = await session_execute(stmt, session=session)
-            subcategories = subcategories.scalars().all()
-            return subcategories
-
-    @staticmethod
-    async def get_maximum_page():
-        async with get_db_session() as session:
-            stmt = select(func.count(Subcategory.id)).distinct()
-            subcategories = await session_execute(stmt, session)
-            subcategories_count = subcategories.scalar_one()
-            if subcategories_count % SubcategoryService.items_per_page == 0:
-                return subcategories_count / SubcategoryService.items_per_page - 1
-            else:
-                return math.trunc(subcategories_count / SubcategoryService.items_per_page)
-
-    @staticmethod
-    async def get_maximum_page_to_delete():
-        async with get_db_session() as session:
-            unique_categories_subquery = (
-                select(Subcategory.id)
-                .join(Item, Item.subcategory_id == Subcategory.id)
-                .filter(Item.is_sold == 0)
-                .distinct()
-            ).alias('unique_categories')
-            stmt = select(func.count()).select_from(unique_categories_subquery)
-            max_page = await session_execute(stmt, session)
-            max_page = max_page.scalar_one()
-            if max_page % config.PAGE_ENTRIES == 0:
-                return max_page / config.PAGE_ENTRIES - 1
-            else:
-                return math.trunc(max_page / config.PAGE_ENTRIES)
-
-    @staticmethod
-    async def get_by_primary_key(subcategory_id: int) -> Subcategory:
-        async with get_db_session() as session:
-            stmt = select(Subcategory).where(Subcategory.id == subcategory_id)
-            subcategory = await session_execute(stmt, session)
-            return subcategory.scalar()
-
-    @staticmethod
-    async def delete_if_not_used(subcategory_id: int):
-        # TODO("Need testing")
-        async with get_db_session() as session:
-            stmt = select(Subcategory).join(Item, Item.subcategory_id == subcategory_id).where(
-                Subcategory.id == subcategory_id)
-            result = await session_execute(stmt, session)
-            if result.scalar() is None:
-                stmt = delete(Subcategory).where(Subcategory.id == subcategory_id)
-                await session_execute(stmt, session)
-                await session_commit(session)
-
-    # new methods________________
     @staticmethod
     async def get_buttons(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
         unpacked_cb = AllCategoriesCallback.unpack(callback.data)

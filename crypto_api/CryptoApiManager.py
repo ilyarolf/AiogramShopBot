@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import aiohttp
 import config
 from enums.cryptocurrency import Cryptocurrency
+from models.deposit import DepositDTO
 from models.user import UserDTO
 from services.deposit import DepositService
 
@@ -25,8 +26,14 @@ class CryptoApiManager:
         deposit_sum = 0.0
         for deposit in data:
             if deposit["txid"] not in deposits and deposit['status']['confirmed']:
-                await DepositService.create(deposit['txid'], user_dto.id, "BTC", None,
-                                            deposit["value"], deposit['vout'])
+                deposit_dto = DepositDTO(
+                    tx_id=deposit['txid'],
+                    user_id=user_dto.id,
+                    network="BTC",
+                    amount=deposit['value'],
+                    vout=deposit['vout']
+                )
+                await DepositService.create(deposit_dto)
                 deposit_sum += float(deposit["value"]) / 100_000_000
         return deposit_sum
 
@@ -40,8 +47,14 @@ class CryptoApiManager:
         if data['n_tx'] > 0:
             for deposit in data['txrefs']:
                 if deposit["confirmations"] > 0 and deposit['tx_hash'] not in deposits:
-                    await DepositService.create(deposit['tx_hash'], user_dto.id, "LTC", None,
-                                                deposit["value"], deposit['tx_output_n'])
+                    deposit_dto = DepositDTO(
+                        tx_id=deposit['tx_hash'],
+                        user_id=user_dto.id,
+                        network='LTC',
+                        amount=deposit['value'],
+                        vout=deposit['tx_output_n']
+                    )
+                    await DepositService.create(deposit_dto)
                     deposits_sum += float(deposit['value']) / 100_000_000
         return deposits_sum
 
@@ -58,9 +71,14 @@ class CryptoApiManager:
                         if transfer['action'] == 'transfer' and transfer['destination'] == user_dto.sol_address and \
                                 transfer[
                                     'status'] == 'Successful' and transfer['token'] == '':
-                            await DepositService.create(deposit['transactionHash'], user_dto.id, "SOL", None,
-                                                        transfer['amount'],
-                                                        transfer['instructionIndex'])
+                            deposit_dto = DepositDTO(
+                                tx_id=deposit['transactionHash'],
+                                user_id=user_dto.id,
+                                network='SOL',
+                                amount=transfer['amount'],
+                                vout=transfer['instructionIndex']
+                            )
+                            await DepositService.create(deposit_dto)
                             deposits_sum += float(transfer['amount'] / 1_000_000_000)
         return deposits_sum
 
@@ -77,8 +95,14 @@ class CryptoApiManager:
         deposits_sum = 0.0
         for deposit in data['data']:
             if deposit['transaction_id'] not in deposits:
-                await DepositService.create(deposit['transaction_id'], user_dto.id, "TRX",
-                                            "USDT_TRC20", deposit['value'])
+                deposit_dto = DepositDTO(
+                    tx_id=deposit['transaction_id'],
+                    user_id=user_dto.id,
+                    network='TRX',
+                    token_name='USDT_TRC20',
+                    amount=deposit['value'],
+                )
+                await DepositService.create(deposit_dto)
                 deposits_sum += float(deposit['value']) / pow(10, deposit['token_info']['decimals'])
         return deposits_sum
 
@@ -98,8 +122,14 @@ class CryptoApiManager:
         deposits_sum = 0.0
         for deposit in data['operations']:
             if deposit['transactionHash'] not in deposits and deposit['to'] == user_dto.eth_address:
-                await DepositService.create(deposit['transactionHash'], user_dto.id, "ETH", "USDT_ERC20",
-                                            deposit['value'])
+                deposit_dto = DepositDTO(
+                    tx_id=deposit['transactionHash'],
+                    user_id=user_dto.id,
+                    network='ETH',
+                    token_name='USDT_ERC20',
+                    amount=deposit['value']
+                )
+                await DepositService.create(deposit_dto)
                 deposits_sum += float(deposit['value']) / pow(10, 6)
         return deposits_sum
 
@@ -119,8 +149,14 @@ class CryptoApiManager:
         deposits_sum = 0.0
         for deposit in data['operations']:
             if deposit['transactionHash'] not in deposits and deposit['to'] == user_dto.eth_address:
-                await DepositService.create(deposit['transactionHash'], user_dto.id, "ETH", "USDC_ERC20",
-                                            deposit['value'])
+                deposit_dto = DepositDTO(
+                    tx_id=deposit['transactionHash'],
+                    user_id=user_dto.id,
+                    network='ETH',
+                    token_name='USDC_ERC20',
+                    amount=deposit['value']
+                )
+                await DepositService.create(deposit_dto)
                 deposits_sum += float(deposit['value']) / pow(10, 6)
         return deposits_sum
 
