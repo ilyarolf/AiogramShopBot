@@ -3,7 +3,8 @@ from enum import IntEnum
 from aiogram import types
 from aiogram.filters.callback_data import CallbackData
 
-from utils.localizator import Localizator, BotEntity
+from enums.bot_entity import BotEntity
+from utils.localizator import Localizator
 
 
 class BaseCallback(CallbackData, prefix="base"):
@@ -86,7 +87,7 @@ class AnnouncementType(IntEnum):
     FROM_RECEIVING_MESSAGE = 3
 
 
-class AdminAnnouncementCallback(BaseCallback, prefix="admin_announcement"):
+class AdminAnnouncementCallback(BaseCallback, prefix="announcement"):
     announcement_type: AnnouncementType
 
     @staticmethod
@@ -106,7 +107,7 @@ class EntityType(IntEnum):
     ITEM = 3
 
 
-class AdminInventoryManagementCallback(BaseCallback, prefix="admin_inventory_management"):
+class AdminInventoryManagementCallback(BaseCallback, prefix="inventory_management"):
     add_type: AddType | None
     entity_type: EntityType | None
     entity_id: int | None
@@ -164,3 +165,11 @@ class StatisticsCallback(BaseCallback, prefix="statistics"):
     def create(level: int, statistics_entity: StatisticsEntity | None = None,
                timedelta: StatisticsTimeDelta | None = None, page: int = 0):
         return StatisticsCallback(level=level, statistics_entity=statistics_entity, timedelta=timedelta, page=page)
+
+
+class WalletCallback(BaseCallback, prefix="wallet"):
+    pass
+
+    @staticmethod
+    def create(level: int):
+        return WalletCallback(level=level)

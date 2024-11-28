@@ -2,9 +2,10 @@ from aiogram import types, F, Router
 from aiogram.types import CallbackQuery, Message
 
 from callbacks import CartCallback
+from enums.bot_entity import BotEntity
 from services.cart import CartService
 from utils.custom_filters import IsUserExistFilter
-from utils.localizator import Localizator, BotEntity
+from utils.localizator import Localizator
 
 cart_router = Router()
 

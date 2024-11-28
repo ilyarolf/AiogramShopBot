@@ -1,7 +1,8 @@
 from aiogram import types
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from utils.localizator import Localizator, BotEntity
+from enums.bot_entity import BotEntity
+from utils.localizator import Localizator
 
 
 async def add_pagination_buttons(keyboard_builder: InlineKeyboardBuilder, unpacked_cb, max_page_function,

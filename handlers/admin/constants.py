@@ -2,8 +2,9 @@ from aiogram import types
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from callbacks import AdminMenuCallback, AdminInventoryManagementCallback, AdminAnnouncementCallback
-from utils.localizator import Localizator, BotEntity
+from callbacks import AdminMenuCallback, AdminAnnouncementCallback
+from enums.bot_entity import BotEntity
+from utils.localizator import Localizator
 
 
 class AdminConstants:
@@ -13,7 +14,6 @@ class AdminConstants:
 
 
 class AdminAnnouncementsConstants:
-    # TODO(move to constants)
     confirmation_builder = InlineKeyboardBuilder()
     confirmation_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
                                 callback_data=AdminAnnouncementCallback.create(3))

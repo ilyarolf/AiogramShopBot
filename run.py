@@ -2,14 +2,12 @@
 import grequests
 from aiogram import types, F, Router
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
 import config
-from callbacks import AdminAnnouncementCallback
 from config import SUPPORT_LINK
 import logging
 from bot import dp, main
+from enums.bot_entity import BotEntity
 from models.user import UserDTO
 from multibot import main as main_multibot
 from handlers.user.cart import cart_router
@@ -18,7 +16,7 @@ from handlers.user.all_categories import all_categories_router
 from handlers.user.my_profile import my_profile_router
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
-from utils.localizator import Localizator, BotEntity
+from utils.localizator import Localizator
 
 logging.basicConfig(level=logging.INFO)
 main_router = Router()
@@ -31,7 +29,6 @@ async def start(message: types.message):
     faq_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "faq"))
     help_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "help"))
     admin_menu_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.ADMIN, "menu"))
-    # TODO: insert item count here, these code lines are not correct yet
     cart_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "cart"))
     telegram_id = message.from_user.id
     await UserService.create_if_not_exist(UserDTO(
@@ -64,11 +61,6 @@ main_router.include_router(admin_router)
 main_router.include_router(my_profile_router)
 main_router.include_router(all_categories_router)
 main_router.include_router(cart_router)
-
-# @main_router.callback_query()
-# async def qwerty(callback: CallbackQuery):
-#     AdminAnnouncementCallback.unpack(callback.data)
-#     print(callback.data)
 
 if __name__ == '__main__':
     if config.MULTIBOT:

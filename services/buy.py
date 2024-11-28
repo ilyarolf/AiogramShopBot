@@ -3,11 +3,11 @@ import math
 
 from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from sqlalchemy import select, update, func
+from sqlalchemy import select, func
 import config
 from callbacks import MyProfileCallback
 from db import session_execute, session_commit, session_refresh, get_db_session
-from handlers.user.constants import UserConstants
+from enums.bot_entity import BotEntity
 from models.buy import Buy, BuyDTO
 from models.user import User, UserDTO
 from repositories.buy import BuyRepository
@@ -15,9 +15,7 @@ from repositories.item import ItemRepository
 from repositories.user import UserRepository
 from services.message import MessageService
 from services.notification import NotificationService
-from services.user import UserService
-from utils.localizator import Localizator, BotEntity
-from utils.other_sql import RefundBuyDTO
+from utils.localizator import Localizator
 
 
 class BuyService:

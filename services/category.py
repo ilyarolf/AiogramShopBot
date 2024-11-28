@@ -2,15 +2,16 @@ from typing import Tuple
 
 from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from sqlalchemy import select, func
+from sqlalchemy import select
 import config
 from callbacks import AllCategoriesCallback
+from enums.bot_entity import BotEntity
 from handlers.common.common import add_pagination_buttons
 from models.category import Category
 from models.item import Item
-from db import session_commit, session_execute, session_refresh, get_db_session
+from db import session_execute, get_db_session
 from repositories.category import CategoryRepository
-from utils.localizator import Localizator, BotEntity
+from utils.localizator import Localizator
 
 
 class CategoryService:

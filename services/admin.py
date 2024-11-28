@@ -5,8 +5,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from callbacks import AdminAnnouncementCallback, AnnouncementType, AdminInventoryManagementCallback, EntityType, \
-    AddType, UserManagementCallback, UserManagementOperation, StatisticsCallback, StatisticsEntity, StatisticsTimeDelta
+    AddType, UserManagementCallback, UserManagementOperation, StatisticsCallback, StatisticsEntity, StatisticsTimeDelta, \
+    WalletCallback
 from crypto_api.CryptoApiManager import CryptoApiManager
+from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
 from handlers.admin.constants import AdminConstants, AdminInventoryManagementStates, UserManagementStates
 from handlers.common.common import add_pagination_buttons
@@ -17,7 +19,7 @@ from repositories.deposit import DepositRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
-from utils.localizator import Localizator, BotEntity
+from utils.localizator import Localizator
 
 
 class AdminService:
@@ -452,3 +454,19 @@ class AdminService:
                     sol_amount=sol_amount, usdt_trc20_amount=usdt_trc20_amount,
                     usdt_erc20_amount=usdt_erc20_amount, usdc_erc20_amount=usdc_erc20_amount, fiat_amount=fiat_amount,
                     currency_text=Localizator.get_currency_text()), kb_builder
+
+    @staticmethod
+    async def get_wallet_menu() -> tuple[str, InlineKeyboardBuilder]:
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "withdraw_funds"),
+                          callback_data=WalletCallback.create(1))
+        kb_builder.row(AdminConstants.back_to_main_button)
+        return Localizator.get_text(BotEntity.ADMIN, "crypto_withdraw"), kb_builder
+
+    @staticmethod
+    async def get_withdraw_menu():
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.row(AdminConstants.back_to_main_button)
+        return Localizator.get_text(BotEntity.ADMIN, "choose_crypto_to_withdraw"), kb_builder
+
+
