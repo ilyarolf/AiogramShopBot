@@ -1,4 +1,10 @@
+import datetime
+import math
+
 from sqlalchemy import select, update, func, or_
+
+import config
+from callbacks import StatisticsTimeDelta
 from db import get_db_session, session_commit, session_execute, session_refresh
 
 from models.user import UserDTO, User
@@ -71,3 +77,33 @@ class UserRepository:
             else:
                 return UserDTO.model_validate(user, from_attributes=True)
 
+    @staticmethod
+    async def get_by_timedelta(timedelta: StatisticsTimeDelta, page: int) -> tuple[list[UserDTO], int]:
+        current_time = datetime.datetime.now()
+        timedelta = datetime.timedelta(days=timedelta.value)
+        time_interval = current_time - timedelta
+        users_stmt = (select(User)
+                      .where(User.registered_at >= time_interval, User.telegram_username != None)
+                      .limit(config.PAGE_ENTRIES)
+                      .offset(config.PAGE_ENTRIES * page))
+        users_count_stmt = select(func.count(User.id)).where(User.registered_at >= time_interval)
+        async with get_db_session() as session:
+            users = await session_execute(users_stmt, session)
+            users = [UserDTO.model_validate(user, from_attributes=True) for user in users.scalars().all()]
+            users_count = await session_execute(users_count_stmt, session)
+            return users, users_count.scalar_one()
+
+    @staticmethod
+    async def get_max_page_by_timedelta(timedelta: StatisticsTimeDelta) -> int:
+        current_time = datetime.datetime.now()
+        timedelta = datetime.timedelta(days=timedelta.value)
+        time_interval = current_time - timedelta
+        stmt = select(func.count(User.id)).where(User.registered_at >= time_interval,
+                                                 User.telegram_username != None)
+        async with get_db_session() as session:
+            users = await session_execute(stmt, session)
+            users = users.scalar_one()
+            if users % config.PAGE_ENTRIES == 0:
+                return users / config.PAGE_ENTRIES - 1
+            else:
+                return math.trunc(users / config.PAGE_ENTRIES)
