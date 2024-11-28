@@ -17,7 +17,6 @@ from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
 from services.message import MessageService
 from services.notification import NotificationService
-from services.subcategory import SubcategoryService
 from utils.localizator import Localizator
 
 
@@ -164,6 +163,6 @@ class CartService:
             kb_builder.row(unpacked_cb.get_back_button(0))
             msg = Localizator.get_text(BotEntity.USER, "out_of_stock")
             for item in out_of_stock:
-                subcategory = await SubcategoryService.get_by_primary_key(item.subcategory_id)
+                subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id)
                 msg += subcategory.name + "\n"
             return msg, kb_builder

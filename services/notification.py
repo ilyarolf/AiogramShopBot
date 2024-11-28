@@ -9,10 +9,11 @@ from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
 from models.buy import RefundDTO
 from models.cartItem import CartItemDTO
+from models.item import ItemDTO
 from models.user import UserDTO
-from services.category import CategoryService
-from services.item import ItemService
-from services.subcategory import SubcategoryService
+from repositories.category import CategoryRepository
+from repositories.item import ItemRepository
+from repositories.subcategory import SubcategoryRepository
 from utils.localizator import Localizator
 
 
@@ -68,9 +69,10 @@ class NotificationService:
         cart_grand_total = 0.0
         message = ""
         for item in sold_items:
-            price = await ItemService.get_price_by_subcategory(item.subcategory_id, item.category_id)
-            category = await CategoryService.get_by_primary_key(item.category_id)
-            subcategory = await SubcategoryService.get_by_primary_key(item.subcategory_id)
+            price = await ItemRepository.get_price(ItemDTO(subcategory_id=item.subcategory_id,
+                                                           category_id=item.category_id))
+            category = await CategoryRepository.get_by_id(item.category_id)
+            subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id)
             cart_item_total = price * item.quantity
             cart_grand_total += cart_item_total
             if user.telegram_username:

@@ -2,7 +2,7 @@ from typing import List
 
 from enums.bot_entity import BotEntity
 from models.item import Item
-from services.category import CategoryService
+from repositories.category import CategoryRepository
 from services.item import ItemService
 from utils.localizator import Localizator
 
@@ -11,7 +11,7 @@ class NewItemsManager:
 
     @staticmethod
     async def generate_restocking_message():
-        new_items = await ItemService.get_new_items()
+        new_items = await ItemService.get_new()
         message = await NewItemsManager.create_text_of_items_msg(new_items, True)
         return message
 
@@ -25,7 +25,7 @@ class NewItemsManager:
     async def create_text_of_items_msg(items: List[Item], is_update: bool) -> str:
         filtered_items = {}
         for item in items:
-            category = await CategoryService.get_by_primary_key(item.category_id)
+            category = await CategoryRepository.get_by_id(item.category_id)
             if category.name not in filtered_items:
                 filtered_items[category.name] = {}
             if item.subcategory not in filtered_items[category.name]:

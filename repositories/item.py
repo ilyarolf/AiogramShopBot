@@ -1,7 +1,7 @@
 from sqlalchemy import select, func, update, delete
 
 from db import get_db_session, session_execute, session_commit
-from models.buyItem import BuyItem, BuyItemDTO
+from models.buyItem import BuyItem
 from models.item import Item, ItemDTO
 
 
@@ -100,4 +100,19 @@ class ItemRepository:
         async with get_db_session() as session:
             [session.add(Item(**item.model_dump())) for item in items]
             await session_commit(session)
+
+    @staticmethod
+    async def get_new() -> list[ItemDTO]:
+        stmt = select(Item).where(Item.is_new == 1)
+        async with get_db_session() as session:
+            items = await session_execute(stmt, session)
+            return [ItemDTO.model_validate(item, from_attributes=True) for item in items.scalars().all()]
+
+    @staticmethod
+    async def get_in_stock() -> list[ItemDTO]:
+        stmt = select(Item).where(Item.is_sold == 0)
+        async with get_db_session() as session:
+            items = await session_execute(stmt, session)
+            return [ItemDTO.model_validate(item, from_attributes=True) for item in items.scalars().all()]
+
 

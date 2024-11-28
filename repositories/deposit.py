@@ -3,7 +3,7 @@ import datetime
 from sqlalchemy import select
 
 from callbacks import StatisticsTimeDelta
-from db import get_db_session, session_execute
+from db import get_db_session, session_execute, session_commit, session_refresh
 from models.deposit import Deposit, DepositDTO
 from models.user import UserDTO
 
@@ -25,3 +25,12 @@ class DepositRepository:
         async with get_db_session() as session:
             deposits = await session_execute(stmt, session)
             return [DepositDTO.model_validate(deposit) for deposit in deposits.scalars().all()]
+
+    @staticmethod
+    async def create(deposit: DepositDTO) -> int:
+        async with get_db_session() as session:
+            dep = Deposit(**deposit.model_dump())
+            session.add(dep)
+            await session_commit(session)
+            await session_refresh(session, dep)
+            return dep.id
