@@ -1,6 +1,6 @@
 import math
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 
 import config
 from db import get_db_session, session_execute, session_commit, session_refresh
@@ -58,4 +58,41 @@ class BuyRepository:
                 .offset(config.PAGE_ENTRIES * page))
         async with get_db_session() as session:
             refund_data = await session_execute(stmt, session)
-            return [RefundDTO.model_validate(refund_item, from_attributes=True) for refund_item in refund_data.mappings().all()]
+            return [RefundDTO.model_validate(refund_item, from_attributes=True) for refund_item in
+                    refund_data.mappings().all()]
+
+    @staticmethod
+    async def get_refund_data_single(buy_id: int) -> RefundDTO:
+        stmt = (select(Buy.total_price,
+                       Buy.quantity,
+                       Buy.id.label("buy_id"),
+                       User.telegram_id,
+                       User.telegram_username,
+                       User.id.label("user_id"),
+                       Subcategory.name.label("subcategory_name"))
+                .join(BuyItem, BuyItem.buy_id == Buy.id)
+                .join(User, User.id == Buy.buyer_id)
+                .join(Item, Item.id == BuyItem.item_id)
+                .join(Subcategory, Subcategory.id == Item.subcategory_id)
+                .where(Buy.is_refunded == False, Buy.id == buy_id))
+        async with get_db_session() as session:
+            refund_data = await session_execute(stmt, session)
+            return RefundDTO.model_validate(refund_data.mappings().one(), from_attributes=True)
+
+    @staticmethod
+    async def get_by_id(buy_id: int) -> BuyDTO:
+        stmt = select(Buy).where(Buy.id == buy_id)
+        async with get_db_session() as session:
+            buy = await session_execute(stmt, session)
+            return BuyDTO.model_validate(buy.scalar_one(), from_attributes=True)
+
+    @staticmethod
+    async def update(buy_dto: BuyDTO):
+        buy_dto_dict = buy_dto.__dict__
+        none_keys = [k for k, v in buy_dto_dict.items() if v is None]
+        for k in none_keys:
+            buy_dto_dict.pop(k)
+        stmt = update(Buy).where(Buy.id == buy_dto.id).values(**buy_dto_dict)
+        async with get_db_session() as session:
+            await session_execute(stmt, session)
+            await session_commit(session)

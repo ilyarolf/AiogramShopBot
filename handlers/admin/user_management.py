@@ -7,6 +7,7 @@ from aiogram.types import CallbackQuery, Message
 
 from callbacks import UserManagementCallback
 from handlers.admin.constants import UserManagementStates
+from models.buy import BuyDTO
 from services.admin import AdminService
 from services.buy import BuyService
 from utils.custom_filters import AdminIdFilter
@@ -51,9 +52,12 @@ async def refund_buy(callback: CallbackQuery):
 async def refund_confirmation(callback: CallbackQuery):
     unpacked_cb = UserManagementCallback.unpack(callback.data)
     if unpacked_cb.confirmation:
-        msg, kb_builder = await BuyService.refund()
+        msg = await BuyService.refund(BuyDTO(id=unpacked_cb.buy_id))
+        await callback.message.edit_text(text=msg)
     else:
         msg, kb_builder = await AdminService.refund_confirmation(callback)
+        await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+
 
 @user_management.callback_query(AdminIdFilter(), UserManagementCallback.filter())
 async def inventory_management_navigation(callback: CallbackQuery, state: FSMContext,

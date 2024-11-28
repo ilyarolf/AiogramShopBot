@@ -319,3 +319,28 @@ class AdminService:
         kb_builder = await add_pagination_buttons(kb_builder, unpacked_cb,
                                                   BuyRepository.get_max_refund_page(), unpacked_cb.get_back_button(0))
         return Localizator.get_text(BotEntity.ADMIN, "refund_menu"), kb_builder
+
+    @staticmethod
+    async def refund_confirmation(callback: CallbackQuery):
+        unpacked_cb = UserManagementCallback.unpack(callback.data)
+        unpacked_cb.confirmation = True
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
+                          callback_data=unpacked_cb)
+        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
+                          callback_data=UserManagementCallback.create(0))
+        refund_data = await BuyRepository.get_refund_data_single(unpacked_cb.buy_id)
+        if refund_data.telegram_username:
+            return Localizator.get_text(BotEntity.ADMIN, "refund_confirmation_by_username").format(
+                telegram_username=refund_data.telegram_username,
+                quantity=refund_data.quantity,
+                subcategory=refund_data.subcategory_name,
+                total_price=refund_data.total_price,
+                currency_sym=Localizator.get_currency_symbol()), kb_builder
+        else:
+            return Localizator.get_text(BotEntity.ADMIN, "refund_confirmation_by_tgid").format(
+                telegram_id=refund_data.telegram_id,
+                quantity=refund_data.quantity,
+                subcategory=refund_data.subcategory_name,
+                total_price=refund_data.total_price,
+                currency_sym=Localizator.get_currency_symbol()), kb_builder
