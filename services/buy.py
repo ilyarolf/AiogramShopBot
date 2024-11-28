@@ -8,11 +8,13 @@ import config
 from callbacks import MyProfileCallback
 from db import session_execute, session_commit, session_refresh, get_db_session
 from handlers.user.constants import UserConstants
-from models.buy import Buy
-from models.user import User
+from models.buy import Buy, BuyDTO
+from models.user import User, UserDTO
 from repositories.buy import BuyRepository
 from repositories.item import ItemRepository
+from repositories.user import UserRepository
 from services.message import MessageService
+from services.notification import NotificationService
 from services.user import UserService
 from utils.localizator import Localizator, BotEntity
 from utils.other_sql import RefundBuyDTO
@@ -57,13 +59,29 @@ class BuyService:
             return not_refunded_buys.scalars().all()
 
     @staticmethod
-    async def refund(buy_id: int):
-        pass
-        # await UserService.reduce_consume_records(refund_data.user_id, refund_data.total_price)
-        # async with get_db_session() as session:
-        #     stmt = update(Buy).where(Buy.id == buy_id).values(is_refunded=True)
-        #     await session_execute(stmt, session)
-        #     await session_commit(session)
+    async def refund(buy_dto: BuyDTO) -> str:
+        refund_data = await BuyRepository.get_refund_data_single(buy_dto.id)
+        buy = await BuyRepository.get_by_id(buy_dto.id)
+        buy.is_refunded = True
+        await BuyRepository.update(buy)
+        user = await UserRepository.get_by_tgid(UserDTO(telegram_id=refund_data.telegram_id))
+        user.consume_records = user.consume_records - refund_data.total_price
+        await UserRepository.update(user)
+        await NotificationService.refund(refund_data)
+        if refund_data.telegram_username:
+            return Localizator.get_text(BotEntity.ADMIN, "successfully_refunded_with_username").format(
+                    total_price=refund_data.total_price,
+                    telegram_username=refund_data.telegram_username,
+                    quantity=refund_data.quantity,
+                    subcategory=refund_data.subcategory_name,
+                    currency_sym=Localizator.get_currency_symbol())
+        else:
+            return Localizator.get_text(BotEntity.ADMIN, "successfully_refunded_with_tgid").format(
+                                total_price=refund_data.total_price,
+                                telegram_id=refund_data.telegram_id,
+                                quantity=refund_data.quantity,
+                                subcategory=refund_data.subcategory_name,
+                                currency_sym=Localizator.get_currency_symbol())
 
     @staticmethod
     async def get_new_buys_by_timedelta(timedelta_int):

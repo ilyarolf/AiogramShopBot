@@ -6,6 +6,7 @@ from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from config import ADMIN_ID_LIST, TOKEN
 from enums.cryptocurrency import Cryptocurrency
+from models.buy import RefundDTO
 from models.cartItem import CartItemDTO
 from models.user import UserDTO
 from services.category import CategoryService
@@ -32,6 +33,8 @@ class NotificationService:
                 await bot.send_message(admin_id, f"<b>{message}</b>", reply_markup=reply_markup)
             except Exception as e:
                 logging.error(e)
+            finally:
+                await bot.close()
 
     @staticmethod
     async def new_deposit(deposit_amount: float, cryptocurrency: Cryptocurrency, fiat_amount: float, user_dto: UserDTO):
@@ -88,3 +91,17 @@ class NotificationService:
         message += Localizator.get_text(BotEntity.USER, "cart_grand_total_string").format(
             cart_grand_total=cart_grand_total, currency_sym=Localizator.get_currency_symbol())
         await NotificationService.send_to_admins(message, user_button)
+
+    @staticmethod
+    async def refund(refund_data: RefundDTO):
+        user_notification = Localizator.get_text(BotEntity.USER, "refund_notification").format(
+            total_price=refund_data.total_price,
+            quantity=refund_data.quantity,
+            subcategory=refund_data.subcategory_name,
+            currency_sym=Localizator.get_currency_symbol())
+        try:
+            bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+            await bot.send_message(refund_data.telegram_id, text=user_notification)
+            await bot.close()
+        except Exception as _:
+            pass
