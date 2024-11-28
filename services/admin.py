@@ -1,18 +1,19 @@
 import asyncio
 import logging
-from typing import Tuple
-
 from aiogram.exceptions import TelegramForbiddenError
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from callbacks import AdminAnnouncementCallback, AnnouncementType, AdminInventoryManagementCallback, EntityType, \
-    AddType, UserManagementCallback, UserManagementOperation
+    AddType, UserManagementCallback, UserManagementOperation, StatisticsCallback, StatisticsEntity, StatisticsTimeDelta
+from crypto_api.CryptoApiManager import CryptoApiManager
+from enums.cryptocurrency import Cryptocurrency
 from handlers.admin.constants import AdminConstants, AdminInventoryManagementStates, UserManagementStates
 from handlers.common.common import add_pagination_buttons
 from models.item import ItemDTO
 from repositories.buy import BuyRepository
 from repositories.category import CategoryRepository
+from repositories.deposit import DepositRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
@@ -344,3 +345,110 @@ class AdminService:
                 subcategory=refund_data.subcategory_name,
                 total_price=refund_data.total_price,
                 currency_sym=Localizator.get_currency_symbol()), kb_builder
+
+    @staticmethod
+    async def get_statistics_menu() -> tuple[str, InlineKeyboardBuilder]:
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "users_statistics"),
+                          callback_data=StatisticsCallback.create(1, StatisticsEntity.USERS))
+        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "buys_statistics"),
+                          callback_data=StatisticsCallback.create(1, StatisticsEntity.BUYS))
+        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "deposits_statistics"),
+                          callback_data=StatisticsCallback.create(1, StatisticsEntity.DEPOSITS))
+        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "get_database_file"),
+                          callback_data=StatisticsCallback.create(3))
+        kb_builder.adjust(1)
+        kb_builder.row(AdminConstants.back_to_main_button)
+        return Localizator.get_text(BotEntity.ADMIN, "pick_statistics_entity"), kb_builder
+
+    @staticmethod
+    async def get_timedelta_menu(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
+        kb_builder = InlineKeyboardBuilder()
+        unpacked_cb = StatisticsCallback.unpack(callback.data)
+        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "1_day"),
+                          callback_data=StatisticsCallback.create(unpacked_cb.level + 1,
+                                                                  unpacked_cb.statistics_entity,
+                                                                  StatisticsTimeDelta.DAY))
+        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "7_day"),
+                          callback_data=StatisticsCallback.create(unpacked_cb.level + 1,
+                                                                  unpacked_cb.statistics_entity,
+                                                                  StatisticsTimeDelta.WEEK))
+        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "30_day"),
+                          callback_data=StatisticsCallback.create(unpacked_cb.level + 1,
+                                                                  unpacked_cb.statistics_entity,
+                                                                  StatisticsTimeDelta.MONTH))
+        kb_builder.row(unpacked_cb.get_back_button(0))
+        return Localizator.get_text(BotEntity.ADMIN, "statistics_timedelta"), kb_builder
+
+    @staticmethod
+    async def get_statistics(callback: CallbackQuery):
+        unpacked_cb = StatisticsCallback.unpack(callback.data)
+        kb_builder = InlineKeyboardBuilder()
+        match unpacked_cb.statistics_entity:
+            case StatisticsEntity.USERS:
+                users, users_count = await UserRepository.get_by_timedelta(unpacked_cb.timedelta, unpacked_cb.page)
+                [kb_builder.button(text=user.telegram_username, url=f't.me/{user.telegram_username}') for user in users
+                 if user.telegram_username]
+                kb_builder.adjust(1)
+                kb_builder = await add_pagination_buttons(
+                    kb_builder,
+                    unpacked_cb,
+                    UserRepository.get_max_page_by_timedelta(unpacked_cb.timedelta),
+                    None)
+                kb_builder.row(AdminConstants.back_to_main_button, unpacked_cb.get_back_button())
+                return Localizator.get_text(BotEntity.ADMIN, "new_users_msg").format(
+                    users_count=len(users),
+                    timedelta=unpacked_cb.timedelta.value
+                ), kb_builder
+            case StatisticsEntity.BUYS:
+                buys = await BuyRepository.get_by_timedelta(unpacked_cb.timedelta)
+                total_profit = 0.0
+                items_sold = 0
+                for buy in buys:
+                    total_profit += buy.total_price
+                    items_sold += buy.quantity
+                kb_builder.row(AdminConstants.back_to_main_button, unpacked_cb.get_back_button())
+                return Localizator.get_text(BotEntity.ADMIN, "sales_statistics").format(
+                    timedelta=unpacked_cb.timedelta,
+                    total_profit=total_profit, items_sold=items_sold,
+                    buys_count=len(buys), currency_sym=Localizator.get_currency_symbol()), kb_builder
+            case StatisticsEntity.DEPOSITS:
+                deposits = await DepositRepository.get_by_timedelta(unpacked_cb.timedelta)
+                fiat_amount = 0.0
+                btc_amount = 0.0
+                ltc_amount = 0.0
+                sol_amount = 0.0
+                usdt_trc20_amount = 0.0
+                usdt_erc20_amount = 0.0
+                usdc_erc20_amount = 0.0
+                for deposit in deposits:
+                    match deposit.network:
+                        case "BTC":
+                            btc_amount += deposit.amount / pow(10, 8)
+                        case "LTC":
+                            ltc_amount += deposit.amount / pow(10, 8)
+                        case "SOL":
+                            sol_amount += deposit.amount / pow(10, 9)
+                        case "TRX":
+                            divided_amount = deposit.amount / pow(10, 6)
+                            fiat_amount += divided_amount
+                            usdt_trc20_amount += divided_amount
+                        case "ETH":
+                            divided_amount = deposit.amount / pow(10, 6)
+                            fiat_amount += divided_amount
+                            match deposit.token_name:
+                                case "USDT_ERC20":
+                                    usdt_erc20_amount += divided_amount
+                                case "USDC_ERC20":
+                                    usdc_erc20_amount += divided_amount
+                btc_price = await CryptoApiManager.get_crypto_prices(Cryptocurrency.BTC)
+                ltc_price = await CryptoApiManager.get_crypto_prices(Cryptocurrency.LTC)
+                sol_price = await CryptoApiManager.get_crypto_prices(Cryptocurrency.SOL)
+                fiat_amount += (btc_amount * btc_price) + (ltc_amount * ltc_price) + (sol_amount * sol_price)
+                kb_builder.row(AdminConstants.back_to_main_button, unpacked_cb.get_back_button())
+                return Localizator.get_text(BotEntity.ADMIN, "deposits_statistics_msg").format(
+                    timedelta=unpacked_cb.timedelta, deposits_count=len(deposits),
+                    btc_amount=btc_amount, ltc_amount=ltc_amount,
+                    sol_amount=sol_amount, usdt_trc20_amount=usdt_trc20_amount,
+                    usdt_erc20_amount=usdt_erc20_amount, usdc_erc20_amount=usdc_erc20_amount, fiat_amount=fiat_amount,
+                    currency_text=Localizator.get_currency_text()), kb_builder

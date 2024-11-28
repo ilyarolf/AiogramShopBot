@@ -1,8 +1,10 @@
+import datetime
 import math
 
 from sqlalchemy import select, func, update
 
 import config
+from callbacks import StatisticsTimeDelta
 from db import get_db_session, session_execute, session_commit, session_refresh
 from models.buy import Buy, BuyDTO, RefundDTO
 from models.buyItem import BuyItem
@@ -96,3 +98,13 @@ class BuyRepository:
         async with get_db_session() as session:
             await session_execute(stmt, session)
             await session_commit(session)
+
+    @staticmethod
+    async def get_by_timedelta(timedelta: StatisticsTimeDelta) -> list[BuyDTO]:
+        current_time = datetime.datetime.now()
+        timedelta = datetime.timedelta(days=timedelta.value)
+        time_interval = current_time - timedelta
+        stmt = select(Buy).where(Buy.buy_datetime >= time_interval)
+        async with get_db_session() as session:
+            buys = await session_execute(stmt, session)
+            return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]

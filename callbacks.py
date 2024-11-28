@@ -141,3 +141,26 @@ class UserManagementCallback(BaseCallback, prefix="user_management"):
                buy_id: int | None = None):
         return UserManagementCallback(level=level, operation=operation, page=page, confirmation=confirmation,
                                       buy_id=buy_id)
+
+
+class StatisticsEntity(IntEnum):
+    USERS = 1
+    BUYS = 2
+    DEPOSITS = 3
+
+
+class StatisticsTimeDelta(IntEnum):
+    DAY = 1
+    WEEK = 7
+    MONTH = 30
+
+
+class StatisticsCallback(BaseCallback, prefix="statistics"):
+    statistics_entity: StatisticsEntity | None
+    timedelta: StatisticsTimeDelta | None
+    page: int
+
+    @staticmethod
+    def create(level: int, statistics_entity: StatisticsEntity | None = None,
+               timedelta: StatisticsTimeDelta | None = None, page: int = 0):
+        return StatisticsCallback(level=level, statistics_entity=statistics_entity, timedelta=timedelta, page=page)
