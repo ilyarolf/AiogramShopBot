@@ -36,7 +36,7 @@ async def receive_admin_message(message: Message, state: FSMContext):
 
 async def send_generated_msg(callback: CallbackQuery):
     unpacked_cb = AdminAnnouncementCallback.unpack(callback.data)
-    if unpacked_cb.type_of_announcement == AnnouncementType.RESTOCKING:
+    if unpacked_cb.announcement_type == AnnouncementType.RESTOCKING:
         msg = await NewItemsManager.generate_restocking_message()
         await callback.message.answer(msg, reply_markup=AdminAnnouncementsConstants.confirmation_builder.as_markup())
     else:
