@@ -35,8 +35,6 @@ class NotificationService:
                 await bot.send_message(admin_id, f"<b>{message}</b>", reply_markup=reply_markup)
             except Exception as e:
                 logging.error(e)
-            finally:
-                await bot.close()
 
     @staticmethod
     async def new_deposit(deposit_amount: float, cryptocurrency: Cryptocurrency, fiat_amount: float, user_dto: UserDTO):
@@ -105,6 +103,5 @@ class NotificationService:
         try:
             bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
             await bot.send_message(refund_data.telegram_id, text=user_notification)
-            await bot.close()
         except Exception as _:
             pass
