@@ -69,13 +69,13 @@ class CartService:
         unpacked_cb = CartCallback.unpack(callback.data)
         cart_item_id = unpacked_cb.cart_item_id
         kb_builder = InlineKeyboardBuilder()
-        if unpacked_cb.delete_cart_item_confirmation:
+        if unpacked_cb.confirmation:
             await CartItemRepository.remove_from_cart(cart_item_id)
             return Localizator.get_text(BotEntity.USER, "delete_cart_item_confirmation_text"), kb_builder
         else:
             kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
                               callback_data=CartCallback.create(1, cart_item_id=cart_item_id,
-                                                                delete_cart_item_confirmation=True))
+                                                                confirmation=True))
             kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
                               callback_data=CartCallback.create(0))
             return Localizator.get_text(BotEntity.USER, "delete_cart_item_confirmation"), kb_builder
@@ -110,7 +110,7 @@ class CartService:
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
                           callback_data=CartCallback.create(3,
-                                                            purchase_confirmation=True))
+                                                            confirmation=True))
         kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
                           callback_data=CartCallback.create(0))
         return message_text, kb_builder
@@ -131,7 +131,7 @@ class CartService:
                 out_of_stock.append(cart_item)
         is_enough_money = (user.top_up_amount - user.consume_records) >= cart_total
         kb_builder = InlineKeyboardBuilder()
-        if unpacked_cb.purchase_confirmation and len(out_of_stock) == 0 and is_enough_money:
+        if unpacked_cb.confirmation and len(out_of_stock) == 0 and is_enough_money:
             sold_items = []
             msg = ""
             for cart_item in cart_items:
@@ -153,7 +153,7 @@ class CartService:
                 await UserRepository.update(user)
             await NotificationService.new_buy(sold_items, user)
             return msg, kb_builder
-        elif unpacked_cb.purchase_confirmation is False:
+        elif unpacked_cb.confirmation is False:
             kb_builder.row(unpacked_cb.get_back_button(0))
             return Localizator.get_text(BotEntity.USER, "purchase_confirmation_declined"), kb_builder
         elif is_enough_money is False:

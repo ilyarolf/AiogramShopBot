@@ -26,7 +26,6 @@ class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
     subcategory_id: int
     price: float
     quantity: int
-    total_price: float
     confirmation: bool
     page: int
 
@@ -35,12 +34,10 @@ class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
                category_id: int = -1,
                subcategory_id: int = -1,
                price: float = 0.0,
-               total_price: float = 0.0,
                quantity: int = 0,
                confirmation: bool = False,
                page: int = 0) -> 'AllCategoriesCallback':
         return AllCategoriesCallback(level=level, category_id=category_id, subcategory_id=subcategory_id, price=price,
-                                     total_price=total_price,
                                      quantity=quantity, confirmation=confirmation, page=page)
 
 
@@ -58,17 +55,13 @@ class CartCallback(BaseCallback, prefix="cart"):
     page: int
     cart_id: int
     cart_item_id: int
-    delete_cart_item_confirmation: bool
-    purchase_confirmation: bool
-    cart_grand_total: float
+    confirmation: bool
 
     @staticmethod
     def create(level: int = 0, page: int = 0, cart_id: int = -1, cart_item_id: int = -1,
-               delete_cart_item_confirmation=False, purchase_confirmation=False,
-               cart_grand_total=0.0):
+               confirmation=False):
         return CartCallback(level=level, page=page, cart_id=cart_id, cart_item_id=cart_item_id,
-                            delete_cart_item_confirmation=delete_cart_item_confirmation,
-                            purchase_confirmation=purchase_confirmation, cart_grand_total=cart_grand_total)
+                            confirmation=confirmation)
 
 
 class AdminMenuCallback(BaseCallback, prefix="admin_menu"):
