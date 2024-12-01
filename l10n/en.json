@@ -106,7 +106,7 @@
     "balance_refresh_timeout": "⏳ Please wait and try again later",
     "buy_confirmation": "🛒 <b>Category: {category_name}\nSubcategory: {subcategory_name}\nPrice: {currency_sym}{price}\nDescription: {description}\nQuantity: {quantity}\nTotal price: {currency_sym}{total_price:.2f}</b>",
     "cart": "\uD83D\uDED2 Cart",
-    "cart_item_button": "\uD83D\uDCE6 {subcategory_name}| Total: {currency_sym}{total_price:.2f} | Qty: {qty}\n",
+    "cart_item_button": "\uD83D\uDCE6 {subcategory_name}| Total: {currency_sym}{total_price:.2f} | Qty: {qty} \uD83D\uDDD1 \n",
     "cart_line_item": "{cart_item_subcategory_name} ({cart_item_quantity!s}) = {cart_item_total:.2f}{cart_item_currency!s} \n",
     "cart_grand_total_string": "\n<u>Grand total: {cart_grand_total:.2f} {currency_sym}</u>",
     "cart_confirm_checkout_process": "Checkout cart?",
