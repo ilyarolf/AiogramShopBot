@@ -56,6 +56,7 @@ class BuyRepository:
                 .join(Item, Item.id == BuyItem.item_id)
                 .join(Subcategory, Subcategory.id == Item.subcategory_id)
                 .where(Buy.is_refunded == False)
+                .distinct()
                 .limit(config.PAGE_ENTRIES)
                 .offset(config.PAGE_ENTRIES * page))
         async with get_db_session() as session:
@@ -76,7 +77,8 @@ class BuyRepository:
                 .join(User, User.id == Buy.buyer_id)
                 .join(Item, Item.id == BuyItem.item_id)
                 .join(Subcategory, Subcategory.id == Item.subcategory_id)
-                .where(Buy.is_refunded == False, Buy.id == buy_id))
+                .where(Buy.is_refunded == False, Buy.id == buy_id)
+                .limit(1))
         async with get_db_session() as session:
             refund_data = await session_execute(stmt, session)
             return RefundDTO.model_validate(refund_data.mappings().one(), from_attributes=True)

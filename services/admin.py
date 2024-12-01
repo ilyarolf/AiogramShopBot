@@ -312,7 +312,7 @@ class AdminService:
                     currency_sym=Localizator.get_currency_symbol()),
                     callback_data=callback)
             else:
-                kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "refund_by_username").format(
+                kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "refund_by_tgid").format(
                     telegram_id=refund_item.telegram_id,
                     total_price=refund_item.total_price,
                     subcategory=refund_item.subcategory_name,

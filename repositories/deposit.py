@@ -24,7 +24,7 @@ class DepositRepository:
         stmt = select(Deposit).where(Deposit.deposit_datetime >= time_interval)
         async with get_db_session() as session:
             deposits = await session_execute(stmt, session)
-            return [DepositDTO.model_validate(deposit) for deposit in deposits.scalars().all()]
+            return [DepositDTO.model_validate(deposit, from_attributes=True) for deposit in deposits.scalars().all()]
 
     @staticmethod
     async def create(deposit: DepositDTO) -> int:
