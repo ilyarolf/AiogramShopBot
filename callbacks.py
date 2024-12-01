@@ -81,11 +81,11 @@ class AnnouncementType(IntEnum):
 
 
 class AdminAnnouncementCallback(BaseCallback, prefix="announcement"):
-    announcement_type: AnnouncementType
+    announcement_type: AnnouncementType | None
 
     @staticmethod
-    def create(level: int):
-        return AdminAnnouncementCallback(level=level, announcement_type=AnnouncementType.FROM_RECEIVING_MESSAGE)
+    def create(level: int, announcement_type: AnnouncementType | None = None):
+        return AdminAnnouncementCallback(level=level, announcement_type=announcement_type)
 
 
 class AddType(IntEnum):

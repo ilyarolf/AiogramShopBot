@@ -28,11 +28,11 @@ class AdminService:
     async def get_announcement_menu() -> tuple[str, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "send_everyone"),
-                          callback_data=AdminAnnouncementCallback.create(level=1))
+                          callback_data=AdminAnnouncementCallback.create(1))
         kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "restocking"),
-                          callback_data=AdminAnnouncementCallback.create(level=2))
+                          callback_data=AdminAnnouncementCallback.create(2, AnnouncementType.RESTOCKING))
         kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "stock"),
-                          callback_data=AdminAnnouncementCallback.create(level=3))
+                          callback_data=AdminAnnouncementCallback.create(2, AnnouncementType.CURRENT_STOCK))
         kb_builder.row(AdminConstants.back_to_main_button)
         kb_builder.adjust(1)
         return Localizator.get_text(BotEntity.ADMIN, "announcements"), kb_builder

@@ -1,8 +1,9 @@
 from typing import List
 
 from enums.bot_entity import BotEntity
-from models.item import Item
+from models.item import ItemDTO
 from repositories.category import CategoryRepository
+from repositories.subcategory import SubcategoryRepository
 from services.item import ItemService
 from utils.localizator import Localizator
 
@@ -22,15 +23,16 @@ class NewItemsManager:
         return message
 
     @staticmethod
-    async def create_text_of_items_msg(items: List[Item], is_update: bool) -> str:
+    async def create_text_of_items_msg(items: List[ItemDTO], is_update: bool) -> str:
         filtered_items = {}
         for item in items:
             category = await CategoryRepository.get_by_id(item.category_id)
+            subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id)
             if category.name not in filtered_items:
                 filtered_items[category.name] = {}
-            if item.subcategory not in filtered_items[category.name]:
-                filtered_items[category.name][item.subcategory] = []
-            filtered_items[category.name][item.subcategory].append(item)
+            if subcategory.name not in filtered_items[category.name]:
+                filtered_items[category.name][subcategory.name] = []
+            filtered_items[category.name][subcategory.name].append(item)
         message = "<b>"
         if is_update is True:
             message += Localizator.get_text(BotEntity.ADMIN, "restocking_message_header")
@@ -41,7 +43,7 @@ class NewItemsManager:
                 category=category)
             for subcategory, item in subcategory_item_dict.items():
                 message += Localizator.get_text(BotEntity.USER, "subcategory_button").format(
-                    subcategory_name=subcategory.name,
+                    subcategory_name=subcategory,
                     available_quantity=len(item),
                     subcategory_price=item[0].price,
                     currency_sym=Localizator.get_currency_symbol()) + "\n"
