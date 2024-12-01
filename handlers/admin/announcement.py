@@ -31,17 +31,19 @@ async def receive_admin_message(message: Message, state: FSMContext):
         await message.answer(text=Localizator.get_text(BotEntity.ADMIN, "canceled"))
     else:
         await message.copy_to(message.chat.id,
-                              reply_markup=AdminAnnouncementsConstants.confirmation_builder.as_markup())
+                              reply_markup=AdminAnnouncementsConstants.get_confirmation_builder(
+                                  AnnouncementType.FROM_RECEIVING_MESSAGE).as_markup())
 
 
 async def send_generated_msg(callback: CallbackQuery):
     unpacked_cb = AdminAnnouncementCallback.unpack(callback.data)
+    kb_builder = AdminAnnouncementsConstants.get_confirmation_builder(unpacked_cb.announcement_type)
     if unpacked_cb.announcement_type == AnnouncementType.RESTOCKING:
         msg = await NewItemsManager.generate_restocking_message()
-        await callback.message.answer(msg, reply_markup=AdminAnnouncementsConstants.confirmation_builder.as_markup())
+        await callback.message.answer(msg, reply_markup=kb_builder.as_markup())
     else:
         msg = await NewItemsManager.generate_in_stock_message()
-        await callback.message.answer(msg, reply_markup=AdminAnnouncementsConstants.confirmation_builder.as_markup())
+        await callback.message.answer(msg, reply_markup=kb_builder.as_markup())
 
 
 async def send_confirmation(callback: CallbackQuery):
