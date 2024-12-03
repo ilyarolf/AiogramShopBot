@@ -188,7 +188,7 @@ class AdminService:
     @staticmethod
     async def add_item_menu(message: Message, state: FSMContext):
         current_state = await state.get_state()
-        if message.text == 'cancel':
+        if message.text and message.text.lower() == 'cancel':
             await state.clear()
             return Localizator.get_text(BotEntity.COMMON, "cancelled")
         elif current_state == AdminInventoryManagementStates.category:
