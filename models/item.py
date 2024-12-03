@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey
 from sqlalchemy.orm import relationship, backref
 
@@ -24,10 +25,12 @@ class Item(Base):
     description = Column(String, nullable=False)
 
 
-@dataclass
-class ItemDTO:
-    category: str
-    subcategory: str
-    private_data: str
-    price: float
-    description: str
+class ItemDTO(BaseModel):
+    id: int | None = None
+    category_id: int | None = None
+    subcategory_id: int | None = None
+    private_data: str | None = None
+    price: float | None = None
+    is_sold: bool | None = None
+    is_new: bool | None = None
+    description: str | None = None
