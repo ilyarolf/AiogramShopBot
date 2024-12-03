@@ -1,13 +1,6 @@
 import json
-from enum import Enum
-
 import config
-
-
-class BotEntity(Enum):
-    USER = 1
-    ADMIN = 2
-    COMMON = 3
+from enums.bot_entity import BotEntity
 
 
 class Localizator:

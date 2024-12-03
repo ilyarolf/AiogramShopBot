@@ -12,33 +12,33 @@ class CryptoAddressGenerator:
             self.mnemonic_str = mnemonic_gen.ToStr()
             self.seed_bytes = Bip39SeedGenerator(self.mnemonic_str).Generate()
 
-    def __generate_btc_pair(self, i: int) -> tuple:
+    def __generate_btc_pair(self) -> tuple:
         bip84_mst_ctx = Bip84.FromSeed(self.seed_bytes, Bip84Coins.BITCOIN)
         bip84_acc_ctx = bip84_mst_ctx.Purpose().Coin().Account(0)
         bip84_chg_ctx = bip84_acc_ctx.Change(Bip44Changes.CHAIN_EXT)
-        bip84_addr_ctx = bip84_chg_ctx.AddressIndex(i).PublicKey().ToAddress()
-        return bip84_addr_ctx, bip84_chg_ctx.AddressIndex(i).PrivateKey().ToWif()
+        bip84_addr_ctx = bip84_chg_ctx.AddressIndex(0).PublicKey().ToAddress()
+        return bip84_addr_ctx, bip84_chg_ctx.AddressIndex(0).PrivateKey().ToWif()
 
-    def __generate_ltc_pair(self, i: int) -> tuple:
+    def __generate_ltc_pair(self) -> tuple:
         bip84_mst_ctx = Bip84.FromSeed(self.seed_bytes, Bip84Coins.LITECOIN)
         bip84_acc_ctx = bip84_mst_ctx.Purpose().Coin().Account(0)
         bip84_chg_ctx = bip84_acc_ctx.Change(Bip44Changes.CHAIN_EXT)
-        bip84_addr_ctx = bip84_chg_ctx.AddressIndex(i).PublicKey().ToAddress()
-        return bip84_addr_ctx, bip84_chg_ctx.AddressIndex(i).PrivateKey().ToWif()
+        bip84_addr_ctx = bip84_chg_ctx.AddressIndex(0).PublicKey().ToAddress()
+        return bip84_addr_ctx, bip84_chg_ctx.AddressIndex(0).PrivateKey().ToWif()
 
-    def __generate_trx_pair(self, i: int) -> tuple:
+    def __generate_trx_pair(self) -> tuple:
         bip44_mst_ctx = Bip44.FromSeed(self.seed_bytes, Bip44Coins.TRON)
         bip44_acc_ctx = bip44_mst_ctx.Purpose().Coin().Account(0)
         bip44_chg_ctx = bip44_acc_ctx.Change(Bip44Changes.CHAIN_EXT)
-        bip44_addr_ctx = bip44_chg_ctx.AddressIndex(i).PublicKey().ToAddress()
-        return bip44_addr_ctx, bip44_chg_ctx.AddressIndex(i).PrivateKey().ToWif()
+        bip44_addr_ctx = bip44_chg_ctx.AddressIndex(0).PublicKey().ToAddress()
+        return bip44_addr_ctx, bip44_chg_ctx.AddressIndex(0).PrivateKey().ToWif()
 
-    def __generate_eth_pair(self, i: int) -> tuple:
+    def __generate_eth_pair(self) -> tuple:
         bip44_mst_ctx = Bip44.FromSeed(self.seed_bytes, Bip44Coins.ETHEREUM)
         bip44_acc_ctx = bip44_mst_ctx.Purpose().Coin().Account(0)
         bip44_chg_ctx = bip44_acc_ctx.Change(Bip44Changes.CHAIN_EXT)
-        bip44_addr_ctx = bip44_chg_ctx.AddressIndex(i).PublicKey().ToAddress()
-        return bip44_addr_ctx, bip44_chg_ctx.AddressIndex(i).PrivateKey().ToWif()
+        bip44_addr_ctx = bip44_chg_ctx.AddressIndex(0).PublicKey().ToAddress()
+        return bip44_addr_ctx, bip44_chg_ctx.AddressIndex(0).PrivateKey().ToWif()
 
     def __generate_sol_pair(self) -> tuple:
         bip44_def_ctx = Bip44.FromSeed(self.seed_bytes, Bip44Coins.SOLANA)
@@ -50,16 +50,16 @@ class CryptoAddressGenerator:
         phantom_wallet_private_key = Base58Encoder.Encode(priv_key + pub_key)
         return bip44_addr_ctx, phantom_wallet_private_key
 
-    def get_private_keys(self, i: int) -> dict:
-        return {'btc': self.__generate_btc_pair(i)[1],
-                'ltc': self.__generate_ltc_pair(i)[1],
-                'trx': self.__generate_trx_pair(i)[1],
-                'eth': self.__generate_eth_pair(i)[1],
+    def get_private_keys(self) -> dict:
+        return {'btc': self.__generate_btc_pair()[1],
+                'ltc': self.__generate_ltc_pair()[1],
+                'trx': self.__generate_trx_pair()[1],
+                'eth': self.__generate_eth_pair()[1],
                 'sol': self.__generate_sol_pair()[1]}
 
-    def get_addresses(self, i: int):
-        return {'btc': self.__generate_btc_pair(i)[0],
-                'ltc': self.__generate_ltc_pair(i)[0],
-                'trx': self.__generate_trx_pair(i)[0],
-                'eth': self.__generate_eth_pair(i)[0],
+    def get_addresses(self):
+        return {'btc': self.__generate_btc_pair()[0],
+                'ltc': self.__generate_ltc_pair()[0],
+                'trx': self.__generate_trx_pair()[0],
+                'eth': self.__generate_eth_pair()[0],
                 'sol': self.__generate_sol_pair()[0]}

@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
-from sqlalchemy import event, Engine, text, create_engine
+from typing import Any
+
+from sqlalchemy import event, Engine, text, create_engine, Result, CursorResult
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import sessionmaker, Session
 
@@ -62,7 +64,7 @@ async def get_db_session() -> AsyncSession | Session:
             session.close()
 
 
-async def session_execute(stmt, session: AsyncSession | Session):
+async def session_execute(stmt, session: AsyncSession | Session) -> Result[Any] | CursorResult[Any]:
     if isinstance(session, AsyncSession):
         query_result = await session.execute(stmt)
         return query_result
