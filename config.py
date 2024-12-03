@@ -3,7 +3,7 @@ import os
 from enums.currency import Currency
 from ngrok_executor import start_ngrok
 
-load_dotenv()
+load_dotenv(".env")
 
 WEBHOOK_HOST = start_ngrok()
 WEBHOOK_PATH = os.environ.get("WEBHOOK_PATH")
