@@ -91,7 +91,6 @@ class AdminAnnouncementCallback(BaseCallback, prefix="announcement"):
 class AddType(IntEnum):
     JSON = 1
     TXT = 2
-    MENU = 3
 
 
 class EntityType(IntEnum):

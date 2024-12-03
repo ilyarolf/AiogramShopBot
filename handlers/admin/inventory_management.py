@@ -47,16 +47,6 @@ async def confirm_delete(callback: CallbackQuery):
         await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
-@inventory_management.message(AdminIdFilter(), F.text, StateFilter(AdminInventoryManagementStates.category,
-                                                                   AdminInventoryManagementStates.subcategory,
-                                                                   AdminInventoryManagementStates.price,
-                                                                   AdminInventoryManagementStates.description,
-                                                                   AdminInventoryManagementStates.private_data))
-async def add_items_menu(message: Message, state: FSMContext):
-    msg = await AdminService.add_item_menu(message, state)
-    await message.answer(text=msg)
-
-
 @inventory_management.message(AdminIdFilter(), F.document, StateFilter(AdminInventoryManagementStates.document))
 async def add_items_document(message: Message, state: FSMContext):
     if message.text and message.text.lower() == 'cancel':
