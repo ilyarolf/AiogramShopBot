@@ -23,7 +23,7 @@ jobs:
       - name: Determine Docker image tag
         id: vars
         run: |
-          if [[ "${GITHUB_REF_NAME}" == "develop"]]; then
+          if [[ "${GITHUB_REF_NAME}" == "develop" ]]; then
             echo "tag=${{ secrets.DOCKERHUB_USERNAME }}/aiogram-shop-bot-develop:latest" >> $GITHUB_ENV
           else
             echo "tag=${{ secrets.DOCKERHUB_USERNAME }}/aiogram-shop-bot:latest" >> $GITHUB_ENV
