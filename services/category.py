@@ -1,69 +1,31 @@
-import math
-
-from sqlalchemy import select, func
-
-import config
-from db import async_session_maker
-from models.category import Category
-from models.item import Item
+from aiogram.types import CallbackQuery
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from callbacks import AllCategoriesCallback
+from enums.bot_entity import BotEntity
+from handlers.common.common import add_pagination_buttons
+from repositories.category import CategoryRepository
+from utils.localizator import Localizator
 
 
 class CategoryService:
-    items_per_page = config.PAGE_ENTRIES
 
     @staticmethod
-    async def get_or_create_one(category_name: str) -> Category:
-        async with async_session_maker() as session:
-            stmt = select(Category).where(Category.name == category_name)
-            category = await session.execute(stmt)
-            category = category.scalar()
-            if category is None:
-                new_category_obj = Category(name=category_name)
-                session.add(new_category_obj)
-                await session.commit()
-                await session.refresh(new_category_obj)
-                return new_category_obj
-            else:
-                return category
-
-    @staticmethod
-    async def get_by_primary_key(primary_key: int) -> Category:
-        async with async_session_maker() as session:
-            stmt = select(Category).where(Category.id == primary_key)
-            category = await session.execute(stmt)
-            return category.scalar()
-
-    @staticmethod
-    async def get_all_categories(page: int = 0):
-        async with async_session_maker() as session:
-            stmt = select(Category).distinct().limit(CategoryService.items_per_page).offset(
-                page * CategoryService.items_per_page).group_by(Category.name)
-            categories = await session.execute(stmt)
-            return categories.scalars().all()
-
-    @staticmethod
-    async def get_unsold(page) -> list[Category]:
-        async with async_session_maker() as session:
-            stmt = select(Category).join(Item, Item.category_id == Category.id).where(
-                Item.is_sold == 0).distinct().limit(CategoryService.items_per_page).offset(
-                page * CategoryService.items_per_page).group_by(Category.name)
-            category_names = await session.execute(stmt)
-            return category_names.scalars().all()
-
-    @staticmethod
-    async def get_maximum_page():
-        async with async_session_maker() as session:
-            unique_categories_subquery = (
-                select(Category.id)
-                .join(Item, Item.category_id == Category.id)
-                .filter(Item.is_sold == 0)
-                .distinct()
-            ).alias('unique_categories')
-            stmt = select(func.count()).select_from(unique_categories_subquery)
-            max_page = await session.execute(stmt)
-            max_page = max_page.scalar_one()
-            if max_page % CategoryService.items_per_page == 0:
-                return max_page / CategoryService.items_per_page - 1
-            else:
-                return math.trunc(max_page / CategoryService.items_per_page)
-
+    async def get_buttons(callback: CallbackQuery | None = None) -> tuple[str, InlineKeyboardBuilder]:
+        if callback is None:
+            unpacked_cb = AllCategoriesCallback.create(0)
+        else:
+            unpacked_cb = AllCategoriesCallback.unpack(callback.data)
+        categories = await CategoryRepository.get(unpacked_cb.page)
+        categories_builder = InlineKeyboardBuilder()
+        [categories_builder.button(text=category.name,
+                                   callback_data=AllCategoriesCallback.create(
+                                       level=1,
+                                       category_id=category.id)) for category in categories]
+        categories_builder.adjust(2)
+        categories_builder = await add_pagination_buttons(categories_builder, unpacked_cb,
+                                                          CategoryRepository.get_maximum_page(),
+                                                          None)
+        if len(categories_builder.as_markup().inline_keyboard) == 0:
+            return Localizator.get_text(BotEntity.USER, "no_categories"), categories_builder
+        else:
+            return Localizator.get_text(BotEntity.USER, "all_categories"), categories_builder

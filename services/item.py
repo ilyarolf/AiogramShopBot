@@ -1,136 +1,70 @@
-import math
-
-from sqlalchemy import select, func, update, distinct
-
-import config
-from db import async_session_maker
-from models.buyItem import BuyItem
-from models.item import Item
-from models.subcategory import Subcategory
+from json import load
+from pathlib import Path
+from callbacks import AddType
+from enums.bot_entity import BotEntity
+from models.item import ItemDTO
+from repositories.category import CategoryRepository
+from repositories.item import ItemRepository
+from repositories.subcategory import SubcategoryRepository
+from utils.localizator import Localizator
 
 
 class ItemService:
-    items_per_page = config.PAGE_ENTRIES
 
     @staticmethod
-    async def get_by_primary_key(item_id: int) -> Item:
-        async with async_session_maker() as session:
-            stmt = select(Item).where(Item.id == item_id)
-            item = await session.execute(stmt)
-            return item.scalar()
+    async def get_new() -> list[ItemDTO]:
+        return await ItemRepository.get_new()
 
     @staticmethod
-    async def get_available_quantity(subcategory_id: int) -> int:
-        async with async_session_maker() as session:
-            stmt = select(func.count(Item.id)).where(Item.subcategory_id == subcategory_id, Item.is_sold == 0)
-            available_quantity = await session.execute(stmt)
-            return available_quantity.scalar()
+    async def get_in_stock_items():
+        return await ItemRepository.get_in_stock()
 
     @staticmethod
-    async def get_description(subcategory_id: int) -> str:
-        async with async_session_maker() as session:
-            stmt = select(Item.description, Item.subcategory_id).join(Subcategory,
-                                                                      Item.subcategory_id == Subcategory.id).where(
-                Item.subcategory_id == subcategory_id).limit(1)
-            description = await session.execute(stmt)
-            return description.scalar()
-
-    @staticmethod
-    async def get_bought_items(subcategory_id: int, quantity: int):
-        async with async_session_maker() as session:
-            stmt = select(Item).join(Subcategory, Item.subcategory_id == Subcategory.id).where(
-                Subcategory.id == subcategory_id,
-                Item.is_sold == 0).limit(quantity)
-            result = await session.execute(stmt)
-            bought_items = result.scalars().all()
-            return list(bought_items)
-
-    @staticmethod
-    async def set_items_sold(sold_items: list[Item]):
-        async with async_session_maker() as session:
-            for item in sold_items:
-                item = await session.merge(item)
-                item.is_sold = 1
-            await session.commit()
-
-    @staticmethod
-    async def get_items_by_buy_id(buy_id: int) -> list:
-        async with async_session_maker() as session:
-            stmt = (
-                select(Item)
-                .join(BuyItem, BuyItem.item_id == Item.id)
-                .where(BuyItem.buy_id == buy_id)
-            )
-            result = await session.execute(stmt)
-            items = result.scalars().all()
-            return items
-
-    @staticmethod
-    async def get_unsold_subcategories_by_category(category_id: int, page) -> list[Item]:
-        async with async_session_maker() as session:
-            stmt = select(Item).join(Subcategory, Subcategory.id == Item.subcategory_id).where(
-                Item.category_id == category_id, Item.is_sold == 0).group_by(Subcategory.name).limit(
-                ItemService.items_per_page).offset(ItemService.items_per_page * page)
-            subcategories = await session.execute(stmt)
-            return subcategories.scalars().all()
-
-    @staticmethod
-    async def get_maximum_page(category_id: int):
-        async with async_session_maker() as session:
-            subquery = select(Item.subcategory_id).where(Item.category_id == category_id, Item.is_sold == 0)
-            stmt = select(func.count(distinct(subquery.c.subcategory_id)))
-            maximum_page = await session.execute(stmt)
-            maximum_page = maximum_page.scalar_one()
-            if maximum_page % ItemService.items_per_page == 0:
-                return maximum_page / ItemService.items_per_page - 1
-            else:
-                return math.trunc(maximum_page / ItemService.items_per_page)
-
-    @staticmethod
-    async def get_price_by_subcategory(subcategory_id: int) -> float:
-        async with async_session_maker() as session:
-            stmt = select(Item.price).join(Subcategory, Subcategory.id == Item.subcategory_id).where(
-                Subcategory.id == subcategory_id)
-            price = await session.execute(stmt)
-            return price.scalar()
-
-    @staticmethod
-    async def set_items_not_new():
-        async with async_session_maker() as session:
-            stmt = update(Item).where(Item.is_new == 1).values(is_new=0)
-            await session.execute(stmt)
-            await session.commit()
-
-    @staticmethod
-    async def delete_unsold_with_category_id(category_id: int):
-        async with async_session_maker() as session:
-            stmt = select(Item).where(Item.category_id == category_id, Item.is_sold == 0)
-            items = await session.execute(stmt)
-            items = items.scalars().all()
+    async def parse_items_json(path_to_file):
+        with open(path_to_file, 'r', encoding='utf-8') as file:
+            items = load(file)
+            items_list = []
             for item in items:
-                await session.delete(item)
-            await session.commit()
+                category = await CategoryRepository.get_or_create(item['category'])
+                subcategory = await SubcategoryRepository.get_or_create(item['subcategory'])
+                item.pop('category')
+                item.pop('subcategory')
+                items_list.append(ItemDTO(
+                    category_id=category.id,
+                    subcategory_id=subcategory.id,
+                    **item
+                ))
+            return items_list
 
     @staticmethod
-    async def delete_with_subcategory_id(subcategory_id):
-        async with async_session_maker() as session:
-            stmt = select(Item).where(Item.subcategory_id == subcategory_id, Item.is_sold == 0)
-            categories = await session.execute(stmt)
-            categories = categories.scalars().all()
-            for category in categories:
-                await session.delete(category)
-            await session.commit()
+    async def parse_items_txt(path_to_file):
+        with open(path_to_file, 'r', encoding='utf-8') as file:
+            lines = file.readlines()
+            items_list = []
+            for line in lines:
+                category_name, subcategory_name, description, price, private_data = line.split(';')
+                category = await CategoryRepository.get_or_create(category_name)
+                subcategory = await SubcategoryRepository.get_or_create(subcategory_name)
+                items_list.append(ItemDTO(
+                    category_id=category.id,
+                    subcategory_id=subcategory.id,
+                    price=float(price),
+                    description=description,
+                    private_data=private_data
+                ))
+            return items_list
 
     @staticmethod
-    async def add_many(new_items: list[Item]):
-        async with async_session_maker() as session:
-            session.add_all(new_items)
-            await session.commit()
-
-    @staticmethod
-    async def get_new_items() -> list[Item]:
-        async with async_session_maker() as session:
-            stmt = select(Item).where(Item.is_new == 1)
-            new_items = await session.execute(stmt)
-            new_items = new_items.scalars().all()
-            return new_items
+    async def add_items(path_to_file: str, add_type: AddType) -> str:
+        try:
+            items = []
+            if add_type == AddType.JSON:
+                items += await ItemService.parse_items_json(path_to_file)
+            else:
+                items += await ItemService.parse_items_txt(path_to_file)
+            await ItemRepository.add_many(items)
+            return Localizator.get_text(BotEntity.ADMIN, "add_items_success").format(adding_result=len(items))
+        except Exception as e:
+            return Localizator.get_text(BotEntity.ADMIN, "add_items_err").format(adding_result=e)
+        finally:
+            Path(path_to_file).unlink(missing_ok=True)
