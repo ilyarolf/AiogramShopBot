@@ -106,7 +106,7 @@ class BuyRepository:
         current_time = datetime.datetime.now()
         timedelta = datetime.timedelta(days=timedelta.value)
         time_interval = current_time - timedelta
-        stmt = select(Buy).where(Buy.buy_datetime >= time_interval)
+        stmt = select(Buy).where(Buy.buy_datetime >= time_interval, Buy.is_refunded == False)
         async with get_db_session() as session:
             buys = await session_execute(stmt, session)
             return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]
