@@ -2,7 +2,7 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [master, feature/sqlalchemy-sqlcipher]
+    branches: [master, develop]
 
 jobs:
   build-and-push:
@@ -19,11 +19,22 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Determine Docker image tag
+        id: vars
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "develop"]]; then
+            echo "tag=${{ secrets.DOCKERHUB_USERNAME }}/aiogram-shop-bot-develop:latest" >> $GITHUB_ENV
+          else
+            echo "tag=${{ secrets.DOCKERHUB_USERNAME }}/aiogram-shop-bot:latest" >> $GITHUB_ENV
+          fi
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/aiogram-shop-bot:latest
-      - name: clean all
+          tags: ${{ env.tag }}
+
+      - name: Clean all
         run: rm -rf ./*
