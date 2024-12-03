@@ -12,7 +12,6 @@ from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
 from handlers.admin.constants import AdminConstants, AdminInventoryManagementStates, UserManagementStates
 from handlers.common.common import add_pagination_buttons
-from models.item import ItemDTO
 from repositories.buy import BuyRepository
 from repositories.category import CategoryRepository
 from repositories.deposit import DepositRepository
@@ -88,8 +87,6 @@ class AdminService:
                           callback_data=AdminInventoryManagementCallback.create(1, AddType.JSON, EntityType.ITEM))
         kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "add_items_txt"),
                           callback_data=AdminInventoryManagementCallback.create(1, AddType.TXT, EntityType.ITEM))
-        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "add_items_menu"),
-                          callback_data=AdminInventoryManagementCallback.create(1, AddType.MENU, EntityType.ITEM))
         kb_builder.adjust(1)
         kb_builder.row(unpacked_cb.get_back_button())
         return Localizator.get_text(BotEntity.ADMIN, "add_items_msg"), kb_builder
@@ -181,46 +178,6 @@ class AdminService:
             case AddType.TXT:
                 await state.set_state(AdminInventoryManagementStates.document)
                 return Localizator.get_text(BotEntity.ADMIN, "add_items_txt_msg"), kb_markup
-            case AddType.MENU:
-                await state.set_state(AdminInventoryManagementStates.category)
-                return Localizator.get_text(BotEntity.ADMIN, "add_items_category"), kb_markup
-
-    @staticmethod
-    async def add_item_menu(message: Message, state: FSMContext):
-        current_state = await state.get_state()
-        if message.text and message.text.lower() == 'cancel':
-            await state.clear()
-            return Localizator.get_text(BotEntity.COMMON, "cancelled")
-        elif current_state == AdminInventoryManagementStates.category:
-            await state.update_data(category_name=message.text)
-            await state.set_state(AdminInventoryManagementStates.subcategory)
-            return Localizator.get_text(BotEntity.ADMIN, "add_items_subcategory")
-        elif current_state == AdminInventoryManagementStates.subcategory:
-            await state.update_data(subcategory_name=message.text)
-            await state.set_state(AdminInventoryManagementStates.description)
-            return Localizator.get_text(BotEntity.ADMIN, "add_items_description")
-        elif current_state == AdminInventoryManagementStates.description:
-            await state.update_data(description=message.text)
-            await state.set_state(AdminInventoryManagementStates.private_data)
-            return Localizator.get_text(BotEntity.ADMIN, "add_items_private_data")
-        elif current_state == AdminInventoryManagementStates.private_data:
-            await state.update_data(private_data=message.text)
-            await state.set_state(AdminInventoryManagementStates.price)
-            return Localizator.get_text(BotEntity.ADMIN, "add_items_price").format(
-                currency_text=Localizator.get_currency_text())
-        elif current_state == AdminInventoryManagementStates.price:
-            await state.update_data(price=message.text)
-            state_data = await state.get_data()
-            category = await CategoryRepository.get_or_create(state_data['category_name'])
-            subcategory = await SubcategoryRepository.get_or_create(state_data['subcategory_name'])
-            items_list = [ItemDTO(category_id=category.id,
-                                  subcategory_id=subcategory.id,
-                                  description=state_data['description'],
-                                  price=float(state_data['price']),
-                                  private_data=private_data) for private_data in state_data['private_data'].split('\n')]
-            await ItemRepository.add_many(items_list)
-            await state.clear()
-            return Localizator.get_text(BotEntity.ADMIN, "add_items_success").format(adding_result=len(items_list))
 
     @staticmethod
     async def get_user_management_menu() -> tuple[str, InlineKeyboardBuilder]:
@@ -468,5 +425,3 @@ class AdminService:
         kb_builder = InlineKeyboardBuilder()
         kb_builder.row(AdminConstants.back_to_main_button)
         return Localizator.get_text(BotEntity.ADMIN, "choose_crypto_to_withdraw"), kb_builder
-
-
