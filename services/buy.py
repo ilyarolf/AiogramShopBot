@@ -1,81 +1,49 @@
-import datetime
-import math
-
-from sqlalchemy import select, update, func
-
-import config
-from db import async_session_maker
-from models.buy import Buy
-from models.user import User
-from services.user import UserService
-from utils.other_sql import RefundBuyDTO
+from aiogram.types import CallbackQuery
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from callbacks import MyProfileCallback
+from enums.bot_entity import BotEntity
+from models.buy import BuyDTO
+from models.user import UserDTO
+from repositories.buy import BuyRepository
+from repositories.item import ItemRepository
+from repositories.user import UserRepository
+from services.message import MessageService
+from services.notification import NotificationService
+from utils.localizator import Localizator
 
 
 class BuyService:
-    buys_per_page = config.PAGE_ENTRIES
 
     @staticmethod
-    async def get_buys_by_buyer_id(buyer_id: int, page: int):
-        async with async_session_maker() as session:
-            stmt = select(Buy).where(Buy.buyer_id == buyer_id).limit(BuyService.buys_per_page).offset(
-                page * BuyService.buys_per_page)
-            buys = await session.execute(stmt)
-            return buys.scalars().all()
+    async def refund(buy_dto: BuyDTO) -> str:
+        refund_data = await BuyRepository.get_refund_data_single(buy_dto.id)
+        buy = await BuyRepository.get_by_id(buy_dto.id)
+        buy.is_refunded = True
+        await BuyRepository.update(buy)
+        user = await UserRepository.get_by_tgid(UserDTO(telegram_id=refund_data.telegram_id))
+        user.consume_records = user.consume_records - refund_data.total_price
+        await UserRepository.update(user)
+        await NotificationService.refund(refund_data)
+        if refund_data.telegram_username:
+            return Localizator.get_text(BotEntity.ADMIN, "successfully_refunded_with_username").format(
+                total_price=refund_data.total_price,
+                telegram_username=refund_data.telegram_username,
+                quantity=refund_data.quantity,
+                subcategory=refund_data.subcategory_name,
+                currency_sym=Localizator.get_currency_symbol())
+        else:
+            return Localizator.get_text(BotEntity.ADMIN, "successfully_refunded_with_tgid").format(
+                total_price=refund_data.total_price,
+                telegram_id=refund_data.telegram_id,
+                quantity=refund_data.quantity,
+                subcategory=refund_data.subcategory_name,
+                currency_sym=Localizator.get_currency_symbol())
 
     @staticmethod
-    async def get_max_page_purchase_history(buyer_id: int):
-        async with async_session_maker() as session:
-            stmt = select(func.count(Buy.id)).where(Buy.buyer_id == buyer_id)
-            max_page = await session.execute(stmt)
-            max_page = max_page.scalar_one()
-            if max_page % BuyService.buys_per_page == 0:
-                return max_page / BuyService.buys_per_page - 1
-            else:
-                return math.trunc(max_page / BuyService.buys_per_page)
-
-    @staticmethod
-    async def insert_new(user: User, quantity: int, total_price: float) -> int:
-        async with async_session_maker() as session:
-            new_buy = Buy(buyer_id=user.id, quantity=quantity, total_price=total_price)
-            session.add(new_buy)
-            await session.commit()
-            await session.refresh(new_buy)
-            return new_buy.id
-
-    @staticmethod
-    async def get_not_refunded_buy_ids(page: int):
-        async with async_session_maker() as session:
-            stmt = select(Buy.id).where(Buy.is_refunded == 0).limit(BuyService.buys_per_page).offset(
-                page * BuyService.buys_per_page)
-            not_refunded_buys = await session.execute(stmt)
-            return not_refunded_buys.scalars().all()
-
-    @staticmethod
-    async def refund(buy_id: int, refund_data: RefundBuyDTO):
-        await UserService.reduce_consume_records(refund_data.user_id, refund_data.total_price)
-        async with async_session_maker() as session:
-            stmt = update(Buy).where(Buy.id == buy_id).values(is_refunded=True)
-            await session.execute(stmt)
-            await session.commit()
-
-    @staticmethod
-    async def get_max_refund_pages():
-        async with async_session_maker() as session:
-            stmt = select(func.count(Buy.id)).where(Buy.is_refunded == 0)
-            not_refunded_buys = await session.execute(stmt)
-            not_refunded_buys = not_refunded_buys.scalar_one()
-            if not_refunded_buys % BuyService.buys_per_page == 0:
-                return not_refunded_buys / BuyService.buys_per_page - 1
-            else:
-                return math.trunc(not_refunded_buys / BuyService.buys_per_page)
-
-    @staticmethod
-    async def get_new_buys_by_timedelta(timedelta_int):
-        async with async_session_maker() as session:
-            current_time = datetime.datetime.now()
-            one_day_interval = datetime.timedelta(days=int(timedelta_int))
-            time_to_subtract = current_time - one_day_interval
-            stmt = select(Buy).where(Buy.buy_datetime >= time_to_subtract)
-            buys = await session.execute(stmt)
-            return buys.scalars().all()
-
+    async def get_purchase(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
+        unpacked_cb = MyProfileCallback.unpack(callback.data)
+        items = await ItemRepository.get_by_buy_id(unpacked_cb.args_for_action)
+        msg = MessageService.create_message_with_bought_items(items)
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.row(unpacked_cb.get_back_button())
+        return msg, kb_builder

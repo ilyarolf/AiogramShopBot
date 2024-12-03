@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy.orm import relationship, backref
 
@@ -12,3 +13,9 @@ class BuyItem(Base):
     buy = relationship("Buy", backref=backref("buys", cascade="all"), passive_deletes="all")
     item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
     item = relationship("Item", backref=backref("items", cascade="all"), passive_deletes="all")
+
+
+class BuyItemDTO(BaseModel):
+    id: int | None = None
+    buy_id: int | None = None
+    item_id: int | None = None

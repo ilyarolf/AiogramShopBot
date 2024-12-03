@@ -1,5 +1,5 @@
 import logging
-
+from aiogram.client.default import DefaultBotProperties
 import config
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
@@ -10,7 +10,7 @@ from aiohttp import web
 from config import TOKEN, WEBHOOK_URL, ADMIN_ID_LIST
 from db import create_db_and_tables
 
-bot = Bot(TOKEN, parse_mode=ParseMode.HTML)
+bot = Bot(TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=MemoryStorage())
 
 
