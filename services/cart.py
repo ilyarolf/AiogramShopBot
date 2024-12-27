@@ -149,8 +149,8 @@ class CartService:
                 await CartItemRepository.remove_from_cart(cart_item.id)
                 sold_items.append(cart_item)
                 msg += MessageService.create_message_with_bought_items(purchased_items)
-                user.consume_records = user.consume_records + cart_total
-                await UserRepository.update(user)
+            user.consume_records = user.consume_records + cart_total
+            await UserRepository.update(user)
             await NotificationService.new_buy(sold_items, user)
             return msg, kb_builder
         elif unpacked_cb.confirmation is False:
