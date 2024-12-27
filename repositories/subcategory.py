@@ -29,7 +29,7 @@ class SubcategoryRepository:
                     .where(Item.category_id == category_id,
                            Item.is_sold == False)
                     .distinct())
-        stmt = select(func.count(subquery))
+        stmt = select(func.count()).select_from(subquery)
         async with get_db_session() as session:
             maximum_page = await session_execute(stmt, session)
             maximum_page = maximum_page.scalar_one()
