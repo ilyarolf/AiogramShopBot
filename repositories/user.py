@@ -25,7 +25,7 @@ class UserRepository:
 
     @staticmethod
     async def update(user_dto: UserDTO) -> None:
-        user_dto_dict = user_dto.__dict__
+        user_dto_dict = user_dto.model_dump()
         none_keys = [k for k, v in user_dto_dict.items() if v is None]
         for k in none_keys:
             user_dto_dict.pop(k)
