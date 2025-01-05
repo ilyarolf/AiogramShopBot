@@ -110,3 +110,14 @@ class BuyRepository:
         async with get_db_session() as session:
             buys = await session_execute(stmt, session)
             return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]
+
+    @staticmethod
+    async def get_max_page_purchase_history(buyerd_id: int) -> int:
+        stmt = select(func.count(Buy.id)).where(Buy.buyer_id == buyerd_id)
+        async with get_db_session() as session:
+            not_refunded_buys = await session_execute(stmt, session)
+            not_refunded_buys = not_refunded_buys.scalar_one()
+            if not_refunded_buys % config.PAGE_ENTRIES == 0:
+                return not_refunded_buys / config.PAGE_ENTRIES - 1
+            else:
+                return math.trunc(not_refunded_buys / config.PAGE_ENTRIES)
