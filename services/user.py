@@ -6,6 +6,7 @@ from crypto_api.CryptoApiManager import CryptoApiManager
 from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
 from enums.user import UserResponse
+from handlers.common.common import add_pagination_buttons
 from models.user import User, UserDTO
 from repositories.buy import BuyRepository
 from repositories.buyItem import BuyItemRepository
@@ -135,7 +136,9 @@ class UserService:
                     args_for_action=buy.id
                 ))
         kb_builder.adjust(1)
-        kb_builder.row(unpacked_cb.get_back_button(0))
+        kb_builder = await add_pagination_buttons(kb_builder, unpacked_cb,
+                                                  BuyRepository.get_max_page_purchase_history(user.id),
+                                                  unpacked_cb.get_back_button(0))
         if len(kb_builder.as_markup().inline_keyboard) > 1:
             return Localizator.get_text(BotEntity.USER, "purchases"), kb_builder
         else:

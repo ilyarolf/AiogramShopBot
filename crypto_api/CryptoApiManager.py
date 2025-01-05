@@ -121,7 +121,7 @@ class CryptoApiManager:
                     deposit.network == "ETH" and deposit.token_name == "USDT_ERC20"]
         deposits_sum = 0.0
         for deposit in data['operations']:
-            if deposit['transactionHash'] not in deposits and deposit['to'] == user_dto.eth_address:
+            if deposit['transactionHash'] not in deposits and deposit['to'] == user_dto.eth_address.lower():
                 deposit_dto = DepositDTO(
                     tx_id=deposit['transactionHash'],
                     user_id=user_dto.id,
@@ -148,7 +148,7 @@ class CryptoApiManager:
                     deposit.network == "ETH" and deposit.token_name == "USDC_ERC20"]
         deposits_sum = 0.0
         for deposit in data['operations']:
-            if deposit['transactionHash'] not in deposits and deposit['to'] == user_dto.eth_address:
+            if deposit['transactionHash'] not in deposits and deposit['to'] == user_dto.eth_address.lower():
                 deposit_dto = DepositDTO(
                     tx_id=deposit['transactionHash'],
                     user_id=user_dto.id,
