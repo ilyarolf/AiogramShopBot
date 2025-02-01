@@ -36,9 +36,6 @@ services:
       ETHPLORER_API_KEY: "" # API key from Ethplorer
       CURRENCY: "USD" # fiat currency
       RUNTIME_ENVIRONMENT: "prod"
-    #env_file:
-    #  - path: ./.env
-    #    required: true # default
     labels:
       caddy: YOUR-DOMAIN-GOES-HERE
       caddy.reverse_proxy: "bot:5000"
