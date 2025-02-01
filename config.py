@@ -1,11 +1,17 @@
-from dotenv import load_dotenv
 import os
+
+from dotenv import load_dotenv
+
 from enums.currency import Currency
+from external_ip import get_sslipio_external_url
 from ngrok_executor import start_ngrok
 
 load_dotenv(".env")
 
-WEBHOOK_HOST = start_ngrok()
+if os.environ.get("RUNTIME_ENVIRONMENT") == "dev":
+    WEBHOOK_HOST = start_ngrok()
+else:
+    WEBHOOK_HOST = get_sslipio_external_url()
 WEBHOOK_PATH = os.environ.get("WEBHOOK_PATH")
 WEBAPP_HOST = os.environ.get("WEBAPP_HOST")
 WEBAPP_PORT = int(os.environ.get("WEBAPP_PORT"))

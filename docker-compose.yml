@@ -1,4 +1,20 @@
 services:
+  caddy:
+    image: lucaslorentz/caddy-docker-proxy:2.9.1-alpine
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      - CADDY_INGRESS_NETWORKS=caddy
+    networks:
+      - caddy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./caddy/caddy_data:/data
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   bot:
     build:
       context: .
@@ -19,7 +35,14 @@ services:
       MULTIBOT: "false" # Allows the use of a multibot
       ETHPLORER_API_KEY: "" # API key from Ethplorer
       CURRENCY: "USD" # fiat currency
-
+      RUNTIME_ENVIRONMENT: "prod"
+    labels:
+      caddy: YOUR-DOMAIN-GOES-HERE
+      caddy.reverse_proxy: "bot:5000"
+    depends_on:
+      - caddy
+    networks:
+      - caddy
     ports:
       - "4040:4040"
       - "5000:5000" # ${WEBAPP_PORT}:${WEBAPP_PORT}
@@ -32,3 +55,7 @@ services:
 
 volumes:
   AiogramShopBot:
+  caddy_data:
+
+networks:
+  caddy:
