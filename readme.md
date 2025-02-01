@@ -98,7 +98,7 @@ Litecoin, Solana and stablecoins in the TRC20 and ERC20 networks, which allows y
 | MULTIBOT                  | Experimental functionality, allows you to raise several bots in one process. And there will be one main bot, where you can create other bots with the command “/add $BOT_TOKEN”. Accepts string parameters “true” or “false”.                                                                                               | "false"                                                             |
 | ETHPLORER_API_KEY         | API Key from ethplorer.io, used to get ERC20 balances.                                                                                                                                                                                                                                                                      | No recommended value                                                |
 | CURRENCY                  | Currency to be used in the bot.                                                                                                                                                                                                                                                                                             | "USD" or "EUR" or "JPY" or "CAD" or "GBP"                           |
-| RUNTIME_ENVIRONMENT       | If set to "dev", the bot will be connected via an ngrok tunnel. "prod" will use [Caddy](https://hub.docker.com/r/lucaslorentz/caddy-docker-proxy) as reverse proxy together with your public hostname                                                                                                                       | "USD" or "EUR" or "JPY" or "CAD" or "GBP"                           |
+| RUNTIME_ENVIRONMENT       | If set to "dev", the bot will be connected via an ngrok tunnel. "prod" will use [Caddy](https://hub.docker.com/r/lucaslorentz/caddy-docker-proxy) as reverse proxy together with your public hostname                                                                                                                       | "prod" or "dev"                                                     |   
 
 ### 1.1 Starting AiogramShopBot with Docker-compose.
 
@@ -107,14 +107,19 @@ Litecoin, Solana and stablecoins in the TRC20 and ERC20 networks, which allows y
 * Run the ``docker-compose up`` command.
 
 #### Development and production mode
-For local development on a computer which is not internet facing, set the "RUNTIME_ENVIRONMENT" to "dev". The bot will be connected via an ngrok tunnel.
+
+For local development on a computer which is not internet facing, set the "RUNTIME_ENVIRONMENT" to "dev". The bot will
+be connected via an ngrok tunnel.
 > **Note**
 > **<br>To get the ngrok token, you need to register on the ngrok website and confirm your email. Then you will have the
 ngrok token in your personal account.**
 
-On an internet facing production system you can either set your own hostname in the caddy label (in the template shown with "YOUR_DOMAIN_GOES_HERE"
-or make use of services like [sslip.io](https://sslip.io/). [Caddy](https://hub.docker.com/r/lucaslorentz/caddy-docker-proxy) will automatically pull a TLS certificate
-and serves as reverse proxy for your bot. You can also run your bot together with an already existing reverse proxy. In 
+On an internet facing production system you can either set your own hostname in the caddy label (in the template shown
+with "YOUR_DOMAIN_GOES_HERE"
+or make use of services
+like [sslip.io](https://sslip.io/). [Caddy](https://hub.docker.com/r/lucaslorentz/caddy-docker-proxy) will automatically
+pull a TLS certificate
+and serves as reverse proxy for your bot. You can also run your bot together with an already existing reverse proxy. In
 this case you have to remove the caddy service from the docker-compose file and configure the reverse proxy accordingly.
 
 ### 1.2 Starting AiogramShopBot without database encryption.
@@ -409,12 +414,11 @@ After each purchase, you will receive a message in the format:
 * After successful execution of the command, you will only deploy a manager bot for other bots, it will not have
   functionality for buying items etc. To deploy a bot with functionality to sell goods etc..., you need to send the
   command ``/add $TOKEN`` to the bot manager. If everything is successful, you will receive this notification.
-  
+
 ![img](https://i.imgur.com/YAGjN3G.png)
 
 ## 📋 Todo List
-- [ ] Pay-as-you-Go
-- [ ] Refer to environment files in docker-compose.yml from .env file
+
 - [x] Make migration from direct raw database queries to SQLAlchemy ORM.
 - [x] Add option to encrypt database via SQLCipher (when using SQLAlchemy).
 - [x] Add an option to generate new crypto addresses using new mnemonic phrases so that 1 user=1 mnemonic phrase.
