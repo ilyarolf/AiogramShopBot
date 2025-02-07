@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func
+from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func, CheckConstraint
 
 from models.base import Base
 
@@ -29,6 +29,17 @@ class User(Base):
     registered_at = Column(DateTime, default=func.now())
     seed = Column(String, nullable=False, unique=True)
     can_receive_messages = Column(Boolean, default=True)
+
+    __table_args__ = (
+        CheckConstraint('top_up_amount >= 0', name='check_top_up_amount_positive'),
+        CheckConstraint('consume_records >= 0', name='check_consume_records_positive'),
+        CheckConstraint('btc_balance >= 0', name='check_btc_balance_positive'),
+        CheckConstraint('ltc_balance >= 0', name='check_ltc_balance_positive'),
+        CheckConstraint('sol_balance >= 0', name='check_sol_balance_positive'),
+        CheckConstraint('usdt_trc20_balance >= 0', name='check_usdt_trc20_balance_positive'),
+        CheckConstraint('usdt_erc20_balance >= 0', name='check_usdt_erc20_balance_positive'),
+        CheckConstraint('usdc_erc20_balance >= 0', name='check_usdc_erc20_balance_positive'),
+    )
 
 
 class UserDTO(BaseModel):
