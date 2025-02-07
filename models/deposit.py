@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Integer, Column, String, ForeignKey, Boolean, BigInteger, DateTime, func
+from sqlalchemy import Integer, Column, String, ForeignKey, Boolean, BigInteger, DateTime, func, CheckConstraint
 
 from models.base import Base
 
@@ -17,6 +17,10 @@ class Deposit(Base):
     is_withdrawn = Column(Boolean, default=False)
     vout = Column(Integer, nullable=True)
     deposit_datetime = Column(DateTime, default=func.now())
+
+    __table_args__ = (
+        CheckConstraint('amount > 0', name='check_amount_positive'),
+    )
 
 
 class DepositDTO(BaseModel):
