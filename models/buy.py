@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, Float, DateTime, Boolean, ForeignKey, func
+from sqlalchemy import Column, Integer, Float, DateTime, Boolean, ForeignKey, func, CheckConstraint
 from sqlalchemy.orm import relationship
 
 from models.base import Base
@@ -17,6 +17,11 @@ class Buy(Base):
     total_price = Column(Float, nullable=False)
     buy_datetime = Column(DateTime, default=func.now())
     is_refunded = Column(Boolean, default=False)
+
+    __table_args__ = (
+        CheckConstraint('quantity > 0', name='check_quantity_positive'),
+        CheckConstraint('total_price > 0', name='check_total_price_positive'),
+    )
 
 
 class BuyDTO(BaseModel):
