@@ -1,7 +1,7 @@
-from dataclasses import dataclass
+from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, CheckConstraint
 from sqlalchemy.orm import relationship, backref
 
 from models.base import Base
@@ -23,6 +23,10 @@ class Item(Base):
     is_sold = Column(Boolean, nullable=False, default=False)
     is_new = Column(Boolean, nullable=False, default=True)
     description = Column(String, nullable=False)
+
+    __table_args__ = (
+        CheckConstraint('price > 0', name='check_price_positive'),
+    )
 
 
 class ItemDTO(BaseModel):
