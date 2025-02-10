@@ -124,7 +124,7 @@ class UserService:
         kb_builder = InlineKeyboardBuilder()
         for buy in buys:
             buy_item = await BuyItemRepository.get_single_by_buy_id(buy.id)
-            item = await ItemRepository.get_by_id(buy_item.id)
+            item = await ItemRepository.get_by_id(buy_item.item_id)
             subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id)
             kb_builder.button(text=Localizator.get_text(BotEntity.USER, "purchase_history_item").format(
                 subcategory_name=subcategory.name,
