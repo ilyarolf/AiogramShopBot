@@ -1,5 +1,10 @@
+import inspect
+
 from aiogram import types, Router, F
 from aiogram.types import CallbackQuery, Message
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
+
 from callbacks import MyProfileCallback
 from enums.bot_entity import BotEntity
 from enums.user import UserResponse
@@ -13,7 +18,7 @@ my_profile_router = Router()
 
 
 @my_profile_router.message(F.text == Localizator.get_text(BotEntity.USER, "my_profile"), IsUserExistFilter())
-async def my_profile_text_message(message: types.message):
+async def my_profile_text_message(message: types.message, session: Session | AsyncSession):
     await my_profile(message)
 
 
@@ -23,7 +28,7 @@ class MyProfileConstants:
         callback_data=MyProfileCallback.create(level=0).pack())
 
 
-async def my_profile(message: Message | CallbackQuery):
+async def my_profile(message: Message | CallbackQuery, session: Session | AsyncSession):
     user_dto = UserDTO(telegram_id=message.from_user.id)
     msg_text, kb_builder = await UserService.get_my_profile_buttons(user_dto)
     if isinstance(message, Message):
@@ -33,17 +38,17 @@ async def my_profile(message: Message | CallbackQuery):
         await callback.message.edit_text(msg_text, reply_markup=kb_builder.as_markup())
 
 
-async def top_up_balance(callback: CallbackQuery):
+async def top_up_balance(callback: CallbackQuery, session: Session | AsyncSession):
     msg_text, kb_builder = await UserService.get_top_up_buttons(callback)
     await callback.message.edit_text(text=msg_text, reply_markup=kb_builder.as_markup())
 
 
-async def purchase_history(callback: CallbackQuery):
+async def purchase_history(callback: CallbackQuery, session: Session | AsyncSession):
     msg_text, kb_builder = await UserService.get_purchase_history_buttons(callback, callback.from_user.id)
     await callback.message.edit_text(text=msg_text, reply_markup=kb_builder.as_markup())
 
 
-async def refresh_balance(callback: CallbackQuery):
+async def refresh_balance(callback: CallbackQuery, session: Session | AsyncSession):
     msg, response = await UserService.refresh_balance(callback)
     match response:
         case UserResponse.BALANCE_REFRESHED:
@@ -55,18 +60,18 @@ async def refresh_balance(callback: CallbackQuery):
             await callback.answer(msg, show_alert=True)
 
 
-async def get_order_from_history(callback: CallbackQuery):
+async def get_order_from_history(callback: CallbackQuery, session: Session | AsyncSession):
     msg, kb_builder = await BuyService.get_purchase(callback)
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
-async def top_up_by_method(callback: CallbackQuery):
+async def top_up_by_method(callback: CallbackQuery, session: Session | AsyncSession):
     msg, kb_builder = await UserService.get_top_up_by_msg(callback)
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
 @my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())
-async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback):
+async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback, session: AsyncSession | Session):
     current_level = callback_data.level
 
     levels = {
@@ -79,5 +84,8 @@ async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback):
     }
 
     current_level_function = levels[current_level]
-
-    await current_level_function(callback)
+    annotations = inspect.getfullargspec(current_level_function).annotations
+    if annotations.get("session") == Session or annotations.get("session") == AsyncSession:
+        await current_level_function(callback, session)
+    else:
+        await current_level_function(callback)
