@@ -27,7 +27,7 @@ class MyProfileConstants:
 
 
 async def my_profile(**kwargs):
-    message = kwargs.get("message")
+    message = kwargs.get("message") or kwargs.get("callback")
     session = kwargs.get("session")
     user_dto = UserDTO(telegram_id=message.from_user.id)
     msg_text, kb_builder = await UserService.get_my_profile_buttons(user_dto, session)

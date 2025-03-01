@@ -28,7 +28,7 @@ async def admin_command_handler(message: types.message):
 
 
 async def admin(**kwargs):
-    message = kwargs.get("message")
+    message = kwargs.get("message") or kwargs.get("callback")
     admin_menu_builder = InlineKeyboardBuilder()
     admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "announcements"),
                               callback_data=AdminAnnouncementCallback.create(level=0))
