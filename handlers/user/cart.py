@@ -20,7 +20,7 @@ async def cart_text_message(message: types.message, session: AsyncSession | Sess
 
 
 async def show_cart(**kwargs):
-    message = kwargs.get("message")
+    message = kwargs.get("message") or kwargs.get("callback")
     session = kwargs.get("session")
     msg, kb_builder = await CartService.create_buttons(message, session)
     if isinstance(message, Message):

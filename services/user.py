@@ -41,7 +41,7 @@ class UserService:
 
     @staticmethod
     async def get(user_dto: UserDTO, session: AsyncSession | Session) -> User | None:
-        return await UserRepository.get_by_tgid(user_dto, session)
+        return await UserRepository.get_by_tgid(user_dto.telegram_id, session)
 
     @staticmethod
     async def refresh_balance(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, UserResponse]:
