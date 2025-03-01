@@ -73,11 +73,11 @@ async def session_execute(stmt, session: AsyncSession | Session) -> Result[Any] 
         return query_result
 
 
-async def session_refresh(session: AsyncSession | Session, instance: object) -> None:
+async def session_flush(session: AsyncSession | Session) -> None:
     if isinstance(session, AsyncSession):
-        await session.refresh(instance)
+        await session.flush()
     else:
-        session.refresh(instance)
+        session.flush()
 
 
 async def session_commit(session: AsyncSession | Session) -> None:

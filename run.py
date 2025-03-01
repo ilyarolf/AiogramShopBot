@@ -8,6 +8,7 @@ from config import SUPPORT_LINK
 import logging
 from bot import dp, main
 from enums.bot_entity import BotEntity
+from middleware.database import DBSessionMiddleware
 from models.user import UserDTO
 from multibot import main as main_multibot
 from handlers.user.cart import cart_router
@@ -56,11 +57,11 @@ async def support(message: types.message):
     await message.answer(Localizator.get_text(BotEntity.USER, "help_string"),
                          reply_markup=admin_keyboard_builder.as_markup())
 
-
+user_routes = [my_profile_router, all_categories_router, cart_router]
 main_router.include_router(admin_router)
-main_router.include_router(my_profile_router)
-main_router.include_router(all_categories_router)
-main_router.include_router(cart_router)
+main_router.include_routers(*user_routes)
+main_router.message.middleware(DBSessionMiddleware)
+main_router.callback_query.middleware(DBSessionMiddleware)
 
 if __name__ == '__main__':
     if config.MULTIBOT:
