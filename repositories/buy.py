@@ -87,7 +87,7 @@ class BuyRepository:
 
     @staticmethod
     async def update(buy_dto: BuyDTO, session: Session | AsyncSession):
-        buy_dto_dict = buy_dto.__dict__
+        buy_dto_dict = buy_dto.model_dump()
         none_keys = [k for k, v in buy_dto_dict.items() if v is None]
         for k in none_keys:
             buy_dto_dict.pop(k)
@@ -104,8 +104,8 @@ class BuyRepository:
         return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]
 
     @staticmethod
-    async def get_max_page_purchase_history(buyerd_id: int, session: Session | AsyncSession) -> int:
-        stmt = select(func.count(Buy.id)).where(Buy.buyer_id == buyerd_id)
+    async def get_max_page_purchase_history(buyer_id: int, session: Session | AsyncSession) -> int:
+        stmt = select(func.count(Buy.id)).where(Buy.buyer_id == buyer_id)
         not_refunded_buys = await session_execute(stmt, session)
         not_refunded_buys = not_refunded_buys.scalar_one()
         if not_refunded_buys % config.PAGE_ENTRIES == 0:

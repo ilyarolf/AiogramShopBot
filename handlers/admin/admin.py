@@ -24,10 +24,11 @@ admin_router.include_router(wallet)
 
 @admin_router.message(F.text == Localizator.get_text(BotEntity.ADMIN, "menu"), AdminIdFilter())
 async def admin_command_handler(message: types.message):
-    await admin(message)
+    await admin(message=message)
 
 
-async def admin(message: Message | CallbackQuery):
+async def admin(**kwargs):
+    message = kwargs.get("message")
     admin_menu_builder = InlineKeyboardBuilder()
     admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "announcements"),
                               callback_data=AdminAnnouncementCallback.create(level=0))
@@ -58,7 +59,10 @@ async def admin_menu_navigation(callback: CallbackQuery, state: FSMContext, call
     }
 
     current_level_function = levels[current_level]
-    if inspect.getfullargspec(current_level_function).annotations.get("state") == FSMContext:
-        await current_level_function(callback, state)
-    else:
-        await current_level_function(callback)
+
+    kwargs = {
+        "callback": callback,
+        "state": state,
+    }
+
+    await current_level_function(**kwargs)
