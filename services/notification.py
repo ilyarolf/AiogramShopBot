@@ -4,6 +4,9 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
+
 from config import ADMIN_ID_LIST, TOKEN
 from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
@@ -62,15 +65,15 @@ class NotificationService:
         await NotificationService.send_to_admins(message, user_button)
 
     @staticmethod
-    async def new_buy(sold_items: list[CartItemDTO], user: UserDTO):
+    async def new_buy(sold_items: list[CartItemDTO], user: UserDTO, session: AsyncSession | Session):
         user_button = await NotificationService.make_user_button(user.telegram_username)
         cart_grand_total = 0.0
         message = ""
         for item in sold_items:
             price = await ItemRepository.get_price(ItemDTO(subcategory_id=item.subcategory_id,
-                                                           category_id=item.category_id))
-            category = await CategoryRepository.get_by_id(item.category_id)
-            subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id)
+                                                           category_id=item.category_id), session)
+            category = await CategoryRepository.get_by_id(item.category_id, session)
+            subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
             cart_item_total = price * item.quantity
             cart_grand_total += cart_item_total
             if user.telegram_username:

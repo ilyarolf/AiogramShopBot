@@ -1,5 +1,8 @@
 from typing import List
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
+
 from enums.bot_entity import BotEntity
 from models.item import ItemDTO
 from repositories.category import CategoryRepository
@@ -11,23 +14,23 @@ from utils.localizator import Localizator
 class NewItemsManager:
 
     @staticmethod
-    async def generate_restocking_message():
-        new_items = await ItemService.get_new()
-        message = await NewItemsManager.create_text_of_items_msg(new_items, True)
+    async def generate_restocking_message(session: AsyncSession | Session):
+        new_items = await ItemService.get_new(session)
+        message = await NewItemsManager.create_text_of_items_msg(new_items, True, session)
         return message
 
     @staticmethod
-    async def generate_in_stock_message():
-        items = await ItemService.get_in_stock_items()
-        message = await NewItemsManager.create_text_of_items_msg(items, False)
+    async def generate_in_stock_message(session: AsyncSession | Session):
+        items = await ItemService.get_in_stock_items(session)
+        message = await NewItemsManager.create_text_of_items_msg(items, False, session)
         return message
 
     @staticmethod
-    async def create_text_of_items_msg(items: List[ItemDTO], is_update: bool) -> str:
+    async def create_text_of_items_msg(items: List[ItemDTO], is_update: bool, session: AsyncSession | Session) -> str:
         filtered_items = {}
         for item in items:
-            category = await CategoryRepository.get_by_id(item.category_id)
-            subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id)
+            category = await CategoryRepository.get_by_id(item.category_id, session)
+            subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
             if category.name not in filtered_items:
                 filtered_items[category.name] = {}
             if subcategory.name not in filtered_items[category.name]:

@@ -3,6 +3,9 @@ import grequests
 from aiogram import types, F, Router
 from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
+
 import config
 from config import SUPPORT_LINK
 import logging
@@ -24,7 +27,7 @@ main_router = Router()
 
 
 @main_router.message(Command(commands=["start", "help"]))
-async def start(message: types.message):
+async def start(message: types.message, session: AsyncSession | Session):
     all_categories_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "all_categories"))
     my_profile_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "my_profile"))
     faq_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "faq"))
@@ -35,7 +38,7 @@ async def start(message: types.message):
     await UserService.create_if_not_exist(UserDTO(
         telegram_username=message.from_user.username,
         telegram_id=telegram_id
-    ))
+    ), session)
     keyboard = [[all_categories_button, my_profile_button], [faq_button, help_button],
                 [cart_button]]
     if telegram_id in config.ADMIN_ID_LIST:
@@ -60,8 +63,8 @@ async def support(message: types.message):
 user_routes = [my_profile_router, all_categories_router, cart_router]
 main_router.include_router(admin_router)
 main_router.include_routers(*user_routes)
-main_router.message.middleware(DBSessionMiddleware)
-main_router.callback_query.middleware(DBSessionMiddleware)
+main_router.message.middleware(DBSessionMiddleware())
+main_router.callback_query.middleware(DBSessionMiddleware())
 
 if __name__ == '__main__':
     if config.MULTIBOT:
