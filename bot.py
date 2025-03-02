@@ -1,17 +1,20 @@
 import logging
 from aiogram.client.default import DefaultBotProperties
+from aiogram.fsm.storage.redis import RedisStorage
+from redis.asyncio import Redis
+
 import config
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
-from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
 
 from config import TOKEN, WEBHOOK_URL, ADMIN_ID_LIST
 from db import create_db_and_tables
 
+redis = Redis()
 bot = Bot(TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-dp = Dispatcher(storage=MemoryStorage())
+dp = Dispatcher(storage=RedisStorage(redis))
 
 
 async def on_startup(bot: Bot):
