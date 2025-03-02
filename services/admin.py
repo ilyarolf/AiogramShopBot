@@ -4,10 +4,14 @@ from aiogram.exceptions import TelegramForbiddenError
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
+
 from callbacks import AdminAnnouncementCallback, AnnouncementType, AdminInventoryManagementCallback, EntityType, \
     AddType, UserManagementCallback, UserManagementOperation, StatisticsCallback, StatisticsEntity, StatisticsTimeDelta, \
     WalletCallback
 from crypto_api.CryptoApiManager import CryptoApiManager
+from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
 from handlers.admin.constants import AdminConstants, AdminInventoryManagementStates, UserManagementStates
@@ -37,11 +41,11 @@ class AdminService:
         return Localizator.get_text(BotEntity.ADMIN, "announcements"), kb_builder
 
     @staticmethod
-    async def send_announcement(callback: CallbackQuery):
+    async def send_announcement(callback: CallbackQuery, session: AsyncSession | Session):
         unpacked_cb = AdminAnnouncementCallback.unpack(callback.data)
         await callback.message.edit_reply_markup()
-        active_users = await UserRepository.get_active()
-        all_users_count = await UserRepository.get_all_count()
+        active_users = await UserRepository.get_active(session)
+        all_users_count = await UserRepository.get_all_count(session)
         counter = 0
         for user in active_users:
             try:
@@ -54,12 +58,13 @@ class AdminService:
                     user.can_receive_messages = False
                 elif "bot was blocked by the user" in e.message.lower():
                     user.can_receive_messages = False
-                    await UserRepository.update(user)
+                    await UserRepository.update(user, session)
             except Exception as e:
                 logging.error(e)
             finally:
                 if unpacked_cb.announcement_type == AnnouncementType.RESTOCKING:
-                    await ItemRepository.set_not_new()
+                    await ItemRepository.set_not_new(session)
+                await session_commit(session)
         return Localizator.get_text(BotEntity.ADMIN, "sending_result").format(counter=counter,
                                                                               len=len(active_users),
                                                                               users_count=all_users_count)
@@ -92,12 +97,12 @@ class AdminService:
         return Localizator.get_text(BotEntity.ADMIN, "add_items_msg"), kb_builder
 
     @staticmethod
-    async def get_delete_entity_menu(callback: CallbackQuery):
+    async def get_delete_entity_menu(callback: CallbackQuery, session: AsyncSession | Session):
         unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
         kb_builder = InlineKeyboardBuilder()
         match unpacked_cb.entity_type:
             case EntityType.CATEGORY:
-                categories = await CategoryRepository.get_to_delete(unpacked_cb.page)
+                categories = await CategoryRepository.get_to_delete(unpacked_cb.page, session)
                 [kb_builder.button(text=category.name, callback_data=AdminInventoryManagementCallback.create(
                     level=3,
                     entity_type=unpacked_cb.entity_type,
@@ -105,11 +110,11 @@ class AdminService:
                 )) for category in categories]
                 kb_builder.adjust(1)
                 kb_builder = await add_pagination_buttons(kb_builder, unpacked_cb,
-                                                          CategoryRepository.get_maximum_page(),
+                                                          CategoryRepository.get_maximum_page(session),
                                                           unpacked_cb.get_back_button(0))
                 return Localizator.get_text(BotEntity.ADMIN, "delete_category"), kb_builder
             case EntityType.SUBCATEGORY:
-                subcategories = await SubcategoryRepository.get_to_delete(unpacked_cb.page)
+                subcategories = await SubcategoryRepository.get_to_delete(unpacked_cb.page, session)
                 [kb_builder.button(text=subcategory.name, callback_data=AdminInventoryManagementCallback.create(
                     level=3,
                     entity_type=unpacked_cb.entity_type,
@@ -117,12 +122,12 @@ class AdminService:
                 )) for subcategory in subcategories]
                 kb_builder.adjust(1)
                 kb_builder = await add_pagination_buttons(kb_builder, unpacked_cb,
-                                                          SubcategoryRepository.get_maximum_page_to_delete(),
+                                                          SubcategoryRepository.get_maximum_page_to_delete(session),
                                                           unpacked_cb.get_back_button(0))
                 return Localizator.get_text(BotEntity.ADMIN, "delete_subcategory"), kb_builder
 
     @staticmethod
-    async def delete_confirmation(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
+    async def delete_confirmation(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
         unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
         unpacked_cb.confirmation = True
         kb_builder = InlineKeyboardBuilder()
@@ -132,33 +137,35 @@ class AdminService:
                           callback_data=AdminInventoryManagementCallback.create(0))
         match unpacked_cb.entity_type:
             case EntityType.CATEGORY:
-                category = await CategoryRepository.get_by_id(unpacked_cb.entity_id)
+                category = await CategoryRepository.get_by_id(unpacked_cb.entity_id, session)
                 return Localizator.get_text(BotEntity.ADMIN, "delete_entity_confirmation").format(
                     entity=unpacked_cb.entity_type.name.capitalize(),
                     entity_name=category.name
                 ), kb_builder
             case EntityType.SUBCATEGORY:
-                subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.entity_id)
+                subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.entity_id, session)
                 return Localizator.get_text(BotEntity.ADMIN, "delete_entity_confirmation").format(
                     entity=unpacked_cb.entity_type.name.capitalize(),
                     entity_name=subcategory.name
                 ), kb_builder
 
     @staticmethod
-    async def delete_entity(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
+    async def delete_entity(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
         unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
         kb_builder = InlineKeyboardBuilder()
         kb_builder.row(AdminConstants.back_to_main_button)
         match unpacked_cb.entity_type:
             case EntityType.CATEGORY:
-                category = await CategoryRepository.get_by_id(unpacked_cb.entity_id)
-                await ItemRepository.delete_unsold_by_category_id(unpacked_cb.entity_id)
+                category = await CategoryRepository.get_by_id(unpacked_cb.entity_id, session)
+                await ItemRepository.delete_unsold_by_category_id(unpacked_cb.entity_id, session)
+                await session_commit(session)
                 return Localizator.get_text(BotEntity.ADMIN, "successfully_deleted").format(
                     entity_name=category.name,
                     entity_to_delete=unpacked_cb.entity_type.name.capitalize()), kb_builder
             case EntityType.SUBCATEGORY:
-                subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.entity_id)
-                await ItemRepository.delete_unsold_by_subcategory_id(unpacked_cb.entity_id)
+                subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.entity_id, session)
+                await ItemRepository.delete_unsold_by_subcategory_id(unpacked_cb.entity_id, session)
+                await session_commit(session)
                 return Localizator.get_text(BotEntity.ADMIN, "successfully_deleted").format(
                     entity_name=subcategory.name,
                     entity_to_delete=unpacked_cb.entity_type.name.capitalize()), kb_builder
@@ -229,33 +236,35 @@ class AdminService:
                     currency_text=Localizator.get_currency_text()), kb_builder
 
     @staticmethod
-    async def balance_management(message: Message, state: FSMContext) -> str:
+    async def balance_management(message: Message, state: FSMContext, session: AsyncSession | Session) -> str:
         data = await state.get_data()
         await state.clear()
-        user = await UserRepository.get_user_entity(data['user_entity'])
+        user = await UserRepository.get_user_entity(data['user_entity'], session)
         operation = UserManagementOperation(int(data['operation']))
         if user is None:
             return Localizator.get_text(BotEntity.ADMIN, "credit_management_user_not_found")
         elif operation == UserManagementOperation.ADD_BALANCE:
             user.top_up_amount += float(message.text)
-            await UserRepository.update(user)
+            await UserRepository.update(user, session)
+            await session_commit(session)
             return Localizator.get_text(BotEntity.ADMIN, "credit_management_added_success").format(
                 amount=message.text,
                 telegram_id=user.telegram_id,
                 currency_text=Localizator.get_currency_text())
         else:
             user.consume_records += float(message.text)
-            await UserRepository.update(user)
+            await UserRepository.update(user, session)
+            await session_commit(session)
             return Localizator.get_text(BotEntity.ADMIN, "credit_management_reduced_success").format(
                 amount=message.text,
                 telegram_id=user.telegram_id,
                 currency_text=Localizator.get_currency_text())
 
     @staticmethod
-    async def get_refund_menu(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
+    async def get_refund_menu(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
         unpacked_cb = UserManagementCallback.unpack(callback.data)
         kb_builder = InlineKeyboardBuilder()
-        refund_data = await BuyRepository.get_refund_data(unpacked_cb.page)
+        refund_data = await BuyRepository.get_refund_data(unpacked_cb.page, session)
         for refund_item in refund_data:
             callback = UserManagementCallback.create(
                 unpacked_cb.level + 1,
@@ -277,11 +286,11 @@ class AdminService:
                     callback_data=callback)
         kb_builder.adjust(1)
         kb_builder = await add_pagination_buttons(kb_builder, unpacked_cb,
-                                                  BuyRepository.get_max_refund_page(), unpacked_cb.get_back_button(0))
+                                                  BuyRepository.get_max_refund_page(session), unpacked_cb.get_back_button(0))
         return Localizator.get_text(BotEntity.ADMIN, "refund_menu"), kb_builder
 
     @staticmethod
-    async def refund_confirmation(callback: CallbackQuery):
+    async def refund_confirmation(callback: CallbackQuery, session: AsyncSession | Session):
         unpacked_cb = UserManagementCallback.unpack(callback.data)
         unpacked_cb.confirmation = True
         kb_builder = InlineKeyboardBuilder()
@@ -289,7 +298,7 @@ class AdminService:
                           callback_data=unpacked_cb)
         kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
                           callback_data=UserManagementCallback.create(0))
-        refund_data = await BuyRepository.get_refund_data_single(unpacked_cb.buy_id)
+        refund_data = await BuyRepository.get_refund_data_single(unpacked_cb.buy_id, session)
         if refund_data.telegram_username:
             return Localizator.get_text(BotEntity.ADMIN, "refund_confirmation_by_username").format(
                 telegram_username=refund_data.telegram_username,
@@ -340,19 +349,19 @@ class AdminService:
         return Localizator.get_text(BotEntity.ADMIN, "statistics_timedelta"), kb_builder
 
     @staticmethod
-    async def get_statistics(callback: CallbackQuery):
+    async def get_statistics(callback: CallbackQuery, session: AsyncSession | Session):
         unpacked_cb = StatisticsCallback.unpack(callback.data)
         kb_builder = InlineKeyboardBuilder()
         match unpacked_cb.statistics_entity:
             case StatisticsEntity.USERS:
-                users, users_count = await UserRepository.get_by_timedelta(unpacked_cb.timedelta, unpacked_cb.page)
+                users, users_count = await UserRepository.get_by_timedelta(unpacked_cb.timedelta, unpacked_cb.page, session)
                 [kb_builder.button(text=user.telegram_username, url=f't.me/{user.telegram_username}') for user in users
                  if user.telegram_username]
                 kb_builder.adjust(1)
                 kb_builder = await add_pagination_buttons(
                     kb_builder,
                     unpacked_cb,
-                    UserRepository.get_max_page_by_timedelta(unpacked_cb.timedelta),
+                    UserRepository.get_max_page_by_timedelta(unpacked_cb.timedelta, session),
                     None)
                 kb_builder.row(AdminConstants.back_to_main_button, unpacked_cb.get_back_button())
                 return Localizator.get_text(BotEntity.ADMIN, "new_users_msg").format(
@@ -360,7 +369,7 @@ class AdminService:
                     timedelta=unpacked_cb.timedelta.value
                 ), kb_builder
             case StatisticsEntity.BUYS:
-                buys = await BuyRepository.get_by_timedelta(unpacked_cb.timedelta)
+                buys = await BuyRepository.get_by_timedelta(unpacked_cb.timedelta, session)
                 total_profit = 0.0
                 items_sold = 0
                 for buy in buys:
@@ -372,7 +381,7 @@ class AdminService:
                     total_profit=total_profit, items_sold=items_sold,
                     buys_count=len(buys), currency_sym=Localizator.get_currency_symbol()), kb_builder
             case StatisticsEntity.DEPOSITS:
-                deposits = await DepositRepository.get_by_timedelta(unpacked_cb.timedelta)
+                deposits = await DepositRepository.get_by_timedelta(unpacked_cb.timedelta, session)
                 fiat_amount = 0.0
                 btc_amount = 0.0
                 ltc_amount = 0.0

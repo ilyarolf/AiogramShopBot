@@ -1,5 +1,8 @@
 from aiogram import types, Router, F
 from aiogram.types import Message, CallbackQuery
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
+
 from callbacks import AllCategoriesCallback
 from enums.bot_entity import BotEntity
 from services.cart import CartService
@@ -13,42 +16,53 @@ all_categories_router = Router()
 
 @all_categories_router.message(F.text == Localizator.get_text(BotEntity.USER, "all_categories"),
                                IsUserExistFilter())
-async def all_categories_text_message(message: types.message):
-    await all_categories(message)
+async def all_categories_text_message(message: types.message, session: AsyncSession | Session):
+    await all_categories(callback=message, session=session)
 
 
-async def all_categories(message: Message | CallbackQuery):
+async def all_categories(**kwargs):
+    message = kwargs.get("callback")
+    session = kwargs.get("session")
     if isinstance(message, Message):
-        msg, kb_builder = await CategoryService.get_buttons()
+        msg, kb_builder = await CategoryService.get_buttons(session)
         await message.answer(msg, reply_markup=kb_builder.as_markup())
     elif isinstance(message, CallbackQuery):
         callback = message
-        msg, kb_builder = await CategoryService.get_buttons(callback)
+        msg, kb_builder = await CategoryService.get_buttons(session, callback)
         await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
 
 
-async def show_subcategories_in_category(callback: CallbackQuery):
-    msg, kb_builder = await SubcategoryService.get_buttons(callback)
+async def show_subcategories_in_category(**kwargs):
+    callback = kwargs.get("callback")
+    session = kwargs.get("session")
+    msg, kb_builder = await SubcategoryService.get_buttons(callback, session)
     await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
 
 
-async def select_quantity(callback: CallbackQuery):
-    msg, kb_builder = await SubcategoryService.get_select_quantity_buttons(callback)
+async def select_quantity(**kwargs):
+    callback = kwargs.get("callback")
+    session = kwargs.get("session")
+    msg, kb_builder = await SubcategoryService.get_select_quantity_buttons(callback, session)
     await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
 
 
-async def add_to_cart_confirmation(callback: CallbackQuery):
-    msg, kb_builder = await SubcategoryService.get_add_to_cart_buttons(callback)
+async def add_to_cart_confirmation(**kwargs):
+    callback = kwargs.get("callback")
+    session = kwargs.get("session")
+    msg, kb_builder = await SubcategoryService.get_add_to_cart_buttons(callback, session)
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
-async def add_to_cart(callback: CallbackQuery):
-    await CartService.add_to_cart(callback)
+async def add_to_cart(**kwargs):
+    callback = kwargs.get("callback")
+    session = kwargs.get("session")
+    await CartService.add_to_cart(callback, session)
     await callback.message.edit_text(text=Localizator.get_text(BotEntity.USER, "item_added_to_cart"))
 
 
 @all_categories_router.callback_query(AllCategoriesCallback.filter(), IsUserExistFilter())
-async def navigate_categories(call: CallbackQuery, callback_data: AllCategoriesCallback):
+async def navigate_categories(callback: CallbackQuery, callback_data: AllCategoriesCallback,
+                              session: AsyncSession | Session):
     current_level = callback_data.level
 
     levels = {
@@ -61,4 +75,9 @@ async def navigate_categories(call: CallbackQuery, callback_data: AllCategoriesC
 
     current_level_function = levels[current_level]
 
-    await current_level_function(call)
+    kwargs = {
+        "callback": callback,
+        "session": session,
+    }
+
+    await current_level_function(**kwargs)
