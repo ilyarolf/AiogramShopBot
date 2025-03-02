@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Cryptocurrency(Enum):
+class Cryptocurrency(str, Enum):
     BTC = "BTC"
     LTC = "LTC"
     SOL = "SOL"

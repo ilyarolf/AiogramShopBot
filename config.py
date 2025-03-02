@@ -3,12 +3,13 @@ import os
 from dotenv import load_dotenv
 
 from enums.currency import Currency
+from enums.runtime_environment import RuntimeEnvironment
 from external_ip import get_sslipio_external_url
 from ngrok_executor import start_ngrok
 
 load_dotenv(".env")
-
-if os.environ.get("RUNTIME_ENVIRONMENT") == "dev":
+RUNTIME_ENVIRONMENT = os.environ.get("RUNTIME_ENVIRONMENT")
+if RUNTIME_ENVIRONMENT == RuntimeEnvironment.DEV:
     WEBHOOK_HOST = start_ngrok()
 else:
     WEBHOOK_HOST = get_sslipio_external_url()
