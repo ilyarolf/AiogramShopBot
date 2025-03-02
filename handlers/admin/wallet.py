@@ -11,13 +11,16 @@ from utils.custom_filters import AdminIdFilter
 wallet = Router()
 
 
-async def wallet_menu(callback: CallbackQuery, state: FSMContext):
+async def wallet_menu(**kwargs):
+    callback = kwargs.get("callback")
+    state = kwargs.get("state")
     await state.clear()
     msg, kb_builder = await AdminService.get_wallet_menu()
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
-async def withdraw_crypto(callback: CallbackQuery):
+async def withdraw_crypto(**kwargs):
+    callback = kwargs.get("callback")
     msg, kb_builder = await AdminService.get_withdraw_menu()
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
@@ -32,7 +35,10 @@ async def wallet_navigation(callback: CallbackQuery, state: FSMContext, callback
     }
 
     current_level_function = levels[current_level]
-    if inspect.getfullargspec(current_level_function).annotations.get("state") == FSMContext:
-        await current_level_function(callback, state)
-    else:
-        await current_level_function(callback)
+
+    kwargs = {
+        "callback": callback,
+        "state": state
+    }
+
+    await current_level_function(**kwargs)
