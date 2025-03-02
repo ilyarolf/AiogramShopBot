@@ -35,7 +35,8 @@ services:
       MULTIBOT: "false" # Allows the use of a multibot
       ETHPLORER_API_KEY: "" # API key from Ethplorer
       CURRENCY: "USD" # fiat currency
-      RUNTIME_ENVIRONMENT: "prod"
+      RUNTIME_ENVIRONMENT: "PROD"
+      WEBHOOK_SECRET_TOKEN: "1234567890" # Any string you want
     labels:
       caddy: YOUR-DOMAIN-GOES-HERE
       caddy.reverse_proxy: "bot:5000"
