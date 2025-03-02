@@ -8,7 +8,7 @@ from external_ip import get_sslipio_external_url
 from ngrok_executor import start_ngrok
 
 load_dotenv(".env")
-RUNTIME_ENVIRONMENT = os.environ.get("RUNTIME_ENVIRONMENT")
+RUNTIME_ENVIRONMENT = RuntimeEnvironment(os.environ.get("RUNTIME_ENVIRONMENT"))
 if RUNTIME_ENVIRONMENT == RuntimeEnvironment.DEV:
     WEBHOOK_HOST = start_ngrok()
 else:
@@ -29,3 +29,4 @@ BOT_LANGUAGE = os.environ.get("BOT_LANGUAGE")
 MULTIBOT = os.environ.get("MULTIBOT", False) == 'true'
 ETHPLORER_API_KEY = os.environ.get("ETHPLORER_API_KEY")
 CURRENCY = Currency(os.environ.get("CURRENCY"))
+WEBHOOK_SECRET_TOKEN = os.environ.get("WEBHOOK_SECRET_TOKEN")
