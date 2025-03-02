@@ -31,7 +31,7 @@ class NotificationService:
         return user_button_builder.as_markup()
 
     @staticmethod
-    async def send_to_admins(message: str, reply_markup: types.InlineKeyboardMarkup):
+    async def send_to_admins(message: str, reply_markup: types.InlineKeyboardMarkup | None):
         bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
         for admin_id in ADMIN_ID_LIST:
             try:
