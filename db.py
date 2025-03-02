@@ -73,11 +73,11 @@ async def session_execute(stmt, session: AsyncSession | Session) -> Result[Any] 
         return query_result
 
 
-async def session_refresh(session: AsyncSession | Session, instance: object) -> None:
+async def session_flush(session: AsyncSession | Session) -> None:
     if isinstance(session, AsyncSession):
-        await session.refresh(instance)
+        await session.flush()
     else:
-        session.refresh(instance)
+        session.flush()
 
 
 async def session_commit(session: AsyncSession | Session) -> None:
@@ -91,6 +91,8 @@ async def session_commit(session: AsyncSession | Session) -> None:
 def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")
+    if config.DB_ENCRYPTION:
+        cursor.execute("PRAGMA journal_mode=WAL")
     cursor.close()
 
 

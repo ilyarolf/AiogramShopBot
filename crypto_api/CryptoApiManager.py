@@ -1,5 +1,8 @@
 from datetime import datetime, timedelta
 import aiohttp
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
+
 import config
 from enums.cryptocurrency import Cryptocurrency
 from models.deposit import DepositDTO
@@ -19,7 +22,7 @@ class CryptoApiManager:
                     return data
 
     @staticmethod
-    async def get_new_btc_deposits(user_dto: UserDTO, deposits) -> float:
+    async def get_new_btc_deposits(user_dto: UserDTO, deposits: list[DepositDTO], session: AsyncSession | Session) -> float:
         url = f'https://mempool.space/api/address/{user_dto.btc_address}/utxo'
         data = await CryptoApiManager.fetch_api_request(url)
         deposits = [deposit.tx_id for deposit in deposits if deposit.network == "BTC"]
@@ -33,12 +36,12 @@ class CryptoApiManager:
                     amount=deposit['value'],
                     vout=deposit['vout']
                 )
-                await DepositService.create(deposit_dto)
+                await DepositService.create(deposit_dto, session)
                 deposit_sum += float(deposit["value"]) / 100_000_000
         return deposit_sum
 
     @staticmethod
-    async def get_new_ltc_deposits(user_dto: UserDTO, deposits) -> float:
+    async def get_new_ltc_deposits(user_dto: UserDTO, deposits: list[DepositDTO], session: AsyncSession | Session) -> float:
         url = f"https://api.blockcypher.com/v1/ltc/main/addrs/{user_dto.ltc_address}"
         params = {"unspentOnly": "true"}
         data = await CryptoApiManager.fetch_api_request(url, params=params)
@@ -54,12 +57,12 @@ class CryptoApiManager:
                         amount=deposit['value'],
                         vout=deposit['tx_output_n']
                     )
-                    await DepositService.create(deposit_dto)
+                    await DepositService.create(deposit_dto, session)
                     deposits_sum += float(deposit['value']) / 100_000_000
         return deposits_sum
 
     @staticmethod
-    async def get_sol_balance(user_dto: UserDTO, deposits) -> float:
+    async def get_sol_balance(user_dto: UserDTO, deposits: list[DepositDTO], session: AsyncSession | Session) -> float:
         url = f"https://api.solana.fm/v0/accounts/{user_dto.sol_address}/transfers"
         data = await CryptoApiManager.fetch_api_request(url)
         deposits = [deposit.tx_id for deposit in deposits if deposit.network == "SOL"]
@@ -78,12 +81,12 @@ class CryptoApiManager:
                                 amount=transfer['amount'],
                                 vout=transfer['instructionIndex']
                             )
-                            await DepositService.create(deposit_dto)
+                            await DepositService.create(deposit_dto, session)
                             deposits_sum += float(transfer['amount'] / 1_000_000_000)
         return deposits_sum
 
     @staticmethod
-    async def get_usdt_trc20_balance(user_dto: UserDTO, deposits) -> float:
+    async def get_usdt_trc20_balance(user_dto: UserDTO, deposits: list[DepositDTO], session: AsyncSession | Session) -> float:
         url = f"https://api.trongrid.io/v1/accounts/{user_dto.trx_address}/transactions/trc20"
         params = {"only_confirmed": "true",
                   "min_timestamp": CryptoApiManager.min_timestamp,
@@ -102,12 +105,12 @@ class CryptoApiManager:
                     token_name='USDT_TRC20',
                     amount=deposit['value'],
                 )
-                await DepositService.create(deposit_dto)
+                await DepositService.create(deposit_dto, session)
                 deposits_sum += float(deposit['value']) / pow(10, deposit['token_info']['decimals'])
         return deposits_sum
 
     @staticmethod
-    async def get_usdt_erc20_balance(user_dto: UserDTO, deposits) -> float:
+    async def get_usdt_erc20_balance(user_dto: UserDTO, deposits: list[DepositDTO], session: AsyncSession | Session) -> float:
         # TODO(Combine the function to obtain erc20 tokens.)
         url = f'https://api.ethplorer.io/getAddressHistory/{user_dto.eth_address}'
         params = {
@@ -129,12 +132,12 @@ class CryptoApiManager:
                     token_name='USDT_ERC20',
                     amount=deposit['value']
                 )
-                await DepositService.create(deposit_dto)
+                await DepositService.create(deposit_dto, session)
                 deposits_sum += float(deposit['value']) / pow(10, 6)
         return deposits_sum
 
     @staticmethod
-    async def get_usdc_erc20_balance(user_dto: UserDTO, deposits):
+    async def get_usdc_erc20_balance(user_dto: UserDTO, deposits: list[DepositDTO], session: AsyncSession | Session):
         # TODO(Combine the function to obtain erc20 tokens.)
         url = f'https://api.ethplorer.io/getAddressHistory/{user_dto.eth_address}'
         params = {
@@ -156,7 +159,7 @@ class CryptoApiManager:
                     token_name='USDC_ERC20',
                     amount=deposit['value']
                 )
-                await DepositService.create(deposit_dto)
+                await DepositService.create(deposit_dto, session)
                 deposits_sum += float(deposit['value']) / pow(10, 6)
         return deposits_sum
 
@@ -175,18 +178,19 @@ class CryptoApiManager:
         return float(next(iter(response_json['result'].values()))['c'][0])
 
     @staticmethod
-    async def get_new_deposits_amount(user_dto: UserDTO, cryptocurrency: Cryptocurrency):
-        deposits = await DepositService.get_by_user_dto(user_dto)
+    async def get_new_deposits_amount(user_dto: UserDTO, cryptocurrency: Cryptocurrency,
+                                      session: AsyncSession | Session):
+        deposits = await DepositService.get_by_user_dto(user_dto, session)
         match cryptocurrency:
             case Cryptocurrency.BTC:
-                return await CryptoApiManager.get_new_btc_deposits(user_dto, deposits)
+                return await CryptoApiManager.get_new_btc_deposits(user_dto, deposits, session)
             case Cryptocurrency.LTC:
-                return await CryptoApiManager.get_new_ltc_deposits(user_dto, deposits)
+                return await CryptoApiManager.get_new_ltc_deposits(user_dto, deposits, session)
             case Cryptocurrency.SOL:
-                return await CryptoApiManager.get_sol_balance(user_dto, deposits)
+                return await CryptoApiManager.get_sol_balance(user_dto, deposits, session)
             case Cryptocurrency.USDT_TRC20:
-                return await CryptoApiManager.get_usdt_trc20_balance(user_dto, deposits)
+                return await CryptoApiManager.get_usdt_trc20_balance(user_dto, deposits, session)
             case Cryptocurrency.USDT_ERC20:
-                return await CryptoApiManager.get_usdt_erc20_balance(user_dto, deposits)
+                return await CryptoApiManager.get_usdt_erc20_balance(user_dto, deposits, session)
             case Cryptocurrency.USDC_ERC20:
-                return await CryptoApiManager.get_usdc_erc20_balance(user_dto, deposits)
+                return await CryptoApiManager.get_usdc_erc20_balance(user_dto, deposits, session)

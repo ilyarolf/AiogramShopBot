@@ -1,5 +1,8 @@
 from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
+
 from callbacks import AllCategoriesCallback
 from enums.bot_entity import BotEntity
 from handlers.common.common import add_pagination_buttons
@@ -13,15 +16,15 @@ from utils.localizator import Localizator
 class SubcategoryService:
 
     @staticmethod
-    async def get_buttons(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
+    async def get_buttons(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
         unpacked_cb = AllCategoriesCallback.unpack(callback.data)
         kb_builder = InlineKeyboardBuilder()
         subcategories = await SubcategoryRepository.get_paginated_by_category_id(unpacked_cb.category_id,
-                                                                                 unpacked_cb.page)
+                                                                                 unpacked_cb.page, session)
         for subcategory in subcategories:
-            item = await ItemRepository.get_single(unpacked_cb.category_id, subcategory.id)
+            item = await ItemRepository.get_single(unpacked_cb.category_id, subcategory.id, session)
             available_qty = await ItemRepository.get_available_qty(ItemDTO(category_id=unpacked_cb.category_id,
-                                                                           subcategory_id=subcategory.id))
+                                                                           subcategory_id=subcategory.id), session)
             kb_builder.button(text=Localizator.get_text(BotEntity.USER, "subcategory_button").format(
                 subcategory_name=subcategory.name,
                 subcategory_price=item.price,
@@ -35,17 +38,17 @@ class SubcategoryService:
             )
         kb_builder.adjust(1)
         kb_builder = await add_pagination_buttons(kb_builder, unpacked_cb,
-                                                  SubcategoryRepository.max_page(unpacked_cb.category_id),
+                                                  SubcategoryRepository.max_page(unpacked_cb.category_id, session),
                                                   unpacked_cb.get_back_button())
         return Localizator.get_text(BotEntity.USER, "subcategories"), kb_builder
 
     @staticmethod
-    async def get_select_quantity_buttons(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
+    async def get_select_quantity_buttons(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
         unpacked_cb = AllCategoriesCallback.unpack(callback.data)
-        item = await ItemRepository.get_single(unpacked_cb.category_id, unpacked_cb.subcategory_id)
-        subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.subcategory_id)
-        category = await CategoryRepository.get_by_id(unpacked_cb.category_id)
-        available_qty = await ItemRepository.get_available_qty(item)
+        item = await ItemRepository.get_single(unpacked_cb.category_id, unpacked_cb.subcategory_id, session)
+        subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.subcategory_id, session)
+        category = await CategoryRepository.get_by_id(unpacked_cb.category_id, session)
+        available_qty = await ItemRepository.get_available_qty(item, session)
         message_text = Localizator.get_text(BotEntity.USER, "select_quantity").format(
             category_name=category.name,
             subcategory_name=subcategory.name,
@@ -67,11 +70,11 @@ class SubcategoryService:
         return message_text, kb_builder
 
     @staticmethod
-    async def get_add_to_cart_buttons(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
+    async def get_add_to_cart_buttons(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
         unpacked_cb = AllCategoriesCallback.unpack(callback.data)
-        item = await ItemRepository.get_single(unpacked_cb.category_id, unpacked_cb.subcategory_id)
-        category = await CategoryRepository.get_by_id(unpacked_cb.category_id)
-        subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.subcategory_id)
+        item = await ItemRepository.get_single(unpacked_cb.category_id, unpacked_cb.subcategory_id, session)
+        category = await CategoryRepository.get_by_id(unpacked_cb.category_id, session)
+        subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.subcategory_id, session)
         message_text = Localizator.get_text(BotEntity.USER, "buy_confirmation").format(
             category_name=category.name,
             subcategory_name=subcategory.name,
