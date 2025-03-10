@@ -2,7 +2,7 @@ import logging
 from aiogram import types, Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.types import InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardMarkup, BufferedInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -31,13 +31,17 @@ class NotificationService:
         return user_button_builder.as_markup()
 
     @staticmethod
-    async def send_to_admins(message: str, reply_markup: types.InlineKeyboardMarkup | None):
+    async def send_to_admins(message: str | BufferedInputFile, reply_markup: types.InlineKeyboardMarkup | None):
         bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
         for admin_id in ADMIN_ID_LIST:
             try:
-                await bot.send_message(admin_id, f"<b>{message}</b>", reply_markup=reply_markup)
+                if isinstance(message, str):
+                    await bot.send_message(admin_id, f"<b>{message}</b>", reply_markup=reply_markup)
+                else:
+                    await bot.send_document(admin_id, message, reply_markup=reply_markup)
             except Exception as e:
                 logging.error(e)
+        await bot.session.close()
 
     @staticmethod
     async def new_deposit(deposit_amount: float, cryptocurrency: Cryptocurrency, fiat_amount: float, user_dto: UserDTO):
