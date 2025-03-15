@@ -57,8 +57,14 @@ services:
   redis:
     image: redis:latest
     container_name: redis
+    command:
+      - /bin/sh
+      - -c
+      - redis-server --requirepass "$${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}"
     ports:
       - "6379:6379"
+    env_file:
+      - .env
     volumes:
       - redis_data:/data
     restart: always
