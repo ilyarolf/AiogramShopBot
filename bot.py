@@ -15,7 +15,7 @@ import uvicorn
 from fastapi.responses import JSONResponse
 from services.notification import NotificationService
 
-redis = Redis()
+redis = Redis(password=config.REDIS_PASSWORD)
 bot = Bot(TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=RedisStorage(redis))
 app = FastAPI()
