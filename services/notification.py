@@ -9,10 +9,10 @@ from sqlalchemy.orm import Session
 
 from config import ADMIN_ID_LIST, TOKEN
 from enums.bot_entity import BotEntity
-from enums.cryptocurrency import Cryptocurrency
 from models.buy import RefundDTO
 from models.cartItem import CartItemDTO
 from models.item import ItemDTO
+from models.payment import ProcessingPaymentDTO, TablePaymentDTO
 from models.user import UserDTO
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
@@ -44,28 +44,67 @@ class NotificationService:
         await bot.session.close()
 
     @staticmethod
-    async def new_deposit(deposit_amount: float, cryptocurrency: Cryptocurrency, fiat_amount: float, user_dto: UserDTO):
-        deposit_amount_fiat = round(fiat_amount, 2)
+    async def send_to_user(message: str, telegram_id: int):
+        bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+        await bot.send_message(telegram_id, message)
+        await bot.session.close()
+
+    @staticmethod
+    async def edit_message(message: str, source_message_id: int, chat_id: int):
+        bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+        await bot.edit_message_text(text=message, chat_id=chat_id, message_id=source_message_id)
+        await bot.session.close()
+
+    @staticmethod
+    async def payment_expired(user_dto: UserDTO, payment_dto: ProcessingPaymentDTO, table_payment_dto: TablePaymentDTO):
+        msg = Localizator.get_text(BotEntity.USER, "notification_payment_expired").format(
+            payment_id=payment_dto.id
+        )
+        edited_payment_message = Localizator.get_text(BotEntity.USER, "top_up_balance_msg").format(
+            crypto_name=payment_dto.cryptoCurrency.name,
+            addr="***",
+            crypto_amount=payment_dto.cryptoAmount,
+            fiat_amount=payment_dto.fiatAmount,
+            currency_text=Localizator.get_currency_text(),
+            status=Localizator.get_text(BotEntity.USER, "status_expired")
+        )
+        await NotificationService.edit_message(edited_payment_message, table_payment_dto.message_id, user_dto.telegram_id)
+        await NotificationService.send_to_user(msg, user_dto.telegram_id)
+
+    @staticmethod
+    async def new_deposit(payment_dto: ProcessingPaymentDTO, user_dto: UserDTO, table_payment_dto: TablePaymentDTO):
         user_button = await NotificationService.make_user_button(user_dto.telegram_username)
+        user_notification_msg = Localizator.get_text(BotEntity.USER, "notification_new_deposit").format(
+            fiat_amount=payment_dto.fiatAmount,
+            currency_text=Localizator.get_currency_text(),
+            payment_id=payment_dto.id
+        )
+        await NotificationService.send_to_user(user_notification_msg, user_dto.telegram_id)
+        edited_payment_message = Localizator.get_text(BotEntity.USER, "top_up_balance_msg").format(
+            crypto_name=payment_dto.cryptoCurrency.name,
+            addr="***",
+            crypto_amount=payment_dto.cryptoAmount,
+            fiat_amount=payment_dto.fiatAmount,
+            currency_text=Localizator.get_currency_text(),
+            status=Localizator.get_text(BotEntity.USER, "status_paid")
+        )
+        await NotificationService.edit_message(edited_payment_message, table_payment_dto.message_id, user_dto.telegram_id)
         if user_dto.telegram_username:
             message = Localizator.get_text(BotEntity.ADMIN, "notification_new_deposit_username").format(
                 username=user_dto.telegram_username,
-                deposit_amount_fiat=deposit_amount_fiat,
-                currency_sym=Localizator.get_currency_symbol()
+                deposit_amount_fiat=payment_dto.fiatAmount,
+                currency_sym=Localizator.get_currency_symbol(),
+                value=payment_dto.cryptoAmount,
+                crypto_name=payment_dto.cryptoCurrency.name
             )
         else:
             message = Localizator.get_text(BotEntity.ADMIN, "notification_new_deposit_id").format(
                 telegram_id=user_dto.telegram_id,
-                deposit_amount_fiat=deposit_amount_fiat,
-                currency_sym=Localizator.get_currency_symbol()
+                deposit_amount_fiat=payment_dto.fiatAmount,
+                currency_sym=Localizator.get_currency_symbol(),
+                value=payment_dto.cryptoAmount,
+                crypto_name=payment_dto.cryptoCurrency.name
             )
-        addr = getattr(user_dto, cryptocurrency.get_address_field())
-        message += Localizator.get_text(BotEntity.ADMIN, "notification_crypto_deposit").format(
-            value=deposit_amount,
-            crypto_name=cryptocurrency.value.replace('_', ' '),
-            crypto_address=addr
-        )
-        message += Localizator.get_text(BotEntity.ADMIN, "notification_seed").format(seed=user_dto.seed)
         await NotificationService.send_to_admins(message, user_button)
 
     @staticmethod
@@ -110,5 +149,6 @@ class NotificationService:
         try:
             bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
             await bot.send_message(refund_data.telegram_id, text=user_notification)
+            await bot.session.close()
         except Exception as _:
             pass
