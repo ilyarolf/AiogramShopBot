@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 from enums.currency import Currency
 from enums.runtime_environment import RuntimeEnvironment
+from enums.withdraw_mode import WithdrawMode
 from external_ip import get_sslipio_external_url
 from ngrok_executor import start_ngrok
 
@@ -27,7 +28,15 @@ DB_PASS = os.environ.get("DB_PASS")
 PAGE_ENTRIES = int(os.environ.get("PAGE_ENTRIES"))
 BOT_LANGUAGE = os.environ.get("BOT_LANGUAGE")
 MULTIBOT = os.environ.get("MULTIBOT", False) == 'true'
-ETHPLORER_API_KEY = os.environ.get("ETHPLORER_API_KEY")
 CURRENCY = Currency(os.environ.get("CURRENCY"))
+KRYPTO_EXPRESS_API_KEY = os.environ.get("KRYPTO_EXPRESS_API_KEY")
+KRYPTO_EXPRESS_API_URL = os.environ.get("KRYPTO_EXPRESS_API_URL")
+KRYPTO_EXPRESS_API_SECRET = os.environ.get("KRYPTO_EXPRESS_API_SECRET")
 WEBHOOK_SECRET_TOKEN = os.environ.get("WEBHOOK_SECRET_TOKEN")
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
+BTC_RECEIVER_ADDR = os.environ.get("BTC_RECEIVER_ADDR")
+LTC_RECEIVER_ADDR = os.environ.get("LTC_RECEIVER_ADDR")
+ETH_RECEIVER_ADDR = os.environ.get("ETH_RECEIVER_ADDR")
+BNB_RECEIVER_ADDR = os.environ.get("BNB_RECEIVER_ADDR")
+SOL_RECEIVER_ADDR = os.environ.get("SOL_RECEIVER_ADDR")
+WITHDRAW_MODE = WithdrawMode(os.environ.get("WITHDRAW_MODE"))
