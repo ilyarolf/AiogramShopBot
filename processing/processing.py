@@ -45,7 +45,7 @@ async def fetch_crypto_event(payment_dto: ProcessingPaymentDTO, request: Request
                 await PaymentRepository.update(table_payment_dto, session)
                 await DepositRepository.create(DepositDTO(
                     user_id=user.id,
-                    network=payment_dto.cryptoCurrency,
+                    blockchain=payment_dto.cryptoCurrency,
                     amount=int(payment_dto.cryptoAmount*pow(10, payment_dto.cryptoCurrency.get_divider())),
                     deposit_datetime=datetime.datetime.now()
                 ), session)
