@@ -1,6 +1,7 @@
 import aiohttp
 import config
 from enums.cryptocurrency import Cryptocurrency
+from enums.withdraw_type import WithdrawType
 from models.withdrawal import WithdrawalDTO
 
 
@@ -21,16 +22,8 @@ class CryptoApiWrapper:
 
     @staticmethod
     async def get_crypto_prices(cryptocurrency: Cryptocurrency) -> float:
-        match cryptocurrency:
-            case cryptocurrency.USDT_TRC20 | cryptocurrency.USDT_ERC20:
-                url = f'https://api.kraken.com/0/public/Ticker?pair=USDT{config.CURRENCY.value}'
-                response_json = await CryptoApiWrapper.fetch_api_request(url)
-            case cryptocurrency.USDC_ERC20:
-                url = f"https://api.kraken.com/0/public/Ticker?pair=USDC{config.CURRENCY.value}"
-                response_json = await CryptoApiWrapper.fetch_api_request(url)
-            case _:
-                url = f"https://api.kraken.com/0/public/Ticker?pair={cryptocurrency.value}{config.CURRENCY.value}"
-                response_json = await CryptoApiWrapper.fetch_api_request(url)
+        url = f"https://api.kraken.com/0/public/Ticker?pair={cryptocurrency.value}{config.CURRENCY.value}"
+        response_json = await CryptoApiWrapper.fetch_api_request(url)
         return float(next(iter(response_json['result'].values()))['c'][0])
 
     @staticmethod
@@ -53,7 +46,7 @@ class CryptoApiWrapper:
             "Content-Type": "application/json"
         }
         body = WithdrawalDTO(
-            withdrawType="ALL",
+            withdrawType=WithdrawType.ALL,
             cryptoCurrency=cryptocurrency.name,
             toAddress=to_address,
             onlyCalculate=only_calculate
@@ -65,5 +58,3 @@ class CryptoApiWrapper:
             headers=headers
         )
         return WithdrawalDTO.model_validate(response)
-
-

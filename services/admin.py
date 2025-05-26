@@ -413,6 +413,7 @@ class AdminService:
                 ltc_price = await CryptoApiWrapper.get_crypto_prices(Cryptocurrency.LTC)
                 sol_price = await CryptoApiWrapper.get_crypto_prices(Cryptocurrency.SOL)
                 eth_price = await CryptoApiWrapper.get_crypto_prices(Cryptocurrency.ETH)
+                bnb_price = await CryptoApiWrapper.get_crypto_prices(Cryptocurrency.BNB)
                 fiat_amount += ((btc_amount * btc_price) + (ltc_amount * ltc_price) + (sol_amount * sol_price)
                                 + (eth_amount * eth_price))
                 kb_builder.row(AdminConstants.back_to_main_button, unpacked_cb.get_back_button())
@@ -420,6 +421,7 @@ class AdminService:
                     timedelta=unpacked_cb.timedelta, deposits_count=len(deposits),
                     btc_amount=btc_amount, ltc_amount=ltc_amount,
                     sol_amount=sol_amount, eth_amount=eth_amount,
+                    bnb_amount=bnb_amount,
                     fiat_amount=fiat_amount, currency_text=Localizator.get_currency_text()), kb_builder
 
     @staticmethod
