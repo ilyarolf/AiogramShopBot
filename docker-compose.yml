@@ -37,6 +37,8 @@ services:
       CURRENCY: "USD" # fiat currency
       RUNTIME_ENVIRONMENT: "PROD"
       WEBHOOK_SECRET_TOKEN: "1234567890" # Any string you want
+      REDIS_HOST: "redis"
+      REDIS_PASSWORD: "1234567890" # Any string you want
     labels:
       caddy: YOUR-DOMAIN-GOES-HERE
       caddy.reverse_proxy: "bot:5000"
@@ -68,6 +70,8 @@ services:
     volumes:
       - redis_data:/data
     restart: always
+    networks:
+      - caddy
 
 volumes:
   AiogramShopBot:
