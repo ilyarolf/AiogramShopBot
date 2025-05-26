@@ -30,4 +30,5 @@ MULTIBOT = os.environ.get("MULTIBOT", False) == 'true'
 ETHPLORER_API_KEY = os.environ.get("ETHPLORER_API_KEY")
 CURRENCY = Currency(os.environ.get("CURRENCY"))
 WEBHOOK_SECRET_TOKEN = os.environ.get("WEBHOOK_SECRET_TOKEN")
+REDIS_HOST = os.environ.get("REDIS_HOST")
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
