@@ -11,7 +11,7 @@ class Deposit(Base):
     __tablename__ = 'deposits'
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    blockchain = Column(Enum(Cryptocurrency), nullable=False)
+    network = Column(Enum(Cryptocurrency), nullable=False)
     amount = Column(BigInteger, nullable=False)
     deposit_datetime = Column(DateTime, default=func.now())
 
@@ -23,6 +23,6 @@ class Deposit(Base):
 class DepositDTO(BaseModel):
     id: int | None = None
     user_id: int | None = None
-    blockchain: Cryptocurrency | None = None
+    network: Cryptocurrency | None = None
     amount: int | None = None
     deposit_datetime: datetime | None = None

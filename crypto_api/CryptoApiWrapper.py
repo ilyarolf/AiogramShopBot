@@ -10,6 +10,7 @@ class CryptoApiWrapper:
     BTC_API_BASENAME_TX = "https://mempool.space/tx/"
     SOL_API_BASENAME_TX = "https://solscan.io/tx/"
     ETH_API_BASENAME_TX = "https://etherscan.io/tx/"
+    BNB_API_BASENAME_TX = "https://bscscan.com/tx/"
 
     @staticmethod
     async def fetch_api_request(url: str, params: dict | None = None, method: str = "GET", data: str | None = None,
@@ -21,10 +22,13 @@ class CryptoApiWrapper:
                     return data
 
     @staticmethod
-    async def get_crypto_prices(cryptocurrency: Cryptocurrency) -> float:
-        url = f"https://api.kraken.com/0/public/Ticker?pair={cryptocurrency.value}{config.CURRENCY.value}"
-        response_json = await CryptoApiWrapper.fetch_api_request(url)
-        return float(next(iter(response_json['result'].values()))['c'][0])
+    async def get_crypto_prices() -> dict:
+        url = f"https://api.coingecko.com/api/v3/simple/price"
+        params = {
+            "ids": "bitcoin,litecoin,solana,ethereum,binancecoin",
+            "vs_currencies": "usd,eur,gbp,jpy,cad"
+        }
+        return await CryptoApiWrapper.fetch_api_request(url, params)
 
     @staticmethod
     async def get_wallet_balance() -> dict:
