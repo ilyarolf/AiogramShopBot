@@ -22,3 +22,16 @@ class Cryptocurrency(str, Enum):
                 return 9
             case Cryptocurrency.BNB:
                 return 18
+
+    def get_coingecko_name(self) -> str:
+        match self:
+            case Cryptocurrency.BTC:
+                return "bitcoin"
+            case Cryptocurrency.LTC:
+                return "litecoin"
+            case Cryptocurrency.ETH:
+                return "ethereum"
+            case Cryptocurrency.BNB:
+                return "binancecoin"
+            case Cryptocurrency.SOL:
+                return "solana"

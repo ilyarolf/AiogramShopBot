@@ -9,6 +9,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+import config
 from callbacks import AdminAnnouncementCallback, AnnouncementType, AdminInventoryManagementCallback, EntityType, \
     AddType, UserManagementCallback, UserManagementOperation, StatisticsCallback, StatisticsEntity, StatisticsTimeDelta, \
     WalletCallback
@@ -400,22 +401,23 @@ class AdminService:
                 for deposit in deposits:
                     match deposit.network:
                         case "BTC":
-                            btc_amount += deposit.amount / pow(10, deposit.blockchain.get_divider())
+                            btc_amount += deposit.amount / pow(10, deposit.network.get_divider())
                         case "LTC":
-                            ltc_amount += deposit.amount / pow(10, deposit.blockchain.get_divider())
+                            ltc_amount += deposit.amount / pow(10, deposit.network.get_divider())
                         case "SOL":
-                            sol_amount += deposit.amount / pow(10, deposit.blockchain.get_divider())
+                            sol_amount += deposit.amount / pow(10, deposit.network.get_divider())
                         case "ETH":
-                            eth_amount += deposit.amount / pow(10, deposit.blockchain.get_divider())
+                            eth_amount += deposit.amount / pow(10, deposit.network.get_divider())
                         case "BNB":
-                            bnb_amount += deposit.amount / pow(10, deposit.blockchain.get_divider())
-                btc_price = await CryptoApiWrapper.get_crypto_prices(Cryptocurrency.BTC)
-                ltc_price = await CryptoApiWrapper.get_crypto_prices(Cryptocurrency.LTC)
-                sol_price = await CryptoApiWrapper.get_crypto_prices(Cryptocurrency.SOL)
-                eth_price = await CryptoApiWrapper.get_crypto_prices(Cryptocurrency.ETH)
-                bnb_price = await CryptoApiWrapper.get_crypto_prices(Cryptocurrency.BNB)
+                            bnb_amount += deposit.amount / pow(10, deposit.network.get_divider())
+                prices = await CryptoApiWrapper.get_crypto_prices()
+                btc_price = prices[Cryptocurrency.BTC.get_coingecko_name()][config.CURRENCY.value.lower()]
+                ltc_price = prices[Cryptocurrency.LTC.get_coingecko_name()][config.CURRENCY.value.lower()]
+                sol_price = prices[Cryptocurrency.SOL.get_coingecko_name()][config.CURRENCY.value.lower()]
+                eth_price = prices[Cryptocurrency.ETH.get_coingecko_name()][config.CURRENCY.value.lower()]
+                bnb_price = prices[Cryptocurrency.BNB.get_coingecko_name()][config.CURRENCY.value.lower()]
                 fiat_amount += ((btc_amount * btc_price) + (ltc_amount * ltc_price) + (sol_amount * sol_price)
-                                + (eth_amount * eth_price))
+                                + (eth_amount * eth_price) + (bnb_amount * bnb_price))
                 kb_builder.row(AdminConstants.back_to_main_button, unpacked_cb.get_back_button())
                 return Localizator.get_text(BotEntity.ADMIN, "deposits_statistics_msg").format(
                     timedelta=unpacked_cb.timedelta, deposits_count=len(deposits),
@@ -473,10 +475,8 @@ class AdminService:
         state_data = await state.get_data()
         await state.update_data(to_address=to_address)
         cryptocurrency = Cryptocurrency(state_data['cryptocurrency'])
-        if cryptocurrency == Cryptocurrency.BNB:
-            price = 0
-        else:
-            price = await CryptoApiWrapper.get_crypto_prices(cryptocurrency)
+        prices = await CryptoApiWrapper.get_crypto_prices()
+        price = prices[cryptocurrency.get_coingecko_name()][config.CURRENCY.value.lower()]
 
         withdraw_dto = await CryptoApiWrapper.withdrawal(
             cryptocurrency,
@@ -530,6 +530,10 @@ class AdminService:
             case Cryptocurrency.ETH:
                 [kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "transaction"),
                                    url=f"{CryptoApiWrapper.ETH_API_BASENAME_TX}{tx_id}") for tx_id in
+                 withdraw_dto.txIdList]
+            case Cryptocurrency.BNB:
+                [kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "transaction"),
+                                   url=f"{CryptoApiWrapper.BNB_API_BASENAME_TX}{tx_id}") for tx_id in
                  withdraw_dto.txIdList]
         kb_builder.adjust(1)
         await state.clear()
