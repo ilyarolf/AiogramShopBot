@@ -9,15 +9,14 @@ import config
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from fastapi import FastAPI, Request, status, HTTPException
-from config import TOKEN, WEBHOOK_URL, ADMIN_ID_LIST, WEBHOOK_SECRET_TOKEN
 from db import create_db_and_tables
 import uvicorn
 from fastapi.responses import JSONResponse
 from processing.processing import processing_router
 from services.notification import NotificationService
 
-redis = Redis(password=config.REDIS_PASSWORD)
-bot = Bot(TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+redis = Redis(host=config.REDIS_HOST, password=config.REDIS_PASSWORD)
+bot = Bot(config.TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=RedisStorage(redis))
 app = FastAPI()
 app.include_router(processing_router)
@@ -26,7 +25,7 @@ app.include_router(processing_router)
 @app.post(config.WEBHOOK_PATH)
 async def webhook(request: Request):
     secret_token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
-    if secret_token != WEBHOOK_SECRET_TOKEN:
+    if secret_token != config.WEBHOOK_SECRET_TOKEN:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
     try:
@@ -42,10 +41,10 @@ async def webhook(request: Request):
 async def on_startup():
     await create_db_and_tables()
     await bot.set_webhook(
-        url=WEBHOOK_URL,
-        secret_token=WEBHOOK_SECRET_TOKEN
+        url=config.WEBHOOK_URL,
+        secret_token=config.WEBHOOK_SECRET_TOKEN
     )
-    for admin in ADMIN_ID_LIST:
+    for admin in config.ADMIN_ID_LIST:
         try:
             await bot.send_message(admin, 'Bot is working')
         except Exception as e:
