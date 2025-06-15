@@ -5,9 +5,9 @@ from sqlalchemy.orm import Session
 
 from callbacks import MyProfileCallback
 from enums.bot_entity import BotEntity
-from enums.user import UserResponse
-from models.user import UserDTO
+from enums.cryptocurrency import Cryptocurrency
 from services.buy import BuyService
+from services.payment import PaymentService
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator
@@ -27,10 +27,9 @@ class MyProfileConstants:
 
 
 async def my_profile(**kwargs):
-    message = kwargs.get("message") or kwargs.get("callback")
-    session = kwargs.get("session")
-    user_dto = UserDTO(telegram_id=message.from_user.id)
-    msg_text, kb_builder = await UserService.get_my_profile_buttons(user_dto, session)
+    message: Message | CallbackQuery = kwargs.get("message") or kwargs.get("callback")
+    session: Session | AsyncSession = kwargs.get("session")
+    msg_text, kb_builder = await UserService.get_my_profile_buttons(message.from_user.id, session)
     if isinstance(message, Message):
         await message.answer(msg_text, reply_markup=kb_builder.as_markup())
     elif isinstance(message, CallbackQuery):
@@ -51,20 +50,6 @@ async def purchase_history(**kwargs):
     await callback.message.edit_text(text=msg_text, reply_markup=kb_builder.as_markup())
 
 
-async def refresh_balance(**kwargs):
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
-    msg, response = await UserService.refresh_balance(callback, session)
-    match response:
-        case UserResponse.BALANCE_REFRESHED:
-            await callback.answer(msg, show_alert=True)
-            await my_profile(message=callback, session=session)
-        case UserResponse.BALANCE_NOT_REFRESHED:
-            await callback.answer(msg, show_alert=True)
-        case UserResponse.BALANCE_REFRESH_COOLDOWN:
-            await callback.answer(msg, show_alert=True)
-
-
 async def get_order_from_history(**kwargs):
     callback = kwargs.get("callback")
     session = kwargs.get("session")
@@ -72,11 +57,13 @@ async def get_order_from_history(**kwargs):
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
-async def top_up_by_method(**kwargs):
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
-    msg, kb_builder = await UserService.get_top_up_by_msg(callback, session)
-    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+async def create_payment(**kwargs):
+    callback: CallbackQuery = kwargs.get("callback")
+    session: AsyncSession | Session = kwargs.get("session")
+    unpacked_cb = MyProfileCallback.unpack(callback.data)
+    msg = await callback.message.edit_text(Localizator.get_text(BotEntity.USER, "loading"))
+    text = await PaymentService.create(Cryptocurrency(unpacked_cb.args_for_action), msg, session)
+    await msg.edit_text(text=text)
 
 
 @my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())
@@ -86,8 +73,7 @@ async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback, se
     levels = {
         0: my_profile,
         1: top_up_balance,
-        2: top_up_by_method,
-        3: refresh_balance,
+        2: create_payment,
         4: purchase_history,
         5: get_order_from_history
     }
