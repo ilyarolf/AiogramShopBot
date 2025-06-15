@@ -22,16 +22,3 @@ class Cryptocurrency(str, Enum):
                 return 9
             case Cryptocurrency.BNB:
                 return 18
-
-    def get_receiver_addr(self):
-        match self:
-            case Cryptocurrency.BTC:
-                return config.BTC_RECEIVER_ADDR
-            case Cryptocurrency.LTC:
-                return config.LTC_RECEIVER_ADDR
-            case Cryptocurrency.ETH:
-                return config.ETH_RECEIVER_ADDR
-            case Cryptocurrency.BNB:
-                return config.BNB_RECEIVER_ADDR
-            case Cryptocurrency.SOL:
-                return config.SOL_RECEIVER_ADDR
