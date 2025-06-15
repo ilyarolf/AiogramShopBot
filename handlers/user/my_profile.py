@@ -74,7 +74,6 @@ async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback, se
         0: my_profile,
         1: top_up_balance,
         2: create_payment,
-        # 3: refresh_balance,
         4: purchase_history,
         5: get_order_from_history
     }
