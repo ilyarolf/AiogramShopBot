@@ -53,7 +53,11 @@ Litecoin, Solana and stablecoins in the TRC20 and ERC20 networks, which allows y
             - [3.4.1.2 ➖ Reduce balance](#3412--reduce-balance)
         - [3.4.2 ↩️ Make Refund](#342--make-refund)
     + [3.5 📊 Analytics & Reports](#35--analytics--reports)
+        - [3.5.1 📊 Statistics](#351--statistics)
+        - [3.5.2 💾 Get database file](#352--get-database-file)
     + [3.6 🔔 Admin notifications](#36--admin-notifications)
+        - [3.6.1 Notification to admin about new deposit](#361-notification-to-admin-about-new-deposit)
+        - [3.6.2 Notification to admin about new buy](#362-notification-to-admin-about-new-buy)
 * [4.0 Multibot (Experimental functionality)](#40-multibot-experimental-functionality)
     + [4.1 Starting the multibot](#41-starting-the-multibot)
 * [📋 Todo List](#-todo-list)
@@ -86,6 +90,7 @@ Litecoin, Solana and stablecoins in the TRC20 and ERC20 networks, which allows y
 | WEBHOOK_PATH              | The path to the webhook where Telegram servers send requests for bot updates. It is not recommended to change it if only one bot will be deployed. In case several bots will be deployed on the same server, it will be necessary to change it, because there will be path collision (Does not apply to the multibot case). | "" (empty string)                                                   |
 | WEBAPP_HOST               | Hostname for Telegram bot, it is not recommended to change in case you use docker-compose.                                                                                                                                                                                                                                  | For docker-compose="0.0.0.0".<br/>For local deployment="localhost". |
 | WEBAPP_PORT               | Port for Telegram bot, if you plan to deploy several bots on the same server, you will need to assign a different port to each one (Not relevant to the multibot case).                                                                                                                                                     | No recommended value                                                |
+| WEBHOOK_SECRET_TOKEN      | Required variable, used to protect requests coming from Telegram servers from spoofing.                                                                                                                                                                                                                                     | Any string you want                                                 |   
 | TOKEN                     | Token from your Telegram bot, you can get it for free in Telegram from the bot of all bots with the username @botfather.                                                                                                                                                                                                    | No recommended value                                                |
 | ADMIN_ID_LIST             | List of Telegram id of all admins of your bot. This list is used to check for access to the admin menu.                                                                                                                                                                                                                     | No recommended value                                                |
 | SUPPORT_LINK              | A link to the Telegram profile that will be sent by the bot to the user when the “Help” button is pressed.                                                                                                                                                                                                                  | https://t.me/${YOUR_USERNAME_TG}                                    |
@@ -99,14 +104,16 @@ Litecoin, Solana and stablecoins in the TRC20 and ERC20 networks, which allows y
 | ETHPLORER_API_KEY         | API Key from ethplorer.io, used to get ERC20 balances.                                                                                                                                                                                                                                                                      | No recommended value                                                |
 | CURRENCY                  | Currency to be used in the bot.                                                                                                                                                                                                                                                                                             | "USD" or "EUR" or "JPY" or "CAD" or "GBP"                           |
 | RUNTIME_ENVIRONMENT       | If set to "dev", the bot will be connected via an ngrok tunnel. "prod" will use [Caddy](https://hub.docker.com/r/lucaslorentz/caddy-docker-proxy) as reverse proxy together with your public hostname                                                                                                                       | "prod" or "dev"                                                     |   
-| WEBHOOK_SECRET_TOKEN      | Required variable, used to protect requests coming from Telegram servers from spoofing.                                                                                                                                                                                                                                     | Any string you want                                                 |   
 | REDIS_HOST                | Required variable, needed to make the throttling mechanism work.                                                                                                                                                                                                                                                            | "redis" for docker-compose.yml                                      |   
 | REDIS_PASSWORD            | Required variable, needed to make the throttling mechanism work.                                                                                                                                                                                                                                                            | Any string you want                                                 |   
+| KRYPTO_EXPRESS_API_KEY            | API KEY from KryptoExpress profile                                                                                                                                                                                                                                                                                          | No recommended value                                                |   
+| KRYPTO_EXPRESS_API_URL            | API URL from KryptoExpress service                                                                                                                                                                                                                                                                                          | https://KryptoExpress.pro/api                                       |   
+| KRYPTO_EXPRESS_API_SECRET            | Required variable, used to protect requests coming from KryptoExpress servers from spoofing.                                                                                                                                                                                                                                | Any string you want                                                 |   
 
 ### 1.1 Starting AiogramShopBot with Docker-compose.
 
 * Clone the project.<br>``git clone git@github.com:ilyarolf/AiogramShopBot.git``
-* Set environment variables in docker-compose.yml file.
+* Set environment variables in .env file.
 * Run the ``docker-compose up`` command.
 
 #### Development and production mode
@@ -132,7 +139,7 @@ this case you have to remove the caddy service from the docker-compose file and 
 * Set the environment variables to run in the .env file.<br>Example:
 
 ```
-WEBHOOK_PATH = ""
+WEBHOOK_PATH = "/"
 WEBAPP_HOST = "localhost"
 WEBAPP_PORT = 5000
 TOKEN = "1234567890:QWER.....TYI"
@@ -142,12 +149,17 @@ DB_NAME = "database.db"
 DB_ENCRYPTION = "false"
 DB_PASS = ""
 NGROK_TOKEN = "NGROK_TOKEN_HERE"
-PAGE_ENTRIES = 8
+PAGE_ENTRIES = "8"
 BOT_LANGUAGE = "en"
 MULTIBOT = "false"
-ETHPLORER_API_KEY = "API_KEY_HERE"
 CURRENCY = "USD"
-RUNTIME_ENVIRONMENT = "dev"
+RUNTIME_ENVIRONMENT = "DEV"
+WEBHOOK_SECRET_TOKEN = "1234567890"
+KRYPTO_EXPRESS_API_KEY = "API_KEY_HERE"
+KRYPTO_EXPRESS_API_URL = "https://kryptoexpress.pro/api"
+KRYPTO_EXPRESS_API_SECRET = "1234567890"
+REDIS_PASSWORD = "1234567890"
+REDIS_HOST = "localhost"
 ```
 
 * After these steps the bot is ready to run, launch the bot with command ```python run.py```
@@ -166,7 +178,7 @@ RUNTIME_ENVIRONMENT = "dev"
 * Set the environment variables to run in the .env file.<br>Example:
 
 ```
-WEBHOOK_PATH = ""
+WEBHOOK_PATH = "/"
 WEBAPP_HOST = "localhost"
 WEBAPP_PORT = 5000
 TOKEN = "1234567890:QWER.....TYI"
@@ -174,14 +186,19 @@ ADMIN_ID_LIST = 123456,654321
 SUPPORT_LINK = "https://t.me/your_username_123"
 DB_NAME = "database.db"
 DB_ENCRYPTION = "true"
-DB_PASS = "1234567890qwertyui"
+DB_PASS = "1234567890"
 NGROK_TOKEN = "NGROK_TOKEN_HERE"
-PAGE_ENTRIES = 8
+PAGE_ENTRIES = "8"
 BOT_LANGUAGE = "en"
 MULTIBOT = "false"
-ETHPLORER_API_KEY = "API_KEY_HERE"
 CURRENCY = "USD"
-RUNTIME_ENVIRONMENT = "dev"
+RUNTIME_ENVIRONMENT = "DEV"
+WEBHOOK_SECRET_TOKEN = "1234567890"
+KRYPTO_EXPRESS_API_KEY = "API_KEY_HERE"
+KRYPTO_EXPRESS_API_URL = "https://kryptoexpress.pro/api"
+KRYPTO_EXPRESS_API_SECRET = "1234567890"
+REDIS_PASSWORD = "1234567890"
+REDIS_HOST = "localhost"
 ```
 
 * After these steps the bot is ready to run, the entry point to run the bot is run.py <br>```python run.py```
@@ -201,11 +218,9 @@ Trust Wallet.
 * Open top-up menu using the <u>“➕ Top Up Balance”</u> button.
 * In the resulting menu, click on cryptocurrency name button.
 * Copy cryptocurrency address, and send cryptocurrency on this address.
-* Once your transaction has at least one confirmation, click on the <u>“🔄 Refresh balance”</u> button.
+* Once your transaction has at least one confirmation you will receive notification from the bot.
 
 <br>![img](https://i.imgur.com/7RQdiPj.gif)
-> **Note**
-> "Refresh balance" button has a 30 seconds cooldown.
 
 ### 2.3 Purchase of goods
 
@@ -394,14 +409,14 @@ CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#8
 > **Note**
 > All users with telegram id in the .env ADMIN_ID_LIST environment variable will receive these notifications
 
-#### 3.8.1 Notification to admin about new deposit
+#### 3.6.1 Notification to admin about new deposit
 
 * If any user topped up the balance and clicked on the "Refresh balance" button, you will receive the following message
   from the bot:
 
 ![img](https://i.imgur.com/E75nbxy.gif)
 
-#### 3.8.2 Notification to admin about new buy
+#### 3.6.2 Notification to admin about new buy
 
 After each purchase, you will receive a message in the format:
 

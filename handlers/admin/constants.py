@@ -35,3 +35,7 @@ class AdminAnnouncementStates(StatesGroup):
 class UserManagementStates(StatesGroup):
     balance_amount = State()
     user_entity = State()
+
+
+class WalletStates(StatesGroup):
+    crypto_address = State()

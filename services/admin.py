@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import re
+
 from aiogram.exceptions import TelegramForbiddenError
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
@@ -7,15 +9,17 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+import config
 from callbacks import AdminAnnouncementCallback, AnnouncementType, AdminInventoryManagementCallback, EntityType, \
     AddType, UserManagementCallback, UserManagementOperation, StatisticsCallback, StatisticsEntity, StatisticsTimeDelta, \
     WalletCallback
-from crypto_api.CryptoApiManager import CryptoApiManager
+from crypto_api.CryptoApiWrapper import CryptoApiWrapper
 from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
-from handlers.admin.constants import AdminConstants, AdminInventoryManagementStates, UserManagementStates
+from handlers.admin.constants import AdminConstants, AdminInventoryManagementStates, UserManagementStates, WalletStates
 from handlers.common.common import add_pagination_buttons
+from models.withdrawal import WithdrawalDTO
 from repositories.buy import BuyRepository
 from repositories.category import CategoryRepository
 from repositories.deposit import DepositRepository
@@ -127,7 +131,8 @@ class AdminService:
                 return Localizator.get_text(BotEntity.ADMIN, "delete_subcategory"), kb_builder
 
     @staticmethod
-    async def delete_confirmation(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
+    async def delete_confirmation(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[
+        str, InlineKeyboardBuilder]:
         unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
         unpacked_cb.confirmation = True
         kb_builder = InlineKeyboardBuilder()
@@ -150,7 +155,8 @@ class AdminService:
                 ), kb_builder
 
     @staticmethod
-    async def delete_entity(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
+    async def delete_entity(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[
+        str, InlineKeyboardBuilder]:
         unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
         kb_builder = InlineKeyboardBuilder()
         kb_builder.row(AdminConstants.back_to_main_button)
@@ -261,7 +267,8 @@ class AdminService:
                 currency_text=Localizator.get_currency_text())
 
     @staticmethod
-    async def get_refund_menu(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
+    async def get_refund_menu(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[
+        str, InlineKeyboardBuilder]:
         unpacked_cb = UserManagementCallback.unpack(callback.data)
         kb_builder = InlineKeyboardBuilder()
         refund_data = await BuyRepository.get_refund_data(unpacked_cb.page, session)
@@ -286,7 +293,8 @@ class AdminService:
                     callback_data=callback)
         kb_builder.adjust(1)
         kb_builder = await add_pagination_buttons(kb_builder, unpacked_cb,
-                                                  BuyRepository.get_max_refund_page(session), unpacked_cb.get_back_button(0))
+                                                  BuyRepository.get_max_refund_page(session),
+                                                  unpacked_cb.get_back_button(0))
         return Localizator.get_text(BotEntity.ADMIN, "refund_menu"), kb_builder
 
     @staticmethod
@@ -354,8 +362,10 @@ class AdminService:
         kb_builder = InlineKeyboardBuilder()
         match unpacked_cb.statistics_entity:
             case StatisticsEntity.USERS:
-                users, users_count = await UserRepository.get_by_timedelta(unpacked_cb.timedelta, unpacked_cb.page, session)
-                [kb_builder.button(text=user.telegram_username, url=f't.me/{user.telegram_username}') for user in users
+                users, users_count = await UserRepository.get_by_timedelta(unpacked_cb.timedelta, unpacked_cb.page,
+                                                                           session)
+                [kb_builder.button(text=user.telegram_username, url=f't.me/{user.telegram_username}') for user in
+                 users
                  if user.telegram_username]
                 kb_builder.adjust(1)
                 kb_builder = await add_pagination_buttons(
@@ -365,7 +375,7 @@ class AdminService:
                     None)
                 kb_builder.row(AdminConstants.back_to_main_button, unpacked_cb.get_back_button())
                 return Localizator.get_text(BotEntity.ADMIN, "new_users_msg").format(
-                    users_count=len(users),
+                    users_count=users_count,
                     timedelta=unpacked_cb.timedelta.value
                 ), kb_builder
             case StatisticsEntity.BUYS:
@@ -386,40 +396,35 @@ class AdminService:
                 btc_amount = 0.0
                 ltc_amount = 0.0
                 sol_amount = 0.0
-                usdt_trc20_amount = 0.0
-                usdt_erc20_amount = 0.0
-                usdc_erc20_amount = 0.0
+                eth_amount = 0.0
+                bnb_amount = 0.0
                 for deposit in deposits:
                     match deposit.network:
                         case "BTC":
-                            btc_amount += deposit.amount / pow(10, 8)
+                            btc_amount += deposit.amount / pow(10, deposit.network.get_divider())
                         case "LTC":
-                            ltc_amount += deposit.amount / pow(10, 8)
+                            ltc_amount += deposit.amount / pow(10, deposit.network.get_divider())
                         case "SOL":
-                            sol_amount += deposit.amount / pow(10, 9)
-                        case "TRX":
-                            divided_amount = deposit.amount / pow(10, 6)
-                            fiat_amount += divided_amount
-                            usdt_trc20_amount += divided_amount
+                            sol_amount += deposit.amount / pow(10, deposit.network.get_divider())
                         case "ETH":
-                            divided_amount = deposit.amount / pow(10, 6)
-                            fiat_amount += divided_amount
-                            match deposit.token_name:
-                                case "USDT_ERC20":
-                                    usdt_erc20_amount += divided_amount
-                                case "USDC_ERC20":
-                                    usdc_erc20_amount += divided_amount
-                btc_price = await CryptoApiManager.get_crypto_prices(Cryptocurrency.BTC)
-                ltc_price = await CryptoApiManager.get_crypto_prices(Cryptocurrency.LTC)
-                sol_price = await CryptoApiManager.get_crypto_prices(Cryptocurrency.SOL)
-                fiat_amount += (btc_amount * btc_price) + (ltc_amount * ltc_price) + (sol_amount * sol_price)
+                            eth_amount += deposit.amount / pow(10, deposit.network.get_divider())
+                        case "BNB":
+                            bnb_amount += deposit.amount / pow(10, deposit.network.get_divider())
+                prices = await CryptoApiWrapper.get_crypto_prices()
+                btc_price = prices[Cryptocurrency.BTC.get_coingecko_name()][config.CURRENCY.value.lower()]
+                ltc_price = prices[Cryptocurrency.LTC.get_coingecko_name()][config.CURRENCY.value.lower()]
+                sol_price = prices[Cryptocurrency.SOL.get_coingecko_name()][config.CURRENCY.value.lower()]
+                eth_price = prices[Cryptocurrency.ETH.get_coingecko_name()][config.CURRENCY.value.lower()]
+                bnb_price = prices[Cryptocurrency.BNB.get_coingecko_name()][config.CURRENCY.value.lower()]
+                fiat_amount += ((btc_amount * btc_price) + (ltc_amount * ltc_price) + (sol_amount * sol_price)
+                                + (eth_amount * eth_price) + (bnb_amount * bnb_price))
                 kb_builder.row(AdminConstants.back_to_main_button, unpacked_cb.get_back_button())
                 return Localizator.get_text(BotEntity.ADMIN, "deposits_statistics_msg").format(
                     timedelta=unpacked_cb.timedelta, deposits_count=len(deposits),
                     btc_amount=btc_amount, ltc_amount=ltc_amount,
-                    sol_amount=sol_amount, usdt_trc20_amount=usdt_trc20_amount,
-                    usdt_erc20_amount=usdt_erc20_amount, usdc_erc20_amount=usdc_erc20_amount, fiat_amount=fiat_amount,
-                    currency_text=Localizator.get_currency_text()), kb_builder
+                    sol_amount=sol_amount, eth_amount=eth_amount,
+                    bnb_amount=bnb_amount,
+                    fiat_amount=fiat_amount, currency_text=Localizator.get_currency_text()), kb_builder
 
     @staticmethod
     async def get_wallet_menu() -> tuple[str, InlineKeyboardBuilder]:
@@ -430,7 +435,120 @@ class AdminService:
         return Localizator.get_text(BotEntity.ADMIN, "crypto_withdraw"), kb_builder
 
     @staticmethod
-    async def get_withdraw_menu():
+    async def get_withdraw_menu() -> tuple[str, InlineKeyboardBuilder]:
+        kb_builder = InlineKeyboardBuilder()
+        wallet_balance = await CryptoApiWrapper.get_wallet_balance()
+        [kb_builder.button(
+            text=Localizator.get_text(BotEntity.COMMON, f"{key.lower()}_top_up"),
+            callback_data=WalletCallback.create(1, Cryptocurrency(key))
+        ) for key in wallet_balance.keys()]
+        kb_builder.adjust(1)
+        kb_builder.row(AdminConstants.back_to_main_button)
+        msg_text = Localizator.get_text(BotEntity.ADMIN, "crypto_wallet").format(
+            btc_balance=wallet_balance.get('BTC') or 0.0,
+            ltc_balance=wallet_balance.get('LTC') or 0.0,
+            sol_balance=wallet_balance.get('SOL') or 0.0,
+            eth_balance=wallet_balance.get('ETH') or 0.0,
+            bnb_balance=wallet_balance.get('BNB') or 0.0
+        )
+        if sum(wallet_balance.values()) > 0:
+            msg_text += Localizator.get_text(BotEntity.ADMIN, "choose_crypto_to_withdraw")
+        return msg_text, kb_builder
+
+    @staticmethod
+    async def request_crypto_address(callback: CallbackQuery, state: FSMContext) -> tuple[str, InlineKeyboardBuilder]:
+        unpacked_cb = WalletCallback.unpack(callback.data)
         kb_builder = InlineKeyboardBuilder()
         kb_builder.row(AdminConstants.back_to_main_button)
-        return Localizator.get_text(BotEntity.ADMIN, "choose_crypto_to_withdraw"), kb_builder
+        await state.update_data(cryptocurrency=unpacked_cb.cryptocurrency)
+        await state.set_state(WalletStates.crypto_address)
+        return Localizator.get_text(BotEntity.ADMIN, "send_addr_request").format(
+            crypto_name=unpacked_cb.cryptocurrency.value), kb_builder
+
+    @staticmethod
+    async def calculate_withdrawal(message: Message, state: FSMContext) -> tuple[str, InlineKeyboardBuilder]:
+        kb_builder = InlineKeyboardBuilder()
+        if message.text and message.text.lower() == "cancel":
+            await state.clear()
+            return Localizator.get_text(BotEntity.COMMON, "cancelled"), kb_builder
+        to_address = message.text
+        state_data = await state.get_data()
+        await state.update_data(to_address=to_address)
+        cryptocurrency = Cryptocurrency(state_data['cryptocurrency'])
+        prices = await CryptoApiWrapper.get_crypto_prices()
+        price = prices[cryptocurrency.get_coingecko_name()][config.CURRENCY.value.lower()]
+
+        withdraw_dto = await CryptoApiWrapper.withdrawal(
+            cryptocurrency,
+            to_address,
+            True
+        )
+        withdraw_dto: WithdrawalDTO = WithdrawalDTO.model_validate(withdraw_dto, from_attributes=True)
+        if withdraw_dto.receivingAmount > 0:
+            kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
+                              callback_data=WalletCallback.create(2, cryptocurrency))
+        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
+                          callback_data=WalletCallback.create(0))
+        return Localizator.get_text(BotEntity.ADMIN, "crypto_withdrawal_info").format(
+            address=withdraw_dto.toAddress,
+            crypto_name=cryptocurrency.value,
+            withdrawal_amount=withdraw_dto.totalWithdrawalAmount,
+            withdrawal_amount_fiat=withdraw_dto.totalWithdrawalAmount * price,
+            currency_text=Localizator.get_currency_text(),
+            blockchain_fee_amount=withdraw_dto.blockchainFeeAmount,
+            blockchain_fee_fiat=withdraw_dto.blockchainFeeAmount * price,
+            service_fee_amount=withdraw_dto.serviceFeeAmount,
+            service_fee_fiat=withdraw_dto.serviceFeeAmount * price,
+            receiving_amount=withdraw_dto.receivingAmount,
+            receiving_amount_fiat=withdraw_dto.receivingAmount * price,
+        ), kb_builder
+
+    @staticmethod
+    async def withdraw_transaction(callback: CallbackQuery, state: FSMContext) -> tuple[str, InlineKeyboardBuilder]:
+        unpacked_cb = WalletCallback.unpack(callback.data)
+        state_data = await state.get_data()
+        kb_builder = InlineKeyboardBuilder()
+        withdraw_dto = await CryptoApiWrapper.withdrawal(
+            unpacked_cb.cryptocurrency,
+            state_data['to_address'],
+            False
+        )
+        withdraw_dto = WithdrawalDTO.model_validate(withdraw_dto, from_attributes=True)
+        match unpacked_cb.cryptocurrency:
+            case Cryptocurrency.LTC:
+                [kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "transaction"),
+                                   url=f"{CryptoApiWrapper.LTC_API_BASENAME_TX}{tx_id}") for tx_id in
+                 withdraw_dto.txIdList]
+            case Cryptocurrency.BTC:
+                [kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "transaction"),
+                                   url=f"{CryptoApiWrapper.BTC_API_BASENAME_TX}{tx_id}") for tx_id in
+                 withdraw_dto.txIdList]
+            case Cryptocurrency.SOL:
+                [kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "transaction"),
+                                   url=f"{CryptoApiWrapper.SOL_API_BASENAME_TX}{tx_id}") for tx_id in
+                 withdraw_dto.txIdList]
+            case Cryptocurrency.ETH:
+                [kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "transaction"),
+                                   url=f"{CryptoApiWrapper.ETH_API_BASENAME_TX}{tx_id}") for tx_id in
+                 withdraw_dto.txIdList]
+            case Cryptocurrency.BNB:
+                [kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "transaction"),
+                                   url=f"{CryptoApiWrapper.BNB_API_BASENAME_TX}{tx_id}") for tx_id in
+                 withdraw_dto.txIdList]
+        kb_builder.adjust(1)
+        await state.clear()
+        return Localizator.get_text(BotEntity.ADMIN, "transaction_broadcasted"), kb_builder
+
+    @staticmethod
+    async def validate_withdrawal_address(message: Message, state: FSMContext) -> bool:
+        address_regex = {
+            Cryptocurrency.BTC: re.compile(r'^bc1[a-zA-HJ-NP-Z0-9]{25,39}$'),
+            Cryptocurrency.LTC: re.compile(r'^ltc1[a-zA-HJ-NP-Z0-9]{26,}$'),
+            Cryptocurrency.ETH: re.compile(r'^0x[a-fA-F0-9]{40}$'),
+            Cryptocurrency.BNB: re.compile(r'^0x[a-fA-F0-9]{40}$'),
+            Cryptocurrency.SOL: re.compile(r'^[1-9A-HJ-NP-Za-km-z]{32,44}$'),
+        }
+        state_data = await state.get_data()
+        cryptocurrency = Cryptocurrency(state_data['cryptocurrency'])
+        regex = address_regex[cryptocurrency]
+        return bool(regex.match(message.text))
