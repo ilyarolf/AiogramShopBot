@@ -12,12 +12,14 @@ from fastapi import FastAPI, Request, status, HTTPException
 from db import create_db_and_tables
 import uvicorn
 from fastapi.responses import JSONResponse
+from processing.processing import processing_router
 from services.notification import NotificationService
 
 redis = Redis(host=config.REDIS_HOST, password=config.REDIS_PASSWORD)
 bot = Bot(config.TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=RedisStorage(redis))
 app = FastAPI()
+app.include_router(processing_router)
 
 
 @app.post(config.WEBHOOK_PATH)

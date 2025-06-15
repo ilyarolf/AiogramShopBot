@@ -4,6 +4,7 @@ from aiogram import types
 from aiogram.filters.callback_data import CallbackData
 
 from enums.bot_entity import BotEntity
+from enums.cryptocurrency import Cryptocurrency
 from utils.localizator import Localizator
 
 
@@ -160,8 +161,8 @@ class StatisticsCallback(BaseCallback, prefix="statistics"):
 
 
 class WalletCallback(BaseCallback, prefix="wallet"):
-    pass
+    cryptocurrency: Cryptocurrency | None
 
     @staticmethod
-    def create(level: int):
-        return WalletCallback(level=level)
+    def create(level: int, cryptocurrency: Cryptocurrency | None = None):
+        return WalletCallback(level=level, cryptocurrency=cryptocurrency)
