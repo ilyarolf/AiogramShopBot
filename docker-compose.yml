@@ -19,26 +19,8 @@ services:
     build:
       context: .
     container_name: 'AiogramShopBot'
-    environment:
-      WEBHOOK_PATH: "/"
-      WEBAPP_HOST: "0.0.0.0" # Don't touch this
-      WEBAPP_PORT: 5000 # Here your port
-      TOKEN: "1234567890:QWER.....TYI" # Here your bot token from botfather
-      NGROK_TOKEN: 'NGROK_TOKEN_HERE' # Here your ngrok token from ngrok.com
-      ADMIN_ID_LIST: "12345678,87654321" # Telegram ID's for admins;
-      SUPPORT_LINK: "https://t.me/YourUsername"
-      DB_NAME: "database.db" # Here your database name
-      DB_ENCRYPTION: "false" # DB encryption option
-      DB_PASS: "1234567890" # Here your database password (Required only if DB_ENCRYPTION-"true”)
-      PAGE_ENTRIES: 8 # Items per page
-      BOT_LANGUAGE: "en" # The name of your file from the l10n folder without the .json suffix
-      MULTIBOT: "false" # Allows the use of a multibot
-      ETHPLORER_API_KEY: "" # API key from Ethplorer
-      CURRENCY: "USD" # fiat currency
-      RUNTIME_ENVIRONMENT: "PROD"
-      WEBHOOK_SECRET_TOKEN: "1234567890" # Any string you want
-      REDIS_HOST: "redis"
-      REDIS_PASSWORD: "1234567890" # Any string you want
+    env_file:
+      - .env
     labels:
       caddy: YOUR-DOMAIN-GOES-HERE
       caddy.reverse_proxy: "bot:5000"

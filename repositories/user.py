@@ -10,7 +10,6 @@ from callbacks import StatisticsTimeDelta
 from db import session_execute, session_flush
 
 from models.user import UserDTO, User
-from utils.CryptoAddressGenerator import CryptoAddressGenerator
 
 
 class UserRepository:
@@ -35,15 +34,7 @@ class UserRepository:
 
     @staticmethod
     async def create(user_dto: UserDTO, session: Session | AsyncSession) -> int:
-        crypto_addr_gen = CryptoAddressGenerator()
-        crypto_addresses = crypto_addr_gen.get_addresses()
-        user_dto.btc_address = crypto_addresses['btc']
-        user_dto.ltc_address = crypto_addresses['ltc']
-        user_dto.trx_address = crypto_addresses['trx']
-        user_dto.eth_address = crypto_addresses['eth']
-        user_dto.sol_address = crypto_addresses['sol']
-        user_dto.seed = crypto_addr_gen.mnemonic_str
-        user = User(**user_dto.__dict__)
+        user = User(**user_dto.model_dump())
         session.add(user)
         await session_flush(session)
         return user.id

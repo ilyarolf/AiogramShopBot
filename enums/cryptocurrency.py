@@ -1,38 +1,37 @@
 from enum import Enum
 
+import config
+
 
 class Cryptocurrency(str, Enum):
+    BNB = "BNB"
     BTC = "BTC"
     LTC = "LTC"
+    ETH = "ETH"
     SOL = "SOL"
-    USDT_TRC20 = "USDT_TRC20"
-    USDT_ERC20 = "USDT_ERC20"
-    USDC_ERC20 = "USDC_ERC20"
 
-    def get_balance_field(self) -> str:
+    def get_divider(self):
         match self:
             case Cryptocurrency.BTC:
-                return "btc_balance"
+                return 8
             case Cryptocurrency.LTC:
-                return "ltc_balance"
+                return 8
+            case Cryptocurrency.ETH:
+                return 18
             case Cryptocurrency.SOL:
-                return "sol_balance"
-            case Cryptocurrency.USDT_TRC20:
-                return "usdt_trc20_balance"
-            case Cryptocurrency.USDT_ERC20:
-                return "usdt_erc20_balance"
-            case Cryptocurrency.USDC_ERC20:
-                return "usdc_erc20_balance"
+                return 9
+            case Cryptocurrency.BNB:
+                return 18
 
-    def get_address_field(self) -> str:
+    def get_coingecko_name(self) -> str:
         match self:
             case Cryptocurrency.BTC:
-                return "btc_address"
+                return "bitcoin"
             case Cryptocurrency.LTC:
-                return "ltc_address"
+                return "litecoin"
+            case Cryptocurrency.ETH:
+                return "ethereum"
+            case Cryptocurrency.BNB:
+                return "binancecoin"
             case Cryptocurrency.SOL:
-                return "sol_address"
-            case Cryptocurrency.USDT_TRC20:
-                return "trx_address"
-            case _:
-                return "eth_address"
+                return "solana"

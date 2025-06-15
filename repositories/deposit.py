@@ -33,3 +33,42 @@ class DepositRepository:
         session.add(dep)
         await session_flush(session)
         return dep.id
+
+    @staticmethod
+    async def get_by_user_id(user_id: int, session: Session | AsyncSession):
+        stmt = (select(Deposit)
+                .where(Deposit.user_id == user_id))
+        deposits = await session_execute(stmt, session)
+        deposits = deposits.scalars().all()
+        return deposits
+
+    @staticmethod
+    async def get_not_withdrawn_deposits(cryptocurrency: Cryptocurrency, session: Session | AsyncSession) -> list[DepositDTO]:
+        stmt = (select(Deposit)
+                .where(Deposit.is_withdrawn == False,
+                       Deposit.network == cryptocurrency.value,
+                       Deposit.token_name == None))
+        deposits = await session_execute(stmt, session)
+        return [DepositDTO.model_validate(deposit, from_attributes=True) for deposit in deposits.scalars().all()]
+
+    @staticmethod
+    async def set_deposit_withdrawn(txid: str, session: Session | AsyncSession):
+        stmt = (update(Deposit)
+                .where(Deposit.tx_id == txid)
+                .values(is_withdrawn=True))
+        await session_execute(stmt, session)
+
+    @staticmethod
+    async def get_deposits_to_withdraw(cryptocurrency: Cryptocurrency, session: Session | AsyncSession) -> int:
+        stmt = (select(func.count(Deposit.id))
+                .where(Deposit.is_withdrawn == False,
+                       Deposit.network == cryptocurrency.value))
+        count = await session_execute(stmt, session)
+        return count.scalar_one()
+
+    @staticmethod
+    async def set_withdrawn_by_network(cryptocurrency: Cryptocurrency, session: Session | AsyncSession):
+        stmt = (update(Deposit)
+                .where(Deposit.network == cryptocurrency.value)
+                .values(is_withdrawn=True))
+        await session_execute(stmt, session)
