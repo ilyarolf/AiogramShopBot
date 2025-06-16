@@ -22,6 +22,12 @@ def upgrade() -> None:
     op.execute('PRAGMA foreign_keys = 0;')
     op.execute('CREATE TABLE sqlitestudio_temp_table AS SELECT * FROM users;')
     with op.batch_alter_table('users', schema=None) as batch_op:
+        batch_op.drop_constraint("check_btc_balance_positive")
+        batch_op.drop_constraint("check_ltc_balance_positive")
+        batch_op.drop_constraint("check_sol_balance_positive")
+        batch_op.drop_constraint("check_usdt_erc20_balance_positive")
+        batch_op.drop_constraint("check_usdc_erc20_balance_positive")
+        batch_op.drop_constraint("check_usdt_trc20_balance_positive")
         batch_op.drop_column('seed')
         batch_op.drop_column('btc_balance')
         batch_op.drop_column('usdc_erc20_balance')
