@@ -33,7 +33,7 @@ async def send_everyone(**kwargs):
 async def receive_admin_message(message: Message, state: FSMContext):
     await state.clear()
     if message.text and message.text.lower() == "cancel":
-        await message.answer(text=Localizator.get_text(BotEntity.ADMIN, "cancelled"))
+        await message.answer(text=Localizator.get_text(BotEntity.COMMON, "cancelled"))
     else:
         await message.copy_to(message.chat.id,
                               reply_markup=AdminAnnouncementsConstants.get_confirmation_builder(
