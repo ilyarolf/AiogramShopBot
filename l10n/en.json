@@ -159,6 +159,7 @@
     "notification_payment_expired": "Your payment with ID {payment_id} has expired.",
     "status_pending": "\uD83D\uDFE1 Pending.",
     "status_paid": "\uD83D\uDFE2 Paid.",
-    "status_expired": "\uD83D\uDD34 Expired."
+    "status_expired": "\uD83D\uDD34 Expired.",
+    "too_many_payment_request": "<b>⏳ Too many payment request!\nPlease wait and try again later.</b>"
   }
 }
