@@ -46,14 +46,22 @@ class NotificationService:
     @staticmethod
     async def send_to_user(message: str, telegram_id: int):
         bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-        await bot.send_message(telegram_id, message)
-        await bot.session.close()
+        try:
+            await bot.send_message(telegram_id, message)
+        except Exception as e:
+            logging.error(e)
+        finally:
+            await bot.session.close()
 
     @staticmethod
     async def edit_message(message: str, source_message_id: int, chat_id: int):
         bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-        await bot.edit_message_text(text=message, chat_id=chat_id, message_id=source_message_id)
-        await bot.session.close()
+        try:
+            await bot.edit_message_text(text=message, chat_id=chat_id, message_id=source_message_id)
+        except Exception as e:
+            logging.error(e)
+        finally:
+            await bot.session.close()
 
     @staticmethod
     async def payment_expired(user_dto: UserDTO, payment_dto: ProcessingPaymentDTO, table_payment_dto: TablePaymentDTO):
@@ -68,7 +76,8 @@ class NotificationService:
             currency_text=Localizator.get_currency_text(),
             status=Localizator.get_text(BotEntity.USER, "status_expired")
         )
-        await NotificationService.edit_message(edited_payment_message, table_payment_dto.message_id, user_dto.telegram_id)
+        await NotificationService.edit_message(edited_payment_message, table_payment_dto.message_id,
+                                               user_dto.telegram_id)
         await NotificationService.send_to_user(msg, user_dto.telegram_id)
 
     @staticmethod
@@ -88,7 +97,8 @@ class NotificationService:
             currency_text=Localizator.get_currency_text(),
             status=Localizator.get_text(BotEntity.USER, "status_paid")
         )
-        await NotificationService.edit_message(edited_payment_message, table_payment_dto.message_id, user_dto.telegram_id)
+        await NotificationService.edit_message(edited_payment_message, table_payment_dto.message_id,
+                                               user_dto.telegram_id)
         if user_dto.telegram_username:
             message = Localizator.get_text(BotEntity.ADMIN, "notification_new_deposit_username").format(
                 username=user_dto.telegram_username,
