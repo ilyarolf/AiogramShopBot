@@ -11,7 +11,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./caddy/caddy_data:/data
-    restart: unless-stopped
+    restart: always
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -37,6 +37,7 @@ services:
     volumes:
       - ./AiogramShopBot:/bot/data # endswith your database name
     command: [ "python", "-u", "run.py" ]
+    restart: always
 
   redis:
     image: redis:latest
