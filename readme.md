@@ -58,6 +58,8 @@ Litecoin, Solana, Ethereum and Binance-Coin, which allows you to sell digital go
     + [3.6 🔔 Admin notifications](#36--admin-notifications)
         - [3.6.1 Notification to admin about new deposit](#361-notification-to-admin-about-new-deposit)
         - [3.6.2 Notification to admin about new buy](#362-notification-to-admin-about-new-buy)
+    + [3.8 👛 Wallet](#38--wallet)
+        - [3.8.1 Cryptocurrency withdrawal](#381-cryptocurrency-withdrawal-functionality)
 * [4.0 Multibot (Experimental functionality)](#40-multibot-experimental-functionality)
     + [4.1 Starting the multibot](#41-starting-the-multibot)
 * [📋 Todo List](#-todo-list)
@@ -419,7 +421,7 @@ After each purchase, you will receive a message in the format:
 
 ![img](https://i.imgur.com/MeRkCYD.gif)
 
-### 3.8 Wallet
+### 3.8 👛 Wallet
 
 #### 3.8.1 Cryptocurrency withdrawal functionality
 
