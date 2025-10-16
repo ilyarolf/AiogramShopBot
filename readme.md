@@ -118,6 +118,18 @@ Litecoin, Solana, Ethereum and Binance-Coin, which allows you to sell digital go
 * Set your domain in the docker-compose.yml file to the bot service in the labels caddy section. {YOUR_IP_ADDRESS}.sslip.io
 * Run the ``docker-compose up`` command.
 
+#### Local Development - Redis only
+
+For local development, you can run only Redis in Docker while running the bot directly on your machine:
+
+* Start Redis: `docker-compose -f docker-compose.dev.yml up -d`
+* Verify Redis is running: `docker ps | grep redis`
+* Run the bot locally: `python run.py`
+* Stop Redis when done: `docker-compose -f docker-compose.dev.yml down`
+
+> **Note**
+> The `docker-compose.dev.yml` file is configured to use the Redis password from your `.env` file (default: `dev-redis-password-123`).
+
 #### Development and production mode
 
 For local development on a computer which is not internet facing, set the "RUNTIME_ENVIRONMENT" to "dev". The bot will

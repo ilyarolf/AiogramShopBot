@@ -1,0 +1,19 @@
+version: '3.8'
+
+# Local Development - Redis only
+# Usage: docker-compose -f docker-compose.dev.yml up -d
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: shopbot-redis-dev
+    command: redis-server --requirepass dev-redis-password-123
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    restart: unless-stopped
+
+volumes:
+  redis_dev_data:
+    driver: local
