@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from callbacks import AllCategoriesCallback, CartCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
+from enums.cryptocurrency import Cryptocurrency
 from handlers.common.common import add_pagination_buttons
 from models.buy import BuyDTO
 from models.buyItem import BuyItemDTO
@@ -16,10 +17,12 @@ from repositories.buyItem import BuyItemRepository
 from repositories.cart import CartRepository
 from repositories.cartItem import CartItemRepository
 from repositories.item import ItemRepository
+from repositories.order import OrderRepository
 from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
 from services.message import MessageService
 from services.notification import NotificationService
+from services.order import OrderService
 from utils.localizator import Localizator
 
 
@@ -172,3 +175,133 @@ class CartService:
                 subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
                 msg += subcategory.name + "\n"
             return msg, kb_builder
+
+    # ========================================
+    # NEUE INVOICE-BASED CHECKOUT METHODEN
+    # ========================================
+
+    @staticmethod
+    async def get_crypto_selection_for_checkout(
+        callback: CallbackQuery,
+        session: AsyncSession | Session
+    ) -> tuple[str, InlineKeyboardBuilder]:
+        """
+        Zeigt Crypto-Auswahl nach Checkout-Confirmation.
+        Nutzt bestehende Localization-Keys von Wallet (btc_top_up, etc.)
+        """
+        user = await UserRepository.get_by_tgid(callback.from_user.id, session)
+        cart_items = await CartItemRepository.get_all_by_user_id(user.id, session)
+
+        # Prüfe: Hat User bereits eine offene Order?
+        pending_order = await OrderRepository.get_pending_order_by_user(user.id, session)
+        if pending_order:
+            kb_builder = InlineKeyboardBuilder()
+            kb_builder.row(CartCallback.create(0).get_back_button())
+            return Localizator.get_text(BotEntity.USER, "pending_order_exists"), kb_builder
+
+        # Prüfe: Stock verfügbar?
+        out_of_stock = []
+        for cart_item in cart_items:
+            item_dto = ItemDTO(category_id=cart_item.category_id, subcategory_id=cart_item.subcategory_id)
+            available = await ItemRepository.get_available_qty(item_dto, session)
+            if available < cart_item.quantity:
+                out_of_stock.append(cart_item)
+
+        if out_of_stock:
+            kb_builder = InlineKeyboardBuilder()
+            kb_builder.row(CartCallback.create(0).get_back_button())
+            msg = Localizator.get_text(BotEntity.USER, "out_of_stock")
+            for item in out_of_stock:
+                subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
+                msg += subcategory.name + "\n"
+            return msg, kb_builder
+
+        # Zeige Crypto-Buttons (reusing Wallet localization)
+        message_text = Localizator.get_text(BotEntity.USER, "choose_top_up_method")
+        kb_builder = InlineKeyboardBuilder()
+
+        # Crypto-Buttons (nutzt bestehende Localization)
+        kb_builder.button(
+            text=Localizator.get_text(BotEntity.COMMON, "btc_top_up"),
+            callback_data=CartCallback.create(4, cryptocurrency=Cryptocurrency.BTC)
+        )
+        kb_builder.button(
+            text=Localizator.get_text(BotEntity.COMMON, "eth_top_up"),
+            callback_data=CartCallback.create(4, cryptocurrency=Cryptocurrency.ETH)
+        )
+        kb_builder.button(
+            text=Localizator.get_text(BotEntity.COMMON, "ltc_top_up"),
+            callback_data=CartCallback.create(4, cryptocurrency=Cryptocurrency.LTC)
+        )
+        kb_builder.button(
+            text=Localizator.get_text(BotEntity.COMMON, "sol_top_up"),
+            callback_data=CartCallback.create(4, cryptocurrency=Cryptocurrency.SOL)
+        )
+        kb_builder.button(
+            text=Localizator.get_text(BotEntity.COMMON, "usdt_top_up"),
+            callback_data=CartCallback.create(4, cryptocurrency=Cryptocurrency.USDT)
+        )
+
+        kb_builder.adjust(2)
+        kb_builder.row(CartCallback.create(0).get_back_button())
+
+        return message_text, kb_builder
+
+    @staticmethod
+    async def create_order_with_selected_crypto(
+        callback: CallbackQuery,
+        session: AsyncSession | Session
+    ) -> tuple[str, InlineKeyboardBuilder]:
+        """
+        Erstellt Order + Invoice nach Crypto-Auswahl.
+
+        Flow:
+        1. Hole Cart-Items
+        2. Erstelle Order (inkl. Item-Reservierung + Invoice via KryptoExpress)
+        3. Leere Cart
+        4. Zeige Payment-Instruktionen
+        """
+        unpacked_cb = CartCallback.unpack(callback.data)
+        crypto_currency = unpacked_cb.cryptocurrency
+
+        if not crypto_currency:
+            raise ValueError("No cryptocurrency selected")
+
+        user = await UserRepository.get_by_tgid(callback.from_user.id, session)
+        cart_items = await CartItemRepository.get_all_by_user_id(user.id, session)
+
+        if not cart_items:
+            kb_builder = InlineKeyboardBuilder()
+            return Localizator.get_text(BotEntity.USER, "no_cart_items"), kb_builder
+
+        kb_builder = InlineKeyboardBuilder()
+
+        try:
+            # Erstelle Order (inkl. Reservierung + Invoice)
+            order = await OrderService.create_order_from_cart(
+                user_id=user.id,
+                cart_items=cart_items,
+                crypto_currency=crypto_currency,
+                session=session
+            )
+
+            # Leere Cart
+            for cart_item in cart_items:
+                await CartItemRepository.remove_from_cart(cart_item.id, session)
+
+            await session_commit(session)
+
+            # Success-Message mit Payment-Instruktionen
+            # TODO: Invoice-Details aus InvoiceRepository holen und anzeigen
+            message_text = Localizator.get_text(BotEntity.USER, "order_created_success").format(
+                order_id=order.id,
+                total_price=order.total_price,
+                currency_sym=Localizator.get_currency_symbol()
+            )
+
+            return message_text, kb_builder
+
+        except ValueError as e:
+            # Stock nicht ausreichend (trotz vorheriger Prüfung → Race Condition!)
+            kb_builder.row(CartCallback.create(0).get_back_button())
+            return str(e), kb_builder

@@ -80,6 +80,8 @@
     "cancelled": "❌ <b>Abgebrochen!</b>",
     "decline": "❌ Ablehnen",
     "ltc_top_up": "Ł LTC",
+    "eth_top_up": "Ξ ETH",
+    "usdt_top_up": "₮ USDT",
     "pagination_first": "⏪ Erste",
     "pagination_last": "⏩ Letzte",
     "pagination_next": "➡️ Nächste",
@@ -142,6 +144,8 @@
     "delete_cart_item_confirmation": "Artikel aus dem Warenkorb entfernen?",
     "delete_cart_item_confirmation_text": "Artikel aus dem Warenkorb entfernt!",
     "item_added_to_cart": "Artikel wurde dem Warenkorb hinzugefügt",
-    "updated_cart": "Warenkorb aktualisiert"
+    "updated_cart": "Warenkorb aktualisiert",
+    "pending_order_exists": "⚠️ <b>Sie haben bereits eine offene Bestellung!</b>\n\nBitte schließen Sie zuerst Ihre aktuelle Bestellung ab oder warten Sie, bis diese abgelaufen ist.",
+    "order_created_success": "✅ <b>Bestellung erfolgreich erstellt!</b>\n\n<b>Bestellnummer:</b> #{order_id}\n<b>Gesamtpreis:</b> {currency_sym}{total_price:.2f}\n\n💳 <b>Zahlungsinformationen werden geladen...</b>"
   }
 }

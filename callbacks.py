@@ -57,12 +57,13 @@ class CartCallback(BaseCallback, prefix="cart"):
     cart_id: int
     cart_item_id: int
     confirmation: bool
+    cryptocurrency: Cryptocurrency | None
 
     @staticmethod
     def create(level: int = 0, page: int = 0, cart_id: int = -1, cart_item_id: int = -1,
-               confirmation=False):
+               confirmation=False, cryptocurrency: Cryptocurrency | None = None):
         return CartCallback(level=level, page=page, cart_id=cart_id, cart_item_id=cart_item_id,
-                            confirmation=confirmation)
+                            confirmation=confirmation, cryptocurrency=cryptocurrency)
 
 
 class AdminMenuCallback(BaseCallback, prefix="admin_menu"):

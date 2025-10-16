@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import select, func, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -99,5 +101,52 @@ class ItemRepository:
         stmt = select(Item).where(Item.is_sold == False)
         items = await session_execute(stmt, session)
         return [ItemDTO.model_validate(item, from_attributes=True) for item in items.scalars().all()]
+
+    @staticmethod
+    async def reserve_items_for_order(
+        subcategory_id: int,
+        quantity: int,
+        order_id: int,
+        session: Session | AsyncSession
+    ) -> list[ItemDTO]:
+        """
+        Reserviert Items für eine Order mit SELECT FOR UPDATE (Race-Condition-safe).
+
+        Returns:
+            Liste von reservierten ItemDTOs
+
+        Raises:
+            ValueError wenn nicht genug Items verfügbar
+        """
+        # SELECT FOR UPDATE: Sperre verfügbare Items
+        stmt = (
+            select(Item)
+            .where(Item.subcategory_id == subcategory_id)
+            .where(Item.is_sold == False)
+            .where(Item.order_id == None)  # Nur nicht-reservierte
+            .limit(quantity)
+            .with_for_update()  # 🔒 Row-Level Lock!
+        )
+
+        result = await session_execute(stmt, session)
+        items = result.scalars().all()
+
+        # Check: Genug Items verfügbar?
+        if len(items) < quantity:
+            raise ValueError(f"Insufficient stock: requested {quantity}, available {len(items)}")
+
+        # Reserviere Items (nutzt ORM-Objects, update wird später über session.commit())
+        for item in items:
+            item.order_id = order_id
+            item.reserved_at = datetime.now()
+
+        return [ItemDTO.model_validate(item, from_attributes=True) for item in items]
+
+    @staticmethod
+    async def get_by_order_id(order_id: int, session: Session | AsyncSession) -> list[ItemDTO]:
+        """Holt alle Items einer Order"""
+        stmt = select(Item).where(Item.order_id == order_id)
+        result = await session_execute(stmt, session)
+        return [ItemDTO.model_validate(item, from_attributes=True) for item in result.scalars().all()]
 
 

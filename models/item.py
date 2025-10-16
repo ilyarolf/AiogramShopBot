@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, CheckConstraint
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, CheckConstraint
 from sqlalchemy.orm import relationship, backref
 
 from models.base import Base
@@ -24,6 +24,10 @@ class Item(Base):
     is_new = Column(Boolean, nullable=False, default=True)
     description = Column(String, nullable=False)
 
+    # Order-Zuordnung (Reservierung + Verkauf)
+    order_id = Column(Integer, ForeignKey('orders.id'), nullable=True)
+    reserved_at = Column(DateTime, nullable=True)
+
     __table_args__ = (
         CheckConstraint('price > 0', name='check_price_positive'),
     )
@@ -38,3 +42,5 @@ class ItemDTO(BaseModel):
     is_sold: bool | None = None
     is_new: bool | None = None
     description: str | None = None
+    order_id: int | None = None
+    reserved_at: datetime | None = None

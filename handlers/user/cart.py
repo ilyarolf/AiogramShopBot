@@ -52,6 +52,27 @@ async def buy_processing(**kwargs):
     await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
 
 
+# ========================================
+# NEUE INVOICE-BASED CHECKOUT HANDLER
+# ========================================
+
+async def crypto_selection_for_checkout(**kwargs):
+    """Level 3: Zeigt Crypto-Auswahl nach Checkout-Confirmation (Invoice-Flow)"""
+    callback = kwargs.get("callback")
+    session = kwargs.get("session")
+    msg, kb_builder = await CartService.get_crypto_selection_for_checkout(callback, session)
+    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+
+
+async def create_order_with_crypto(**kwargs):
+    """Level 4: Erstellt Order + Invoice mit gewählter Crypto"""
+    callback = kwargs.get("callback")
+    session = kwargs.get("session")
+    await callback.message.edit_reply_markup()  # Entferne Buttons während Processing
+    msg, kb_builder = await CartService.create_order_with_selected_crypto(callback, session)
+    await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
+
+
 @cart_router.callback_query(CartCallback.filter(), IsUserExistFilter())
 async def navigate_cart_process(callback: CallbackQuery, callback_data: CartCallback, session: AsyncSession | Session):
     current_level = callback_data.level
@@ -60,7 +81,9 @@ async def navigate_cart_process(callback: CallbackQuery, callback_data: CartCall
         0: show_cart,
         1: delete_cart_item,
         2: checkout_processing,
-        3: buy_processing
+        3: crypto_selection_for_checkout,      # INVOICE-FLOW: Crypto-Auswahl
+        4: create_order_with_crypto,           # INVOICE-FLOW: Order-Erstellung
+        # 3: buy_processing  # OLD WALLET-FLOW (auskommentiert für Migration)
     }
 
     current_level_function = levels[current_level]
