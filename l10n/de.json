@@ -146,6 +146,13 @@
     "item_added_to_cart": "Artikel wurde dem Warenkorb hinzugefügt",
     "updated_cart": "Warenkorb aktualisiert",
     "pending_order_exists": "⚠️ <b>Sie haben bereits eine offene Bestellung!</b>\n\nBitte schließen Sie zuerst Ihre aktuelle Bestellung ab oder warten Sie, bis diese abgelaufen ist.",
-    "order_created_success": "✅ <b>Bestellung erfolgreich erstellt!</b>\n\n<b>Bestellnummer:</b> #{order_id}\n<b>Gesamtpreis:</b> {currency_sym}{total_price:.2f}\n\n💳 <b>Zahlungsinformationen werden geladen...</b>"
+    "choose_payment_crypto": "💳 <b>Wählen Sie eine Kryptowährung für die Zahlung:</b>",
+    "order_created_success": "✅ <b>Bestellung erfolgreich erstellt!</b>\n\n📋 <b>Bestellcode:</b> {invoice_number}\n💰 <b>Gesamtpreis:</b> {currency_sym}{total_price:.2f}\n\n💳 <b>Zahlungsdetails:</b>\n\n🪙 <b>Zu zahlender Betrag:</b>\n<code>{crypto_amount}</code> {crypto_currency}\n\n📬 <b>Zahlungsadresse:</b>\n<code>{payment_address}</code>\n\n⏰ <b>Läuft ab um:</b> {expires_at} Uhr ({expires_minutes} Minuten)\n\n<i>Bitte senden Sie den exakten Betrag an die angegebene Adresse. Die Bestellung wird automatisch nach erfolgter Zahlung abgeschlossen.</i>",
+    "order_pending": "📋 <b>Ihre offene Bestellung:</b>\n\n📋 <b>Bestellcode:</b> {invoice_number}\n💰 <b>Gesamtpreis:</b> {currency_sym}{total_price:.2f}\n\n💳 <b>Zahlungsdetails:</b>\n\n🪙 <b>Zu zahlender Betrag:</b>\n<code>{crypto_amount}</code> {crypto_currency}\n\n📬 <b>Zahlungsadresse:</b>\n<code>{payment_address}</code>\n\n⏰ <b>Läuft ab um:</b> {expires_at} Uhr (noch {expires_minutes} Minuten)\n\n<i>Bitte senden Sie den exakten Betrag an die angegebene Adresse. Die Bestellung wird automatisch nach erfolgter Zahlung abgeschlossen.</i>",
+    "order_expired": "❌ <b>Bestellung abgelaufen!</b>\n\n📋 <b>Bestellcode:</b> {invoice_number}\n💰 <b>Gesamtpreis:</b> {currency_sym}{total_price:.2f}\n\n💳 <b>Zahlungsdetails:</b>\n\n🪙 <b>Zu zahlender Betrag:</b>\n<code>{crypto_amount}</code> {crypto_currency}\n\n📬 <b>Zahlungsadresse:</b>\n<code>{payment_address}</code>\n\n⏰ <b>Abgelaufen um:</b> {expires_at} Uhr\n\n<i>Diese Bestellung ist abgelaufen. Die reservierten Artikel wurden wieder freigegeben. Sie können eine neue Bestellung aufgeben.</i>",
+    "cancel_order_free": "❌ Bestellung stornieren (kostenlos)",
+    "cancel_order_strike": "⚠️ Bestellung stornieren (Strike!)",
+    "order_cancelled_free": "✅ <b>Bestellung erfolgreich storniert!</b>\n\nDie reservierten Artikel wurden wieder freigegeben. Sie können jetzt eine neue Bestellung aufgeben.",
+    "order_cancelled_with_strike": "✅ <b>Bestellung storniert!</b>\n\n⚠️ <b>Achtung:</b> Da die Grace Period ({grace_period} Minuten) abgelaufen war, wurde ein Strike vermerkt.\n\nDie reservierten Artikel wurden wieder freigegeben."
   }
 }

@@ -14,12 +14,16 @@ import uvicorn
 from fastapi.responses import JSONResponse
 from processing.processing import processing_router
 from services.notification import NotificationService
+from jobs.payment_timeout_job import PaymentTimeoutJob
 
 redis = Redis(host=config.REDIS_HOST, password=config.REDIS_PASSWORD)
 bot = Bot(config.TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=RedisStorage(redis))
 app = FastAPI()
 app.include_router(processing_router)
+
+# Initialize payment timeout job
+payment_timeout_job = PaymentTimeoutJob(check_interval_seconds=60)
 
 
 @app.post(config.WEBHOOK_PATH)
@@ -44,6 +48,10 @@ async def on_startup():
         url=config.WEBHOOK_URL,
         secret_token=config.WEBHOOK_SECRET_TOKEN
     )
+
+    # Start payment timeout job
+    await payment_timeout_job.start()
+
     for admin in config.ADMIN_ID_LIST:
         try:
             await bot.send_message(admin, 'Bot is working')
@@ -54,6 +62,10 @@ async def on_startup():
 @app.on_event("shutdown")
 async def on_shutdown():
     logging.warning('Shutting down..')
+
+    # Stop payment timeout job
+    await payment_timeout_job.stop()
+
     await bot.delete_webhook()
     await dp.storage.close()
     logging.warning('Bye!')

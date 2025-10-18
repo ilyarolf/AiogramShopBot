@@ -25,27 +25,27 @@ class OrderService:
         session: AsyncSession | Session
     ) -> OrderDTO:
         """
-        Erstellt Order aus Cart-Items mit Reservierung und Invoice.
+        Creates order from cart items with reservation and invoice.
 
         Args:
             user_id: User ID
-            cart_items: Cart-Items
-            crypto_currency: Gewählte Crypto-Währung für Payment
-            session: DB Session
+            cart_items: Cart items
+            crypto_currency: Selected cryptocurrency for payment
+            session: DB session
 
         Returns:
             OrderDTO
 
         Raises:
-            ValueError: Bei insufficient stock
+            ValueError: On insufficient stock
         """
 
-        # 1. Berechne Total und prüfe Stock
+        # 1. Calculate total and check stock
         total_price = 0.0
         reserved_items = []
 
         for cart_item in cart_items:
-            # Hole Preis
+            # Get price
             item_dto = ItemDTO(
                 category_id=cart_item.category_id,
                 subcategory_id=cart_item.subcategory_id
@@ -53,7 +53,7 @@ class OrderService:
             price = await ItemRepository.get_price(item_dto, session)
             total_price += price * cart_item.quantity
 
-        # 2. Erstelle Order
+        # 2. Create order
         expires_at = datetime.now() + timedelta(minutes=config.ORDER_TIMEOUT_MINUTES)
 
         order_dto = OrderDTO(
@@ -65,9 +65,11 @@ class OrderService:
         )
 
         order_id = await OrderRepository.create(order_dto, session)
-        order_dto.id = order_id
 
-        # 3. Reserviere Items (mit SELECT FOR UPDATE in Repository!)
+        # Reload order from DB to get created_at (set by func.now() in DB)
+        order_dto = await OrderRepository.get_by_id(order_id, session)
+
+        # 3. Reserve items (with SELECT FOR UPDATE in repository!)
         try:
             for cart_item in cart_items:
                 items = await ItemRepository.reserve_items_for_order(
@@ -78,10 +80,10 @@ class OrderService:
                 )
                 reserved_items.extend(items)
         except ValueError as e:
-            # Stock nicht ausreichend → Exception durchreichen
+            # Insufficient stock → pass exception through
             raise e
 
-        # 4. Erstelle Invoice
+        # 4. Create invoice
         await InvoiceService.create_invoice_with_kryptoexpress(
             order_id=order_id,
             fiat_amount=total_price,
@@ -98,20 +100,67 @@ class OrderService:
         session: AsyncSession | Session
     ):
         """
-        Schließt Order ab nach erfolgreichem Payment.
-        - Markiert Items als verkauft
-        - Setzt Order-Status auf PAID
+        Completes order after successful payment.
+        - Marks items as sold
+        - Sets order status to PAID
         """
 
-        # Hole Items der Order
+        # Get order items
         items = await ItemRepository.get_by_order_id(order_id, session)
 
-        # Markiere als verkauft
+        # Mark as sold
         for item in items:
             item.is_sold = True
 
         await ItemRepository.update(items, session)
 
-        # Update Order Status
+        # Update order status
         await OrderRepository.update_status(order_id, OrderStatus.PAID, session)
         await session_commit(session)
+
+    @staticmethod
+    async def cancel_order_by_user(
+        order_id: int,
+        session: AsyncSession | Session
+    ) -> tuple[bool, str]:
+        """
+        Cancels an order by the user.
+
+        Returns:
+            tuple[bool, str]: (within_grace_period, message)
+                - within_grace_period: True if cancelled for free (no strike)
+                - message: Confirmation message
+
+        Raises:
+            ValueError: If order not found or already completed
+        """
+        from datetime import datetime, timezone
+
+        # Get order
+        order = await OrderRepository.get_by_id(order_id, session)
+
+        if not order:
+            raise ValueError("Order not found")
+
+        if order.status != OrderStatus.PENDING_PAYMENT:
+            raise ValueError("Order cannot be cancelled (Status: {})".format(order.status.value))
+
+        # Check grace period
+        time_elapsed = (datetime.utcnow() - order.created_at).total_seconds() / 60  # Minutes
+        within_grace_period = time_elapsed <= config.ORDER_CANCEL_GRACE_PERIOD_MINUTES
+
+        # Release reserved items
+        items = await ItemRepository.get_by_order_id(order_id, session)
+        for item in items:
+            item.order_id = None  # Remove reservation
+        await ItemRepository.update(items, session)
+
+        # Set order status
+        await OrderRepository.update_status(order_id, OrderStatus.CANCELLED_BY_USER, session)
+
+        # TODO: If not within_grace_period → create strike!
+        # (Strike system needs to be implemented)
+
+        await session_commit(session)
+
+        return within_grace_period, "Order successfully cancelled"

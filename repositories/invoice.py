@@ -40,27 +40,34 @@ class InvoiceRepository:
 
     @staticmethod
     async def get_next_invoice_number(session: Session | AsyncSession) -> str:
-        """Generiert nächste Invoice-Nummer (INV-2025-00001)"""
+        """
+        Generiert eindeutige Invoice-Nummer im Format: YYYY-XXXXX
+        Beispiel: 2025-AX7D8
+
+        5-stelliger alphanumerischer Code (Großbuchstaben + Zahlen ohne 0/O/1/I zur Vermeidung von Verwechslungen)
+        """
+        import random
+        import string
         from datetime import datetime
 
         year = datetime.now().year
-        prefix = f"INV-{year}-"
 
-        # Finde höchste Nummer für dieses Jahr
-        stmt = (
-            select(Invoice.invoice_number)
-            .where(Invoice.invoice_number.like(f"{prefix}%"))
-            .order_by(Invoice.invoice_number.desc())
-            .limit(1)
-        )
-        result = await session_execute(stmt, session)
-        last_invoice = result.scalar_one_or_none()
+        # Alphanumerische Zeichen ohne verwirrende: 0, O, 1, I, l
+        chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
 
-        if last_invoice:
-            # Extrahiere Nummer: "INV-2025-00123" -> 123
-            last_number = int(last_invoice.split('-')[-1])
-            next_number = last_number + 1
-        else:
-            next_number = 1
+        # Versuche max 10x einen eindeutigen Code zu generieren
+        for _ in range(10):
+            # Generiere 5-stelligen Code
+            code = ''.join(random.choices(chars, k=6))
+            invoice_number = f"{year}-{code}"
 
-        return f"{prefix}{next_number:05d}"
+            # Prüfe ob schon existiert
+            stmt = select(Invoice.invoice_number).where(Invoice.invoice_number == invoice_number)
+            result = await session_execute(stmt, session)
+            existing = result.scalar_one_or_none()
+
+            if not existing:
+                return invoice_number
+
+        # Fallback: sollte nie passieren (33^6 = ~1,3 Milliarden Möglichkeiten)
+        raise RuntimeError("Could not generate unique invoice number after 10 attempts")

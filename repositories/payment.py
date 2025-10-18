@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from db import session_execute
-from models.payment import Payment, TablePaymentDTO
+from models.payment import Payment, DepositRecordDTO
 from models.user import User, UserDTO
 
 
@@ -31,11 +31,11 @@ class PaymentRepository:
 
     @staticmethod
     async def get_by_processing_payment_id(processing_payment_id: int,
-                                           session: AsyncSession | Session) -> TablePaymentDTO:
+                                           session: AsyncSession | Session) -> DepositRecordDTO:
         stmt = (select(Payment)
                 .where(Payment.processing_payment_id == processing_payment_id))
         payment = await session_execute(stmt, session)
-        return TablePaymentDTO.model_validate(payment.scalar_one(), from_attributes=True)
+        return DepositRecordDTO.model_validate(payment.scalar_one(), from_attributes=True)
 
     @staticmethod
     async def get_unexpired_unpaid_payments(user_id: int, session: AsyncSession | Session):
@@ -48,7 +48,7 @@ class PaymentRepository:
         return count.scalar_one()
 
     @staticmethod
-    async def update(payment_dto: TablePaymentDTO, session: AsyncSession | Session):
+    async def update(payment_dto: DepositRecordDTO, session: AsyncSession | Session):
         stmt = (update(Payment)
                 .where(Payment.id == payment_dto.id)
                 .values(**payment_dto.model_dump()))

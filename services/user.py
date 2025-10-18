@@ -43,15 +43,15 @@ class UserService:
     async def get_my_profile_buttons(telegram_id: int, session: Session | AsyncSession) -> tuple[
         str, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
-        kb_builder.button(text=Localizator.get_text(BotEntity.USER, "top_up_balance_button"),
-                          callback_data=MyProfileCallback.create(1, "top_up"))
         kb_builder.button(text=Localizator.get_text(BotEntity.USER, "purchase_history_button"),
                           callback_data=MyProfileCallback.create(4, "purchase_history"))
         user = await UserRepository.get_by_tgid(telegram_id, session)
-        fiat_balance = round(user.top_up_amount - user.consume_records, 2)
+
+        # Invoice-based system: no balance, only order history
+        # TODO: Show total spent from OrderRepository.get_total_spent_by_currency()
         message = (Localizator.get_text(BotEntity.USER, "my_profile_msg")
                    .format(telegram_id=user.telegram_id,
-                           fiat_balance=fiat_balance,
+                           fiat_balance=0.0,  # No wallet balance anymore
                            currency_text=Localizator.get_currency_text(),
                            currency_sym=Localizator.get_currency_symbol()))
         return message, kb_builder

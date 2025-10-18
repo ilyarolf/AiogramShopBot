@@ -28,27 +28,40 @@ class InvoiceService:
             InvoiceDTO mit payment_address, payment_amount_crypto, etc.
         """
 
-        # KryptoExpress API Call
-        payment_dto = ProcessingPaymentDTO(
-            paymentType=PaymentType.PAYMENT,  # PAYMENT (nicht DEPOSIT!)
-            fiatCurrency=fiat_currency,
-            fiatAmount=fiat_amount,
-            cryptoCurrency=crypto_currency
+        # Check if API keys are configured (not placeholders)
+        use_mock = (
+            not config.KRYPTO_EXPRESS_API_KEY or
+            config.KRYPTO_EXPRESS_API_KEY.startswith("${") or
+            config.KRYPTO_EXPRESS_API_KEY == ""
         )
 
-        headers = {
-            "X-Api-Key": config.KRYPTO_EXPRESS_API_KEY,
-            "Content-Type": "application/json"
-        }
+        if use_mock:
+            # MOCK MODE: Generate fake payment data for testing
+            payment_response = InvoiceService._generate_mock_payment_response(
+                fiat_amount, fiat_currency, crypto_currency
+            )
+        else:
+            # REAL API MODE: Call KryptoExpress
+            payment_dto = ProcessingPaymentDTO(
+                paymentType=PaymentType.PAYMENT,  # PAYMENT (nicht DEPOSIT!)
+                fiatCurrency=fiat_currency,
+                fiatAmount=fiat_amount,
+                cryptoCurrency=crypto_currency
+            )
 
-        response_data = await CryptoApiWrapper.fetch_api_request(
-            f"{config.KRYPTO_EXPRESS_API_URL}/payment",
-            method="POST",
-            data=payment_dto.model_dump_json(exclude_none=True),
-            headers=headers
-        )
+            headers = {
+                "X-Api-Key": config.KRYPTO_EXPRESS_API_KEY,
+                "Content-Type": "application/json"
+            }
 
-        payment_response = ProcessingPaymentDTO.model_validate(response_data)
+            response_data = await CryptoApiWrapper.fetch_api_request(
+                f"{config.KRYPTO_EXPRESS_API_URL}/payment",
+                method="POST",
+                data=payment_dto.model_dump_json(exclude_none=True),
+                headers=headers
+            )
+
+            payment_response = ProcessingPaymentDTO.model_validate(response_data)
 
         # Generiere Invoice-Nummer
         invoice_number = await InvoiceRepository.get_next_invoice_number(session)
@@ -68,3 +81,59 @@ class InvoiceService:
         await InvoiceRepository.create(invoice_dto, session)
 
         return invoice_dto
+
+    @staticmethod
+    def _generate_mock_payment_response(
+        fiat_amount: float,
+        fiat_currency: Currency,
+        crypto_currency: Cryptocurrency
+    ) -> ProcessingPaymentDTO:
+        """
+        Generiert Mock-Payment-Response für Testing ohne echte API.
+
+        Returns fake but realistic payment data based on crypto type.
+        """
+        import random
+
+        # Mock crypto amounts (simplified conversion rates)
+        crypto_rates = {
+            Cryptocurrency.BTC: 50000,
+            Cryptocurrency.ETH: 3000,
+            Cryptocurrency.LTC: 100,
+            Cryptocurrency.SOL: 150,
+            Cryptocurrency.BNB: 400,
+            Cryptocurrency.USDT_TRC20: 1,
+            Cryptocurrency.USDT_ERC20: 1,
+            Cryptocurrency.USDC_ERC20: 1,
+        }
+
+        rate = crypto_rates.get(crypto_currency, 1000)
+        crypto_amount = fiat_amount / rate
+
+        # Generate fake addresses based on crypto type
+        mock_addresses = {
+            Cryptocurrency.BTC: f"bc1qmock{random.randint(100000, 999999)}test{random.randint(10, 99)}",
+            Cryptocurrency.ETH: f"0xMOCK{random.randint(100000, 999999):06x}TEST{random.randint(1000, 9999):04x}",
+            Cryptocurrency.LTC: f"ltc1qmock{random.randint(100000, 999999)}test{random.randint(10, 99)}",
+            Cryptocurrency.SOL: f"MOCK{random.randint(10000000, 99999999)}TEST{random.randint(1000, 9999)}Sol",
+            Cryptocurrency.BNB: f"0xMOCK{random.randint(100000, 999999):06x}BNB{random.randint(1000, 9999):04x}",
+            Cryptocurrency.USDT_TRC20: f"TMOCK{random.randint(10000000, 99999999)}TRC20{random.randint(100, 999)}",
+            Cryptocurrency.USDT_ERC20: f"0xMOCK{random.randint(100000, 999999):06x}USDT{random.randint(1000, 9999):04x}",
+            Cryptocurrency.USDC_ERC20: f"0xMOCK{random.randint(100000, 999999):06x}USDC{random.randint(1000, 9999):04x}",
+        }
+
+        mock_address = mock_addresses.get(
+            crypto_currency,
+            f"MOCK_{crypto_currency.value}_{random.randint(100000, 999999)}"
+        )
+
+        # Create mock payment response
+        return ProcessingPaymentDTO(
+            id=random.randint(100000, 999999),  # Fake payment ID
+            address=mock_address,
+            cryptoAmount=round(crypto_amount, 8),
+            cryptoCurrency=crypto_currency,
+            fiatAmount=fiat_amount,
+            fiatCurrency=fiat_currency,
+            paymentType=PaymentType.PAYMENT
+        )

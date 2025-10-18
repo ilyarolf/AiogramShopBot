@@ -53,11 +53,11 @@ async def buy_processing(**kwargs):
 
 
 # ========================================
-# NEUE INVOICE-BASED CHECKOUT HANDLER
+# NEW INVOICE-BASED CHECKOUT HANDLERS
 # ========================================
 
 async def crypto_selection_for_checkout(**kwargs):
-    """Level 3: Zeigt Crypto-Auswahl nach Checkout-Confirmation (Invoice-Flow)"""
+    """Level 3: Shows crypto selection after checkout confirmation (invoice flow)"""
     callback = kwargs.get("callback")
     session = kwargs.get("session")
     msg, kb_builder = await CartService.get_crypto_selection_for_checkout(callback, session)
@@ -65,11 +65,20 @@ async def crypto_selection_for_checkout(**kwargs):
 
 
 async def create_order_with_crypto(**kwargs):
-    """Level 4: Erstellt Order + Invoice mit gewählter Crypto"""
+    """Level 4: Creates order + invoice with selected crypto"""
     callback = kwargs.get("callback")
     session = kwargs.get("session")
-    await callback.message.edit_reply_markup()  # Entferne Buttons während Processing
+    await callback.message.edit_reply_markup()  # Remove buttons during processing
     msg, kb_builder = await CartService.create_order_with_selected_crypto(callback, session)
+    await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
+
+
+async def cancel_order(**kwargs):
+    """Level 5: Cancels an order (with grace period check)"""
+    callback = kwargs.get("callback")
+    session = kwargs.get("session")
+    await callback.message.edit_reply_markup()  # Remove buttons during processing
+    msg, kb_builder = await CartService.cancel_order(callback, session)
     await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
 
 
@@ -81,9 +90,10 @@ async def navigate_cart_process(callback: CallbackQuery, callback_data: CartCall
         0: show_cart,
         1: delete_cart_item,
         2: checkout_processing,
-        3: crypto_selection_for_checkout,      # INVOICE-FLOW: Crypto-Auswahl
-        4: create_order_with_crypto,           # INVOICE-FLOW: Order-Erstellung
-        # 3: buy_processing  # OLD WALLET-FLOW (auskommentiert für Migration)
+        3: crypto_selection_for_checkout,      # INVOICE-FLOW: Crypto selection
+        4: create_order_with_crypto,           # INVOICE-FLOW: Order creation
+        5: cancel_order,                       # INVOICE-FLOW: Order cancellation
+        # 3: buy_processing  # OLD WALLET-FLOW (commented out for migration)
     }
 
     current_level_function = levels[current_level]

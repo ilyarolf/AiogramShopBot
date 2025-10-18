@@ -36,9 +36,17 @@ class ProcessingPaymentDTO(BaseModel):
     callbackSecret: str | None = config.KRYPTO_EXPRESS_API_SECRET if len(config.KRYPTO_EXPRESS_API_SECRET) > 0 else None
 
 
-class TablePaymentDTO(BaseModel):
+class DepositRecordDTO(BaseModel):
+    """
+    Internal database record for deposit (balance top-up) payments.
+    Tracks which user created which payment and its status.
+    """
     id: int
     user_id: int
     processing_payment_id: int
     message_id: int
     is_paid: bool
+
+
+# Backwards compatibility alias (deprecated)
+TablePaymentDTO = DepositRecordDTO

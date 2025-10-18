@@ -13,7 +13,7 @@ class OrderRepository:
 
     @staticmethod
     async def create(order_dto: OrderDTO, session: Session | AsyncSession) -> int:
-        """Erstellt eine neue Order und gibt die ID zurück"""
+        """Creates a new order and returns the ID"""
         order = Order(**order_dto.model_dump(exclude_none=True))
         session.add(order)
         await session_flush(session)
@@ -21,14 +21,14 @@ class OrderRepository:
 
     @staticmethod
     async def get_by_id(order_id: int, session: Session | AsyncSession) -> OrderDTO:
-        """Holt Order by ID"""
+        """Gets order by ID"""
         stmt = select(Order).where(Order.id == order_id)
         order = await session_execute(stmt, session)
         return OrderDTO.model_validate(order.scalar_one(), from_attributes=True)
 
     @staticmethod
     async def get_by_id_with_items(order_id: int, session: Session | AsyncSession) -> Order:
-        """Holt Order mit allen Items (für Anzeige)"""
+        """Gets order with all items (for display)"""
         stmt = (
             select(Order)
             .where(Order.id == order_id)
@@ -39,7 +39,7 @@ class OrderRepository:
 
     @staticmethod
     async def get_pending_order_by_user(user_id: int, session: Session | AsyncSession) -> OrderDTO | None:
-        """Holt offene Order eines Users (falls vorhanden)"""
+        """Gets pending order of a user (if exists)"""
         stmt = (
             select(Order)
             .where(Order.user_id == user_id)
@@ -54,12 +54,12 @@ class OrderRepository:
 
     @staticmethod
     async def update_status(order_id: int, status: OrderStatus, session: Session | AsyncSession):
-        """Aktualisiert den Status einer Order"""
+        """Updates the status of an order"""
         timestamp_field = None
 
         if status == OrderStatus.PAID:
             timestamp_field = Order.paid_at
-        elif status in [OrderStatus.CANCELLED, OrderStatus.TIMEOUT]:
+        elif status in [OrderStatus.CANCELLED_BY_USER, OrderStatus.CANCELLED_BY_ADMIN, OrderStatus.TIMEOUT]:
             timestamp_field = Order.cancelled_at
 
         values = {"status": status}
@@ -71,7 +71,7 @@ class OrderRepository:
 
     @staticmethod
     async def get_expired_orders(session: Session | AsyncSession) -> list[OrderDTO]:
-        """Holt alle abgelaufenen Orders (für Timeout-Job)"""
+        """Gets all expired orders (for timeout job)"""
         stmt = (
             select(Order)
             .where(Order.status == OrderStatus.PENDING_PAYMENT)
@@ -82,7 +82,7 @@ class OrderRepository:
 
     @staticmethod
     async def get_by_user_id(user_id: int, session: Session | AsyncSession) -> list[OrderDTO]:
-        """Holt alle Orders eines Users (für Historie)"""
+        """Gets all orders of a user (for history)"""
         stmt = (
             select(Order)
             .where(Order.user_id == user_id)
@@ -94,7 +94,7 @@ class OrderRepository:
 
     @staticmethod
     async def get_total_spent_by_currency(user_id: int, session: Session | AsyncSession):
-        """Berechnet Gesamtausgaben gruppiert nach Währung"""
+        """Calculates total spending grouped by currency"""
         stmt = (
             select(Order.currency, func.sum(Order.total_price))
             .where(Order.user_id == user_id)
