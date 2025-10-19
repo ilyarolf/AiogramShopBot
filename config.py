@@ -34,3 +34,7 @@ KRYPTO_EXPRESS_API_SECRET = os.environ.get("KRYPTO_EXPRESS_API_SECRET")
 WEBHOOK_SECRET_TOKEN = os.environ.get("WEBHOOK_SECRET_TOKEN")
 REDIS_HOST = os.environ.get("REDIS_HOST")
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
+
+# Invoice/Order System Configuration
+ORDER_TIMEOUT_MINUTES = int(os.environ.get("ORDER_TIMEOUT_MINUTES", "30"))  # Default: 30 minutes
+ORDER_CANCEL_GRACE_PERIOD_MINUTES = int(os.environ.get("ORDER_CANCEL_GRACE_PERIOD_MINUTES", "5"))  # Grace period for free cancellation

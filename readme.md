@@ -16,12 +16,12 @@
 [![Bitcoin](https://img.shields.io/badge/Bitcoin-FF9900?logo=bitcoin&logoColor=white)](https://github.com/bitcoin/bitcoin)
 [![Litecoin](https://img.shields.io/badge/Litecoin-A6A9AA?logo=litecoin&logoColor=white)](https://github.com/litecoin-project/litecoin)
 [![Solana](https://img.shields.io/badge/Solana-9945FF?logo=solana&logoColor=fff)](https://github.com/solana-labs/solana)
-[![Tron](https://i.imgur.com/x14HuEg.png)](https://github.com/tronprotocol)
-[![Tether](https://img.shields.io/badge/Tether-168363?&logo=tether&logoColor=white)](https://tether.to/ru/)
+[![Ethereum](https://img.shields.io/badge/Ethereum-3C3C3D?logo=ethereum&logoColor=white)](https://github.com/ethereum)
+[![BinanceCoin](https://img.shields.io/badge/Binance-FCD535?logo=binance&logoColor=000)](https://github.com/binance)
 
 **AiogramShopBot is a software product based on Aiogram3 and SQLAlchemy that allows you to automate sales of digital
 goods in Telegram. One of the bot's advantages is that AiogramShopBot implements the ability to top up with Bitcoin,
-Litecoin, Solana and stablecoins in the TRC20 and ERC20 networks, which allows you to sell digital goods worldwide.**
+Litecoin, Solana, Ethereum and Binance-Coin, which allows you to sell digital goods worldwide.**
 
 * [🤝 Commercial offers](#commercial-offers)
     + [➤ Telegram. ](#-for-commercial-offers-contact-me-on-telegram)
@@ -58,6 +58,8 @@ Litecoin, Solana and stablecoins in the TRC20 and ERC20 networks, which allows y
     + [3.6 🔔 Admin notifications](#36--admin-notifications)
         - [3.6.1 Notification to admin about new deposit](#361-notification-to-admin-about-new-deposit)
         - [3.6.2 Notification to admin about new buy](#362-notification-to-admin-about-new-buy)
+    + [3.8 👛 Wallet](#38--wallet)
+        - [3.8.1 Cryptocurrency withdrawal](#381-cryptocurrency-withdrawal-functionality)
 * [4.0 Multibot (Experimental functionality)](#40-multibot-experimental-functionality)
     + [4.1 Starting the multibot](#41-starting-the-multibot)
 * [📋 Todo List](#-todo-list)
@@ -90,7 +92,6 @@ Litecoin, Solana and stablecoins in the TRC20 and ERC20 networks, which allows y
 | WEBHOOK_PATH              | The path to the webhook where Telegram servers send requests for bot updates. It is not recommended to change it if only one bot will be deployed. In case several bots will be deployed on the same server, it will be necessary to change it, because there will be path collision (Does not apply to the multibot case). | "" (empty string)                                                   |
 | WEBAPP_HOST               | Hostname for Telegram bot, it is not recommended to change in case you use docker-compose.                                                                                                                                                                                                                                  | For docker-compose="0.0.0.0".<br/>For local deployment="localhost". |
 | WEBAPP_PORT               | Port for Telegram bot, if you plan to deploy several bots on the same server, you will need to assign a different port to each one (Not relevant to the multibot case).                                                                                                                                                     | No recommended value                                                |
-| WEBHOOK_SECRET_TOKEN      | Required variable, used to protect requests coming from Telegram servers from spoofing.                                                                                                                                                                                                                                     | Any string you want                                                 |   
 | TOKEN                     | Token from your Telegram bot, you can get it for free in Telegram from the bot of all bots with the username @botfather.                                                                                                                                                                                                    | No recommended value                                                |
 | ADMIN_ID_LIST             | List of Telegram id of all admins of your bot. This list is used to check for access to the admin menu.                                                                                                                                                                                                                     | No recommended value                                                |
 | SUPPORT_LINK              | A link to the Telegram profile that will be sent by the bot to the user when the “Help” button is pressed.                                                                                                                                                                                                                  | https://t.me/${YOUR_USERNAME_TG}                                    |
@@ -101,20 +102,33 @@ Litecoin, Solana and stablecoins in the TRC20 and ERC20 networks, which allows y
 | PAGE_ENTRIES              | The number of entries per page. Serves as a variable for pagination.                                                                                                                                                                                                                                                        | 8                                                                   |
 | BOT_LANGUAGE              | The name of the .json file with the l10n localization. At the moment only English localization is supplied out of the box, but you can make your own if you create a file in the l10n folder with the same keys as in l10n/en.json.                                                                                         | "en" or "de"                                                        |
 | MULTIBOT                  | Experimental functionality, allows you to raise several bots in one process. And there will be one main bot, where you can create other bots with the command “/add $BOT_TOKEN”. Accepts string parameters “true” or “false”.                                                                                               | "false"                                                             |
-| ETHPLORER_API_KEY         | API Key from ethplorer.io, used to get ERC20 balances.                                                                                                                                                                                                                                                                      | No recommended value                                                |
 | CURRENCY                  | Currency to be used in the bot.                                                                                                                                                                                                                                                                                             | "USD" or "EUR" or "JPY" or "CAD" or "GBP"                           |
 | RUNTIME_ENVIRONMENT       | If set to "dev", the bot will be connected via an ngrok tunnel. "prod" will use [Caddy](https://hub.docker.com/r/lucaslorentz/caddy-docker-proxy) as reverse proxy together with your public hostname                                                                                                                       | "prod" or "dev"                                                     |   
-| REDIS_HOST                | Required variable, needed to make the throttling mechanism work.                                                                                                                                                                                                                                                            | "redis" for docker-compose.yml                                      |   
+| WEBHOOK_SECRET_TOKEN      | Required variable, used to protect requests coming from Telegram servers from spoofing.                                                                                                                                                                                                                                     | Any string you want                                                 |   
+| KRYPTO_EXPRESS_API_KEY    | API KEY from KryptoExpress profile                                                                                                                                                                                                                                                                                          | No recommended value                                                |   
+| KRYPTO_EXPRESS_API_URL    | API URL from KryptoExpress service                                                                                                                                                                                                                                                                                          | https://KryptoExpress.pro/api                                       |   
+| KRYPTO_EXPRESS_API_SECRET | Required variable, used to protect requests coming from KryptoExpress servers from spoofing.                                                                                                                                                                                                                                | Any string you want                                                 |   
 | REDIS_PASSWORD            | Required variable, needed to make the throttling mechanism work.                                                                                                                                                                                                                                                            | Any string you want                                                 |   
-| KRYPTO_EXPRESS_API_KEY            | API KEY from KryptoExpress profile                                                                                                                                                                                                                                                                                          | No recommended value                                                |   
-| KRYPTO_EXPRESS_API_URL            | API URL from KryptoExpress service                                                                                                                                                                                                                                                                                          | https://KryptoExpress.pro/api                                       |   
-| KRYPTO_EXPRESS_API_SECRET            | Required variable, used to protect requests coming from KryptoExpress servers from spoofing.                                                                                                                                                                                                                                | Any string you want                                                 |   
+| REDIS_HOST                | Required variable, needed to make the throttling mechanism work.                                                                                                                                                                                                                                                            | "redis" for docker-compose.yml                                      |   
 
 ### 1.1 Starting AiogramShopBot with Docker-compose.
 
-* Clone the project.<br>``git clone git@github.com:ilyarolf/AiogramShopBot.git``
+* Clone the project.<br>``git clone https://github.com/ilyarolf/AiogramShopBot.git``
 * Set environment variables in .env file.
+* Set your domain in the docker-compose.yml file to the bot service in the labels caddy section. {YOUR_IP_ADDRESS}.sslip.io
 * Run the ``docker-compose up`` command.
+
+#### Local Development - Redis only
+
+For local development, you can run only Redis in Docker while running the bot directly on your machine:
+
+* Start Redis: `docker-compose -f docker-compose.dev.yml up -d`
+* Verify Redis is running: `docker ps | grep redis`
+* Run the bot locally: `python run.py`
+* Stop Redis when done: `docker-compose -f docker-compose.dev.yml down`
+
+> **Note**
+> The `docker-compose.dev.yml` file is configured to use the Redis password from your `.env` file (default: `dev-redis-password-123`).
 
 #### Development and production mode
 
@@ -122,7 +136,7 @@ For local development on a computer which is not internet facing, set the "RUNTI
 be connected via an ngrok tunnel.
 > **Note**
 > **<br>To get the ngrok token, you need to register on the ngrok website and confirm your email. Then you will have the
-ngrok token in your personal account.**
+ngrok token in your personal account.<br>You will still need Redis.**
 
 On an internet facing production system you can either set your own hostname in the caddy label (in the template shown
 with "YOUR_DOMAIN_GOES_HERE"
@@ -134,7 +148,7 @@ this case you have to remove the caddy service from the docker-compose file and 
 
 ### 1.2 Starting AiogramShopBot without database encryption.
 
-* Clone the project from the master branch. <br>``git clone git@github.com:ilyarolf/AiogramShopBot.git``
+* Clone the project from the master branch. <br>``git clone https://github.com/ilyarolf/AiogramShopBot.git``
 * Install all necessary packages <br>``pip install -r requirements.txt``
 * Set the environment variables to run in the .env file.<br>Example:
 
@@ -170,7 +184,7 @@ REDIS_HOST = "localhost"
 > **<br>To run AiogramShopBot with database encryption via SQLCipher, you need to use Linux kernel operating systems.**
 
 * Clone the project.
-  branch.<br>``git clone git@github.com:ilyarolf/AiogramShopBot.git``
+  branch.<br>``git clone https://github.com/ilyarolf/AiogramShopBot.git``
 * Install the SQLCipher package, for example in Ubuntu this can be done with the
   command <br>``sudo apt install sqlcipher``.
 * Install all necessary packages <br>``pip install -r requirements.txt``
@@ -207,10 +221,7 @@ REDIS_HOST = "localhost"
 
 ### 2.1 Registration
 
-User registration occurs when the bot is first accessed with the ``/start`` command. Each user is assigned a different
-mnemonic phrase to generate BTC, LTC, USDT TRC20 crypto addresses. BTC and LTC addresses are generated according to
-BIP-84 standard, for USDT TRC20 the BIP-44 standard is used, this is done so that wallets can be easily imported into
-Trust Wallet.
+User registration occurs when the bot is first accessed with the ``/start`` command.
 
 ### 2.2 ➕ Top Up Balance
 
@@ -220,7 +231,7 @@ Trust Wallet.
 * Copy cryptocurrency address, and send cryptocurrency on this address.
 * Once your transaction has at least one confirmation you will receive notification from the bot.
 
-<br>![img](https://i.imgur.com/7RQdiPj.gif)
+<br>![img](https://i.imgur.com/j2l7fHc.gif)
 
 ### 2.3 Purchase of goods
 
@@ -414,13 +425,21 @@ CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#8
 * If any user topped up the balance and clicked on the "Refresh balance" button, you will receive the following message
   from the bot:
 
-![img](https://i.imgur.com/E75nbxy.gif)
+![img](https://i.imgur.com/FSXzEoW.gif)
 
 #### 3.6.2 Notification to admin about new buy
 
 After each purchase, you will receive a message in the format:
 
 ![img](https://i.imgur.com/MeRkCYD.gif)
+
+### 3.8 👛 Wallet
+
+#### 3.8.1 Cryptocurrency withdrawal functionality
+
+To withdraw cryptocurrency from the bot, open the admin menu, go to the wallet tab, select the cryptocurrency you want to withdraw, send the cryptocurrency address where you want to withdraw and confirm the withdrawal. After a successful withdrawal, the bot will send you a link to the blockchain browser with the transaction.
+
+![img](https://i.imgur.com/gjkRFVb.gif)
 
 ## 4.0 Multibot (Experimental functionality)
 

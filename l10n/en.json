@@ -89,6 +89,7 @@
     "cancelled": "❌ <b>Cancelled!</b>",
     "decline": "❌ Decline",
     "ltc_top_up": "Ł LTC",
+    "usdt_top_up": "₮ USDT",
     "pagination_first": "⏪ First",
     "pagination_last": "⏩ Last",
     "pagination_next": "➡️ Next",
@@ -160,6 +161,15 @@
     "status_pending": "\uD83D\uDFE1 Pending.",
     "status_paid": "\uD83D\uDFE2 Paid.",
     "status_expired": "\uD83D\uDD34 Expired.",
-    "too_many_payment_request": "<b>⏳ Too many payment request!\nPlease wait and try again later.</b>"
+    "too_many_payment_request": "<b>⏳ Too many payment request!\nPlease wait and try again later.</b>",
+    "pending_order_exists": "⚠️ <b>You already have a pending order!</b>\n\nPlease complete your current order first or wait until it expires.",
+    "choose_payment_crypto": "💳 <b>Choose a cryptocurrency for payment:</b>",
+    "order_created_success": "✅ <b>Order created successfully!</b>\n\n📋 <b>Order code:</b> {invoice_number}\n💰 <b>Total price:</b> {currency_sym}{total_price:.2f}\n\n💳 <b>Payment details:</b>\n\n🪙 <b>Amount to pay:</b>\n<code>{crypto_amount}</code> {crypto_currency}\n\n📬 <b>Payment address:</b>\n<code>{payment_address}</code>\n\n⏰ <b>Expires at:</b> {expires_at} ({expires_minutes} minutes)\n\n<i>Please send the exact amount to the provided address. The order will be completed automatically after payment confirmation.</i>",
+    "order_pending": "📋 <b>Your pending order:</b>\n\n📋 <b>Order code:</b> {invoice_number}\n💰 <b>Total price:</b> {currency_sym}{total_price:.2f}\n\n💳 <b>Payment details:</b>\n\n🪙 <b>Amount to pay:</b>\n<code>{crypto_amount}</code> {crypto_currency}\n\n📬 <b>Payment address:</b>\n<code>{payment_address}</code>\n\n⏰ <b>Expires at:</b> {expires_at} ({expires_minutes} minutes remaining)\n\n<i>Please send the exact amount to the provided address. The order will be completed automatically after payment confirmation.</i>",
+    "order_expired": "❌ <b>Order expired!</b>\n\n📋 <b>Order code:</b> {invoice_number}\n💰 <b>Total price:</b> {currency_sym}{total_price:.2f}\n\n💳 <b>Payment details:</b>\n\n🪙 <b>Amount to pay:</b>\n<code>{crypto_amount}</code> {crypto_currency}\n\n📬 <b>Payment address:</b>\n<code>{payment_address}</code>\n\n⏰ <b>Expired at:</b> {expires_at}\n\n<i>This order has expired. The reserved items have been released. You can place a new order.</i>",
+    "cancel_order_free": "❌ Cancel Order (free)",
+    "cancel_order_strike": "⚠️ Cancel Order (Strike!)",
+    "order_cancelled_free": "✅ <b>Order cancelled successfully!</b>\n\nThe reserved items have been released. You can now place a new order.",
+    "order_cancelled_with_strike": "✅ <b>Order cancelled!</b>\n\n⚠️ <b>Warning:</b> Since the grace period ({grace_period} minutes) has expired, a strike has been recorded.\n\nThe reserved items have been released."
   }
 }

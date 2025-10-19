@@ -9,6 +9,9 @@ class Cryptocurrency(str, Enum):
     LTC = "LTC"
     ETH = "ETH"
     SOL = "SOL"
+    USDT_TRC20 = "USDT_TRC20"
+    USDT_ERC20 = "USDT_ERC20"
+    USDC_ERC20 = "USDC_ERC20"
 
     def get_divider(self):
         match self:
@@ -22,6 +25,12 @@ class Cryptocurrency(str, Enum):
                 return 9
             case Cryptocurrency.BNB:
                 return 18
+            case Cryptocurrency.USDT_TRC20:
+                return 6
+            case Cryptocurrency.USDT_ERC20:
+                return 6
+            case Cryptocurrency.USDC_ERC20:
+                return 6
 
     def get_coingecko_name(self) -> str:
         match self:
@@ -35,3 +44,7 @@ class Cryptocurrency(str, Enum):
                 return "binancecoin"
             case Cryptocurrency.SOL:
                 return "solana"
+            case Cryptocurrency.USDT_TRC20 | Cryptocurrency.USDT_ERC20:
+                return "tether"
+            case Cryptocurrency.USDC_ERC20:
+                return "usd-coin"
