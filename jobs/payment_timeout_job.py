@@ -4,7 +4,7 @@ from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from db import async_session
+from db import get_db_session
 from enums.order_status import OrderStatus
 from repositories.item import ItemRepository
 from repositories.order import OrderRepository
@@ -65,7 +65,7 @@ class PaymentTimeoutJob:
         Checks for expired orders and cancels them.
         Releases reserved stock back to available pool.
         """
-        async with async_session() as session:
+        async with get_db_session() as session:
             # Get all pending orders that have expired
             expired_orders = await OrderRepository.get_expired_orders(session)
 
