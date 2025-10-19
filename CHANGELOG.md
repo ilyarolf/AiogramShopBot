@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-10-19
+
+### UX Improvement: Return to Category After Add to Cart
+- After adding item to cart, user is now redirected back to subcategory list
+- User can continue shopping in same category without re-navigating
+- Added toast notification (`callback.answer()`) instead of full message edit
+- Preserves shopping context and improves multi-item cart building flow
+
 ## 2025-10-18
 
 ### Code Quality: DTO Naming Refactoring

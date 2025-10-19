@@ -57,7 +57,34 @@ async def add_to_cart(**kwargs):
     callback = kwargs.get("callback")
     session = kwargs.get("session")
     await CartService.add_to_cart(callback, session)
-    await callback.message.edit_text(text=Localizator.get_text(BotEntity.USER, "item_added_to_cart"))
+
+    # Show confirmation message briefly
+    await callback.answer(text=Localizator.get_text(BotEntity.USER, "item_added_to_cart"), show_alert=False)
+
+    # Get current context and build new callback with level 1 for subcategory list
+    unpacked_cb = AllCategoriesCallback.unpack(callback.data)
+
+    # Create a new callback query object with level 1 to avoid KeyError
+    # We need to use model_copy to create a new CallbackQuery with modified data
+    from aiogram.types import CallbackQuery as CQ
+    from copy import copy
+
+    # Create callback data for level 1 (subcategory list)
+    new_callback_data = AllCategoriesCallback.create(
+        level=1,
+        category_id=unpacked_cb.category_id,
+        page=unpacked_cb.page
+    )
+
+    # Create a shallow copy of callback with new data string
+    modified_callback = copy(callback)
+    object.__setattr__(modified_callback, 'data', new_callback_data.pack())
+
+    # Build subcategory list message and buttons with the modified callback
+    msg, kb_builder = await SubcategoryService.get_buttons(modified_callback, session)
+
+    # Edit message to show subcategory list, preserving category context
+    await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
 
 
 @all_categories_router.callback_query(AllCategoriesCallback.filter(), IsUserExistFilter())
