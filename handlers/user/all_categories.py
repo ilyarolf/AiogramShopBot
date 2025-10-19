@@ -57,7 +57,12 @@ async def add_to_cart(**kwargs):
     callback = kwargs.get("callback")
     session = kwargs.get("session")
     await CartService.add_to_cart(callback, session)
-    await callback.message.edit_text(text=Localizator.get_text(BotEntity.USER, "item_added_to_cart"))
+
+    # Show confirmation message briefly, then return to subcategory list
+    await callback.answer(text=Localizator.get_text(BotEntity.USER, "item_added_to_cart"), show_alert=False)
+
+    # Return to subcategory list (level 1) to continue shopping
+    await show_subcategories_in_category(callback=callback, session=session)
 
 
 @all_categories_router.callback_query(AllCategoriesCallback.filter(), IsUserExistFilter())
