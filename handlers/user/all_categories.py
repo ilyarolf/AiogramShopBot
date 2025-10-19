@@ -61,20 +61,14 @@ async def add_to_cart(**kwargs):
     # Show confirmation message briefly
     await callback.answer(text=Localizator.get_text(BotEntity.USER, "item_added_to_cart"), show_alert=False)
 
-    # Create new callback with level=1 to return to subcategory list
+    # Get current context
     unpacked_cb = AllCategoriesCallback.unpack(callback.data)
-    # Create a modified callback pointing to level 1 (subcategory list) with preserved category
-    new_callback_data = AllCategoriesCallback.create(
-        level=1,
-        category_id=unpacked_cb.category_id,
-        page=unpacked_cb.page
-    )
 
-    # Manually trigger subcategory view by modifying callback data
-    callback.data = new_callback_data.pack()
+    # Build subcategory list message and buttons
+    msg, kb_builder = await SubcategoryService.get_buttons(callback, session)
 
-    # Return to subcategory list to continue shopping
-    await show_subcategories_in_category(callback=callback, session=session)
+    # Edit message to show subcategory list, preserving category context
+    await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
 
 
 @all_categories_router.callback_query(AllCategoriesCallback.filter(), IsUserExistFilter())
