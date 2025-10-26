@@ -1,0 +1,8 @@
+# Test Dependencies for Payment Validation Testing
+#
+# Install with:
+#   pip install -r tests/manual/requirements.txt
+#
+
+# HTTP client for webhook simulation
+requests>=2.31.0

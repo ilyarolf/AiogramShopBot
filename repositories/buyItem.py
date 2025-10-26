@@ -14,6 +14,18 @@ class BuyItemRepository:
         return BuyItemDTO.model_validate(item_subcategory.scalar(), from_attributes=True)
 
     @staticmethod
+    async def get_by_item_ids(item_ids: list[int], session: Session | AsyncSession) -> list[BuyItemDTO]:
+        """Check if any of the given items already have Buy records"""
+        if not item_ids:
+            return []
+
+        stmt = select(BuyItem).where(BuyItem.item_id.in_(item_ids))
+        result = await session_execute(stmt, session)
+        buy_items = result.scalars().all()
+
+        return [BuyItemDTO.model_validate(bi, from_attributes=True) for bi in buy_items]
+
+    @staticmethod
     async def create_many(buy_item_dto_list: list[BuyItemDTO], session: Session | AsyncSession):
         for buy_item_dto in buy_item_dto_list:
             session.add(BuyItem(**buy_item_dto.model_dump()))

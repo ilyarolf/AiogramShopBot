@@ -25,6 +25,11 @@ class SubcategoryService:
             item = await ItemRepository.get_single(unpacked_cb.category_id, subcategory.id, session)
             available_qty = await ItemRepository.get_available_qty(ItemDTO(category_id=unpacked_cb.category_id,
                                                                            subcategory_id=subcategory.id), session)
+
+            # Skip subcategories with zero stock (sold out or all reserved) or no items
+            if available_qty == 0 or item is None:
+                continue
+
             kb_builder.button(text=Localizator.get_text(BotEntity.USER, "subcategory_button").format(
                 subcategory_name=subcategory.name,
                 subcategory_price=item.price,
@@ -48,15 +53,33 @@ class SubcategoryService:
         item = await ItemRepository.get_single(unpacked_cb.category_id, unpacked_cb.subcategory_id, session)
         subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.subcategory_id, session)
         category = await CategoryRepository.get_by_id(unpacked_cb.category_id, session)
+
+        # If no item exists (all sold/reserved), show error
+        if item is None:
+            raise ValueError(f"No items found for subcategory {unpacked_cb.subcategory_id}")
+
         available_qty = await ItemRepository.get_available_qty(item, session)
-        message_text = Localizator.get_text(BotEntity.USER, "select_quantity").format(
-            category_name=category.name,
-            subcategory_name=subcategory.name,
-            price=item.price,
-            description=item.description,
-            quantity=available_qty,
-            currency_sym=Localizator.get_currency_symbol()
-        )
+
+        # Build message with shipping info for physical items
+        if item.is_physical:
+            message_text = Localizator.get_text(BotEntity.USER, "select_quantity_with_shipping").format(
+                category_name=category.name,
+                subcategory_name=subcategory.name,
+                price=item.price,
+                shipping_cost=item.shipping_cost,
+                description=item.description,
+                quantity=available_qty,
+                currency_sym=Localizator.get_currency_symbol()
+            )
+        else:
+            message_text = Localizator.get_text(BotEntity.USER, "select_quantity").format(
+                category_name=category.name,
+                subcategory_name=subcategory.name,
+                price=item.price,
+                description=item.description,
+                quantity=available_qty,
+                currency_sym=Localizator.get_currency_symbol()
+            )
         kb_builder = InlineKeyboardBuilder()
         for i in range(1, 11):
             kb_builder.button(text=str(i), callback_data=AllCategoriesCallback.create(
@@ -75,6 +98,10 @@ class SubcategoryService:
         item = await ItemRepository.get_single(unpacked_cb.category_id, unpacked_cb.subcategory_id, session)
         category = await CategoryRepository.get_by_id(unpacked_cb.category_id, session)
         subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.subcategory_id, session)
+
+        # If no item exists (all sold/reserved), show error
+        if item is None:
+            raise ValueError(f"No items found for subcategory {unpacked_cb.subcategory_id}")
         message_text = Localizator.get_text(BotEntity.USER, "buy_confirmation").format(
             category_name=category.name,
             subcategory_name=subcategory.name,

@@ -19,3 +19,4 @@ class Cart(Base):
 class CartDTO(BaseModel):
     id: int | None = None
     user_id: int | None = None
+    items: list = []  # List of CartItemDTO objects

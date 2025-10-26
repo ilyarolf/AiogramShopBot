@@ -250,7 +250,7 @@ class AdminService:
         if user is None:
             return Localizator.get_text(BotEntity.ADMIN, "credit_management_user_not_found")
         elif operation == UserManagementOperation.ADD_BALANCE:
-            user.top_up_amount += float(message.text)
+            user.top_up_amount = round(user.top_up_amount + float(message.text), 2)
             await UserRepository.update(user, session)
             await session_commit(session)
             return Localizator.get_text(BotEntity.ADMIN, "credit_management_added_success").format(
@@ -258,7 +258,23 @@ class AdminService:
                 telegram_id=user.telegram_id,
                 currency_text=Localizator.get_currency_text())
         else:
-            user.consume_records += float(message.text)
+            # REDUCE_BALANCE: Subtract from wallet
+            amount_to_reduce = float(message.text)
+
+            # Round amounts for comparison (avoid floating-point errors)
+            current_balance = round(user.top_up_amount, 2)
+            amount_to_reduce = round(amount_to_reduce, 2)
+
+            # Check if user has enough balance
+            if current_balance < amount_to_reduce:
+                return Localizator.get_text(BotEntity.ADMIN, "credit_management_insufficient_balance").format(
+                    current_balance=current_balance,
+                    amount=amount_to_reduce,
+                    telegram_id=user.telegram_id,
+                    currency_text=Localizator.get_currency_text())
+
+            # Subtract and round to 2 decimals
+            user.top_up_amount = round(max(0.0, user.top_up_amount - amount_to_reduce), 2)
             await UserRepository.update(user, session)
             await session_commit(session)
             return Localizator.get_text(BotEntity.ADMIN, "credit_management_reduced_success").format(

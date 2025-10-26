@@ -1,0 +1,122 @@
+[
+  {
+    "category": "Hardware",
+    "subcategory": "USB-Sticks",
+    "price": 15.99,
+    "description": "SanDisk 32GB USB 3.0 Stick - Schnelle Datenübertragung",
+    "private_data": "Seriennummer: USB-32GB-001\nModell: SanDisk Ultra USB 3.0\nKapazität: 32GB",
+    "is_physical": true,
+    "shipping_cost": 2.50,
+    "allows_packstation": true
+  },
+  {
+    "category": "Hardware",
+    "subcategory": "USB-Sticks",
+    "price": 15.99,
+    "description": "SanDisk 32GB USB 3.0 Stick - Schnelle Datenübertragung",
+    "private_data": "Seriennummer: USB-32GB-002\nModell: SanDisk Ultra USB 3.0\nKapazität: 32GB",
+    "is_physical": true,
+    "shipping_cost": 2.50,
+    "allows_packstation": true
+  },
+  {
+    "category": "Hardware",
+    "subcategory": "USB-Sticks",
+    "price": 15.99,
+    "description": "SanDisk 32GB USB 3.0 Stick - Schnelle Datenübertragung",
+    "private_data": "Seriennummer: USB-32GB-003\nModell: SanDisk Ultra USB 3.0\nKapazität: 32GB",
+    "is_physical": true,
+    "shipping_cost": 2.50,
+    "allows_packstation": true
+  },
+  {
+    "category": "Hardware",
+    "subcategory": "Grafikkarten",
+    "price": 499.99,
+    "description": "NVIDIA RTX 3060 Ti - 8GB GDDR6, Ray Tracing",
+    "private_data": "Seriennummer: RTX3060TI-001\nModell: NVIDIA GeForce RTX 3060 Ti\nSpeicher: 8GB GDDR6",
+    "is_physical": true,
+    "shipping_cost": 6.99,
+    "allows_packstation": false
+  },
+  {
+    "category": "Hardware",
+    "subcategory": "Grafikkarten",
+    "price": 499.99,
+    "description": "NVIDIA RTX 3060 Ti - 8GB GDDR6, Ray Tracing",
+    "private_data": "Seriennummer: RTX3060TI-002\nModell: NVIDIA GeForce RTX 3060 Ti\nSpeicher: 8GB GDDR6",
+    "is_physical": true,
+    "shipping_cost": 6.99,
+    "allows_packstation": false
+  },
+  {
+    "category": "Merchandise",
+    "subcategory": "T-Shirts",
+    "price": 24.99,
+    "description": "Shop Logo T-Shirt Schwarz - Größe L",
+    "private_data": "Artikel: TSHIRT-BLK-L-001\nGröße: L\nFarbe: Schwarz\nMaterial: 100% Baumwolle",
+    "is_physical": true,
+    "shipping_cost": 3.99,
+    "allows_packstation": true
+  },
+  {
+    "category": "Merchandise",
+    "subcategory": "T-Shirts",
+    "price": 24.99,
+    "description": "Shop Logo T-Shirt Schwarz - Größe M",
+    "private_data": "Artikel: TSHIRT-BLK-M-001\nGröße: M\nFarbe: Schwarz\nMaterial: 100% Baumwolle",
+    "is_physical": true,
+    "shipping_cost": 3.99,
+    "allows_packstation": true
+  },
+  {
+    "category": "Merchandise",
+    "subcategory": "Sticker-Packs",
+    "price": 5.99,
+    "description": "Premium Sticker Pack - 10 hochwertige Vinyl-Sticker",
+    "private_data": "Set: STICKER-PACK-001\nAnzahl: 10 Sticker\nMaterial: Vinyl (wetterfest)",
+    "is_physical": true,
+    "shipping_cost": 1.55,
+    "allows_packstation": true
+  },
+  {
+    "category": "Merchandise",
+    "subcategory": "Sticker-Packs",
+    "price": 5.99,
+    "description": "Premium Sticker Pack - 10 hochwertige Vinyl-Sticker",
+    "private_data": "Set: STICKER-PACK-002\nAnzahl: 10 Sticker\nMaterial: Vinyl (wetterfest)",
+    "is_physical": true,
+    "shipping_cost": 1.55,
+    "allows_packstation": true
+  },
+  {
+    "category": "Digital",
+    "subcategory": "Software-Lizenzen",
+    "price": 9.99,
+    "description": "Windows 10 Pro Lizenz - Lifetime Aktivierung",
+    "private_data": "Lizenzschlüssel: XXXXX-XXXXX-XXXXX-XXXXX-XXXXX\nVersion: Windows 10 Pro\nGültigkeit: Lifetime",
+    "is_physical": false,
+    "shipping_cost": 0.0,
+    "allows_packstation": false
+  },
+  {
+    "category": "Digital",
+    "subcategory": "Software-Lizenzen",
+    "price": 9.99,
+    "description": "Windows 10 Pro Lizenz - Lifetime Aktivierung",
+    "private_data": "Lizenzschlüssel: YYYYY-YYYYY-YYYYY-YYYYY-YYYYY\nVersion: Windows 10 Pro\nGültigkeit: Lifetime",
+    "is_physical": false,
+    "shipping_cost": 0.0,
+    "allows_packstation": false
+  },
+  {
+    "category": "Digital",
+    "subcategory": "E-Books",
+    "price": 4.99,
+    "description": "Python Programming Guide - Komplettes Handbuch (PDF)",
+    "private_data": "Download-Link: https://example.com/download/python-guide.pdf\nFormat: PDF\nSeiten: 350",
+    "is_physical": false,
+    "shipping_cost": 0.0,
+    "allows_packstation": false
+  }
+]

@@ -12,6 +12,7 @@ class Cryptocurrency(str, Enum):
     USDT_TRC20 = "USDT_TRC20"
     USDT_ERC20 = "USDT_ERC20"
     USDC_ERC20 = "USDC_ERC20"
+    PENDING_SELECTION = "PENDING_SELECTION"  # Placeholder when order created before crypto selected
 
     def get_divider(self):
         match self:

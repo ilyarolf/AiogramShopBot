@@ -24,12 +24,28 @@ class UserRepository:
             return user
 
     @staticmethod
+    async def get_by_id(user_id: int, session: AsyncSession | Session) -> UserDTO | None:
+        stmt = select(User).where(User.id == user_id)
+        user = await session_execute(stmt, session)
+        user = user.scalar()
+        if user is not None:
+            return UserDTO.model_validate(user, from_attributes=True)
+        else:
+            return user
+
+    @staticmethod
     async def update(user_dto: UserDTO, session: Session | AsyncSession) -> None:
         user_dto_dict = user_dto.model_dump()
         none_keys = [k for k, v in user_dto_dict.items() if v is None]
         for k in none_keys:
             user_dto_dict.pop(k)
-        stmt = update(User).where(User.telegram_id == user_dto.telegram_id).values(**user_dto_dict)
+
+        # Update by id if available (preferred), otherwise by telegram_id
+        if user_dto.id is not None:
+            stmt = update(User).where(User.id == user_dto.id).values(**user_dto_dict)
+        else:
+            stmt = update(User).where(User.telegram_id == user_dto.telegram_id).values(**user_dto_dict)
+
         await session_execute(stmt, session)
 
     @staticmethod

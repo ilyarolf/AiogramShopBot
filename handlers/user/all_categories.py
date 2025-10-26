@@ -56,10 +56,16 @@ async def add_to_cart_confirmation(**kwargs):
 async def add_to_cart(**kwargs):
     callback = kwargs.get("callback")
     session = kwargs.get("session")
-    await CartService.add_to_cart(callback, session)
+    success, message_key, format_args = await CartService.add_to_cart(callback, session)
 
-    # Show confirmation message briefly
-    await callback.answer(text=Localizator.get_text(BotEntity.USER, "item_added_to_cart"), show_alert=False)
+    # Show confirmation or warning message
+    message = Localizator.get_text(BotEntity.USER, message_key)
+    if format_args:
+        message = message.format(**format_args)
+
+    # Show alert for failures OR warnings (stock reduced)
+    show_alert = (not success) or (message_key == "add_to_cart_stock_reduced")
+    await callback.answer(text=message, show_alert=show_alert)
 
     # Get current context and build new callback with level 1 for subcategory list
     unpacked_cb = AllCategoriesCallback.unpack(callback.data)
