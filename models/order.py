@@ -21,11 +21,23 @@ class Order(Base):
     expires_at = Column(DateTime, nullable=False)
     paid_at = Column(DateTime, nullable=True)
     cancelled_at = Column(DateTime, nullable=True)
+    shipped_at = Column(DateTime, nullable=True)
+
+    # Shipping Fields
+    shipping_cost = Column(Float, nullable=False, default=0.0)
+
+    # Payment Validation Fields
+    total_paid_crypto = Column(Float, nullable=False, default=0.0)  # Sum of all partial payments
+    retry_count = Column(Integer, nullable=False, default=0)  # Underpayment retry counter (0 or 1)
+    original_expires_at = Column(DateTime, nullable=True)  # Original deadline (before extension)
+    wallet_used = Column(Float, nullable=False, default=0.0)  # Wallet balance used for this order
 
     # Relations
     user = relationship('User', backref='orders')
     items = relationship('Item', backref='order')
-    invoice = relationship('Invoice', back_populates='order', uselist=False, cascade='all, delete-orphan')
+    invoices = relationship('Invoice', back_populates='order', cascade='all, delete-orphan')  # Changed to plural, removed uselist=False to allow multiple invoices (partial payments)
+    payment_transactions = relationship('PaymentTransaction', back_populates='order', cascade='all, delete-orphan')
+    shipping_address = relationship('ShippingAddress', back_populates='order', uselist=False, cascade='all, delete-orphan')
 
     __table_args__ = (
         CheckConstraint('total_price > 0', name='check_order_total_price_positive'),
@@ -42,3 +54,9 @@ class OrderDTO(BaseModel):
     expires_at: datetime | None = None
     paid_at: datetime | None = None
     cancelled_at: datetime | None = None
+    shipped_at: datetime | None = None
+    shipping_cost: float | None = 0.0
+    total_paid_crypto: float | None = None
+    retry_count: int | None = None
+    original_expires_at: datetime | None = None
+    wallet_used: float | None = None

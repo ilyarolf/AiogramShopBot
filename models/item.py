@@ -24,12 +24,18 @@ class Item(Base):
     is_new = Column(Boolean, nullable=False, default=True)
     description = Column(String, nullable=False)
 
+    # Shipping-related fields
+    is_physical = Column(Boolean, nullable=False, default=False)
+    shipping_cost = Column(Float, nullable=False, default=0.0)
+    allows_packstation = Column(Boolean, nullable=False, default=False)
+
     # Order-Zuordnung (Reservierung + Verkauf)
     order_id = Column(Integer, ForeignKey('orders.id'), nullable=True)
     reserved_at = Column(DateTime, nullable=True)
 
     __table_args__ = (
         CheckConstraint('price > 0', name='check_price_positive'),
+        CheckConstraint('shipping_cost >= 0', name='check_shipping_cost_non_negative'),
     )
 
 
@@ -42,5 +48,8 @@ class ItemDTO(BaseModel):
     is_sold: bool | None = None
     is_new: bool | None = None
     description: str | None = None
+    is_physical: bool | None = None
+    shipping_cost: float | None = None
+    allows_packstation: bool | None = None
     order_id: int | None = None
     reserved_at: datetime | None = None

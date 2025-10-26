@@ -86,19 +86,27 @@ class PaymentTimeoutJob:
     async def _cancel_expired_order(self, order_id: int, session: AsyncSession):
         """
         Cancels a single expired order and releases its stock.
+        Also refunds wallet balance with penalty and notifies user.
 
         Args:
             order_id: Order ID to cancel
             session: DB session
         """
-        # Release reserved items
-        items = await ItemRepository.get_by_order_id(order_id, session)
-        for item in items:
-            item.order_id = None  # Remove reservation
+        from services.order import OrderService
+        from enums.order_cancel_reason import OrderCancelReason
 
-        await ItemRepository.update(items, session)
-
-        # Set order status to TIMEOUT
-        await OrderRepository.update_status(order_id, OrderStatus.TIMEOUT, session)
-
-        logging.debug(f"Order {order_id}: Released {len(items)} reserved items")
+        # Use OrderService.cancel_order which handles:
+        # - Stock release
+        # - Wallet refund (with penalty)
+        # - Status update
+        # - User notification
+        try:
+            within_grace_period, message = await OrderService.cancel_order(
+                order_id=order_id,
+                reason=OrderCancelReason.TIMEOUT,
+                session=session
+            )
+            logging.debug(f"Order {order_id}: {message}")
+        except ValueError as e:
+            # Order might already be cancelled or in wrong state
+            logging.warning(f"Could not cancel order {order_id}: {e}")

@@ -1,0 +1,163 @@
+[
+  {
+    "category": "Digital Products",
+    "subcategory": "Game Keys",
+    "price": 10.0,
+    "description": "Steam Game Key",
+    "private_data": "STEAM-KEY-AAAAA-BBBBB-CCCCC"
+  },
+  {
+    "category": "Digital Products",
+    "subcategory": "Game Keys",
+    "price": 10.0,
+    "description": "Steam Game Key",
+    "private_data": "STEAM-KEY-DDDDD-EEEEE-FFFFF"
+  },
+  {
+    "category": "Digital Products",
+    "subcategory": "Game Keys",
+    "price": 10.0,
+    "description": "Steam Game Key",
+    "private_data": "STEAM-KEY-GGGGG-HHHHH-IIIII"
+  },
+  {
+    "category": "Digital Products",
+    "subcategory": "Game Keys",
+    "price": 10.0,
+    "description": "Steam Game Key",
+    "private_data": "STEAM-KEY-JJJJJ-KKKKK-LLLLL"
+  },
+  {
+    "category": "Digital Products",
+    "subcategory": "Game Keys",
+    "price": 10.0,
+    "description": "Steam Game Key",
+    "private_data": "STEAM-KEY-MMMMM-NNNNN-OOOOO"
+  },
+  {
+    "category": "Digital Products",
+    "subcategory": "Software Licenses",
+    "price": 25.0,
+    "description": "Windows 11 Pro License",
+    "private_data": "WIN11-PRO-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
+  },
+  {
+    "category": "Digital Products",
+    "subcategory": "Software Licenses",
+    "price": 25.0,
+    "description": "Office 365 License",
+    "private_data": "OFFICE365-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
+  },
+  {
+    "category": "Digital Products",
+    "subcategory": "Software Licenses",
+    "price": 25.0,
+    "description": "Adobe CC License",
+    "private_data": "ADOBE-CC-XXXXX-XXXXX-XXXXX-XXXXX-XXXXX"
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Steam Cards",
+    "price": 20.0,
+    "description": "Steam 20 EUR Gift Card",
+    "private_data": "STEAM-20EUR-AAAAA-BBBBB-CCCCC"
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Steam Cards",
+    "price": 20.0,
+    "description": "Steam 20 EUR Gift Card",
+    "private_data": "STEAM-20EUR-DDDDD-EEEEE-FFFFF"
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Steam Cards",
+    "price": 20.0,
+    "description": "Steam 20 EUR Gift Card",
+    "private_data": "STEAM-20EUR-GGGGG-HHHHH-IIIII"
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Steam Cards",
+    "price": 20.0,
+    "description": "Steam 20 EUR Gift Card",
+    "private_data": "STEAM-20EUR-JJJJJ-KKKKK-LLLLL"
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Steam Cards",
+    "price": 20.0,
+    "description": "Steam 20 EUR Gift Card",
+    "private_data": "STEAM-20EUR-MMMMM-NNNNN-OOOOO"
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Steam Cards",
+    "price": 20.0,
+    "description": "Steam 20 EUR Gift Card",
+    "private_data": "STEAM-20EUR-PPPPP-QQQQQ-RRRRR"
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Steam Cards",
+    "price": 20.0,
+    "description": "Steam 20 EUR Gift Card",
+    "private_data": "STEAM-20EUR-SSSSS-TTTTT-UUUUU"
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Steam Cards",
+    "price": 20.0,
+    "description": "Steam 20 EUR Gift Card",
+    "private_data": "STEAM-20EUR-VVVVV-WWWWW-XXXXX"
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Steam Cards",
+    "price": 20.0,
+    "description": "Steam 20 EUR Gift Card",
+    "private_data": "STEAM-20EUR-YYYYY-ZZZZZ-11111"
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Steam Cards",
+    "price": 20.0,
+    "description": "Steam 20 EUR Gift Card",
+    "private_data": "STEAM-20EUR-22222-33333-44444"
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Amazon Cards",
+    "price": 50.0,
+    "description": "Amazon 50 EUR Gift Card",
+    "private_data": "AMAZON-50EUR-AAAA-BBBB-CCCC-DDDD"
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Amazon Cards",
+    "price": 50.0,
+    "description": "Amazon 50 EUR Gift Card",
+    "private_data": "AMAZON-50EUR-EEEE-FFFF-GGGG-HHHH"
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Amazon Cards",
+    "price": 50.0,
+    "description": "Amazon 50 EUR Gift Card",
+    "private_data": "AMAZON-50EUR-IIII-JJJJ-KKKK-LLLL"
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Amazon Cards",
+    "price": 50.0,
+    "description": "Amazon 50 EUR Gift Card",
+    "private_data": "AMAZON-50EUR-MMMM-NNNN-OOOO-PPPP"
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Amazon Cards",
+    "price": 50.0,
+    "description": "Amazon 50 EUR Gift Card",
+    "private_data": "AMAZON-50EUR-QQQQ-RRRR-SSSS-TTTT"
+  }
+]

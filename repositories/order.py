@@ -53,6 +53,17 @@ class OrderRepository:
         return None
 
     @staticmethod
+    async def update(order_dto: OrderDTO, session: Session | AsyncSession) -> None:
+        """Updates an order with all fields from the DTO"""
+        order_dto_dict = order_dto.model_dump()
+        none_keys = [k for k, v in order_dto_dict.items() if v is None]
+        for k in none_keys:
+            order_dto_dict.pop(k)
+
+        stmt = update(Order).where(Order.id == order_dto.id).values(**order_dto_dict)
+        await session.execute(stmt)
+
+    @staticmethod
     async def update_status(order_id: int, status: OrderStatus, session: Session | AsyncSession):
         """Updates the status of an order"""
         timestamp_field = None
@@ -61,6 +72,8 @@ class OrderRepository:
             timestamp_field = Order.paid_at
         elif status in [OrderStatus.CANCELLED_BY_USER, OrderStatus.CANCELLED_BY_ADMIN, OrderStatus.TIMEOUT]:
             timestamp_field = Order.cancelled_at
+        elif status == OrderStatus.SHIPPED:
+            timestamp_field = Order.shipped_at
 
         values = {"status": status}
         if timestamp_field is not None:
@@ -103,3 +116,26 @@ class OrderRepository:
         )
         result = await session_execute(stmt, session)
         return result.all()
+
+    @staticmethod
+    async def get_orders_awaiting_shipment(session: Session | AsyncSession) -> list[Order]:
+        """Gets all orders awaiting shipment (for admin shipping management)"""
+        stmt = (
+            select(Order)
+            .where(Order.status == OrderStatus.PAID_AWAITING_SHIPMENT)
+            .order_by(Order.paid_at.desc())
+            .options(selectinload(Order.items))
+        )
+        result = await session_execute(stmt, session)
+        return result.scalars().all()
+
+    @staticmethod
+    async def get_by_id_with_items(order_id: int, session: Session | AsyncSession) -> Order:
+        """Gets order with all items (for display)"""
+        stmt = (
+            select(Order)
+            .where(Order.id == order_id)
+            .options(selectinload(Order.items))
+        )
+        result = await session_execute(stmt, session)
+        return result.scalar_one()

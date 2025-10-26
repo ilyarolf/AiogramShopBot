@@ -1,0 +1,513 @@
+[
+  {
+    "category": "Gaming Accounts",
+    "subcategory": "Steam Level 50+",
+    "price": 25.99,
+    "description": "Steam account with Level 50+ badge, 100+ games library, verified email",
+    "private_data": "Username: user1234 | Password: pass9876 | Email: steamuser1@example.com",
+    "is_physical": false
+  },
+  {
+    "category": "Gaming Accounts",
+    "subcategory": "Steam Level 50+",
+    "price": 25.99,
+    "description": "Steam account with Level 50+ badge, 100+ games library, verified email",
+    "private_data": "Username: gamer5678 | Password: secure123 | Email: steam2@example.com",
+    "is_physical": false
+  },
+  {
+    "category": "Gaming Accounts",
+    "subcategory": "Steam Level 50+",
+    "price": 25.99,
+    "description": "Steam account with Level 50+ badge, 100+ games library, verified email",
+    "private_data": "Username: player999 | Password: mypass456 | Email: steam3@example.com",
+    "is_physical": false
+  },
+  {
+    "category": "Gaming Accounts",
+    "subcategory": "Epic Games",
+    "price": 19.99,
+    "description": "Epic Games account with Fortnite skins, 50+ free games claimed",
+    "private_data": "Username: epicuser1 | Password: epicpass1 | Email: epic1@example.com",
+    "is_physical": false
+  },
+  {
+    "category": "Gaming Accounts",
+    "subcategory": "Epic Games",
+    "price": 19.99,
+    "description": "Epic Games account with Fortnite skins, 50+ free games claimed",
+    "private_data": "Username: epicgamer2 | Password: epic2pass | Email: epic2@example.com",
+    "is_physical": false
+  },
+  {
+    "category": "Gaming Accounts",
+    "subcategory": "Origin",
+    "price": 15.99,
+    "description": "Origin account with Battlefield collection, Apex Legends skins",
+    "private_data": "Username: originpro | Password: origin123 | Email: origin1@example.com",
+    "is_physical": false
+  },
+  {
+    "category": "Streaming Services",
+    "subcategory": "Netflix Premium 1 Month",
+    "price": 12.99,
+    "description": "Netflix Premium account, 4K streaming, 4 screens",
+    "private_data": "Email: netflix1@example.com | Password: netpass123",
+    "is_physical": false
+  },
+  {
+    "category": "Streaming Services",
+    "subcategory": "Netflix Premium 1 Month",
+    "price": 12.99,
+    "description": "Netflix Premium account, 4K streaming, 4 screens",
+    "private_data": "Email: netflix2@example.com | Password: netpass456",
+    "is_physical": false
+  },
+  {
+    "category": "Streaming Services",
+    "subcategory": "Netflix Premium 1 Month",
+    "price": 12.99,
+    "description": "Netflix Premium account, 4K streaming, 4 screens",
+    "private_data": "Email: netflix3@example.com | Password: netpass789",
+    "is_physical": false
+  },
+  {
+    "category": "Streaming Services",
+    "subcategory": "Spotify Premium 1 Year",
+    "price": 49.99,
+    "description": "Spotify Premium 1 year subscription, ad-free music",
+    "private_data": "Email: spotify1@example.com | Password: spot123",
+    "is_physical": false
+  },
+  {
+    "category": "Streaming Services",
+    "subcategory": "Spotify Premium 1 Year",
+    "price": 49.99,
+    "description": "Spotify Premium 1 year subscription, ad-free music",
+    "private_data": "Email: spotify2@example.com | Password: spot456",
+    "is_physical": false
+  },
+  {
+    "category": "Streaming Services",
+    "subcategory": "Disney+ 1 Month",
+    "price": 8.99,
+    "description": "Disney+ subscription, all Marvel, Star Wars, Pixar content",
+    "private_data": "Email: disney1@example.com | Password: disney123",
+    "is_physical": false
+  },
+  {
+    "category": "VPN Services",
+    "subcategory": "NordVPN 1 Year",
+    "price": 59.99,
+    "description": "NordVPN 1 year subscription, 6 devices, no logs",
+    "private_data": "Username: norduser1 | Password: nordpass1",
+    "is_physical": false
+  },
+  {
+    "category": "VPN Services",
+    "subcategory": "NordVPN 1 Year",
+    "price": 59.99,
+    "description": "NordVPN 1 year subscription, 6 devices, no logs",
+    "private_data": "Username: norduser2 | Password: nordpass2",
+    "is_physical": false
+  },
+  {
+    "category": "VPN Services",
+    "subcategory": "ExpressVPN 6 Months",
+    "price": 39.99,
+    "description": "ExpressVPN 6 months, fastest speeds, 5 devices",
+    "private_data": "Activation Code: EXPR-1234-5678-ABCD",
+    "is_physical": false
+  },
+  {
+    "category": "VPN Services",
+    "subcategory": "Surfshark 2 Years",
+    "price": 79.99,
+    "description": "Surfshark 2 years, unlimited devices, ad blocker",
+    "private_data": "Email: surf1@example.com | Password: surf123",
+    "is_physical": false
+  },
+  {
+    "category": "Software Licenses",
+    "subcategory": "Windows 11 Pro",
+    "price": 34.99,
+    "description": "Genuine Windows 11 Pro license key, lifetime activation",
+    "private_data": "License Key: W11PR-12345-67890-ABCDE-FGHIJ",
+    "is_physical": false
+  },
+  {
+    "category": "Software Licenses",
+    "subcategory": "Windows 11 Pro",
+    "price": 34.99,
+    "description": "Genuine Windows 11 Pro license key, lifetime activation",
+    "private_data": "License Key: W11PR-98765-43210-ZYXWV-UTSRQ",
+    "is_physical": false
+  },
+  {
+    "category": "Software Licenses",
+    "subcategory": "Windows 11 Pro",
+    "price": 34.99,
+    "description": "Genuine Windows 11 Pro license key, lifetime activation",
+    "private_data": "License Key: W11PR-11111-22222-33333-44444",
+    "is_physical": false
+  },
+  {
+    "category": "Software Licenses",
+    "subcategory": "Microsoft Office 2021",
+    "price": 44.99,
+    "description": "Microsoft Office 2021 Pro Plus, Word, Excel, PowerPoint, Outlook",
+    "private_data": "Product Key: OFFIC-12345-67890-ABCDE-FGHIJ",
+    "is_physical": false
+  },
+  {
+    "category": "Software Licenses",
+    "subcategory": "Microsoft Office 2021",
+    "price": 44.99,
+    "description": "Microsoft Office 2021 Pro Plus, Word, Excel, PowerPoint, Outlook",
+    "private_data": "Product Key: OFFIC-98765-43210-ZYXWV-UTSRQ",
+    "is_physical": false
+  },
+  {
+    "category": "Software Licenses",
+    "subcategory": "Adobe Creative Cloud 1 Year",
+    "price": 299.99,
+    "description": "Adobe Creative Cloud All Apps, Photoshop, Premiere Pro, After Effects",
+    "private_data": "Email: adobe1@example.com | Password: adobe123",
+    "is_physical": false
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Amazon $50",
+    "price": 45.00,
+    "description": "Amazon Gift Card $50 USD, instant delivery",
+    "private_data": "Code: AMZN-1234-5678-90AB",
+    "is_physical": false
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Amazon $50",
+    "price": 45.00,
+    "description": "Amazon Gift Card $50 USD, instant delivery",
+    "private_data": "Code: AMZN-9876-5432-10ZY",
+    "is_physical": false
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Amazon $50",
+    "price": 45.00,
+    "description": "Amazon Gift Card $50 USD, instant delivery",
+    "private_data": "Code: AMZN-1111-2222-3333",
+    "is_physical": false
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Steam $25",
+    "price": 22.50,
+    "description": "Steam Wallet Card $25, works worldwide",
+    "private_data": "Code: STEAM-ABCD-EFGH-IJKL-MNOP",
+    "is_physical": false
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "Steam $25",
+    "price": 22.50,
+    "description": "Steam Wallet Card $25, works worldwide",
+    "private_data": "Code: STEAM-ZYXW-VUTS-RQPO-NMLK",
+    "is_physical": false
+  },
+  {
+    "category": "Gift Cards",
+    "subcategory": "PlayStation Plus 12 Months",
+    "price": 54.99,
+    "description": "PlayStation Plus 12 month membership, online multiplayer, free games",
+    "private_data": "Code: PSN-1234-5678-90AB-CDEF",
+    "is_physical": false
+  },
+  {
+    "category": "Physical Goods",
+    "subcategory": "Laptop Stickers Pack",
+    "price": 12.99,
+    "description": "100 premium vinyl laptop stickers, waterproof, developer/gaming themed",
+    "private_data": "Tracking will be provided after shipment",
+    "is_physical": true,
+    "shipping_cost": 3.99
+  },
+  {
+    "category": "Physical Goods",
+    "subcategory": "Laptop Stickers Pack",
+    "price": 12.99,
+    "description": "100 premium vinyl laptop stickers, waterproof, developer/gaming themed",
+    "private_data": "Tracking will be provided after shipment",
+    "is_physical": true,
+    "shipping_cost": 3.99
+  },
+  {
+    "category": "Physical Goods",
+    "subcategory": "USB C Cable 2m",
+    "price": 8.99,
+    "description": "High-speed USB-C to USB-C cable, 100W charging, 10Gbps data transfer",
+    "private_data": "Tracking will be provided after shipment",
+    "is_physical": true,
+    "shipping_cost": 2.99
+  },
+  {
+    "category": "Physical Goods",
+    "subcategory": "USB C Cable 2m",
+    "price": 8.99,
+    "description": "High-speed USB-C to USB-C cable, 100W charging, 10Gbps data transfer",
+    "private_data": "Tracking will be provided after shipment",
+    "is_physical": true,
+    "shipping_cost": 2.99
+  },
+  {
+    "category": "Physical Goods",
+    "subcategory": "USB C Cable 2m",
+    "price": 8.99,
+    "description": "High-speed USB-C to USB-C cable, 100W charging, 10Gbps data transfer",
+    "private_data": "Tracking will be provided after shipment",
+    "is_physical": true,
+    "shipping_cost": 2.99
+  },
+  {
+    "category": "Physical Goods",
+    "subcategory": "Mechanical Keyboard",
+    "price": 89.99,
+    "description": "RGB mechanical gaming keyboard, Cherry MX Red switches, aluminum frame",
+    "private_data": "Tracking will be provided after shipment",
+    "is_physical": true,
+    "shipping_cost": 12.99
+  },
+  {
+    "category": "Physical Goods",
+    "subcategory": "Mechanical Keyboard",
+    "price": 89.99,
+    "description": "RGB mechanical gaming keyboard, Cherry MX Red switches, aluminum frame",
+    "private_data": "Tracking will be provided after shipment",
+    "is_physical": true,
+    "shipping_cost": 12.99
+  },
+  {
+    "category": "Physical Goods",
+    "subcategory": "Gaming Mouse",
+    "price": 49.99,
+    "description": "Wireless gaming mouse, 16000 DPI, RGB lighting, 70-hour battery",
+    "private_data": "Tracking will be provided after shipment",
+    "is_physical": true,
+    "shipping_cost": 5.99
+  },
+  {
+    "category": "Physical Goods",
+    "subcategory": "Gaming Mouse",
+    "price": 49.99,
+    "description": "Wireless gaming mouse, 16000 DPI, RGB lighting, 70-hour battery",
+    "private_data": "Tracking will be provided after shipment",
+    "is_physical": true,
+    "shipping_cost": 5.99
+  },
+  {
+    "category": "Physical Goods",
+    "subcategory": "Gaming Mouse",
+    "price": 49.99,
+    "description": "Wireless gaming mouse, 16000 DPI, RGB lighting, 70-hour battery",
+    "private_data": "Tracking will be provided after shipment",
+    "is_physical": true,
+    "shipping_cost": 5.99
+  },
+  {
+    "category": "Physical Goods",
+    "subcategory": "Webcam 1080p",
+    "price": 39.99,
+    "description": "HD webcam 1080p 60fps, auto-focus, built-in mic, USB plug-and-play",
+    "private_data": "Tracking will be provided after shipment",
+    "is_physical": true,
+    "shipping_cost": 4.99
+  },
+  {
+    "category": "Physical Goods",
+    "subcategory": "Webcam 1080p",
+    "price": 39.99,
+    "description": "HD webcam 1080p 60fps, auto-focus, built-in mic, USB plug-and-play",
+    "private_data": "Tracking will be provided after shipment",
+    "is_physical": true,
+    "shipping_cost": 4.99
+  },
+  {
+    "category": "Physical Goods",
+    "subcategory": "Phone Case iPhone 15",
+    "price": 14.99,
+    "description": "Shockproof iPhone 15 case, military-grade drop protection, clear design",
+    "private_data": "Tracking will be provided after shipment",
+    "is_physical": true,
+    "shipping_cost": 2.49
+  },
+  {
+    "category": "Physical Goods",
+    "subcategory": "Phone Case iPhone 15",
+    "price": 14.99,
+    "description": "Shockproof iPhone 15 case, military-grade drop protection, clear design",
+    "private_data": "Tracking will be provided after shipment",
+    "is_physical": true,
+    "shipping_cost": 2.49
+  },
+  {
+    "category": "Physical Goods",
+    "subcategory": "Phone Case iPhone 15",
+    "price": 14.99,
+    "description": "Shockproof iPhone 15 case, military-grade drop protection, clear design",
+    "private_data": "Tracking will be provided after shipment",
+    "is_physical": true,
+    "shipping_cost": 2.49
+  },
+  {
+    "category": "Crypto Mining",
+    "subcategory": "Cloud Mining 6 Months BTC",
+    "price": 299.99,
+    "description": "Bitcoin cloud mining contract, 6 months, 10 TH/s",
+    "private_data": "Contract ID: BTC-MINE-12345 | Dashboard: https://miningpool.com/dashboard",
+    "is_physical": false
+  },
+  {
+    "category": "Crypto Mining",
+    "subcategory": "Cloud Mining 6 Months BTC",
+    "price": 299.99,
+    "description": "Bitcoin cloud mining contract, 6 months, 10 TH/s",
+    "private_data": "Contract ID: BTC-MINE-67890 | Dashboard: https://miningpool.com/dashboard",
+    "is_physical": false
+  },
+  {
+    "category": "Crypto Mining",
+    "subcategory": "Cloud Mining 12 Months ETH",
+    "price": 499.99,
+    "description": "Ethereum cloud mining contract, 12 months, 100 MH/s",
+    "private_data": "Contract ID: ETH-MINE-11111 | Dashboard: https://ethmining.com/dashboard",
+    "is_physical": false
+  },
+  {
+    "category": "Education",
+    "subcategory": "Udemy Course Bundle",
+    "price": 29.99,
+    "description": "10 premium Udemy courses, Python, Web Dev, Data Science",
+    "private_data": "Coupon codes: PYTHON123, WEBDEV456, DATA789, ...",
+    "is_physical": false
+  },
+  {
+    "category": "Education",
+    "subcategory": "Udemy Course Bundle",
+    "price": 29.99,
+    "description": "10 premium Udemy courses, Python, Web Dev, Data Science",
+    "private_data": "Coupon codes: CODE111, CODE222, CODE333, ...",
+    "is_physical": false
+  },
+  {
+    "category": "Education",
+    "subcategory": "Coursera Plus 1 Year",
+    "price": 199.99,
+    "description": "Coursera Plus annual subscription, 7000+ courses, certificates",
+    "private_data": "Email: coursera1@example.com | Password: course123",
+    "is_physical": false
+  },
+  {
+    "category": "eBooks",
+    "subcategory": "Programming eBook Bundle",
+    "price": 24.99,
+    "description": "50 programming eBooks: Python, JavaScript, algorithms, design patterns",
+    "private_data": "Download Link: https://ebooks.com/download/bundle-12345",
+    "is_physical": false
+  },
+  {
+    "category": "eBooks",
+    "subcategory": "Programming eBook Bundle",
+    "price": 24.99,
+    "description": "50 programming eBooks: Python, JavaScript, algorithms, design patterns",
+    "private_data": "Download Link: https://ebooks.com/download/bundle-67890",
+    "is_physical": false
+  },
+  {
+    "category": "eBooks",
+    "subcategory": "Business eBook Collection",
+    "price": 19.99,
+    "description": "30 business eBooks: marketing, leadership, finance, entrepreneurship",
+    "private_data": "Download Link: https://ebooks.com/download/business-11111",
+    "is_physical": false
+  },
+  {
+    "category": "Music Production",
+    "subcategory": "FL Studio Producer Edition",
+    "price": 189.99,
+    "description": "FL Studio Producer Edition license, lifetime updates",
+    "private_data": "License: FLSTUDIO-PROD-12345-67890-ABCDE",
+    "is_physical": false
+  },
+  {
+    "category": "Music Production",
+    "subcategory": "Serum VST Plugin",
+    "price": 99.99,
+    "description": "Xfer Serum wavetable synthesizer plugin, full version",
+    "private_data": "Serial: SERUM-12345-ABCDE-67890",
+    "is_physical": false
+  },
+  {
+    "category": "Fitness",
+    "subcategory": "MyFitnessPal Premium 1 Year",
+    "price": 49.99,
+    "description": "MyFitnessPal Premium 1 year, ad-free, meal plans, macros",
+    "private_data": "Email: fitness1@example.com | Password: fit123",
+    "is_physical": false
+  },
+  {
+    "category": "Fitness",
+    "subcategory": "Peloton Digital 3 Months",
+    "price": 39.99,
+    "description": "Peloton Digital 3 months, all classes, yoga, strength, cardio",
+    "private_data": "Email: peloton1@example.com | Password: pelo123",
+    "is_physical": false
+  },
+  {
+    "category": "Social Media",
+    "subcategory": "Instagram Followers 10K",
+    "price": 79.99,
+    "description": "10,000 real Instagram followers, gradual delivery, no drop",
+    "private_data": "Service will start within 24h after providing your @username",
+    "is_physical": false
+  },
+  {
+    "category": "Social Media",
+    "subcategory": "YouTube Subscribers 5K",
+    "price": 149.99,
+    "description": "5,000 YouTube subscribers, real accounts, gradual delivery",
+    "private_data": "Service will start within 24h after providing your channel URL",
+    "is_physical": false
+  },
+  {
+    "category": "Hosting & Domains",
+    "subcategory": "Shared Hosting 1 Year",
+    "price": 59.99,
+    "description": "Shared web hosting 1 year, unlimited bandwidth, cPanel, SSL",
+    "private_data": "Login: https://hosting.com/login | User: host123 | Pass: hostpass456",
+    "is_physical": false
+  },
+  {
+    "category": "Hosting & Domains",
+    "subcategory": "VPS 3 Months",
+    "price": 89.99,
+    "description": "VPS 3 months, 4 CPU, 8GB RAM, 160GB SSD, root access",
+    "private_data": "IP: 192.168.1.100 | Root Password: vps123pass",
+    "is_physical": false
+  },
+  {
+    "category": "Anti-Virus",
+    "subcategory": "Norton 360 1 Year",
+    "price": 39.99,
+    "description": "Norton 360 Deluxe 1 year, 5 devices, VPN, dark web monitoring",
+    "private_data": "Product Key: NORTON-12345-67890-ABCDE-FGHIJ",
+    "is_physical": false
+  },
+  {
+    "category": "Anti-Virus",
+    "subcategory": "Kaspersky Total Security 1 Year",
+    "price": 34.99,
+    "description": "Kaspersky Total Security 1 year, 3 devices, password manager",
+    "private_data": "Activation Code: KASP-ABCD-EFGH-IJKL-MNOP",
+    "is_physical": false
+  }
+]

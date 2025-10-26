@@ -1,11 +1,13 @@
 import inspect
 
 from aiogram import types, F, Router
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from callbacks import CartCallback
+import config
+from callbacks import CartCallback, OrderCallback
 from enums.bot_entity import BotEntity
 from services.cart import CartService
 from utils.custom_filters import IsUserExistFilter
@@ -40,7 +42,8 @@ async def delete_cart_item(**kwargs):
 async def checkout_processing(**kwargs):
     callback = kwargs.get("callback")
     session = kwargs.get("session")
-    msg, kb_builder = await CartService.checkout_processing(callback, session)
+    state = kwargs.get("state")
+    msg, kb_builder = await CartService.checkout_processing(callback, session, state)
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
@@ -56,44 +59,39 @@ async def buy_processing(**kwargs):
 # NEW INVOICE-BASED CHECKOUT HANDLERS
 # ========================================
 
-async def crypto_selection_for_checkout(**kwargs):
-    """Level 3: Shows crypto selection after checkout confirmation (invoice flow)"""
+async def create_order_handler(**kwargs):
+    """
+    Level 3: Checkout → Hand off to Order Domain
+
+    Redirects to OrderCallback Level 0 (Order Creation).
+    Order domain handles:
+    - Stock reservation
+    - Stock adjustment confirmation
+    - Address collection (physical items)
+    - Payment processing
+    """
     callback = kwargs.get("callback")
-    session = kwargs.get("session")
-    msg, kb_builder = await CartService.get_crypto_selection_for_checkout(callback, session)
+
+    # Hand off to Order domain
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
+    from services.order import OrderService
+
+    # Directly call order creation
+    msg, kb_builder = await OrderService.create_order(callback, kwargs.get("session"), kwargs.get("state"))
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
-async def create_order_with_crypto(**kwargs):
-    """Level 4: Creates order + invoice with selected crypto"""
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
-    await callback.message.edit_reply_markup()  # Remove buttons during processing
-    msg, kb_builder = await CartService.create_order_with_selected_crypto(callback, session)
-    await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
-
-
-async def cancel_order(**kwargs):
-    """Level 5: Cancels an order (with grace period check)"""
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
-    await callback.message.edit_reply_markup()  # Remove buttons during processing
-    msg, kb_builder = await CartService.cancel_order(callback, session)
-    await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
 
 
 @cart_router.callback_query(CartCallback.filter(), IsUserExistFilter())
-async def navigate_cart_process(callback: CallbackQuery, callback_data: CartCallback, session: AsyncSession | Session):
+async def navigate_cart_process(callback: CallbackQuery, callback_data: CartCallback, session: AsyncSession | Session, state: FSMContext):
     current_level = callback_data.level
 
     levels = {
         0: show_cart,
         1: delete_cart_item,
         2: checkout_processing,
-        3: crypto_selection_for_checkout,      # INVOICE-FLOW: Crypto selection
-        4: create_order_with_crypto,           # INVOICE-FLOW: Order creation
-        5: cancel_order,                       # INVOICE-FLOW: Order cancellation
-        # 3: buy_processing  # OLD WALLET-FLOW (commented out for migration)
+        3: create_order_handler,  # Hand off to Order domain
     }
 
     current_level_function = levels[current_level]
@@ -101,6 +99,7 @@ async def navigate_cart_process(callback: CallbackQuery, callback_data: CartCall
     kwargs = {
         "callback": callback,
         "session": session,
+        "state": state,
     }
 
     await current_level_function(**kwargs)

@@ -13,6 +13,7 @@ from repositories.deposit import DepositRepository
 from repositories.invoice import InvoiceRepository
 from repositories.payment import PaymentRepository
 from repositories.user import UserRepository
+from services.cart import format_crypto_amount
 from services.notification import NotificationService
 from services.order import OrderService
 
@@ -44,7 +45,7 @@ async def fetch_crypto_event(payment_dto: ProcessingPaymentDTO, request: Request
     logging.info(f"Payment ID: {payment_dto.id}")
     logging.info(f"Payment Type: {payment_dto.paymentType}")
     logging.info(f"Is Paid: {payment_dto.isPaid}")
-    logging.info(f"Crypto: {payment_dto.cryptoCurrency} | Amount: {payment_dto.cryptoAmount}")
+    logging.info(f"Crypto: {payment_dto.cryptoCurrency} | Amount: {format_crypto_amount(payment_dto.cryptoAmount)}")
     logging.info(f"Fiat: {payment_dto.fiatCurrency} | Amount: {payment_dto.fiatAmount}")
     logging.info(f"Raw Body: {request_body.decode('utf-8')}")
     logging.info("=" * 80)
@@ -104,10 +105,21 @@ async def _handle_deposit_payment(payment_dto: ProcessingPaymentDTO, session):
 
 
 async def _handle_order_payment(payment_dto: ProcessingPaymentDTO, invoice, session):
-    """Handles PAYMENT (order payments) - new logic for invoice-based system"""
+    """
+    Handles PAYMENT (order payments) with full payment validation.
+
+    Validates payment amount and handles:
+    - Exact payments
+    - Overpayments (minor = forfeit, significant = wallet credit)
+    - Underpayments (1st = retry, 2nd = cancel with penalty)
+    - Late payments (wallet credit with penalty)
+    - Currency mismatches
+    """
     import logging
     from repositories.order import OrderRepository
     from enums.order_status import OrderStatus
+    from services.payment_validator import PaymentValidator
+    from enums.payment_validation import PaymentValidationResult
 
     logging.info(f"🛒 Processing ORDER PAYMENT (Invoice: {invoice.invoice_number}, Payment ID: {payment_dto.id})")
 
@@ -120,19 +132,80 @@ async def _handle_order_payment(payment_dto: ProcessingPaymentDTO, invoice, sess
 
     logging.info(f"Order ID: {order.id} | Status: {order.status.value} | Total: {order.total_price} {order.currency.value}")
 
-    # Only process if payment is confirmed and order is still pending
-    if payment_dto.isPaid is True and order.status == OrderStatus.PENDING_PAYMENT:
-        logging.info(f"✅ PAYMENT CONFIRMED: Completing order {order.id}")
-
-        # Complete order payment (marks items as sold, updates order status to PAID)
-        await OrderService.complete_order_payment(invoice.order_id, session)
-
-        logging.info(f"🎉 SUCCESS: Order {order.id} marked as PAID (Invoice: {invoice.invoice_number})")
-        # TODO: Send notification to user about successful payment
-
-    elif payment_dto.isPaid is True and order.status != OrderStatus.PENDING_PAYMENT:
-        logging.warning(f"⚠️ DUPLICATE/LATE PAYMENT: Order {order.id} already in status {order.status.value}")
-
-    elif payment_dto.isPaid is False:
-        # Payment expired or failed - order will be cancelled by timeout job
+    # Only process if payment is confirmed
+    if payment_dto.isPaid is False:
         logging.warning(f"❌ PAYMENT FAILED/EXPIRED: Order {order.id} (Invoice: {invoice.invoice_number})")
+        return
+
+    # Handle late payment (order timed out but payment received)
+    if order.status == OrderStatus.TIMEOUT:
+        logging.warning(f"⏰ LATE PAYMENT DETECTED: Order {order.id} already timed out")
+        # Use late payment handler which applies penalty and credits wallet
+        from processing.payment_handlers import _handle_late_payment
+        await _handle_late_payment(payment_dto, invoice, order, session)
+        return
+
+    # Handle double payment (order already completed successfully)
+    if order.status not in [OrderStatus.PENDING_PAYMENT, OrderStatus.PENDING_PAYMENT_PARTIAL]:
+        logging.warning(f"⚠️ DUPLICATE PAYMENT DETECTED: Order {order.id} already in status {order.status.value}")
+
+        # Calculate fiat amount from crypto (using invoice exchange rate)
+        from processing.payment_handlers import calculate_fiat_from_crypto
+        paid_fiat = calculate_fiat_from_crypto(payment_dto.cryptoAmount, invoice)
+
+        # Credit entire payment to wallet
+        from repositories.user import UserRepository
+        user = await UserRepository.get_by_id(order.user_id, session)
+        user.top_up_amount += paid_fiat
+        await UserRepository.update(user, session)
+        await session_commit(session)
+
+        logging.info(f"💳 DOUBLE PAYMENT: Credited {paid_fiat} {payment_dto.fiatCurrency} to user {user.id} wallet")
+
+        # Notify user
+        from services.notification import NotificationService
+        await NotificationService.notify_double_payment(user, paid_fiat, invoice.invoice_number)
+
+        return
+
+    # Validate payment amount
+    validation_result = PaymentValidator.validate_payment(
+        paid=payment_dto.cryptoAmount,
+        required=invoice.payment_amount_crypto,
+        currency_paid=payment_dto.cryptoCurrency,
+        currency_required=invoice.payment_crypto_currency,
+        deadline=order.expires_at
+    )
+
+    logging.info(f"💳 Payment Validation: {validation_result.value}")
+    logging.info(f"   Paid: {format_crypto_amount(payment_dto.cryptoAmount)} {payment_dto.cryptoCurrency.value}")
+    logging.info(f"   Required: {format_crypto_amount(invoice.payment_amount_crypto)} {invoice.payment_crypto_currency.value}")
+    logging.info(f"   Deadline: {order.expires_at}")
+
+    # Handle validation result
+    from processing.payment_handlers import (
+        _handle_exact_payment,
+        _handle_minor_overpayment,
+        _handle_significant_overpayment,
+        _handle_underpayment,
+        _handle_late_payment,
+        _handle_currency_mismatch
+    )
+
+    if validation_result == PaymentValidationResult.EXACT_MATCH:
+        await _handle_exact_payment(payment_dto, invoice, order, session)
+
+    elif validation_result == PaymentValidationResult.MINOR_OVERPAYMENT:
+        await _handle_minor_overpayment(payment_dto, invoice, order, session)
+
+    elif validation_result == PaymentValidationResult.OVERPAYMENT:
+        await _handle_significant_overpayment(payment_dto, invoice, order, session)
+
+    elif validation_result == PaymentValidationResult.UNDERPAYMENT:
+        await _handle_underpayment(payment_dto, invoice, order, session)
+
+    elif validation_result == PaymentValidationResult.LATE_PAYMENT:
+        await _handle_late_payment(payment_dto, invoice, order, session)
+
+    elif validation_result == PaymentValidationResult.CURRENCY_MISMATCH:
+        await _handle_currency_mismatch(payment_dto, invoice, order, session)

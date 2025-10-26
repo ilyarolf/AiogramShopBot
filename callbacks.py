@@ -168,3 +168,25 @@ class WalletCallback(BaseCallback, prefix="wallet"):
     @staticmethod
     def create(level: int, cryptocurrency: Cryptocurrency | None = None):
         return WalletCallback(level=level, cryptocurrency=cryptocurrency)
+
+
+class OrderCallback(BaseCallback, prefix="order"):
+    order_id: int
+    confirmation: bool
+    cryptocurrency: Cryptocurrency | None
+
+    @staticmethod
+    def create(level: int = 0, order_id: int = -1, confirmation: bool = False,
+               cryptocurrency: Cryptocurrency | None = None):
+        return OrderCallback(level=level, order_id=order_id, confirmation=confirmation,
+                           cryptocurrency=cryptocurrency)
+
+
+class ShippingManagementCallback(BaseCallback, prefix="shipping_management"):
+    order_id: int
+    confirmation: bool
+    page: int
+
+    @staticmethod
+    def create(level: int, order_id: int = -1, confirmation: bool = False, page: int = 0):
+        return ShippingManagementCallback(level=level, order_id=order_id, confirmation=confirmation, page=page)

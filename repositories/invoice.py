@@ -18,7 +18,7 @@ class InvoiceRepository:
 
     @staticmethod
     async def get_by_order_id(order_id: int, session: Session | AsyncSession) -> InvoiceDTO | None:
-        """Holt Invoice einer Order"""
+        """Holt erste Invoice einer Order (für Backward-Compatibility)"""
         stmt = select(Invoice).where(Invoice.order_id == order_id)
         result = await session_execute(stmt, session)
         invoice = result.scalar_one_or_none()
@@ -26,6 +26,18 @@ class InvoiceRepository:
         if invoice:
             return InvoiceDTO.model_validate(invoice, from_attributes=True)
         return None
+
+    @staticmethod
+    async def get_all_by_order_id(order_id: int, session: Session | AsyncSession) -> list[InvoiceDTO]:
+        """
+        Holt ALLE Invoices einer Order (für Underpayment-Fälle).
+        Returns list of invoices sorted by creation time.
+        """
+        stmt = select(Invoice).where(Invoice.order_id == order_id).order_by(Invoice.id)
+        result = await session_execute(stmt, session)
+        invoices = result.scalars().all()
+
+        return [InvoiceDTO.model_validate(inv, from_attributes=True) for inv in invoices]
 
     @staticmethod
     async def get_by_payment_processing_id(processing_id: int, session: Session | AsyncSession) -> InvoiceDTO | None:

@@ -16,9 +16,12 @@ from middleware.throttling_middleware import ThrottlingMiddleware
 from models.user import UserDTO
 from multibot import main as main_multibot
 from handlers.user.cart import cart_router
+from handlers.user.order import order_router
 from handlers.admin.admin import admin_router
+from handlers.admin.shipping_management import shipping_management_router
 from handlers.user.all_categories import all_categories_router
 from handlers.user.my_profile import my_profile_router
+from handlers.user.shipping_handlers import shipping_router
 from services.notification import NotificationService
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
@@ -56,11 +59,15 @@ async def faq(message: types.message):
 
 @main_router.message(F.text == Localizator.get_text(BotEntity.USER, "help"), IsUserExistFilter())
 async def support(message: types.message):
-    admin_keyboard_builder = InlineKeyboardBuilder()
+    help_text = Localizator.get_text(BotEntity.USER, "help_string")
 
-    admin_keyboard_builder.button(text=Localizator.get_text(BotEntity.USER, "help_button"), url=SUPPORT_LINK)
-    await message.answer(Localizator.get_text(BotEntity.USER, "help_string"),
-                         reply_markup=admin_keyboard_builder.as_markup())
+    # Only add button if SUPPORT_LINK is configured
+    if SUPPORT_LINK:
+        admin_keyboard_builder = InlineKeyboardBuilder()
+        admin_keyboard_builder.button(text=Localizator.get_text(BotEntity.USER, "help_button"), url=SUPPORT_LINK)
+        await message.answer(help_text, reply_markup=admin_keyboard_builder.as_markup())
+    else:
+        await message.answer(help_text)
 
 
 @main_router.error(F.update.message.as_("message"))
@@ -82,11 +89,14 @@ users_routers = Router()
 users_routers.include_routers(
     all_categories_router,
     my_profile_router,
-    cart_router
+    cart_router,
+    order_router,
+    shipping_router
 )
 users_routers.message.middleware(throttling_middleware)
 users_routers.callback_query.middleware(throttling_middleware)
 main_router.include_router(admin_router)
+main_router.include_router(shipping_management_router)
 main_router.include_routers(users_routers)
 main_router.message.middleware(DBSessionMiddleware())
 main_router.callback_query.middleware(DBSessionMiddleware())
