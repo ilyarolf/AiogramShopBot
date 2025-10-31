@@ -157,7 +157,6 @@ class OrderService:
         from models.buyItem import BuyItemDTO
         from repositories.buy import BuyRepository
         from repositories.buyItem import BuyItemRepository
-        from services.message import MessageService
         from services.notification import NotificationService
 
         # Get order details
@@ -210,16 +209,9 @@ class OrderService:
         await session_commit(session)
         logging.info(f"✅ Order {order_id} data committed (status=PAID, items sold, buy records created)")
 
-        # 5. Deliver items to user
-        user = await UserRepository.get_by_id(order.user_id, session)
-
-        # Create message with bought items (same format as old system)
-        items_message = MessageService.create_message_with_bought_items(items)
-
-        # Send items to user via DM (user receives their purchased items)
-        await NotificationService.send_to_user(items_message, user.telegram_id)
-
-        logging.info(f"✅ Order {order_id} completed - {len(items)} items delivered to user {user.id}")
+        # Note: Items are now delivered via NotificationService.payment_success()
+        # which sends a single combined message with invoice details + private_data
+        logging.info(f"✅ Order {order_id} completed - {len(items)} items will be delivered via payment_success notification")
 
         # Send admin notification if order has physical items awaiting shipment
         if has_physical_items:

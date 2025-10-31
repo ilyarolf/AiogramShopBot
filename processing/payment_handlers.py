@@ -86,9 +86,9 @@ async def _handle_exact_payment(payment_dto, invoice, order, session):
 
     logging.info(f"🎉 SUCCESS: Order {order.id} marked as PAID")
 
-    # Send notification to user
+    # Send notification to user (includes invoice details + purchased items)
     user = await UserRepository.get_by_id(order.user_id, session)
-    await NotificationService.payment_success(user, invoice.invoice_number)
+    await NotificationService.payment_success(user, invoice.invoice_number, order.id, session)
 
 
 async def _handle_minor_overpayment(payment_dto, invoice, order, session):
@@ -133,9 +133,9 @@ async def _handle_minor_overpayment(payment_dto, invoice, order, session):
 
     logging.info(f"🎉 SUCCESS: Order {order.id} marked as PAID (minor overpayment forfeited)")
 
-    # Send notification to user (same as exact payment)
+    # Send notification to user (includes invoice details + purchased items)
     user = await UserRepository.get_by_id(order.user_id, session)
-    await NotificationService.payment_success(user, invoice.invoice_number)
+    await NotificationService.payment_success(user, invoice.invoice_number, order.id, session)
 
 
 async def _handle_significant_overpayment(payment_dto, invoice, order, session):

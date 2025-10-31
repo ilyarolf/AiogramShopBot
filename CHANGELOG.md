@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-10-31
+
+### Payment System Improvements
+
+**Invoice System**
+- Invoice numbers now use INV- prefix format (INV-YYYY-XXXXXX) for consistency with TOPUP- format
+- Fixed duplicate prefix display in user-facing invoice messages
+
+**Payment Notifications**
+- Unified payment confirmation into single invoice-style message with order details and purchased items
+- Fixed missing parameters (topup_reference, bot_name) in deposit and payment expiry notifications
+- Consistent reference display across all payment messages
+
+**Payment Testing**
+- Simplified webhook simulator to 3 parameters (--reference, --amount-paid, --no-signature)
+- Auto-detection of payment type from INV-/TOPUP- prefix
+- Database lookup of expected amounts for accurate test scenarios
+
+**Admin Interface**
+- Enhanced order view with itemized invoice format showing quantities and line totals
+- Cleaner presentation of digital vs physical items with explicit "Stk." quantities
+
 ## 2025-10-30
 
 ### Strike System & Automated User Ban Management

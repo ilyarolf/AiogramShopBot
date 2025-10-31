@@ -108,43 +108,63 @@ async def show_order_details(**kwargs):
         user_id=user.telegram_id
     )
 
-    # Calculate items total
-    items_total = sum(item.price for item in order.items)
-
-    # Show price breakdown with separators
-    message_text += "\n\n─────────────────────\n"
-    message_text += f"<b>Artikel:</b> {items_total:.2f}{Localizator.get_currency_symbol()}\n"
-    if order.shipping_cost > 0:
-        message_text += f"<b>Versand:</b> {order.shipping_cost:.2f}{Localizator.get_currency_symbol()}\n"
-    message_text += "─────────────────────\n"
-    message_text += f"<b>Gesamtsumme:</b> {order.total_price:.2f}{Localizator.get_currency_symbol()}\n"
-
-    # Show ALL items with status
-    message_text += "\n\n<b>📋 ALLE BESTELLARTIKEL:</b>\n"
-    message_text += "─────────────────────\n"
+    message_text += "\n\n"
 
     # Digital items (delivered)
     digital_items = [item for item in order.items if not item.is_physical]
+    digital_total = 0.0
     if digital_items:
-        message_text += "<b>💾 Digitale Artikel (zugestellt):</b>\n"
+        message_text += "<b>Digital:</b>\n"
+        # Group by (description, price) and count quantities
+        digital_grouped = {}
         for item in digital_items:
-            message_text += f"✅ {item.description} ({item.price:.2f}{Localizator.get_currency_symbol()})\n"
+            key = (item.description, item.price)
+            if key not in digital_grouped:
+                digital_grouped[key] = 0
+            digital_grouped[key] += 1
+
+        for (description, price), qty in digital_grouped.items():
+            line_total = qty * price
+            digital_total += line_total
+            if qty == 1:
+                message_text += f"{qty} Stk. {description} {price:.2f}\n"
+            else:
+                message_text += f"{qty} Stk. {description} {price:.2f} = {line_total:.2f}\n"
         message_text += "\n"
 
     # Physical items (to be shipped)
     physical_items = [item for item in order.items if item.is_physical]
+    physical_total = 0.0
     if physical_items:
-        message_text += "<b>📦 Artikel für Versand:</b>\n"
+        message_text += "<b>Versandartikel:</b>\n"
+        # Group by (description, price) and count quantities
+        physical_grouped = {}
         for item in physical_items:
-            message_text += f"📦 {item.description} ({item.price:.2f}{Localizator.get_currency_symbol()})\n"
+            key = (item.description, item.price)
+            if key not in physical_grouped:
+                physical_grouped[key] = 0
+            physical_grouped[key] += 1
+
+        for (description, price), qty in physical_grouped.items():
+            line_total = qty * price
+            physical_total += line_total
+            if qty == 1:
+                message_text += f"{qty} Stk. {description} {price:.2f}\n"
+            else:
+                message_text += f"{qty} Stk. {description} {price:.2f} = {line_total:.2f}\n"
         message_text += "\n"
+
+    # Price breakdown
+    message_text += "═══════════════════════\n"
+    if order.shipping_cost > 0:
+        message_text += f"Versand {order.shipping_cost:.2f}\n\n"
+    message_text += f"<b>Total: {order.total_price:.2f} {Localizator.get_currency_symbol()}</b>\n"
+    message_text += "═══════════════════════\n"
 
     # Shipping address
     if shipping_address:
-        message_text += "─────────────────────\n"
-        message_text += Localizator.get_text(BotEntity.ADMIN, "order_shipping_address").format(
-            address=shipping_address
-        )
+        message_text += "\n<b>Adressdaten:</b>\n"
+        message_text += f"{shipping_address}"
 
     # Buttons
     kb_builder = InlineKeyboardBuilder()

@@ -7,6 +7,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+import config
 from config import ADMIN_ID_LIST, TOKEN
 from enums.bot_entity import BotEntity
 from models.buy import RefundDTO
@@ -74,7 +75,9 @@ class NotificationService:
             crypto_amount=payment_dto.cryptoAmount,
             fiat_amount=payment_dto.fiatAmount,
             currency_text=Localizator.get_currency_text(),
-            status=Localizator.get_text(BotEntity.USER, "status_expired")
+            status=Localizator.get_text(BotEntity.USER, "status_expired"),
+            topup_reference=deposit_record.topup_reference or "N/A",
+            bot_name=config.BOT_NAME if hasattr(config, 'BOT_NAME') else "Bot"
         )
         await NotificationService.edit_message(edited_payment_message, deposit_record.message_id,
                                                user_dto.telegram_id)
@@ -86,7 +89,7 @@ class NotificationService:
         user_notification_msg = Localizator.get_text(BotEntity.USER, "notification_new_deposit").format(
             fiat_amount=payment_dto.fiatAmount,
             currency_text=Localizator.get_currency_text(),
-            payment_id=payment_dto.id
+            payment_id=deposit_record.topup_reference or f"ID-{payment_dto.id}"
         )
         await NotificationService.send_to_user(user_notification_msg, user_dto.telegram_id)
         edited_payment_message = Localizator.get_text(BotEntity.USER, "top_up_balance_msg").format(
@@ -95,7 +98,9 @@ class NotificationService:
             crypto_amount=payment_dto.cryptoAmount,
             fiat_amount=payment_dto.fiatAmount,
             currency_text=Localizator.get_currency_text(),
-            status=Localizator.get_text(BotEntity.USER, "status_paid")
+            status=Localizator.get_text(BotEntity.USER, "status_paid"),
+            topup_reference=deposit_record.topup_reference or "N/A",
+            bot_name=config.BOT_NAME if hasattr(config, 'BOT_NAME') else "Bot"
         )
         await NotificationService.edit_message(edited_payment_message, deposit_record.message_id,
                                                user_dto.telegram_id)
@@ -264,15 +269,33 @@ class NotificationService:
     @staticmethod
     async def payment_success(
         user: UserDTO,
-        invoice_number: str
+        invoice_number: str,
+        order_id: int = None,
+        session = None
     ):
         """
-        Notifies user about successful payment (exact or minor overpayment).
+        Notifies user about successful payment with full order details and purchased items.
+
+        Combines payment confirmation with invoice-style formatting and private_data delivery.
         """
+        # If order_id provided, use detailed invoice format with items
+        if order_id and session:
+            from services.buy import BuyService
+            from repositories.item import ItemRepository
+
+            # Get items for this order
+            items = await ItemRepository.get_by_order_id(order_id, session)
+
+            if items:
+                # Use the same formatted message as Purchase History
+                msg, _ = await BuyService.generate_buy_message(items, session)
+                await NotificationService.send_to_user(msg, user.telegram_id)
+                return
+
+        # Fallback: Simple payment success message
         msg = Localizator.get_text(BotEntity.USER, "payment_success").format(
             invoice_number=invoice_number
         )
-
         await NotificationService.send_to_user(msg, user.telegram_id)
 
     @staticmethod

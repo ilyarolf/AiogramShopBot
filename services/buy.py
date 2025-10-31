@@ -98,10 +98,13 @@ class BuyService:
                     shipped_at=shipped_at_str
                 )
 
-            # Build items list with descriptions
+            # Build items list with descriptions and optionally private_data
             items_list = ""
             for idx, item in enumerate(items, 1):
                 items_list += f"{idx}. {item.description}\n"
+                # Add private_data if available (for payment confirmation)
+                if item.private_data:
+                    items_list += f"   <code>{item.private_data}</code>\n"
 
             # Calculate subtotal (total - shipping)
             subtotal = order.total_price - order.shipping_cost
@@ -126,6 +129,12 @@ class BuyService:
                 shipping_line=shipping_line,
                 total=order.total_price
             )
+
+            # Add retention notice if private_data is included
+            if any(item.private_data for item in items):
+                msg += Localizator.get_text(BotEntity.USER, "purchased_items_retention_notice").format(
+                    retention_days=config.DATA_RETENTION_DAYS
+                )
         else:
             # Fallback to old message format if no order found
             msg = MessageService.create_message_with_bought_items(items)
