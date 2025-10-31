@@ -68,6 +68,23 @@ class UserRepository:
         return users_count.scalar_one()
 
     @staticmethod
+    async def get_banned_users(session: Session | AsyncSession) -> list[UserDTO]:
+        """
+        Get all banned users ordered by ban date (most recent first).
+
+        Returns:
+            list[UserDTO]: List of banned users with all user information
+        """
+        stmt = (
+            select(User)
+            .where(User.is_blocked == True)
+            .order_by(User.blocked_at.desc())
+        )
+        result = await session_execute(stmt, session)
+        users = result.scalars().all()
+        return [UserDTO.model_validate(user, from_attributes=True) for user in users]
+
+    @staticmethod
     async def get_user_entity(user_entity: int | str, session: Session | AsyncSession) -> UserDTO | None:
         stmt = select(User).where(or_(User.telegram_id == user_entity, User.telegram_username == user_entity,
                                       User.id == user_entity))

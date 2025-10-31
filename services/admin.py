@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import logging
 import re
 
@@ -199,6 +200,8 @@ class AdminService:
                           callback_data=UserManagementCallback.create(1))
         kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "make_refund"),
                           callback_data=UserManagementCallback.create(2))
+        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "unban_user"),
+                          callback_data=UserManagementCallback.create(1, UserManagementOperation.UNBAN_USER))
         kb_builder.adjust(1)
         kb_builder.row(AdminConstants.back_to_main_button)
         return Localizator.get_text(BotEntity.ADMIN, "user_management"), kb_builder
@@ -213,6 +216,119 @@ class AdminService:
                           callback_data=UserManagementCallback.create(1, UserManagementOperation.REDUCE_BALANCE))
         kb_builder.row(unpacked_cb.get_back_button())
         return Localizator.get_text(BotEntity.ADMIN, "credit_management"), kb_builder
+
+    @staticmethod
+    async def get_banned_users_list(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
+        """
+        Display list of all banned users with unban buttons.
+
+        Shows:
+        - Username/ID
+        - Strike count
+        - Ban date
+        - Ban reason
+        - Unban button for each user
+        """
+        from repositories.user import UserRepository
+        from repositories.user_strike import UserStrikeRepository
+
+        unpacked_cb = UserManagementCallback.unpack(callback.data)
+        banned_users = await UserRepository.get_banned_users(session)
+
+        kb_builder = InlineKeyboardBuilder()
+
+        if not banned_users:
+            message = Localizator.get_text(BotEntity.ADMIN, "no_banned_users")
+        else:
+            message = Localizator.get_text(BotEntity.ADMIN, "banned_users_list_header").format(
+                count=len(banned_users)
+            )
+
+            for user in banned_users:
+                # Get actual strike count from DB
+                strikes = await UserStrikeRepository.get_by_user_id(user.id, session)
+                strike_count = len(strikes)
+
+                # Format username display
+                if user.telegram_username:
+                    user_display = f"@{user.telegram_username}"
+                else:
+                    user_display = f"ID: {user.telegram_id}"
+
+                # Format ban date
+                ban_date = user.blocked_at.strftime("%d.%m.%Y") if user.blocked_at else "Unknown"
+
+                # Build user info text
+                user_info = Localizator.get_text(BotEntity.ADMIN, "banned_user_item").format(
+                    user_display=user_display,
+                    telegram_id=user.telegram_id,
+                    strike_count=strike_count,
+                    ban_date=ban_date,
+                    ban_reason=user.blocked_reason or "Unknown"
+                )
+                message += user_info
+
+                # Add unban button for this user
+                kb_builder.button(
+                    text=Localizator.get_text(BotEntity.ADMIN, "unban_user_button").format(user_display=user_display),
+                    callback_data=UserManagementCallback.create(
+                        level=4,  # New level for unban confirmation
+                        operation=UserManagementOperation.UNBAN_USER,
+                        page=user.id  # Store user_id in page field
+                    )
+                )
+
+        kb_builder.adjust(1)
+        kb_builder.row(unpacked_cb.get_back_button())
+        return message, kb_builder
+
+    @staticmethod
+    async def unban_user(callback: CallbackQuery, session: AsyncSession | Session) -> str:
+        """
+        Unban a user by setting is_blocked = False.
+
+        Args:
+            callback: Callback with user_id in page field
+            session: Database session
+
+        Returns:
+            str: Success or error message
+        """
+        from repositories.user import UserRepository
+
+        unpacked_cb = UserManagementCallback.unpack(callback.data)
+        user_id = unpacked_cb.page  # user_id is stored in page field
+
+        # Get user
+        user = await UserRepository.get_by_id(user_id, session)
+
+        if not user:
+            return Localizator.get_text(BotEntity.ADMIN, "user_not_found")
+
+        if not user.is_blocked:
+            return Localizator.get_text(BotEntity.ADMIN, "user_not_banned").format(
+                user_display=user.telegram_username or user.telegram_id
+            )
+
+        # Unban user
+        user.is_blocked = False
+        user.blocked_at = None
+        user.blocked_reason = f"Unbanned by admin at {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}"
+
+        await UserRepository.update(user, session)
+        from db import session_commit
+        await session_commit(session)
+
+        # Format user display
+        if user.telegram_username:
+            user_display = f"@{user.telegram_username}"
+        else:
+            user_display = f"ID: {user.telegram_id}"
+
+        return Localizator.get_text(BotEntity.ADMIN, "user_unbanned_success").format(
+            user_display=user_display,
+            strike_count=user.strike_count
+        )
 
     @staticmethod
     async def request_user_entity(callback: CallbackQuery, state: FSMContext):

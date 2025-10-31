@@ -44,9 +44,10 @@ class PaymentService:
             )
             payment_dto = ProcessingPaymentDTO.model_validate(payment_dto, from_attributes=True)
             if payment_dto:
-                await PaymentRepository.create(payment_dto.id, user.id, message.message_id, session)
+                topup_ref = await PaymentRepository.create(payment_dto.id, user.id, message.message_id, session)
                 await session_commit(session)
                 return Localizator.get_text(BotEntity.USER, "top_up_balance_msg").format(
+                    topup_reference=topup_ref,
                     crypto_name=payment_dto.cryptoCurrency.name,
                     addr=payment_dto.address,
                     crypto_amount=payment_dto.cryptoAmount,

@@ -114,9 +114,30 @@ Allow banned users to pay their way out of ban (this should HURT):
 9. Testing with multiple scenarios
 
 ## Dependencies
-- Requires timeout job to be implemented (for TIMEOUT strikes)
-- Requires User model migrations
+- Requires timeout job to be implemented (for TIMEOUT strikes) ✅ DONE
+- Requires User model migrations ✅ DONE
+
+## Implementation Status
+
+### Completed Features
+- ✅ Database model with UserStrike table (separate table instead of counter)
+- ✅ Strike increment logic in OrderService
+- ✅ Auto-ban logic when threshold reached (configurable via MAX_STRIKES_BEFORE_BAN)
+- ✅ Ban check via IsUserExistFilter
+- ✅ Ban message with unban instructions
+- ✅ Localization keys (DE/EN)
+- ✅ Integration with timeout job
+- ✅ Strike statistics display in user profile
+- ✅ Wallet top-up unban system (UNBAN_TOP_UP_AMOUNT config)
+- ✅ Admin exemption from bans (EXEMPT_ADMINS_FROM_BAN config)
+- ✅ Banned users can access Support/FAQ
+- ✅ Informative ban message with unban instructions
+
+### Pending Features
+- ⏳ Admin manual unban functionality
+- ⏳ Admin notification when user gets banned
+- ⏳ Testing with multiple scenarios
 
 ---
 
-**Status:** Planned
+**Status:** Testing

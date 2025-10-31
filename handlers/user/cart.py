@@ -17,7 +17,9 @@ cart_router = Router()
 
 
 @cart_router.message(F.text == Localizator.get_text(BotEntity.USER, "cart"), IsUserExistFilter())
-async def cart_text_message(message: types.message, session: AsyncSession | Session):
+async def cart_text_message(message: types.Message, session: AsyncSession | Session):
+    import logging
+    logging.info("🛒 CART BUTTON HANDLER TRIGGERED")
     await show_cart(message=message, session=session)
 
 
@@ -32,10 +34,17 @@ async def show_cart(**kwargs):
         await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
 
 
-async def delete_cart_item(**kwargs):
+async def delete_cart_item_confirm(**kwargs):
     callback = kwargs.get("callback")
     session = kwargs.get("session")
-    msg, kb_builder = await CartService.delete_cart_item(callback, session)
+    msg, kb_builder = await CartService.delete_cart_item_confirm(callback, session)
+    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+
+
+async def delete_cart_item_execute(**kwargs):
+    callback = kwargs.get("callback")
+    session = kwargs.get("session")
+    msg, kb_builder = await CartService.delete_cart_item_execute(callback, session)
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
@@ -89,9 +98,10 @@ async def navigate_cart_process(callback: CallbackQuery, callback_data: CartCall
 
     levels = {
         0: show_cart,
-        1: delete_cart_item,
+        1: delete_cart_item_confirm,
         2: checkout_processing,
         3: create_order_handler,  # Hand off to Order domain
+        4: delete_cart_item_execute,
     }
 
     current_level_function = levels[current_level]

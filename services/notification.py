@@ -297,13 +297,17 @@ class NotificationService:
     @staticmethod
     async def notify_order_cancelled_wallet_refund(
         user: UserDTO,
+        order,
+        invoice,
         invoice_number: str,
         refund_info: dict,
-        currency_sym: str
+        currency_sym: str,
+        session
     ):
         """
         Notifies user about order cancellation and wallet refund.
         Shows processing fee if applicable.
+        For admin cancellations, shows full invoice with refund line.
         """
         original_amount = refund_info['original_amount']
         penalty_amount = refund_info['penalty_amount']
@@ -359,12 +363,105 @@ class NotificationService:
             )
         else:
             # Full refund (no fee)
-            msg = (
-                f"🔔 <b>Order Cancelled</b>\n\n"
-                f"Order-id {invoice_number} has been cancelled.\n\n"
-                f"💰 <b>Full wallet refund:</b> {refund_amount:.2f} {currency_sym}\n\n"
-                f"Your wallet balance has been fully restored."
-            )
+            reason = refund_info.get('reason', 'UNKNOWN')
+
+            # Check if this is an admin cancellation
+            if 'ADMIN' in reason.upper():
+                # Build full invoice with items and refund line for admin cancellation
+                from repositories.item import ItemRepository
+                from repositories.subcategory import SubcategoryRepository
+                from datetime import datetime
+                from utils.localizator import Localizator
+                from enums.bot_entity import BotEntity
+
+                # Get order items
+                order_items = await ItemRepository.get_by_order_id(order.id, session)
+
+                # Build items list (same format as invoice)
+                items_dict = {}
+                for item in order_items:
+                    subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
+                    key = (subcategory.name, item.price)
+                    items_dict[key] = items_dict.get(key, 0) + 1
+
+                items_list = ""
+                subtotal = 0.0
+                for (name, price), qty in items_dict.items():
+                    line_total = price * qty
+                    items_list += f"{qty}x {name}\n  {currency_sym}{price:.2f} × {qty}{' ' * (20 - len(name))}{currency_sym}{line_total:.2f}\n"
+                    subtotal += line_total
+
+                # Shipping line
+                shipping_line = ""
+                if order.shipping_cost > 0:
+                    shipping_label = Localizator.get_text(BotEntity.USER, "admin_cancel_invoice_shipping")
+                    shipping_line = f"{shipping_label}{' ' * (29 - len(shipping_label))}{currency_sym}{order.shipping_cost:.2f}\n"
+
+                # Calculate spacing for alignment
+                subtotal_label = Localizator.get_text(BotEntity.USER, "admin_cancel_invoice_subtotal")
+                total_label = Localizator.get_text(BotEntity.USER, "admin_cancel_invoice_total")
+                refund_label = Localizator.get_text(BotEntity.USER, "admin_cancel_invoice_refund_amount")
+                balance_label = Localizator.get_text(BotEntity.USER, "admin_cancel_invoice_balance")
+
+                subtotal_spacing = " " * (29 - len(subtotal_label))
+                total_spacing = " " * (29 - len(total_label))
+                refund_spacing = " " * (29 - len(refund_label))
+                balance_spacing = " " * (29 - len(balance_label))
+
+                # Format date
+                date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+                msg = (
+                    f"<b>{Localizator.get_text(BotEntity.USER, 'admin_cancel_invoice_header')}{invoice_number}</b>\n"
+                    f"{Localizator.get_text(BotEntity.USER, 'admin_cancel_invoice_date')} {date_str}\n"
+                    f"{Localizator.get_text(BotEntity.USER, 'admin_cancel_invoice_status')}\n\n"
+                    f"<b>{Localizator.get_text(BotEntity.USER, 'admin_cancel_invoice_items')}</b>\n"
+                    f"─────────────────────────────\n"
+                    f"{items_list}"
+                    f"─────────────────────────────\n"
+                    f"{subtotal_label}{subtotal_spacing}{currency_sym}{subtotal:.2f}\n"
+                    f"{shipping_line}"
+                    f"─────────────────────────────\n"
+                    f"<b>{total_label}{total_spacing}{currency_sym}{order.total_price:.2f}</b>\n\n"
+                    f"<b>{Localizator.get_text(BotEntity.USER, 'admin_cancel_invoice_refund_section')}</b>\n"
+                    f"─────────────────────────────\n"
+                    f"{refund_label}{refund_spacing}-{currency_sym}{refund_amount:.2f}\n"
+                    f"─────────────────────────────\n"
+                    f"<b>{balance_label}{balance_spacing}{currency_sym}0.00</b>\n\n"
+                    f"{Localizator.get_text(BotEntity.USER, 'admin_cancel_notice')}\n\n"
+                    f"{Localizator.get_text(BotEntity.USER, 'admin_cancel_refund_notice')}\n\n"
+                    f"{Localizator.get_text(BotEntity.USER, 'admin_cancel_contact_support')}"
+                )
+            else:
+                msg = (
+                    f"🔔 <b>Order Cancelled</b>\n\n"
+                    f"📋 Order Number: {invoice_number}\n\n"
+                    f"💰 <b>Full Refund:</b> {refund_amount:.2f} {currency_sym}\n\n"
+                    f"Your wallet balance has been fully refunded and you will not receive a strike."
+                )
+
+        await NotificationService.send_to_user(msg, user.telegram_id)
+
+    @staticmethod
+    async def notify_order_cancelled_strike_only(
+        user: UserDTO,
+        invoice_number: str,
+        reason
+    ):
+        """
+        Notifies user about order cancellation when no wallet was involved but strike was given.
+        """
+        from enums.order_cancel_reason import OrderCancelReason
+
+        if reason == OrderCancelReason.TIMEOUT:
+            reason_text = Localizator.get_text(BotEntity.USER, "order_cancelled_strike_timeout_reason")
+        else:
+            reason_text = Localizator.get_text(BotEntity.USER, "order_cancelled_strike_late_cancel_reason")
+
+        msg = Localizator.get_text(BotEntity.USER, "order_cancelled_strike_only").format(
+            invoice_number=invoice_number,
+            reason_text=reason_text
+        )
 
         await NotificationService.send_to_user(msg, user.telegram_id)
 
@@ -396,3 +493,62 @@ class NotificationService:
             username=username
         )
         await NotificationService.send_to_admins(msg, None)
+
+    @staticmethod
+    async def notify_user_banned(user, strike_count: int):
+        """
+        Sends notification to user when they are banned due to strikes.
+
+        Args:
+            user: User object
+            strike_count: Number of strikes that caused the ban
+        """
+        msg = Localizator.get_text(BotEntity.USER, "user_banned_notification").format(
+            strike_count=strike_count
+        )
+        await NotificationService.send_to_user(msg, user.telegram_id)
+
+    @staticmethod
+    async def notify_admin_user_banned(user, strike_count: int):
+        """
+        Sends notification to admins when a user is banned due to strikes.
+
+        Args:
+            user: User object
+            strike_count: Number of strikes that caused the ban
+        """
+        from config import UNBAN_TOP_UP_AMOUNT
+
+        # Format user display
+        if user.telegram_username:
+            user_display = f"@{user.telegram_username}"
+        else:
+            user_display = f"ID: {user.telegram_id}"
+
+        msg = Localizator.get_text(BotEntity.ADMIN, "admin_user_banned_notification").format(
+            user_display=user_display,
+            telegram_id=user.telegram_id,
+            strike_count=strike_count,
+            ban_reason=user.blocked_reason or "Unknown",
+            unban_amount=UNBAN_TOP_UP_AMOUNT
+        )
+
+        user_button = await NotificationService.make_user_button(user.telegram_username)
+        await NotificationService.send_to_admins(msg, user_button)
+
+    @staticmethod
+    async def notify_user_unbanned(user, top_up_amount: float, strike_count: int):
+        """
+        Sends notification to user when they are unbanned via wallet top-up.
+
+        Args:
+            user: User object
+            top_up_amount: Amount that was topped up (EUR)
+            strike_count: Current strike count (remains after unban)
+        """
+        msg = Localizator.get_text(BotEntity.USER, "user_unbanned_notification").format(
+            top_up_amount=top_up_amount,
+            currency_sym=Localizator.get_currency_symbol(),
+            strike_count=strike_count
+        )
+        await NotificationService.send_to_user(msg, user.telegram_id)

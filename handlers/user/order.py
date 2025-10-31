@@ -49,15 +49,15 @@ async def reenter_shipping_address(**kwargs):
     Level 2: Re-enter Shipping Address
 
     - User clicked cancel on address confirmation
-    - Prompts for address input again
+    - Prompts for address input again with cancel button
     """
     callback = kwargs.get("callback")
     session = kwargs.get("session")
     state = kwargs.get("state")
 
-    msg = await OrderService.reenter_shipping_address(callback, session, state)
+    msg, kb_builder = await OrderService.reenter_shipping_address(callback, session, state)
     await callback.message.edit_reply_markup()
-    await callback.message.answer(msg)
+    await callback.message.answer(msg, reply_markup=kb_builder.as_markup())
 
 
 async def process_payment(**kwargs):

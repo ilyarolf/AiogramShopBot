@@ -44,8 +44,14 @@ class UserService:
     async def get_my_profile_buttons(telegram_id: int, session: Session | AsyncSession) -> tuple[
         str, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
+        kb_builder.button(text=Localizator.get_text(BotEntity.USER, "top_up_balance_button"),
+                          callback_data=MyProfileCallback.create(1, "top_up_balance"))
         kb_builder.button(text=Localizator.get_text(BotEntity.USER, "purchase_history_button"),
                           callback_data=MyProfileCallback.create(4, "purchase_history"))
+        kb_builder.button(text=Localizator.get_text(BotEntity.USER, "strike_statistics"),
+                          callback_data=MyProfileCallback.create(6, "strike_statistics"))
+        kb_builder.adjust(1)
+
         user = await UserRepository.get_by_tgid(telegram_id, session)
 
         # Show wallet balance (top_up_amount = overpayments + penalties credited)
@@ -112,3 +118,68 @@ class UserService:
             ), kb_builder
         else:
             return Localizator.get_text(BotEntity.USER, "no_purchases"), kb_builder
+
+    @staticmethod
+    async def get_strike_statistics_buttons(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
+        """
+        Shows user's strike statistics and history.
+        Uses DB count as single source of truth (not user.strike_count field).
+        """
+        from repositories.user_strike import UserStrikeRepository
+        import config
+
+        unpacked_cb = MyProfileCallback.unpack(callback.data)
+        user = await UserRepository.get_by_tgid(callback.from_user.id, session)
+
+        # Get user's strikes - use DB count as single source of truth
+        strikes = await UserStrikeRepository.get_by_user_id(user.id, session)
+        actual_strike_count = len(strikes)
+
+        # Determine status based on actual DB count
+        # Use max(0, ...) to prevent negative remaining strikes
+        remaining_strikes = max(0, config.MAX_STRIKES_BEFORE_BAN - actual_strike_count)
+        if user.is_blocked:
+            status = Localizator.get_text(BotEntity.USER, "strike_status_banned")
+        elif actual_strike_count >= config.MAX_STRIKES_BEFORE_BAN - 1:
+            status = Localizator.get_text(BotEntity.USER, "strike_status_warning").format(remaining=remaining_strikes)
+        else:
+            status = Localizator.get_text(BotEntity.USER, "strike_status_ok")
+
+        # Build strike list (show last 5)
+        strikes_list = ""
+        for strike in strikes[:5]:
+            date_str = strike.created_at.strftime("%d.%m.%Y")
+
+            # Get invoice number for this order
+            from repositories.invoice import InvoiceRepository
+            invoice = await InvoiceRepository.get_by_order_id(strike.order_id, session)
+            if invoice:
+                invoice_number = invoice.invoice_number
+            else:
+                # Fallback for strikes on orders without invoice (legacy data)
+                from datetime import datetime
+                invoice_number = f"ORDER-{datetime.now().year}-{strike.order_id:06d}"
+
+            strikes_list += Localizator.get_text(BotEntity.USER, "strike_list_item").format(
+                date=date_str,
+                strike_type=strike.strike_type.name,
+                order_id=invoice_number
+            )
+
+        if not strikes_list:
+            strikes_list = "No strikes\n"
+
+        # Build message using actual DB count
+        message = Localizator.get_text(BotEntity.USER, "strike_statistics_msg").format(
+            strike_count=actual_strike_count,
+            max_strikes=config.MAX_STRIKES_BEFORE_BAN,
+            status=status,
+            strikes_list=strikes_list,
+            grace_period=config.ORDER_CANCEL_GRACE_PERIOD_MINUTES
+        )
+
+        # Build keyboard
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.row(unpacked_cb.get_back_button(0))
+
+        return message, kb_builder

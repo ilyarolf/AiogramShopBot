@@ -39,11 +39,23 @@ class OrderRepository:
 
     @staticmethod
     async def get_pending_order_by_user(user_id: int, session: Session | AsyncSession) -> OrderDTO | None:
-        """Gets pending order of a user (if exists)"""
+        """
+        Gets pending order of a user (if exists).
+
+        Includes all incomplete order states:
+        - PENDING_PAYMENT: Waiting for payment (invoice created)
+        - PENDING_PAYMENT_AND_ADDRESS: Waiting for shipping address input
+        - PENDING_PAYMENT_PARTIAL: After 1st underpayment (30 min extension)
+        """
         stmt = (
             select(Order)
             .where(Order.user_id == user_id)
-            .where(Order.status == OrderStatus.PENDING_PAYMENT)
+            .where(Order.status.in_([
+                OrderStatus.PENDING_PAYMENT,
+                OrderStatus.PENDING_PAYMENT_AND_ADDRESS,
+                OrderStatus.PENDING_PAYMENT_PARTIAL
+            ]))
+            .order_by(Order.created_at.desc())  # Get most recent if multiple exist
         )
         result = await session_execute(stmt, session)
         order = result.scalar_one_or_none()
@@ -87,7 +99,11 @@ class OrderRepository:
         """Gets all expired orders (for timeout job)"""
         stmt = (
             select(Order)
-            .where(Order.status == OrderStatus.PENDING_PAYMENT)
+            .where(Order.status.in_([
+                OrderStatus.PENDING_PAYMENT,
+                OrderStatus.PENDING_PAYMENT_AND_ADDRESS,
+                OrderStatus.PENDING_PAYMENT_PARTIAL
+            ]))
             .where(Order.expires_at < datetime.now())
         )
         result = await session_execute(stmt, session)

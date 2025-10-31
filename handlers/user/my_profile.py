@@ -9,14 +9,16 @@ from enums.cryptocurrency import Cryptocurrency
 from services.buy import BuyService
 from services.payment import PaymentService
 from services.user import UserService
-from utils.custom_filters import IsUserExistFilter
+from utils.custom_filters import IsUserExistFilter, IsUserExistFilterIncludingBanned
 from utils.localizator import Localizator
 
 my_profile_router = Router()
 
 
-@my_profile_router.message(F.text == Localizator.get_text(BotEntity.USER, "my_profile"), IsUserExistFilter())
-async def my_profile_text_message(message: types.message, session: Session | AsyncSession):
+@my_profile_router.message(F.text == Localizator.get_text(BotEntity.USER, "my_profile"), IsUserExistFilterIncludingBanned())
+async def my_profile_text_message(message: types.Message, session: Session | AsyncSession):
+    import logging
+    logging.info("👤 MY PROFILE BUTTON HANDLER TRIGGERED")
     await my_profile(message=message, session=session)
 
 
@@ -50,6 +52,13 @@ async def purchase_history(**kwargs):
     await callback.message.edit_text(text=msg_text, reply_markup=kb_builder.as_markup())
 
 
+async def strike_statistics(**kwargs):
+    callback = kwargs.get("callback")
+    session = kwargs.get("session")
+    msg_text, kb_builder = await UserService.get_strike_statistics_buttons(callback, session)
+    await callback.message.edit_text(text=msg_text, reply_markup=kb_builder.as_markup())
+
+
 async def get_order_from_history(**kwargs):
     callback = kwargs.get("callback")
     session = kwargs.get("session")
@@ -66,7 +75,7 @@ async def create_payment(**kwargs):
     await msg.edit_text(text=text)
 
 
-@my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())
+@my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilterIncludingBanned())
 async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback, session: AsyncSession | Session):
     current_level = callback_data.level
 
@@ -75,7 +84,8 @@ async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback, se
         1: top_up_balance,
         2: create_payment,
         4: purchase_history,
-        5: get_order_from_history
+        5: get_order_from_history,
+        6: strike_statistics
     }
 
     current_level_function = levels[current_level]

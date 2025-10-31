@@ -42,6 +42,14 @@ class CartItemRepository:
                 cart_items.scalars().all()]
 
     @staticmethod
+    async def get_by_id(cart_item_id: int, session: AsyncSession | Session) -> CartItemDTO:
+        """Get cart item by ID"""
+        stmt = select(CartItem).where(CartItem.id == cart_item_id)
+        result = await session_execute(stmt, session)
+        cart_item = result.scalar()
+        return CartItemDTO.model_validate(cart_item, from_attributes=True)
+
+    @staticmethod
     async def remove_from_cart(cart_item_id: int, session: AsyncSession | Session):
         stmt = delete(CartItem).where(CartItem.id == cart_item_id)
         await session_execute(stmt, session)

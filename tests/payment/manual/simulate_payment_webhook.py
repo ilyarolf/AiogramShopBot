@@ -61,7 +61,8 @@ class WebhookSimulator:
         crypto: str = "BTC",
         fiat_amount: Optional[float] = None,
         is_paid: bool = True,
-        tx_hash: Optional[str] = None
+        tx_hash: Optional[str] = None,
+        payment_type: str = "PAYMENT"
     ) -> dict:
         """
         Creates realistic payment webhook payload
@@ -72,9 +73,11 @@ class WebhookSimulator:
             amount_required: Expected crypto amount (defaults to amount_paid)
             crypto: Cryptocurrency (BTC, ETH, LTC, etc.)
             fiat_amount: Fiat equivalent (optional, defaults to dummy value)
-                         NOTE: Bot ignores this and calculates from invoice rate
+                         NOTE: For PAYMENT type, bot recalculates from invoice rate
+                         For DEPOSIT type, this value is used directly
             is_paid: Payment status
             tx_hash: Blockchain transaction hash (auto-generated if None)
+            payment_type: "PAYMENT" (order) or "DEPOSIT" (top-up)
 
         Returns:
             dict: Webhook payload
@@ -83,7 +86,8 @@ class WebhookSimulator:
             amount_required = amount_paid
 
         if fiat_amount is None:
-            # Dummy fiat amount (bot will recalculate from invoice rate anyway)
+            # Dummy fiat amount (for PAYMENT bot will recalculate from invoice rate)
+            # For DEPOSIT this is the actual top-up amount
             fiat_amount = 50.0
 
         if tx_hash is None:
@@ -97,10 +101,10 @@ class WebhookSimulator:
             "address": self._generate_crypto_address(crypto),
             "cryptoAmount": amount_paid,
             "cryptoCurrency": crypto,
-            "fiatAmount": fiat_amount,  # Bot recalculates this from invoice
+            "fiatAmount": fiat_amount,
             "fiatCurrency": "EUR",
             "isPaid": is_paid,
-            "paymentType": "PAYMENT",
+            "paymentType": payment_type,
             "hash": tx_hash
         }
 
@@ -205,27 +209,32 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Exact payment (0.001 BTC) - fiat calculated by bot from invoice rate
+  # ORDER PAYMENT: Exact payment (0.001 BTC) - fiat calculated by bot from invoice rate
   python simulate_payment_webhook.py --invoice-number 2025-ABCDEF --amount-paid 0.001
 
-  # Overpayment (10% more)
+  # ORDER PAYMENT: Overpayment (10% more)
   python simulate_payment_webhook.py --invoice-number 2025-ABCDEF --amount-paid 0.0011 --amount-required 0.001
 
-  # Underpayment (90%)
+  # ORDER PAYMENT: Underpayment (90%)
   python simulate_payment_webhook.py --invoice-number 2025-ABCDEF --amount-paid 0.0009 --amount-required 0.001
 
-  # Late payment (payment received after deadline)
+  # ORDER PAYMENT: Late payment (payment received after deadline)
   python simulate_payment_webhook.py --invoice-number 2025-ABCDEF --amount-paid 0.001 --late
 
-  # Different cryptocurrency
-  python simulate_payment_webhook.py --invoice-number 2025-ABCDEF --amount-paid 0.05 --crypto ETH
+  # DEPOSIT (Top-Up): Using topup-reference (recommended)
+  python simulate_payment_webhook.py --topup-reference TOPUP-2025-ABCDEF --amount-paid 0.001 --deposit --fiat-amount 50.0
+
+  # DEPOSIT (Top-Up): Using payment-id (legacy)
+  python simulate_payment_webhook.py --payment-id 12345 --amount-paid 0.002 --deposit --fiat-amount 100.0
         """
     )
 
     parser.add_argument("--payment-id", type=int, required=False,
-                        help="Payment ID from KryptoExpress (auto-detected if --invoice-number provided)")
+                        help="Payment ID from KryptoExpress (auto-detected if --invoice-number or --topup-reference provided)")
     parser.add_argument("--invoice-number", type=str, required=False,
                         help="Invoice number from bot (e.g., 2025-ABCDEF) - will lookup payment ID")
+    parser.add_argument("--topup-reference", type=str, required=False,
+                        help="Top-up reference from bot (e.g., TOPUP-2025-ABCDEF) - will lookup payment ID")
     parser.add_argument("--amount-paid", type=float, required=True,
                         help="Crypto amount actually paid")
     parser.add_argument("--amount-required", type=float, default=None,
@@ -234,7 +243,9 @@ Examples:
                         choices=["BTC", "ETH", "LTC", "SOL", "BNB", "USDT_TRC20", "USDT_ERC20", "USDC_ERC20"],
                         help="Cryptocurrency")
     parser.add_argument("--fiat-amount", type=float, default=None,
-                        help="Fiat equivalent (EUR) - IGNORED by bot (calculates from invoice rate)")
+                        help="Fiat equivalent (EUR) - For PAYMENT: IGNORED (bot calculates from invoice). For DEPOSIT: actual top-up amount")
+    parser.add_argument("--deposit", action="store_true",
+                        help="Simulate DEPOSIT (top-up) instead of order PAYMENT")
     parser.add_argument("--url", default=None,
                         help="Webhook URL (defaults to WEBHOOK_URL env var)")
     parser.add_argument("--api-secret", default=None,
@@ -250,15 +261,21 @@ Examples:
 
     args = parser.parse_args()
 
-    # Validate: Either payment-id OR invoice-number must be provided
-    if not args.payment_id and not args.invoice_number:
-        print("ERROR: Either --payment-id or --invoice-number must be provided.")
-        sys.exit(1)
+    # Validate: For DEPOSIT, payment-id OR topup-reference required. For PAYMENT, payment-id OR invoice-number required.
+    if args.deposit:
+        if not args.payment_id and not args.topup_reference:
+            print("ERROR: For DEPOSIT, either --payment-id or --topup-reference is required.")
+            print("       Get topup reference from bot message (e.g., TOPUP-2025-ABCDEF)")
+            sys.exit(1)
+    else:
+        if not args.payment_id and not args.invoice_number:
+            print("ERROR: For PAYMENT, either --payment-id or --invoice-number must be provided.")
+            sys.exit(1)
 
     # If invoice-number provided, lookup payment-id from database
     if args.invoice_number and not args.payment_id:
         import sqlite3
-        db_path = os.path.join(os.path.dirname(__file__), '../../data/database.db')
+        db_path = os.path.join(os.path.dirname(__file__), '../../../data/database.db')
         if not os.path.exists(db_path):
             print(f"ERROR: Database not found at {db_path}")
             sys.exit(1)
@@ -293,6 +310,40 @@ Examples:
             print(f"ERROR: Database lookup failed: {e}")
             sys.exit(1)
 
+    # If topup-reference provided, lookup payment-id from database
+    if args.topup_reference and not args.payment_id:
+        import sqlite3
+        db_path = os.path.join(os.path.dirname(__file__), '../../../data/database.db')
+        if not os.path.exists(db_path):
+            print(f"ERROR: Database not found at {db_path}")
+            sys.exit(1)
+
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT processing_payment_id FROM payments WHERE topup_reference = ?", (args.topup_reference,))
+            result = cursor.fetchone()
+
+            if not result:
+                print(f"ERROR: No payment found with topup reference '{args.topup_reference}'")
+                # Show recent top-up references
+                cursor.execute("SELECT topup_reference FROM payments WHERE topup_reference IS NOT NULL ORDER BY id DESC LIMIT 5")
+                recent = cursor.fetchall()
+                if recent:
+                    print(f"\nℹ️  Recent top-up references:")
+                    for ref in recent:
+                        print(f"     - {ref[0]}")
+                conn.close()
+                sys.exit(1)
+
+            args.payment_id = result[0]
+            print(f"✓ Looked up payment ID: {args.payment_id} for topup reference {args.topup_reference}")
+            conn.close()
+        except Exception as e:
+            print(f"ERROR: Database lookup failed: {e}")
+            sys.exit(1)
+
     # Get webhook URL
     webhook_url = args.url or os.getenv("WEBHOOK_URL")
 
@@ -315,6 +366,7 @@ Examples:
     )
 
     # Create payload
+    payment_type = "DEPOSIT" if args.deposit else "PAYMENT"
     payload = simulator.create_payment_payload(
         payment_id=args.payment_id,
         amount_paid=args.amount_paid,
@@ -322,11 +374,14 @@ Examples:
         crypto=args.crypto,
         fiat_amount=args.fiat_amount,
         is_paid=not args.not_paid,
-        tx_hash=args.tx_hash
+        tx_hash=args.tx_hash,
+        payment_type=payment_type
     )
 
     # Add scenario info
-    if args.late:
+    if args.deposit:
+        print(f"\n💰 SCENARIO: DEPOSIT (Top-Up) - {args.fiat_amount or 50.0} EUR")
+    elif args.late:
         print("\n⏰ SCENARIO: Late Payment (received after deadline)")
     elif args.amount_required and args.amount_paid < args.amount_required:
         shortfall = args.amount_required - args.amount_paid

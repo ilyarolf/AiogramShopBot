@@ -23,7 +23,9 @@ admin_router.include_router(wallet)
 
 
 @admin_router.message(F.text == Localizator.get_text(BotEntity.ADMIN, "menu"), AdminIdFilter())
-async def admin_command_handler(message: types.message):
+async def admin_command_handler(message: types.Message):
+    import logging
+    logging.info("🔑 ADMIN MENU BUTTON HANDLER TRIGGERED")
     await admin(message=message)
 
 

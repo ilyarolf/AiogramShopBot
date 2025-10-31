@@ -63,3 +63,8 @@ REFERRAL_DATA_RETENTION_DAYS = int(os.environ.get("REFERRAL_DATA_RETENTION_DAYS"
 
 # Shipping Management Configuration
 SHIPPING_ADDRESS_SECRET = os.environ.get("ENCRYPTION_SECRET", "")
+
+# Strike System Configuration
+MAX_STRIKES_BEFORE_BAN = int(os.environ.get("MAX_STRIKES_BEFORE_BAN", "3"))  # Default: 3 strikes = ban
+EXEMPT_ADMINS_FROM_BAN = os.environ.get("EXEMPT_ADMINS_FROM_BAN", "true") == "true"  # Default: admins exempt from bans
+UNBAN_TOP_UP_AMOUNT = float(os.environ.get("UNBAN_TOP_UP_AMOUNT", "50.0"))  # Minimum top-up amount to unban (EUR)

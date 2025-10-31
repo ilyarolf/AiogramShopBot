@@ -24,7 +24,7 @@ from handlers.user.my_profile import my_profile_router
 from handlers.user.shipping_handlers import shipping_router
 from services.notification import NotificationService
 from services.user import UserService
-from utils.custom_filters import IsUserExistFilter
+from utils.custom_filters import IsUserExistFilter, IsUserExistFilterIncludingBanned
 from utils.localizator import Localizator
 
 logging.basicConfig(level=logging.INFO)
@@ -32,7 +32,7 @@ main_router = Router()
 
 
 @main_router.message(Command(commands=["start", "help"]))
-async def start(message: types.message, session: AsyncSession | Session):
+async def start(message: types.Message, session: AsyncSession | Session):
     all_categories_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "all_categories"))
     my_profile_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "my_profile"))
     faq_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "faq"))
@@ -52,13 +52,15 @@ async def start(message: types.message, session: AsyncSession | Session):
     await message.answer(Localizator.get_text(BotEntity.COMMON, "start_message"), reply_markup=start_markup)
 
 
-@main_router.message(F.text == Localizator.get_text(BotEntity.USER, "faq"), IsUserExistFilter())
-async def faq(message: types.message):
+@main_router.message(F.text == Localizator.get_text(BotEntity.USER, "faq"), IsUserExistFilterIncludingBanned())
+async def faq(message: types.Message):
+    logging.info("❓ FAQ BUTTON HANDLER TRIGGERED")
     await message.answer(Localizator.get_text(BotEntity.USER, "faq_string"))
 
 
-@main_router.message(F.text == Localizator.get_text(BotEntity.USER, "help"), IsUserExistFilter())
-async def support(message: types.message):
+@main_router.message(F.text == Localizator.get_text(BotEntity.USER, "help"), IsUserExistFilterIncludingBanned())
+async def support(message: types.Message):
+    logging.info("❔ HELP BUTTON HANDLER TRIGGERED")
     help_text = Localizator.get_text(BotEntity.USER, "help_string")
 
     # Only add button if SUPPORT_LINK is configured

@@ -12,6 +12,7 @@ from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.order_cancel_reason import OrderCancelReason
 from enums.order_status import OrderStatus
+from enums.strike_type import StrikeType
 from models.cart import CartDTO
 from models.cartItem import CartItemDTO
 from models.item import ItemDTO
@@ -225,9 +226,15 @@ class OrderService:
             from repositories.invoice import InvoiceRepository
 
             invoice = await InvoiceRepository.get_by_order_id(order_id, session)
+            if invoice:
+                invoice_number = invoice.invoice_number
+            else:
+                from datetime import datetime
+                invoice_number = f"ORDER-{datetime.now().year}-{order_id:06d}"
+
             await NotificationService.order_awaiting_shipment(
                 user_id=order.user_id,
-                invoice_number=invoice.invoice_number,
+                invoice_number=invoice_number,
                 session=session
             )
             logging.info(f"📢 Admin notification sent: Order {order_id} awaiting shipment")
@@ -266,19 +273,72 @@ class OrderService:
         if not order:
             raise ValueError("Order not found")
 
-        # Only pending/paid (not yet delivered) orders can be cancelled
-        # PAID status means wallet covered amount but items not yet delivered (awaiting user confirmation of adjustments)
-        if order.status not in [OrderStatus.PENDING_PAYMENT, OrderStatus.PENDING_PAYMENT_AND_ADDRESS, OrderStatus.PENDING_PAYMENT_PARTIAL, OrderStatus.PAID]:
+        # Determine which statuses can be cancelled
+        cancellable_statuses = [
+            OrderStatus.PENDING_PAYMENT,
+            OrderStatus.PENDING_PAYMENT_AND_ADDRESS,
+            OrderStatus.PENDING_PAYMENT_PARTIAL,
+            OrderStatus.PAID
+        ]
+
+        # Admin can also cancel orders awaiting shipment (paid physical items)
+        if reason == OrderCancelReason.ADMIN:
+            cancellable_statuses.append(OrderStatus.PAID_AWAITING_SHIPMENT)
+
+        if order.status not in cancellable_statuses:
             raise ValueError("Order cannot be cancelled (Status: {})".format(order.status.value))
 
         # Check grace period (only relevant for USER cancellation)
         time_elapsed = (datetime.utcnow() - order.created_at).total_seconds() / 60  # Minutes
         within_grace_period = time_elapsed <= config.ORDER_CANCEL_GRACE_PERIOD_MINUTES
 
-        # Release reserved items
+        # Release reserved items - restore stock
         items = await ItemRepository.get_by_order_id(order_id, session)
+
+        # Group items by subcategory and price for stock restoration
+        from collections import defaultdict
+        items_by_type = defaultdict(list)
         for item in items:
-            item.order_id = None  # Remove reservation
+            key = (item.subcategory_id, item.category_id, item.price, item.description)
+            items_by_type[key].append(item)
+
+        # For each item type, restore stock by setting is_sold=false
+        for (subcategory_id, category_id, price, description), cancelled_items in items_by_type.items():
+            qty_needed = len(cancelled_items)
+
+            # First, try to restore existing sold items (is_sold=true) back to available
+            sold_items = await ItemRepository.get_sold_items_by_subcategory(
+                subcategory_id=subcategory_id,
+                category_id=category_id,
+                price=price,
+                limit=qty_needed,
+                session=session
+            )
+
+            # Restore sold items to available stock
+            for item in sold_items:
+                item.is_sold = False
+                item.order_id = None
+
+            if sold_items:
+                await ItemRepository.update(sold_items, session)
+
+            # If we couldn't find enough sold items (e.g., after DB cleanup),
+            # create new items to maintain stock integrity
+            shortage = qty_needed - len(sold_items)
+            if shortage > 0:
+                logging.warning(
+                    f"Stock shortage detected for subcategory {subcategory_id}: "
+                    f"needed {qty_needed}, found {len(sold_items)} sold items. "
+                    f"Creating {shortage} new items."
+                )
+                # Note: We don't create new items automatically as we don't have private_data.
+                # This should be handled manually by admin or through a separate stock management system.
+                # For now, just log the shortage.
+
+        # Clean up the cancelled order items (remove reservation)
+        for item in items:
+            item.order_id = None
         await ItemRepository.update(items, session)
 
         # Handle wallet refund/penalty logic
@@ -324,7 +384,13 @@ class OrderService:
                     'penalty_percent': penalty_percent,
                     'reason': reason.value
                 }
-                # TODO: Create strike for late cancellation/timeout
+                # Add strike for late cancellation/timeout
+                await OrderService._add_strike_and_check_ban(
+                    user_id=user.id,
+                    order_id=order_id,
+                    strike_type=StrikeType.TIMEOUT if reason == OrderCancelReason.TIMEOUT else StrikeType.LATE_CANCEL,
+                    session=session
+                )
             else:
                 # Full refund for: ADMIN or USER within grace period (rounded to 2 decimals)
                 user.top_up_amount = round(user.top_up_amount + order.wallet_used, 2)
@@ -372,11 +438,27 @@ class OrderService:
         if reason == OrderCancelReason.USER:
             new_status = OrderStatus.CANCELLED_BY_USER
             message = "Order successfully cancelled"
-            # TODO: If not within_grace_period → create strike!
+            # Add strike if cancelled outside grace period
+            if not within_grace_period:
+                await OrderService._add_strike_and_check_ban(
+                    user_id=user.id,
+                    order_id=order_id,
+                    strike_type=StrikeType.LATE_CANCEL,
+                    session=session
+                )
         elif reason == OrderCancelReason.TIMEOUT:
             new_status = OrderStatus.TIMEOUT
             within_grace_period = False  # Timeouts never count as grace period
             message = "Order cancelled due to timeout"
+            # Add strike for timeout (if not already added above)
+            # Check if wallet was used (strike already added in wallet refund section)
+            if order.wallet_used == 0:
+                await OrderService._add_strike_and_check_ban(
+                    user_id=user.id,
+                    order_id=order_id,
+                    strike_type=StrikeType.TIMEOUT,
+                    session=session
+                )
         elif reason == OrderCancelReason.ADMIN:
             new_status = OrderStatus.CANCELLED_BY_ADMIN
             within_grace_period = True  # Admin cancels don't cause strikes
@@ -386,21 +468,37 @@ class OrderService:
 
         await OrderRepository.update_status(order_id, new_status, session)
 
-        # Send notification to user about wallet refund if applicable
+        # Send notification to user
+        from services.notification import NotificationService
+        from utils.localizator import Localizator
+        from repositories.invoice import InvoiceRepository
+
+        # Get invoice number for notification
+        invoice = await InvoiceRepository.get_by_order_id(order_id, session)
+        if invoice:
+            invoice_number = invoice.invoice_number
+        else:
+            # Fallback for orders without invoice (should not happen in normal flow)
+            from datetime import datetime
+            invoice_number = f"ORDER-{datetime.now().year}-{order_id:06d}"
+
         if wallet_refund_info:
-            from services.notification import NotificationService
-            from utils.localizator import Localizator
-            from repositories.invoice import InvoiceRepository
-
-            # Get invoice number for notification
-            invoice = await InvoiceRepository.get_by_order_id(order_id, session)
-            invoice_number = invoice.invoice_number if invoice else str(order_id)
-
+            # Wallet-based notification (includes strike info if penalty was applied)
             await NotificationService.notify_order_cancelled_wallet_refund(
                 user=user,
+                order=order,
+                invoice=invoice,
                 invoice_number=invoice_number,
                 refund_info=wallet_refund_info,
-                currency_sym=Localizator.get_currency_symbol()
+                currency_sym=Localizator.get_currency_symbol(),
+                session=session
+            )
+        elif not within_grace_period and reason != OrderCancelReason.ADMIN:
+            # No wallet involved but strike was given - notify user about strike
+            await NotificationService.notify_order_cancelled_strike_only(
+                user=user,
+                invoice_number=invoice_number,
+                reason=reason
             )
 
         return within_grace_period, message
@@ -507,7 +605,7 @@ class OrderService:
                 return message_text, kb_builder
 
             # 6. UI Fork: Digital items → Redirect directly to payment (no intermediate screen)
-            return await OrderService.process_payment(callback, session, state)
+            return await OrderService.process_payment(callback, session, state, order_id=order.id)
 
         except ValueError as e:
             # All items out of stock - remove them from cart immediately to prevent loop
@@ -531,7 +629,8 @@ class OrderService:
     async def process_payment(
         callback: CallbackQuery,
         session: AsyncSession | Session,
-        state=None
+        state=None,
+        order_id: int = None
     ) -> tuple[str, InlineKeyboardBuilder]:
         """
         Level 4: Payment Processing Router
@@ -546,6 +645,9 @@ class OrderService:
         B. First visit + wallet insufficient: Show crypto selection
         C. Crypto selected: Process payment with crypto
 
+        Args:
+            order_id: Optional order_id to use directly (when called from Cart domain)
+
         Returns:
             Tuple of (message, keyboard)
         """
@@ -553,13 +655,21 @@ class OrderService:
         from enums.cryptocurrency import Cryptocurrency
         from repositories.invoice import InvoiceRepository
 
-        unpacked_cb = OrderCallback.unpack(callback.data)
+        # Get order_id from parameter, callback, or FSM (in that order)
+        unpacked_cb = None
+        if not order_id:
+            # Try to unpack as OrderCallback first, fall back to CartCallback
+            try:
+                unpacked_cb = OrderCallback.unpack(callback.data)
+                order_id = unpacked_cb.order_id
+            except (ValueError, TypeError):
+                # If that fails, try CartCallback (which also has order_id field)
+                unpacked_cb = CartCallback.unpack(callback.data)
+                order_id = unpacked_cb.order_id
 
-        # Get order_id from callback or FSM
-        order_id = unpacked_cb.order_id
-        if order_id == -1 and state:
-            state_data = await state.get_data()
-            order_id = state_data.get("order_id")
+            if order_id == -1 and state:
+                state_data = await state.get_data()
+                order_id = state_data.get("order_id")
 
         if not order_id or order_id == -1:
             # No order found - error
@@ -592,8 +702,8 @@ class OrderService:
 
             return payment_message, kb_builder
 
-        # Check if crypto already selected
-        crypto_selected = unpacked_cb.cryptocurrency and unpacked_cb.cryptocurrency != Cryptocurrency.PENDING_SELECTION
+        # Check if crypto already selected (only if callback was unpacked)
+        crypto_selected = unpacked_cb and unpacked_cb.cryptocurrency and unpacked_cb.cryptocurrency != Cryptocurrency.PENDING_SELECTION
 
         # Mode A/B: First visit - Check wallet balance first
         if not crypto_selected:
@@ -640,6 +750,11 @@ class OrderService:
                 return await CartService._show_crypto_selection(order_id)
 
         # Mode C: Crypto selected - Process payment
+        if not unpacked_cb or not unpacked_cb.cryptocurrency:
+            # Should never happen (crypto_selected would be False), but safety check
+            from services.cart import CartService
+            return await CartService._show_crypto_selection(order_id)
+
         try:
             invoice, needs_crypto_payment = await PaymentService.orchestrate_payment_processing(
                 order_id=order_id,
@@ -695,7 +810,7 @@ class OrderService:
         callback: CallbackQuery,
         session: AsyncSession | Session,
         state=None
-    ) -> str:
+    ) -> tuple[str, InlineKeyboardBuilder]:
         """
         Level 2: Re-enter Shipping Address
 
@@ -703,11 +818,12 @@ class OrderService:
         Restart address input process.
 
         Returns:
-            Message prompting for address input
+            Tuple of (message, keyboard) with cancel button
         """
         from handlers.user.shipping_states import ShippingAddressStates
 
         # Get order_id from FSM
+        order_id = None
         if state:
             state_data = await state.get_data()
             order_id = state_data.get("order_id")
@@ -715,10 +831,19 @@ class OrderService:
             # Set FSM state to waiting for address
             await state.set_state(ShippingAddressStates.waiting_for_address)
 
-        # Return prompt message
-        return Localizator.get_text(BotEntity.USER, "shipping_address_request").format(
+        # Build keyboard with cancel button
+        kb_builder = InlineKeyboardBuilder()
+        if order_id:
+            kb_builder.button(
+                text=Localizator.get_text(BotEntity.USER, "cancel_order"),
+                callback_data=OrderCallback.create(level=4, order_id=order_id)  # Level 4 = Cancel Order
+            )
+
+        # Return prompt message with keyboard
+        message = Localizator.get_text(BotEntity.USER, "shipping_address_request").format(
             retention_days=config.DATA_RETENTION_DAYS
         )
+        return message, kb_builder
 
     @staticmethod
     async def confirm_shipping_address(
@@ -1130,7 +1255,7 @@ class OrderService:
                 callback_data=OrderCallback.create(level=5, order_id=order_id)  # Level 5 = Execute cancellation
             )
 
-            # Check if we came from stock adjustment screen
+            # Determine where Back button should go based on order status
             has_stock_adjustment = False
             if state:
                 state_data = await state.get_data()
@@ -1142,11 +1267,17 @@ class OrderService:
                     text=Localizator.get_text(BotEntity.COMMON, "back_button"),
                     callback_data=OrderCallback.create(level=6, order_id=order_id)  # Level 6 = Re-show stock adjustment
                 )
-            else:
-                # Back to payment screen
+            elif order.status == OrderStatus.PENDING_PAYMENT_AND_ADDRESS:
+                # Back to address input (don't go to payment - would finalize order without address!)
                 kb_builder.button(
                     text=Localizator.get_text(BotEntity.COMMON, "back_button"),
-                    callback_data=OrderCallback.create(level=3, order_id=order_id)  # Back to payment screen
+                    callback_data=OrderCallback.create(level=2, order_id=order_id)  # Level 2 = Re-enter address
+                )
+            else:
+                # Back to payment screen (order already has address or no physical items)
+                kb_builder.button(
+                    text=Localizator.get_text(BotEntity.COMMON, "back_button"),
+                    callback_data=OrderCallback.create(level=3, order_id=order_id)  # Level 3 = Payment screen
                 )
 
             return message_text, kb_builder
@@ -1516,3 +1647,60 @@ class OrderService:
             wallet_spacing=wallet_spacing,
             currency_sym=Localizator.get_currency_symbol()
         )
+
+    @staticmethod
+    async def _add_strike_and_check_ban(
+        user_id: int,
+        order_id: int,
+        strike_type: StrikeType,
+        session: AsyncSession | Session
+    ):
+        """
+        Adds a strike to user and checks if ban threshold reached.
+
+        Args:
+            user_id: User ID
+            order_id: Order ID that caused the strike
+            strike_type: Type of strike (TIMEOUT, LATE_CANCEL, etc.)
+            session: Database session
+        """
+        from models.user_strike import UserStrikeDTO
+        from repositories.user_strike import UserStrikeRepository
+
+        # Create strike record
+        strike_dto = UserStrikeDTO(
+            user_id=user_id,
+            order_id=order_id,
+            strike_type=strike_type,
+            reason=f"{strike_type.name} for order {order_id}"
+        )
+        await UserStrikeRepository.create(strike_dto, session)
+
+        # Get actual strike count from DB (single source of truth)
+        user = await UserRepository.get_by_id(user_id, session)
+        strikes = await UserStrikeRepository.get_by_user_id(user_id, session)
+        actual_strike_count = len(strikes)
+
+        # Update user strike count field for consistency
+        user.strike_count = actual_strike_count
+
+        # Check if ban threshold reached (unless admin is exempt)
+        is_admin = user.telegram_id in config.ADMIN_ID_LIST
+        admin_exempt = is_admin and config.EXEMPT_ADMINS_FROM_BAN
+
+        if actual_strike_count >= config.MAX_STRIKES_BEFORE_BAN and not admin_exempt:
+            user.is_blocked = True
+            user.blocked_at = datetime.utcnow()
+            user.blocked_reason = f"Automatic ban: {actual_strike_count} strikes (threshold: {config.MAX_STRIKES_BEFORE_BAN})"
+            logging.warning(f"🚫 User {user_id} BANNED: {actual_strike_count} strikes reached")
+
+            # Send ban notifications
+            from services.notification import NotificationService
+            await NotificationService.notify_user_banned(user, actual_strike_count)
+            await NotificationService.notify_admin_user_banned(user, actual_strike_count)
+        elif admin_exempt and actual_strike_count >= config.MAX_STRIKES_BEFORE_BAN:
+            logging.warning(f"⚠️ Admin {user_id} reached ban threshold ({actual_strike_count} strikes) but is exempt from ban")
+        else:
+            logging.warning(f"⚠️ User {user_id} received strike #{actual_strike_count} (type: {strike_type.name})")
+
+        await UserRepository.update(user, session)

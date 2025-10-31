@@ -191,4 +191,38 @@ class ItemRepository:
         result = await session_execute(stmt, session)
         return [ItemDTO.model_validate(item, from_attributes=True) for item in result.scalars().all()]
 
+    @staticmethod
+    async def get_sold_items_by_subcategory(
+        subcategory_id: int,
+        category_id: int,
+        price: float,
+        limit: int,
+        session: Session | AsyncSession
+    ) -> list[ItemDTO]:
+        """
+        Get sold items (is_sold=true) for a specific subcategory/category/price combination.
+        Used for stock restoration when orders are cancelled.
+
+        Args:
+            subcategory_id: Subcategory ID
+            category_id: Category ID
+            price: Item price
+            limit: Maximum number of items to return
+            session: Database session
+
+        Returns:
+            List of sold ItemDTOs matching the criteria
+        """
+        stmt = (
+            select(Item)
+            .where(Item.subcategory_id == subcategory_id)
+            .where(Item.category_id == category_id)
+            .where(Item.price == price)
+            .where(Item.is_sold == True)
+            .where(Item.order_id == None)  # Not currently reserved
+            .limit(limit)
+        )
+        result = await session_execute(stmt, session)
+        return [ItemDTO.model_validate(item, from_attributes=True) for item in result.scalars().all()]
+
 

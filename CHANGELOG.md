@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-10-30
+
+### Strike System & Automated User Ban Management
+
+**Key Features**
+- Automatic strike tracking for order violations (timeouts, late cancellations after grace period)
+- Automatic ban after configurable strike threshold (default: 3 strikes)
+- Self-service unban via wallet top-up (default: 50 EUR, balance usable for shopping)
+- Admin panel for banned user management with click-to-unban UI
+- Strike statistics in user profile with status indicators and violation history
+
+**User Experience**
+- Banned users receive clear messages with unban instructions and support access
+- Shopping restricted, but FAQ and Support remain accessible
+- Strike count preserved after unban (next violation = immediate re-ban)
+- Notifications for ban/unban events with transparent explanations
+
+**Configuration**
+- MAX_STRIKES_BEFORE_BAN: Strike threshold before ban (default: 3)
+- EXEMPT_ADMINS_FROM_BAN: Admin exemption for testing (default: true)
+- UNBAN_TOP_UP_AMOUNT: Minimum wallet top-up to unban (default: 50.0 EUR)
+
+**Documentation**
+- Quick start guide for payment testing including TOPUP scenarios
+- Strike system test cases and webhook simulator improvements
+
 ## 2025-10-26
 
 ### Comprehensive Shipping & Order Management System

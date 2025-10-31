@@ -43,7 +43,7 @@ async def process_shipping_address_input(message: Message, state: FSMContext, se
         callback_data=OrderCallback.create(level=1).pack()  # Level 1 = confirm address
     )
     kb_builder.button(
-        text=Localizator.get_text(BotEntity.COMMON, "cancel"),
+        text=Localizator.get_text(BotEntity.USER, "change_address"),
         callback_data=OrderCallback.create(level=2).pack()  # Level 2 = re-enter address
     )
 

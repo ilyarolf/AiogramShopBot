@@ -64,8 +64,10 @@ class BuyService:
             if invoices:
                 invoice_numbers = [inv.invoice_number for inv in invoices]
             else:
-                # Should not happen anymore (all orders get invoices now)
-                invoice_numbers = [f"Order #{order.id}"]
+                # Fallback for orders without invoice (should not happen in normal flow)
+                from datetime import datetime
+                fallback_ref = f"ORDER-{datetime.now().year}-{order.id:06d}"
+                invoice_numbers = [fallback_ref]
 
         # Build detailed message if order exists
         if order:

@@ -45,8 +45,9 @@ async def fetch_crypto_event(payment_dto: ProcessingPaymentDTO, request: Request
     logging.info(f"Payment ID: {payment_dto.id}")
     logging.info(f"Payment Type: {payment_dto.paymentType}")
     logging.info(f"Is Paid: {payment_dto.isPaid}")
-    logging.info(f"Crypto: {payment_dto.cryptoCurrency} | Amount: {format_crypto_amount(payment_dto.cryptoAmount)}")
-    logging.info(f"Fiat: {payment_dto.fiatCurrency} | Amount: {payment_dto.fiatAmount}")
+    crypto_amount_str = format_crypto_amount(payment_dto.cryptoAmount) if payment_dto.cryptoAmount is not None else "N/A"
+    logging.info(f"Crypto: {payment_dto.cryptoCurrency} | Amount: {crypto_amount_str}")
+    logging.info(f"Fiat: {payment_dto.fiatCurrency} | Amount: {payment_dto.fiatAmount if payment_dto.fiatAmount is not None else 'N/A'}")
     logging.info(f"Raw Body: {request_body.decode('utf-8')}")
     logging.info("=" * 80)
 
@@ -76,7 +77,7 @@ async def fetch_crypto_event(payment_dto: ProcessingPaymentDTO, request: Request
 
 
 async def _handle_deposit_payment(payment_dto: ProcessingPaymentDTO, session):
-    """Handles DEPOSIT payments (balance top-ups) - existing logic"""
+    """Handles DEPOSIT payments (balance top-ups) with automatic unban logic"""
     import logging
 
     logging.info(f"💰 Processing DEPOSIT payment (ID: {payment_dto.id})")
@@ -88,6 +89,18 @@ async def _handle_deposit_payment(payment_dto: ProcessingPaymentDTO, session):
 
     if payment_dto.isPaid is True and deposit_record.is_paid is False:
         logging.info(f"✅ DEPOSIT CONFIRMED: Adding {payment_dto.fiatAmount} {payment_dto.fiatCurrency} to user {user.telegram_id}")
+
+        # Check if user is banned and deposit amount >= unban threshold
+        was_banned = user.is_blocked
+        unban_triggered = False
+        if was_banned and payment_dto.fiatAmount >= config.UNBAN_TOP_UP_AMOUNT:
+            logging.info(f"🔓 UNBAN TRIGGERED: User {user.telegram_id} topped up {payment_dto.fiatAmount} EUR (>= {config.UNBAN_TOP_UP_AMOUNT} EUR threshold)")
+            user.is_blocked = False
+            user.blocked_at = None
+            user.blocked_reason = f"Unbanned via top-up: {payment_dto.fiatAmount} EUR"
+            logging.info(f"🔓 User {user.telegram_id} has been UNBANNED (strikes remain: {user.strike_count})")
+            unban_triggered = True
+
         user.top_up_amount += payment_dto.fiatAmount
         await UserRepository.update(user, session)
         deposit_record.is_paid = True
@@ -99,7 +112,11 @@ async def _handle_deposit_payment(payment_dto: ProcessingPaymentDTO, session):
             deposit_datetime=datetime.datetime.now()
         ), session)
         await session_commit(session)
+
+        # Send notifications
         await NotificationService.new_deposit(payment_dto, user, deposit_record)
+        if unban_triggered:
+            await NotificationService.notify_user_unbanned(user, payment_dto.fiatAmount, user.strike_count)
     elif payment_dto.isPaid is False:
         await NotificationService.payment_expired(user, payment_dto, deposit_record)
 

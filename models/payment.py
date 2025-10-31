@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, ForeignKey, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
 
 import config
 from enums.cryptocurrency import Cryptocurrency
@@ -13,6 +13,7 @@ class Payment(Base):
     id = Column(Integer, primary_key=True, unique=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     processing_payment_id = Column(Integer, nullable=False)
+    topup_reference = Column(String, unique=True, nullable=True)  # TOPUP-YYYY-ABCDEF
     message_id = Column(Integer, nullable=False)
     is_paid = Column(Boolean, nullable=False, default=False)
     expire_datetime = Column(DateTime)
@@ -44,6 +45,7 @@ class DepositRecordDTO(BaseModel):
     id: int
     user_id: int
     processing_payment_id: int
+    topup_reference: str | None = None  # TOPUP-YYYY-ABCDEF
     message_id: int
     is_paid: bool
 
