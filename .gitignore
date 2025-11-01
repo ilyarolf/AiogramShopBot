@@ -153,6 +153,7 @@ cython_debug/
 # Project specific
 /data/
 claude.bak/
+CLAUDE.md
 
 # Local config files
 .env.local

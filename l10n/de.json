@@ -91,8 +91,14 @@
     "confirm_mark_shipped": "❓ <b>Möchten Sie die Bestellung #{invoice_number} wirklich als versendet markieren?</b>",
     "order_marked_shipped": "✅ <b>Bestellung #{invoice_number} wurde als versendet markiert!</b>\n\nDer Kunde wurde benachrichtigt.",
     "cancel_order_admin": "❌ Bestellung stornieren",
-    "confirm_cancel_order_admin": "❓ <b>Möchten Sie die Bestellung #{invoice_number} wirklich stornieren?</b>\n\n⚠️ Dies wird:\n• Reservierten Bestand freigeben\n• Guthaben zurückerstatten (100%, keine Gebühr)\n• Den Kunden benachrichtigen",
-    "order_cancelled_by_admin": "✅ <b>Bestellung #{invoice_number} wurde storniert!</b>\n\nBestand wurde freigegeben und Guthaben zurückerstattet.",
+    "choose_cancel_order_path": "❓ <b>Wie möchten Sie die Bestellung #{invoice_number} stornieren?</b>\n\n⚠️ Dies wird:\n• Reservierten Bestand freigeben\n• Guthaben zurückerstatten (100%, keine Gebühr)\n• Den Kunden benachrichtigen",
+    "cancel_with_reason": "✍️ Mit Begründung stornieren",
+    "cancel_without_reason": "❌ Ohne Begründung stornieren",
+    "order_cancelled_by_admin_no_reason": "✅ <b>Bestellung #{invoice_number} wurde storniert!</b>\n\nBestand wurde freigegeben und Guthaben zurückerstattet.\nDer Kunde wurde benachrichtigt.",
+    "enter_cancellation_reason": "✍️ <b>Bitte geben Sie den Grund für die Stornierung ein:</b>\n\nDieser Grund wird dem Kunden in der Benachrichtigung angezeigt.",
+    "confirm_cancel_with_reason": "❓ <b>Bestellung stornieren - Bestätigung</b>\n\n📋 <b>Bestellung:</b> #{invoice_number}\n\n<b>Grund der Stornierung:</b>\n{reason}\n\n⚠️ Dies wird:\n• Reservierten Bestand freigeben\n• Guthaben zurückerstatten (100%, keine Gebühr)\n• Den Kunden mit diesem Grund benachrichtigen\n\n<b>Fortfahren?</b>",
+    "order_cancelled_by_admin_with_reason": "✅ <b>Bestellung #{invoice_number} wurde storniert!</b>\n\n<b>Grund:</b> {reason}\n\nDer Kunde wurde benachrichtigt.",
+    "error_order_not_found": "❌ <b>Fehler:</b> Bestellung nicht gefunden.",
     "order_awaiting_shipment_notification": "📦 <b>Neue physische Bestellung!</b>\n\nBestellung #{invoice_number} von Benutzer {username} wartet auf Versandbearbeitung.\n\nBitte überprüfen Sie die Versandverwaltung.",
     "admin_user_banned_notification": "🚫 <b>Benutzer gesperrt (Automatisch)</b>\n\n<b>Benutzer:</b> {user_display} (ID: {telegram_id})\n<b>Grund:</b> {strike_count} Strikes erreicht (Bestellungs-Timeouts/verspätete Stornierungen)\n<b>Sperrgrund:</b> {ban_reason}\n\n⚠️ <b>Hinweis:</b> Benutzer kann sich durch Guthaben-Aufladung von mindestens {unban_amount} EUR selbst entsperren. Das Guthaben kann zum Einkaufen verwendet werden.\n\nStrikes bleiben nach Entsperrung bestehen."
   },
@@ -255,6 +261,7 @@
     "admin_cancel_invoice_header": "RECHNUNG INV-",
     "admin_cancel_invoice_date": "Datum:",
     "admin_cancel_invoice_status": "Status: STORNIERT (Admin)",
+    "admin_cancel_reason_label": "Grund der Stornierung",
     "admin_cancel_invoice_items": "ARTIKEL",
     "admin_cancel_invoice_subtotal": "Zwischensumme",
     "admin_cancel_invoice_shipping": "Versand",
@@ -264,6 +271,8 @@
     "admin_cancel_invoice_balance": "SALDO",
     "admin_cancel_notice": "⚠️ <b>Diese Bestellung wurde vom Administrator storniert.</b>",
     "admin_cancel_refund_notice": "Der Betrag wurde vollständig erstattet und steht für weitere Einkäufe zur Verfügung. Sie erhalten keinen Strike.",
-    "admin_cancel_contact_support": "ℹ️ Bei Fragen kontaktieren Sie bitte den Support."
+    "admin_cancel_contact_support": "ℹ️ Bei Fragen kontaktieren Sie bitte den Support.",
+    "order_cancelled_by_admin_title": "Bestellung vom Administrator storniert",
+    "order_number": "Bestellnummer"
   }
 }

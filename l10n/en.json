@@ -97,8 +97,14 @@
     "confirm_mark_shipped": "❓ <b>Do you really want to mark order #{invoice_number} as shipped?</b>",
     "order_marked_shipped": "✅ <b>Order #{invoice_number} has been marked as shipped!</b>\n\nThe customer has been notified.",
     "cancel_order_admin": "❌ Cancel Order",
-    "confirm_cancel_order_admin": "❓ <b>Do you really want to cancel order #{invoice_number}?</b>\n\n⚠️ This will:\n• Release reserved stock\n• Refund wallet balance (100%, no penalty)\n• Notify the customer",
-    "order_cancelled_by_admin": "✅ <b>Order #{invoice_number} has been cancelled!</b>\n\nStock has been released and wallet refunded.",
+    "choose_cancel_order_path": "❓ <b>How would you like to cancel order #{invoice_number}?</b>\n\n⚠️ This will:\n• Release reserved stock\n• Refund wallet balance (100%, no penalty)\n• Notify the customer",
+    "cancel_with_reason": "✍️ Cancel with reason",
+    "cancel_without_reason": "❌ Cancel without reason",
+    "order_cancelled_by_admin_no_reason": "✅ <b>Order #{invoice_number} has been cancelled!</b>\n\nStock released and wallet balance refunded.\nCustomer has been notified.",
+    "enter_cancellation_reason": "✍️ <b>Please enter the cancellation reason:</b>\n\nThis reason will be shown to the customer in the notification.",
+    "confirm_cancel_with_reason": "❓ <b>Cancel Order - Confirmation</b>\n\n📋 <b>Order:</b> #{invoice_number}\n\n<b>Cancellation Reason:</b>\n{reason}\n\n⚠️ This will:\n• Release reserved stock\n• Refund wallet balance (100%, no penalty)\n• Notify the customer with this reason\n\n<b>Proceed?</b>",
+    "order_cancelled_by_admin_with_reason": "✅ <b>Order #{invoice_number} has been cancelled!</b>\n\n<b>Reason:</b> {reason}\n\nThe customer has been notified.",
+    "error_order_not_found": "❌ <b>Error:</b> Order not found.",
     "order_awaiting_shipment_notification": "📦 <b>New Physical Order!</b>\n\nOrder #{invoice_number} from user {username} is awaiting shipment processing.\n\nPlease check the shipping management.",
     "admin_user_banned_notification": "🚫 <b>User Banned (Automatic)</b>\n\n<b>User:</b> {user_display} (ID: {telegram_id})\n<b>Reason:</b> {strike_count} strikes reached (order timeouts/late cancellations)\n<b>Ban reason:</b> {ban_reason}\n\n⚠️ <b>Note:</b> User can unban themselves by topping up their wallet with at least {unban_amount} EUR. The balance can be used for shopping.\n\nStrikes will remain after unbanning."
   },
@@ -271,6 +277,7 @@
     "admin_cancel_invoice_header": "INVOICE INV-",
     "admin_cancel_invoice_date": "Date:",
     "admin_cancel_invoice_status": "Status: CANCELLED (Admin)",
+    "admin_cancel_reason_label": "Cancellation Reason",
     "admin_cancel_invoice_items": "ITEMS",
     "admin_cancel_invoice_subtotal": "Subtotal",
     "admin_cancel_invoice_shipping": "Shipping",
@@ -280,6 +287,8 @@
     "admin_cancel_invoice_balance": "BALANCE",
     "admin_cancel_notice": "⚠️ <b>This order was cancelled by the administrator.</b>",
     "admin_cancel_refund_notice": "The amount has been fully refunded and is available for future purchases. You will not receive a strike.",
-    "admin_cancel_contact_support": "ℹ️ If you have any questions, please contact support."
+    "admin_cancel_contact_support": "ℹ️ If you have any questions, please contact support.",
+    "order_cancelled_by_admin_title": "Order Cancelled by Administrator",
+    "order_number": "Order Number"
   }
 }

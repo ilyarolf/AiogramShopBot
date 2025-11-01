@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-11-01
+
+### Admin Order Cancellation with Custom Reason
+
+**Admin Interface**
+- Admin can choose to cancel orders with or without providing a reason
+- Two-step confirmation workflow with reason preview before execution (when reason provided)
+- Direct cancellation option for quick processing without explanation
+- Cancel button available to abort the cancellation process at any time
+- Full order invoice displayed in user notification including itemized list and totals
+
+**User Experience**
+- Users receive detailed cancellation notification with admin's explanation (when provided)
+- Notification includes complete order breakdown with items, prices, and shipping costs
+- Full wallet refund with no penalties for admin-initiated cancellations
+- Clear distinction between admin cancellations and system/user cancellations
+- Graceful handling of cancellations without custom reason
+
+**Technical Implementation**
+- FSM state management for multi-step admin input workflow
+- Dual cancellation paths: with custom reason (Level 5→6) or without reason (Level 7)
+- Transactional notification building: message assembled before database changes
+- Notifications sent only after successful item release to ensure data consistency
+- Proper FSM state lifecycle management to prevent premature data cleanup
+- Optional custom_reason parameter in notification system
+
 ## 2025-10-31
 
 ### Payment System Improvements

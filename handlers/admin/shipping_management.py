@@ -1,6 +1,7 @@
 from aiogram import Router
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.fsm.context import FSMContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -8,6 +9,7 @@ from callbacks import ShippingManagementCallback, AdminMenuCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.order_status import OrderStatus
+from handlers.admin.admin_states import AdminOrderCancellationStates
 from repositories.invoice import InvoiceRepository
 from repositories.order import OrderRepository
 from repositories.user import UserRepository
@@ -252,7 +254,7 @@ async def mark_as_shipped_execute(**kwargs):
 
 
 async def cancel_order_admin_confirm(**kwargs):
-    """Level 4: Confirmation before cancelling order (admin)"""
+    """Level 4: Choose cancellation path (with or without reason)"""
     callback = kwargs.get("callback")
     session = kwargs.get("session")
     callback_data = kwargs.get("callback_data")
@@ -267,15 +269,46 @@ async def cancel_order_admin_confirm(**kwargs):
         from datetime import datetime
         invoice_number = f"ORDER-{datetime.now().year}-{order_id:06d}"
 
-    message_text = Localizator.get_text(BotEntity.ADMIN, "confirm_cancel_order_admin").format(
+    message_text = Localizator.get_text(BotEntity.ADMIN, "choose_cancel_order_path").format(
         invoice_number=invoice_number
     )
 
     kb_builder = InlineKeyboardBuilder()
     kb_builder.button(
-        text=Localizator.get_text(BotEntity.COMMON, "confirm"),
-        callback_data=ShippingManagementCallback.create(level=5, order_id=order_id, confirmation=True).pack()
+        text=Localizator.get_text(BotEntity.ADMIN, "cancel_with_reason"),
+        callback_data=ShippingManagementCallback.create(level=5, order_id=order_id).pack()
     )
+    kb_builder.button(
+        text=Localizator.get_text(BotEntity.ADMIN, "cancel_without_reason"),
+        callback_data=ShippingManagementCallback.create(level=7, order_id=order_id).pack()
+    )
+    kb_builder.adjust(1)
+    kb_builder.button(
+        text=Localizator.get_text(BotEntity.COMMON, "back_button"),
+        callback_data=ShippingManagementCallback.create(level=1, order_id=order_id).pack()
+    )
+
+    await callback.message.edit_text(message_text, reply_markup=kb_builder.as_markup())
+
+
+async def cancel_order_admin_request_reason(**kwargs):
+    """Level 5: Request cancellation reason from admin"""
+    callback = kwargs.get("callback")
+    callback_data = kwargs.get("callback_data")
+    state = kwargs.get("state")
+
+    order_id = callback_data.order_id
+
+    # Store order_id in FSM context
+    await state.update_data(order_id=order_id)
+
+    # Set FSM state
+    await state.set_state(AdminOrderCancellationStates.waiting_for_cancellation_reason)
+
+    # Prompt for reason with cancel button
+    message_text = Localizator.get_text(BotEntity.ADMIN, "enter_cancellation_reason")
+
+    kb_builder = InlineKeyboardBuilder()
     kb_builder.button(
         text=Localizator.get_text(BotEntity.COMMON, "cancel"),
         callback_data=ShippingManagementCallback.create(level=1, order_id=order_id).pack()
@@ -284,11 +317,117 @@ async def cancel_order_admin_confirm(**kwargs):
     await callback.message.edit_text(message_text, reply_markup=kb_builder.as_markup())
 
 
+@shipping_management_router.message(AdminOrderCancellationStates.waiting_for_cancellation_reason, AdminIdFilter())
+async def process_cancellation_reason(message: Message, state: FSMContext, session: AsyncSession | Session):
+    """Store cancellation reason and show confirmation"""
+    # Get order_id from FSM context
+    data = await state.get_data()
+    order_id = data.get("order_id")
+
+    if not order_id:
+        await message.answer(Localizator.get_text(BotEntity.ADMIN, "error_order_not_found"))
+        await state.clear()
+        return
+
+    custom_reason = message.text
+
+    # Store reason in FSM for confirmation step
+    await state.update_data(custom_reason=custom_reason)
+
+    # Get order and invoice for display
+    order = await OrderRepository.get_by_id(order_id, session)
+    invoice = await InvoiceRepository.get_by_order_id(order_id, session)
+
+    if invoice:
+        invoice_number = invoice.invoice_number
+    else:
+        from datetime import datetime
+        invoice_number = f"ORDER-{datetime.now().year}-{order_id:06d}"
+
+    # Show confirmation with order details and reason
+    message_text = Localizator.get_text(BotEntity.ADMIN, "confirm_cancel_with_reason").format(
+        invoice_number=invoice_number,
+        reason=custom_reason
+    )
+
+    kb_builder = InlineKeyboardBuilder()
+    kb_builder.button(
+        text=Localizator.get_text(BotEntity.COMMON, "confirm"),
+        callback_data=ShippingManagementCallback.create(level=6, order_id=order_id, confirmation=True).pack()
+    )
+    kb_builder.button(
+        text=Localizator.get_text(BotEntity.COMMON, "cancel"),
+        callback_data=ShippingManagementCallback.create(level=1, order_id=order_id).pack()
+    )
+
+    await message.answer(message_text, reply_markup=kb_builder.as_markup())
+
+
 async def cancel_order_admin_execute(**kwargs):
-    """Level 5: Execute order cancellation (admin)"""
+    """Level 6: Execute order cancellation with custom reason"""
     callback = kwargs.get("callback")
     session = kwargs.get("session")
     callback_data = kwargs.get("callback_data")
+    state = kwargs.get("state")
+
+    order_id = callback_data.order_id
+
+    # Get reason from FSM context
+    data = await state.get_data()
+    custom_reason = data.get("custom_reason")
+
+    if not custom_reason:
+        await callback.message.edit_text(Localizator.get_text(BotEntity.ADMIN, "error_order_not_found"))
+        await state.clear()
+        return
+
+    # Get order and invoice
+    order = await OrderRepository.get_by_id(order_id, session)
+    invoice = await InvoiceRepository.get_by_order_id(order_id, session)
+
+    if invoice:
+        invoice_number = invoice.invoice_number
+    else:
+        from datetime import datetime
+        invoice_number = f"ORDER-{datetime.now().year}-{order_id:06d}"
+
+    # Cancel order using OrderService with custom reason
+    from services.order import OrderService
+    from enums.order_cancel_reason import OrderCancelReason
+
+    await OrderService.cancel_order(
+        order_id=order_id,
+        reason=OrderCancelReason.ADMIN,
+        session=session,
+        refund_wallet=True,  # Full refund, no penalty for admin cancellation
+        custom_reason=custom_reason  # Pass custom reason
+    )
+    await session_commit(session)
+
+    # Clear FSM state
+    await state.clear()
+
+    # Success message
+    message_text = Localizator.get_text(BotEntity.ADMIN, "order_cancelled_by_admin_with_reason").format(
+        invoice_number=invoice_number,
+        reason=custom_reason
+    )
+
+    kb_builder = InlineKeyboardBuilder()
+    kb_builder.button(
+        text=Localizator.get_text(BotEntity.ADMIN, "back_to_menu"),
+        callback_data=ShippingManagementCallback.create(level=0).pack()
+    )
+
+    await callback.message.edit_text(message_text, reply_markup=kb_builder.as_markup())
+
+
+async def cancel_order_admin_without_reason(**kwargs):
+    """Level 7: Execute order cancellation without custom reason"""
+    callback = kwargs.get("callback")
+    session = kwargs.get("session")
+    callback_data = kwargs.get("callback_data")
+    state = kwargs.get("state")
 
     order_id = callback_data.order_id
 
@@ -302,7 +441,7 @@ async def cancel_order_admin_execute(**kwargs):
         from datetime import datetime
         invoice_number = f"ORDER-{datetime.now().year}-{order_id:06d}"
 
-    # Cancel order using OrderService
+    # Cancel order using OrderService WITHOUT custom reason
     from services.order import OrderService
     from enums.order_cancel_reason import OrderCancelReason
 
@@ -310,12 +449,16 @@ async def cancel_order_admin_execute(**kwargs):
         order_id=order_id,
         reason=OrderCancelReason.ADMIN,
         session=session,
-        refund_wallet=True  # Full refund, no penalty for admin cancellation
+        refund_wallet=True,
+        custom_reason=None  # No custom reason
     )
     await session_commit(session)
 
+    # Clear FSM state (in case it was set)
+    await state.clear()
+
     # Success message
-    message_text = Localizator.get_text(BotEntity.ADMIN, "order_cancelled_by_admin").format(
+    message_text = Localizator.get_text(BotEntity.ADMIN, "order_cancelled_by_admin_no_reason").format(
         invoice_number=invoice_number
     )
 
@@ -329,7 +472,12 @@ async def cancel_order_admin_execute(**kwargs):
 
 
 @shipping_management_router.callback_query(AdminIdFilter(), ShippingManagementCallback.filter())
-async def shipping_management_navigation(callback: CallbackQuery, callback_data: ShippingManagementCallback, session: AsyncSession | Session):
+async def shipping_management_navigation(callback: CallbackQuery, callback_data: ShippingManagementCallback, session: AsyncSession | Session, state: FSMContext):
+    # Clear FSM state when cancelling (going back to level 1), but NOT when going to level 6 (execute)
+    current_state = await state.get_state()
+    if current_state == AdminOrderCancellationStates.waiting_for_cancellation_reason and callback_data.level == 1:
+        await state.clear()
+
     current_level = callback_data.level
 
     levels = {
@@ -338,7 +486,9 @@ async def shipping_management_navigation(callback: CallbackQuery, callback_data:
         2: mark_as_shipped_confirm,
         3: mark_as_shipped_execute,
         4: cancel_order_admin_confirm,
-        5: cancel_order_admin_execute,
+        5: cancel_order_admin_request_reason,
+        6: cancel_order_admin_execute,
+        7: cancel_order_admin_without_reason,
     }
 
     current_level_function = levels[current_level]
@@ -347,6 +497,7 @@ async def shipping_management_navigation(callback: CallbackQuery, callback_data:
         "callback": callback,
         "session": session,
         "callback_data": callback_data,
+        "state": state,
     }
 
     await current_level_function(**kwargs)

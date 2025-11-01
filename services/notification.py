@@ -318,19 +318,23 @@ class NotificationService:
         await NotificationService.send_to_user(msg, user.telegram_id)
 
     @staticmethod
-    async def notify_order_cancelled_wallet_refund(
+    async def build_order_cancelled_wallet_refund_message(
         user: UserDTO,
         order,
         invoice,
         invoice_number: str,
         refund_info: dict,
         currency_sym: str,
-        session
-    ):
+        session,
+        custom_reason: str = None
+    ) -> str:
         """
-        Notifies user about order cancellation and wallet refund.
+        Builds notification message about order cancellation and wallet refund.
         Shows processing fee if applicable.
         For admin cancellations, shows full invoice with refund line.
+
+        Returns:
+            Formatted message string (does NOT send)
         """
         original_amount = refund_info['original_amount']
         penalty_amount = refund_info['penalty_amount']
@@ -397,15 +401,21 @@ class NotificationService:
                 from utils.localizator import Localizator
                 from enums.bot_entity import BotEntity
 
-                # Get order items
+                # Load items (they still have order_id at this point)
                 order_items = await ItemRepository.get_by_order_id(order.id, session)
+
+                import logging
+                logging.info(f"Admin cancel notification: Found {len(order_items) if order_items else 0} items for order {order.id}")
 
                 # Build items list (same format as invoice)
                 items_dict = {}
                 for item in order_items:
                     subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
-                    key = (subcategory.name, item.price)
-                    items_dict[key] = items_dict.get(key, 0) + 1
+                    if subcategory:
+                        key = (subcategory.name, item.price)
+                        items_dict[key] = items_dict.get(key, 0) + 1
+                    else:
+                        logging.warning(f"Subcategory {item.subcategory_id} not found for item {item.id}")
 
                 items_list = ""
                 subtotal = 0.0
@@ -413,6 +423,8 @@ class NotificationService:
                     line_total = price * qty
                     items_list += f"{qty}x {name}\n  {currency_sym}{price:.2f} × {qty}{' ' * (20 - len(name))}{currency_sym}{line_total:.2f}\n"
                     subtotal += line_total
+
+                logging.info(f"Admin cancel notification: items_list length = {len(items_list)}")
 
                 # Shipping line
                 shipping_line = ""
@@ -434,10 +446,16 @@ class NotificationService:
                 # Format date
                 date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
 
+                # Add custom reason if provided
+                reason_section = ""
+                if custom_reason:
+                    reason_section = f"\n<b>{Localizator.get_text(BotEntity.USER, 'admin_cancel_reason_label')}</b>\n{custom_reason}\n\n"
+
                 msg = (
                     f"<b>{Localizator.get_text(BotEntity.USER, 'admin_cancel_invoice_header')}{invoice_number}</b>\n"
                     f"{Localizator.get_text(BotEntity.USER, 'admin_cancel_invoice_date')} {date_str}\n"
-                    f"{Localizator.get_text(BotEntity.USER, 'admin_cancel_invoice_status')}\n\n"
+                    f"{Localizator.get_text(BotEntity.USER, 'admin_cancel_invoice_status')}\n"
+                    f"{reason_section}"
                     f"<b>{Localizator.get_text(BotEntity.USER, 'admin_cancel_invoice_items')}</b>\n"
                     f"─────────────────────────────\n"
                     f"{items_list}"
@@ -463,16 +481,120 @@ class NotificationService:
                     f"Your wallet balance has been fully refunded and you will not receive a strike."
                 )
 
-        await NotificationService.send_to_user(msg, user.telegram_id)
+        return msg
 
     @staticmethod
-    async def notify_order_cancelled_strike_only(
+    async def build_order_cancelled_by_admin_message(
         user: UserDTO,
         invoice_number: str,
-        reason
-    ):
+        custom_reason: str,
+        order = None,
+        session = None
+    ) -> str:
         """
-        Notifies user about order cancellation when no wallet was involved but strike was given.
+        Builds notification message about admin order cancellation with custom reason.
+        Shows full invoice with items if order and session provided.
+        No wallet refund or strikes involved.
+
+        Returns:
+            Formatted message string (does NOT send)
+        """
+        # If order info available, show full invoice format
+        if order and session:
+            from repositories.item import ItemRepository
+            from repositories.subcategory import SubcategoryRepository
+            from datetime import datetime
+            from utils.localizator import Localizator
+            from enums.bot_entity import BotEntity
+
+            currency_sym = Localizator.get_currency_symbol()
+
+            # Load items (they still have order_id at this point)
+            order_items = await ItemRepository.get_by_order_id(order.id, session)
+
+            import logging
+            logging.info(f"notify_order_cancelled_by_admin: Found {len(order_items) if order_items else 0} items for order {order.id}")
+
+            # Build items list (same format as invoice)
+            items_dict = {}
+            for item in order_items:
+                subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
+                if subcategory:
+                    key = (subcategory.name, item.price)
+                    items_dict[key] = items_dict.get(key, 0) + 1
+                else:
+                    logging.warning(f"Subcategory {item.subcategory_id} not found for item {item.id}")
+
+            items_list = ""
+            subtotal = 0.0
+            for (name, price), qty in items_dict.items():
+                line_total = price * qty
+                items_list += f"{qty}x {name}\n  {currency_sym}{price:.2f} × {qty}{' ' * (20 - len(name))}{currency_sym}{line_total:.2f}\n"
+                subtotal += line_total
+
+            logging.info(f"notify_order_cancelled_by_admin: items_list length = {len(items_list)}")
+
+            # Shipping line
+            shipping_line = ""
+            if order.shipping_cost > 0:
+                shipping_label = Localizator.get_text(BotEntity.USER, "admin_cancel_invoice_shipping")
+                shipping_line = f"{shipping_label}{' ' * (29 - len(shipping_label))}{currency_sym}{order.shipping_cost:.2f}\n"
+
+            # Calculate spacing for alignment
+            subtotal_label = Localizator.get_text(BotEntity.USER, "admin_cancel_invoice_subtotal")
+            total_label = Localizator.get_text(BotEntity.USER, "admin_cancel_invoice_total")
+
+            subtotal_spacing = " " * (29 - len(subtotal_label))
+            total_spacing = " " * (29 - len(total_label))
+
+            # Format date
+            date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+            # Build reason section (only if custom_reason provided)
+            reason_section = ""
+            if custom_reason:
+                reason_section = f"\n<b>{Localizator.get_text(BotEntity.USER, 'admin_cancel_reason_label')}</b>\n{custom_reason}\n\n"
+
+            msg = (
+                f"<b>{Localizator.get_text(BotEntity.USER, 'admin_cancel_invoice_header')}{invoice_number}</b>\n"
+                f"{Localizator.get_text(BotEntity.USER, 'admin_cancel_invoice_date')} {date_str}\n"
+                f"{Localizator.get_text(BotEntity.USER, 'admin_cancel_invoice_status')}\n"
+                f"{reason_section}"
+                f"<b>{Localizator.get_text(BotEntity.USER, 'admin_cancel_invoice_items')}</b>\n"
+                f"─────────────────────────────\n"
+                f"{items_list}"
+                f"─────────────────────────────\n"
+                f"{subtotal_label}{subtotal_spacing}{currency_sym}{subtotal:.2f}\n"
+                f"{shipping_line}"
+                f"─────────────────────────────\n"
+                f"<b>{total_label}{total_spacing}{currency_sym}{order.total_price:.2f}</b>\n\n"
+                f"{Localizator.get_text(BotEntity.USER, 'admin_cancel_notice')}\n\n"
+                f"{Localizator.get_text(BotEntity.USER, 'admin_cancel_contact_support')}"
+            )
+        else:
+            # Fallback: Simple message without items
+            msg = (
+                f"❌ <b>{Localizator.get_text(BotEntity.USER, 'order_cancelled_by_admin_title')}</b>\n\n"
+                f"📋 {Localizator.get_text(BotEntity.USER, 'order_number')}: {invoice_number}\n\n"
+                f"<b>{Localizator.get_text(BotEntity.USER, 'admin_cancel_reason_label')}</b>\n"
+                f"{custom_reason}\n\n"
+                f"{Localizator.get_text(BotEntity.USER, 'admin_cancel_contact_support')}"
+            )
+
+        return msg
+
+    @staticmethod
+    async def build_order_cancelled_strike_only_message(
+        user: UserDTO,
+        invoice_number: str,
+        reason,
+        custom_reason: str = None
+    ) -> str:
+        """
+        Builds notification message about order cancellation when no wallet was involved but strike was given.
+
+        Returns:
+            Formatted message string (does NOT send)
         """
         from enums.order_cancel_reason import OrderCancelReason
 
@@ -486,7 +608,7 @@ class NotificationService:
             reason_text=reason_text
         )
 
-        await NotificationService.send_to_user(msg, user.telegram_id)
+        return msg
 
     @staticmethod
     async def order_shipped(user_id: int, invoice_number: str, session: AsyncSession | Session):

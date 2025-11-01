@@ -236,7 +236,8 @@ class OrderService:
         order_id: int,
         reason: 'OrderCancelReason',
         session: AsyncSession | Session,
-        refund_wallet: bool = True
+        refund_wallet: bool = True,
+        custom_reason: str = None
     ) -> tuple[bool, str]:
         """
         Cancels an order with the specified reason.
@@ -246,6 +247,7 @@ class OrderService:
             reason: Reason for cancellation (USER, TIMEOUT, ADMIN)
             session: Database session
             refund_wallet: Whether to refund wallet balance (False if payment handler already credited)
+            custom_reason: Optional custom reason text (used for ADMIN cancellations)
 
         Returns:
             tuple[bool, str]: (within_grace_period, message)
@@ -284,54 +286,19 @@ class OrderService:
         time_elapsed = (datetime.utcnow() - order.created_at).total_seconds() / 60  # Minutes
         within_grace_period = time_elapsed <= config.ORDER_CANCEL_GRACE_PERIOD_MINUTES
 
-        # Release reserved items - restore stock
-        items = await ItemRepository.get_by_order_id(order_id, session)
+        # Get invoice number for notification (before items are released)
+        from repositories.invoice import InvoiceRepository
+        invoice = await InvoiceRepository.get_by_order_id(order_id, session)
+        if invoice:
+            invoice_number = invoice.invoice_number
+        else:
+            # Fallback for orders without invoice
+            from datetime import datetime
+            invoice_number = f"ORDER-{datetime.now().year}-{order_id:06d}"
 
-        # Group items by subcategory and price for stock restoration
-        from collections import defaultdict
-        items_by_type = defaultdict(list)
-        for item in items:
-            key = (item.subcategory_id, item.category_id, item.price, item.description)
-            items_by_type[key].append(item)
-
-        # For each item type, restore stock by setting is_sold=false
-        for (subcategory_id, category_id, price, description), cancelled_items in items_by_type.items():
-            qty_needed = len(cancelled_items)
-
-            # First, try to restore existing sold items (is_sold=true) back to available
-            sold_items = await ItemRepository.get_sold_items_by_subcategory(
-                subcategory_id=subcategory_id,
-                category_id=category_id,
-                price=price,
-                limit=qty_needed,
-                session=session
-            )
-
-            # Restore sold items to available stock
-            for item in sold_items:
-                item.is_sold = False
-                item.order_id = None
-
-            if sold_items:
-                await ItemRepository.update(sold_items, session)
-
-            # If we couldn't find enough sold items (e.g., after DB cleanup),
-            # create new items to maintain stock integrity
-            shortage = qty_needed - len(sold_items)
-            if shortage > 0:
-                logging.warning(
-                    f"Stock shortage detected for subcategory {subcategory_id}: "
-                    f"needed {qty_needed}, found {len(sold_items)} sold items. "
-                    f"Creating {shortage} new items."
-                )
-                # Note: We don't create new items automatically as we don't have private_data.
-                # This should be handled manually by admin or through a separate stock management system.
-                # For now, just log the shortage.
-
-        # Clean up the cancelled order items (remove reservation)
-        for item in items:
-            item.order_id = None
-        await ItemRepository.update(items, session)
+        # BUILD NOTIFICATION STRINGS FIRST (before items are released)
+        # This ensures items still have order_id and can be loaded
+        notification_messages = {}  # Store pre-built messages
 
         # Handle wallet refund/penalty logic
         # Three scenarios:
@@ -458,40 +425,100 @@ class OrderService:
         else:
             raise ValueError(f"Unknown cancel reason: {reason}")
 
-        await OrderRepository.update_status(order_id, new_status, session)
-
-        # Send notification to user
+        # BUILD NOTIFICATION MESSAGES (before releasing items)
+        # Items still have order_id at this point, so notifications can load them
         from services.notification import NotificationService
         from utils.localizator import Localizator
-        from repositories.invoice import InvoiceRepository
-
-        # Get invoice number for notification
-        invoice = await InvoiceRepository.get_by_order_id(order_id, session)
-        if invoice:
-            invoice_number = invoice.invoice_number
-        else:
-            # Fallback for orders without invoice (should not happen in normal flow)
-            from datetime import datetime
-            invoice_number = f"ORDER-{datetime.now().year}-{order_id:06d}"
 
         if wallet_refund_info:
             # Wallet-based notification (includes strike info if penalty was applied)
-            await NotificationService.notify_order_cancelled_wallet_refund(
+            notification_messages['wallet_refund'] = await NotificationService.build_order_cancelled_wallet_refund_message(
                 user=user,
                 order=order,
                 invoice=invoice,
                 invoice_number=invoice_number,
                 refund_info=wallet_refund_info,
                 currency_sym=Localizator.get_currency_symbol(),
-                session=session
+                session=session,
+                custom_reason=custom_reason
             )
         elif not within_grace_period and reason != OrderCancelReason.ADMIN:
-            # No wallet involved but strike was given - notify user about strike
-            await NotificationService.notify_order_cancelled_strike_only(
+            # No wallet involved but strike was given
+            notification_messages['strike_only'] = await NotificationService.build_order_cancelled_strike_only_message(
                 user=user,
                 invoice_number=invoice_number,
-                reason=reason
+                reason=reason,
+                custom_reason=custom_reason
             )
+        elif reason == OrderCancelReason.ADMIN:
+            # Admin cancellation (with or without custom reason)
+            notification_messages['admin_cancel'] = await NotificationService.build_order_cancelled_by_admin_message(
+                user=user,
+                invoice_number=invoice_number,
+                custom_reason=custom_reason,  # Can be None
+                order=order,
+                session=session
+            )
+
+        # UPDATE ORDER STATUS
+        await OrderRepository.update_status(order_id, new_status, session)
+
+        # RELEASE ITEMS AND RESTORE STOCK
+        items = await ItemRepository.get_by_order_id(order_id, session)
+
+        # Group items by subcategory and price for stock restoration
+        from collections import defaultdict
+        items_by_type = defaultdict(list)
+        for item in items:
+            key = (item.subcategory_id, item.category_id, item.price, item.description)
+            items_by_type[key].append(item)
+
+        # For each item type, restore stock by setting is_sold=false
+        for (subcategory_id, category_id, price, description), cancelled_items in items_by_type.items():
+            qty_needed = len(cancelled_items)
+
+            # First, try to restore existing sold items (is_sold=true) back to available
+            sold_items = await ItemRepository.get_sold_items_by_subcategory(
+                subcategory_id=subcategory_id,
+                category_id=category_id,
+                price=price,
+                limit=qty_needed,
+                session=session
+            )
+
+            # Restore sold items to available stock
+            for item in sold_items:
+                item.is_sold = False
+                item.order_id = None
+
+            if sold_items:
+                await ItemRepository.update(sold_items, session)
+
+            # If we couldn't find enough sold items (e.g., after DB cleanup),
+            # create new items to maintain stock integrity
+            shortage = qty_needed - len(sold_items)
+            if shortage > 0:
+                logging.warning(
+                    f"Stock shortage detected for subcategory {subcategory_id}: "
+                    f"needed {qty_needed}, found {len(sold_items)} sold items. "
+                    f"Creating {shortage} new items."
+                )
+                # Note: We don't create new items automatically as we don't have private_data.
+                # This should be handled manually by admin or through a separate stock management system.
+                # For now, just log the shortage.
+
+        # Clean up the cancelled order items (remove reservation)
+        for item in items:
+            item.order_id = None
+        await ItemRepository.update(items, session)
+
+        # SEND NOTIFICATIONS (only after successful item release)
+        if 'wallet_refund' in notification_messages:
+            await NotificationService.send_to_user(notification_messages['wallet_refund'], user.telegram_id)
+        elif 'strike_only' in notification_messages:
+            await NotificationService.send_to_user(notification_messages['strike_only'], user.telegram_id)
+        elif 'admin_cancel' in notification_messages:
+            await NotificationService.send_to_user(notification_messages['admin_cancel'], user.telegram_id)
 
         return within_grace_period, message
 
