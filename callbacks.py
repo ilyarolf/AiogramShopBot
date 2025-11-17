@@ -134,3 +134,16 @@ class WalletCallback(BaseCallback, prefix="wallet"):
     @staticmethod
     def create(level: int, cryptocurrency: Cryptocurrency | None = None):
         return WalletCallback(level=level, cryptocurrency=cryptocurrency)
+
+
+class MediaManagementCallback(BaseCallback, prefix="media"):
+    entity_type: EntityType | None
+    entity_id: int | None = None
+    page: int
+
+    @staticmethod
+    def create(level: int, entity_type: EntityType | None = None, entity_id: int | None = None, page: int = 0):
+        return MediaManagementCallback(level=level,
+                                       entity_type=entity_type,
+                                       entity_id=entity_id,
+                                       page=page)

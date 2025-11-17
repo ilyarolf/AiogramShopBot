@@ -1,13 +1,13 @@
-import inspect
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from callbacks import AdminMenuCallback, AdminAnnouncementCallback, AdminInventoryManagementCallback, \
-    UserManagementCallback, StatisticsCallback, WalletCallback
+    UserManagementCallback, StatisticsCallback, WalletCallback, MediaManagementCallback
 from enums.bot_entity import BotEntity
 from handlers.admin.announcement import announcement_router
 from handlers.admin.inventory_management import inventory_management
+from handlers.admin.media_management import media_management
 from handlers.admin.statistics import statistics
 from handlers.admin.user_management import user_management
 from handlers.admin.wallet import wallet
@@ -15,11 +15,12 @@ from utils.custom_filters import AdminIdFilter
 from utils.localizator import Localizator
 
 admin_router = Router()
-admin_router.include_router(announcement_router)
-admin_router.include_router(inventory_management)
-admin_router.include_router(user_management)
-admin_router.include_router(statistics)
-admin_router.include_router(wallet)
+admin_router.include_routers(announcement_router,
+                             inventory_management,
+                             user_management,
+                             statistics,
+                             wallet,
+                             media_management)
 
 
 @admin_router.message(F.text == Localizator.get_text(BotEntity.ADMIN, "menu"), AdminIdFilter())
@@ -40,6 +41,8 @@ async def admin(**kwargs):
                               callback_data=StatisticsCallback.create(level=0))
     admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "crypto_withdraw"),
                               callback_data=WalletCallback.create(level=0))
+    admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "media_management"),
+                              callback_data=MediaManagementCallback.create(level=0))
     admin_menu_builder.adjust(2)
     if isinstance(message, Message):
         await message.answer(Localizator.get_text(BotEntity.ADMIN, "menu"),

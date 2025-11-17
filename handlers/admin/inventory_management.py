@@ -39,7 +39,8 @@ async def add_items(**kwargs):
 async def delete_entity(**kwargs):
     callback = kwargs.get("callback")
     session = kwargs.get("session")
-    msg, kb_builder = await AdminService.get_delete_entity_menu(callback, session)
+    callback_data = kwargs.get("callback_data")
+    msg, kb_builder = await AdminService.get_entity_picker(callback_data, session)
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
@@ -90,6 +91,7 @@ async def inventory_management_navigation(callback: CallbackQuery, state: FSMCon
         "callback": callback,
         "state": state,
         "session": session,
+        "callback_data": callback_data
     }
 
     await current_level_function(**kwargs)

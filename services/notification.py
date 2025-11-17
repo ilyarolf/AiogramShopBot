@@ -1,4 +1,5 @@
 import logging
+import traceback
 from aiogram import types, Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -162,3 +163,18 @@ class NotificationService:
             await bot.session.close()
         except Exception as _:
             pass
+
+    @staticmethod
+    async def edit_reply_markup(bot: Bot,
+                                chat_id: int,
+                                message_id: int,
+                                reply_markup: InlineKeyboardMarkup | None = None):
+        try:
+            await bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=reply_markup)
+        except Exception as exception:
+            traceback_str = traceback.format_exc()
+            admin_notification = (
+                f"Critical error caused by {exception}\n\n"
+                f"Stack trace:\n{traceback_str}"
+            )
+            logging.error(admin_notification)
