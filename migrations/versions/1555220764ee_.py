@@ -26,10 +26,10 @@ def upgrade() -> None:
     op.add_column('categories', sa.Column('media_id', sa.String(), nullable=True))
     op.add_column('subcategories', sa.Column('media_id', sa.String(), nullable=True))
     op.execute(f"""
-        UPDATE categories SET media_id='0{bot_photo_id}'; 
+        UPDATE categories SET media_id='{bot_photo_id}'; 
     """)
     op.execute(f"""
-        UPDATE subcategories SET media_id='0{bot_photo_id}'; 
+        UPDATE subcategories SET media_id='{bot_photo_id}'; 
     """)
     with op.batch_alter_table('categories') as batch_op:
         batch_op.alter_column('media_id', nullable=False)
