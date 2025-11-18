@@ -23,6 +23,7 @@ from services.notification import NotificationService
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator
+from utils.utils import get_bot_photo_id
 
 logging.basicConfig(level=logging.INFO)
 main_router = Router()
@@ -46,12 +47,17 @@ async def start(message: types.message, session: AsyncSession | Session):
     if telegram_id in config.ADMIN_ID_LIST:
         keyboard.append([admin_menu_button])
     start_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, keyboard=keyboard)
-    await message.answer(Localizator.get_text(BotEntity.COMMON, "start_message"), reply_markup=start_markup)
+    bot_photo_id = get_bot_photo_id()
+    await message.answer_photo(photo=bot_photo_id,
+                               caption=Localizator.get_text(BotEntity.COMMON, "start_message"),
+                               reply_markup=start_markup)
 
 
 @main_router.message(F.text == Localizator.get_text(BotEntity.USER, "faq"), IsUserExistFilter())
 async def faq(message: types.message):
-    await message.answer(Localizator.get_text(BotEntity.USER, "faq_string"))
+    bot_photo_id = get_bot_photo_id()
+    await message.answer_photo(photo=bot_photo_id,
+                               caption=Localizator.get_text(BotEntity.USER, "faq_string"))
 
 
 @main_router.message(F.text == Localizator.get_text(BotEntity.USER, "help"), IsUserExistFilter())
@@ -59,8 +65,10 @@ async def support(message: types.message):
     admin_keyboard_builder = InlineKeyboardBuilder()
 
     admin_keyboard_builder.button(text=Localizator.get_text(BotEntity.USER, "help_button"), url=SUPPORT_LINK)
-    await message.answer(Localizator.get_text(BotEntity.USER, "help_string"),
-                         reply_markup=admin_keyboard_builder.as_markup())
+    bot_photo_id = get_bot_photo_id()
+    await message.answer_photo(photo=bot_photo_id,
+                               caption=Localizator.get_text(BotEntity.USER, "help_string"),
+                               reply_markup=admin_keyboard_builder.as_markup())
 
 
 @main_router.error(F.update.message.as_("message"))

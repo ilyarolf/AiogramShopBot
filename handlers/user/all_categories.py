@@ -21,43 +21,50 @@ async def all_categories_text_message(message: types.message, session: AsyncSess
 
 
 async def all_categories(**kwargs):
-    message = kwargs.get("callback")
-    session = kwargs.get("session")
+    message: CallbackQuery | Message = kwargs.get("callback")
+    callback_data: AllCategoriesCallback = kwargs.get("callback_data")
+    session: AsyncSession = kwargs.get("session")
     if isinstance(message, Message):
-        msg, kb_builder = await CategoryService.get_buttons(session)
-        await message.answer(msg, reply_markup=kb_builder.as_markup())
+        media, kb_builder = await CategoryService.get_buttons(session, callback_data)
+        await message.answer_photo(photo=media.media,
+                                   caption=media.caption,
+                                   reply_markup=kb_builder.as_markup())
     elif isinstance(message, CallbackQuery):
         callback = message
-        msg, kb_builder = await CategoryService.get_buttons(session, callback)
-        await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
+        media, kb_builder = await CategoryService.get_buttons(session, callback_data)
+        await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
 
 
 async def show_subcategories_in_category(**kwargs):
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
-    msg, kb_builder = await SubcategoryService.get_buttons(callback, session)
-    await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
+    callback: CallbackQuery = kwargs.get("callback")
+    callback_data: AllCategoriesCallback = kwargs.get("callback_data")
+    session: AsyncSession = kwargs.get("session")
+    media, kb_builder = await SubcategoryService.get_buttons(callback_data, session)
+    await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
 
 
 async def select_quantity(**kwargs):
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
-    msg, kb_builder = await SubcategoryService.get_select_quantity_buttons(callback, session)
-    await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
+    callback: CallbackQuery = kwargs.get("callback")
+    callback_data: AllCategoriesCallback = kwargs.get("callback_data")
+    session: AsyncSession = kwargs.get("session")
+    media, kb_builder = await SubcategoryService.get_select_quantity_buttons(callback_data, session)
+    await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
 
 
 async def add_to_cart_confirmation(**kwargs):
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
-    msg, kb_builder = await SubcategoryService.get_add_to_cart_buttons(callback, session)
-    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+    callback: CallbackQuery = kwargs.get("callback")
+    callback_data: AllCategoriesCallback = kwargs.get("callback_data")
+    session: AsyncSession = kwargs.get("session")
+    msg, kb_builder = await SubcategoryService.get_add_to_cart_buttons(callback_data, session)
+    await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
 
 
 async def add_to_cart(**kwargs):
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
-    await CartService.add_to_cart(callback, session)
-    await callback.message.edit_text(text=Localizator.get_text(BotEntity.USER, "item_added_to_cart"))
+    callback: CallbackQuery = kwargs.get("callback")
+    callback_data: AllCategoriesCallback = kwargs.get("callback_data")
+    session: AsyncSession = kwargs.get("session")
+    media, kb_builder = await CartService.add_to_cart(callback, callback_data, session)
+    await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
 
 
 @all_categories_router.callback_query(AllCategoriesCallback.filter(), IsUserExistFilter())
@@ -78,6 +85,7 @@ async def navigate_categories(callback: CallbackQuery, callback_data: AllCategor
     kwargs = {
         "callback": callback,
         "session": session,
+        "callback_data": callback_data
     }
 
     await current_level_function(**kwargs)

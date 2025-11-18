@@ -1,4 +1,4 @@
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, InputMediaPhoto
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -21,23 +21,32 @@ from repositories.user import UserRepository
 from services.message import MessageService
 from services.notification import NotificationService
 from utils.localizator import Localizator
+from utils.utils import get_bot_photo_id
 
 
 class CartService:
 
     @staticmethod
-    async def add_to_cart(callback: CallbackQuery, session: AsyncSession | Session):
-        unpacked_cb = AllCategoriesCallback.unpack(callback.data)
+    async def add_to_cart(callback: CallbackQuery,
+                          callback_data: AllCategoriesCallback,
+                          session: AsyncSession) -> tuple[InputMediaPhoto, InlineKeyboardBuilder]:
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
         cart = await CartRepository.get_or_create(user.id, session)
         cart_item = CartItemDTO(
-            category_id=unpacked_cb.category_id,
-            subcategory_id=unpacked_cb.subcategory_id,
-            quantity=unpacked_cb.quantity,
+            category_id=callback_data.category_id,
+            subcategory_id=callback_data.subcategory_id,
+            quantity=callback_data.quantity,
             cart_id=cart.id
         )
         await CartRepository.add_to_cart(cart_item, cart, session)
         await session_commit(session)
+        caption = Localizator.get_text(BotEntity.USER, "item_added_to_cart")
+        bot_photo_id = get_bot_photo_id()
+        media = InputMediaPhoto(media=bot_photo_id, caption=caption)
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.row(callback_data.get_back_button(0))
+        return media, kb_builder
+
 
     @staticmethod
     async def create_buttons(message: Message | CallbackQuery, session: AsyncSession | Session):

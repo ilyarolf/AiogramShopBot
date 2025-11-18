@@ -1,5 +1,5 @@
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import Message, InputMediaPhoto, InputMediaVideo, InputMediaAnimation
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -47,7 +47,7 @@ class MediaService:
     async def set_entity_media_edit(callback_data: MediaManagementCallback,
                                     state: FSMContext,
                                     session: AsyncSession) -> tuple[str, InlineKeyboardBuilder]:
-        await state.update_data(entity=callback_data.entity_type, entity_id=callback_data.entity_id)
+        await state.update_data(entity_type=callback_data.entity_type, entity_id=callback_data.entity_id)
         await state.set_state(MediaManagementStates.media)
         if callback_data.entity_type == EntityType.CATEGORY:
             entity = await CategoryRepository.get_by_id(callback_data.entity_id, session)
@@ -82,14 +82,14 @@ class MediaService:
             prefix = "2"
         state_data = await state.get_data()
         media = f"{prefix}{file_id}"
-        entity = EntityType(state_data['entity_type'])
-        if entity == EntityType.CATEGORY:
+        entity_type = EntityType(state_data['entity_type'])
+        if entity_type == EntityType.CATEGORY:
             entity_dto = await CategoryRepository.get_by_id(state_data['entity_id'], session)
-            entity_dto.media = media
+            entity_dto.media_id = media
             await CategoryRepository.update(entity_dto, session)
         else:
             entity_dto = await SubcategoryRepository.get_by_id(state_data['entity_id'], session)
-            entity_dto.media = media
+            entity_dto.media_id = media
             await SubcategoryRepository.update(entity_dto, session)
         await session_commit(session)
         await state.clear()
@@ -98,6 +98,18 @@ class MediaService:
             callback_data=MediaManagementCallback.create(0)
         )
         return Localizator.get_text(BotEntity.ADMIN, "entity_media_successfully_edited").format(
-            entity=entity_dto.get_localized(),
+            entity=entity_type.get_localized(),
             entity_name=entity_dto.name
         ), kb_builder
+
+    @staticmethod
+    def convert_to_media(media_id: str, caption: str) -> InputMediaPhoto | InputMediaVideo | InputMediaAnimation:
+        category_media_type = media_id[0]
+        category_media_id = media_id[1:]
+        if category_media_type == "0":
+            media = InputMediaPhoto(media=category_media_id, caption=caption)
+        elif category_media_type == "1":
+            media = InputMediaVideo(media=category_media_id, caption=caption)
+        else:
+            media = InputMediaAnimation(media=category_media_id, caption=caption)
+        return media
