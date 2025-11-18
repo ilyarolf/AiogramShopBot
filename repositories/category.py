@@ -8,6 +8,7 @@ import config
 from db import session_execute, session_flush
 from models.category import Category, CategoryDTO
 from models.item import Item
+from utils.utils import get_bot_photo_id
 
 
 class CategoryRepository:
@@ -41,7 +42,7 @@ class CategoryRepository:
             return math.trunc(max_page / config.PAGE_ENTRIES)
 
     @staticmethod
-    async def get_by_id(category_id: int, session: Session | AsyncSession):
+    async def get_by_id(category_id: int, session: Session | AsyncSession) -> CategoryDTO:
         stmt = select(Category).where(Category.id == category_id)
         category = await session_execute(stmt, session)
         return CategoryDTO.model_validate(category.scalar(), from_attributes=True)
@@ -65,11 +66,11 @@ class CategoryRepository:
         category = await session_execute(stmt, session)
         category = category.scalar()
         if category is None:
-            with open("static/no_image.jpeg", "r") as f:
-                new_category_obj = Category(name=category_name, photo_id=f"0{f.read()}")
-                session.add(new_category_obj)
-                await session_flush(session)
-                return new_category_obj
+            bot_photo_id = get_bot_photo_id()
+            new_category_obj = Category(name=category_name, media_id=f"0{bot_photo_id}")
+            session.add(new_category_obj)
+            await session_flush(session)
+            return new_category_obj
         else:
             return category
 

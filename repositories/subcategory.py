@@ -8,6 +8,7 @@ import config
 from db import session_execute, session_flush
 from models.item import Item
 from models.subcategory import Subcategory, SubcategoryDTO
+from utils.utils import get_bot_photo_id
 
 
 class SubcategoryRepository:
@@ -78,11 +79,11 @@ class SubcategoryRepository:
         subcategory = await session_execute(stmt, session)
         subcategory = subcategory.scalar()
         if subcategory is None:
-            with open("static/no_image.jpeg", "r") as f:
-                new_category_obj = Subcategory(name=subcategory_name, photo_id=f"0{f.read()}")
-                session.add(new_category_obj)
-                await session_flush(session)
-                return new_category_obj
+            bot_photo_id = get_bot_photo_id()
+            new_category_obj = Subcategory(name=subcategory_name, media_id=f"0{bot_photo_id}")
+            session.add(new_category_obj)
+            await session_flush(session)
+            return new_category_obj
         else:
             return subcategory
 

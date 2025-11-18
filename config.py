@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 
 from enums.currency import Currency
 from enums.runtime_environment import RuntimeEnvironment
-from external_ip import get_sslipio_external_url
 from ngrok_executor import start_ngrok
+from utils.utils import get_sslipio_external_url
 
 load_dotenv(".env")
 RUNTIME_ENVIRONMENT = RuntimeEnvironment(os.environ.get("RUNTIME_ENVIRONMENT"))
