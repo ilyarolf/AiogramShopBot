@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 import config
 from callbacks import AdminAnnouncementCallback, AnnouncementType, AdminInventoryManagementCallback, EntityType, \
     AddType, UserManagementCallback, UserManagementOperation, StatisticsCallback, StatisticsEntity, StatisticsTimeDelta, \
-    WalletCallback
+    WalletCallback, MediaManagementCallback
 from crypto_api.CryptoApiWrapper import CryptoApiWrapper
 from db import session_commit
 from enums.bot_entity import BotEntity
@@ -78,12 +78,16 @@ class AdminService:
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "add_items"),
                           callback_data=AdminInventoryManagementCallback.create(level=1, entity_type=EntityType.ITEM))
-        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "delete_category"),
-                          callback_data=AdminInventoryManagementCallback.create(level=2,
-                                                                                entity_type=EntityType.CATEGORY))
-        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "delete_subcategory"),
-                          callback_data=AdminInventoryManagementCallback.create(level=2,
-                                                                                entity_type=EntityType.SUBCATEGORY))
+        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "delete_entity").format(
+            entity=EntityType.CATEGORY.get_localized()
+        ),
+            callback_data=AdminInventoryManagementCallback.create(level=2,
+                                                                  entity_type=EntityType.CATEGORY))
+        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "delete_entity").format(
+            entity=EntityType.SUBCATEGORY.get_localized()
+        ),
+            callback_data=AdminInventoryManagementCallback.create(level=2,
+                                                                  entity_type=EntityType.SUBCATEGORY))
         kb_builder.adjust(1)
         kb_builder.row(AdminConstants.back_to_main_button)
         return Localizator.get_text(BotEntity.ADMIN, "inventory_management"), kb_builder
@@ -101,34 +105,42 @@ class AdminService:
         return Localizator.get_text(BotEntity.ADMIN, "add_items_msg"), kb_builder
 
     @staticmethod
-    async def get_delete_entity_menu(callback: CallbackQuery, session: AsyncSession | Session):
-        unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
+    async def get_entity_picker(callback_data: AdminInventoryManagementCallback | MediaManagementCallback,
+                                session: AsyncSession | Session):
         kb_builder = InlineKeyboardBuilder()
-        match unpacked_cb.entity_type:
+        match callback_data.entity_type:
             case EntityType.CATEGORY:
-                categories = await CategoryRepository.get_to_delete(unpacked_cb.page, session)
-                [kb_builder.button(text=category.name, callback_data=AdminInventoryManagementCallback.create(
+                entities = await CategoryRepository.get_to_delete(callback_data.page, session)
+            case _:
+                entities = await SubcategoryRepository.get_to_delete(callback_data.page, session)
+        for entity in entities:
+            if isinstance(callback_data, AdminInventoryManagementCallback):
+                kb_builder.button(text=entity.name, callback_data=AdminInventoryManagementCallback.create(
                     level=3,
-                    entity_type=unpacked_cb.entity_type,
-                    entity_id=category.id
-                )) for category in categories]
-                kb_builder.adjust(1)
-                kb_builder = await add_pagination_buttons(kb_builder, unpacked_cb,
-                                                          CategoryRepository.get_maximum_page(session),
-                                                          unpacked_cb.get_back_button(0))
-                return Localizator.get_text(BotEntity.ADMIN, "delete_category"), kb_builder
-            case EntityType.SUBCATEGORY:
-                subcategories = await SubcategoryRepository.get_to_delete(unpacked_cb.page, session)
-                [kb_builder.button(text=subcategory.name, callback_data=AdminInventoryManagementCallback.create(
-                    level=3,
-                    entity_type=unpacked_cb.entity_type,
-                    entity_id=subcategory.id
-                )) for subcategory in subcategories]
-                kb_builder.adjust(1)
-                kb_builder = await add_pagination_buttons(kb_builder, unpacked_cb,
-                                                          SubcategoryRepository.get_maximum_page_to_delete(session),
-                                                          unpacked_cb.get_back_button(0))
-                return Localizator.get_text(BotEntity.ADMIN, "delete_subcategory"), kb_builder
+                    entity_type=callback_data.entity_type,
+                    entity_id=entity.id,
+                    page=callback_data.page
+                ))
+            else:
+                kb_builder.button(text=entity.name, callback_data=MediaManagementCallback.create(
+                    level=2,
+                    entity_type=callback_data.entity_type,
+                    entity_id=entity.id,
+                    page=callback_data.page
+                ))
+        kb_builder.adjust(1)
+        kb_builder = await add_pagination_buttons(kb_builder, callback_data,
+                                                  SubcategoryRepository.get_maximum_page_to_delete(session),
+                                                  callback_data.get_back_button(0))
+        if isinstance(callback_data, AdminInventoryManagementCallback):
+            msg_text = Localizator.get_text(BotEntity.ADMIN, "delete_entity").format(
+                entity=callback_data.entity_type.get_localized()
+            )
+        else:
+            msg_text = Localizator.get_text(BotEntity.ADMIN, "edit_media").format(
+                entity=callback_data.entity_type.get_localized()
+            )
+        return msg_text, kb_builder
 
     @staticmethod
     async def delete_confirmation(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[

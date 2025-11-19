@@ -1,4 +1,4 @@
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, InputMediaPhoto, InputMediaVideo, InputMediaAnimation
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -6,11 +6,13 @@ from sqlalchemy.orm import Session
 from callbacks import AllCategoriesCallback, CartCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
+from enums.keyboardbutton import KeyboardButton
 from handlers.common.common import add_pagination_buttons
 from models.buy import BuyDTO
 from models.buyItem import BuyItemDTO
 from models.cartItem import CartItemDTO
 from models.item import ItemDTO
+from repositories.button_media import ButtonMediaRepository
 from repositories.buy import BuyRepository
 from repositories.buyItem import BuyItemRepository
 from repositories.cart import CartRepository
@@ -18,29 +20,41 @@ from repositories.cartItem import CartItemRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
+from services.media import MediaService
 from services.message import MessageService
 from services.notification import NotificationService
 from utils.localizator import Localizator
+from utils.utils import get_bot_photo_id
 
 
 class CartService:
 
     @staticmethod
-    async def add_to_cart(callback: CallbackQuery, session: AsyncSession | Session):
-        unpacked_cb = AllCategoriesCallback.unpack(callback.data)
+    async def add_to_cart(callback: CallbackQuery,
+                          callback_data: AllCategoriesCallback,
+                          session: AsyncSession) -> tuple[InputMediaPhoto, InlineKeyboardBuilder]:
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
         cart = await CartRepository.get_or_create(user.id, session)
         cart_item = CartItemDTO(
-            category_id=unpacked_cb.category_id,
-            subcategory_id=unpacked_cb.subcategory_id,
-            quantity=unpacked_cb.quantity,
+            category_id=callback_data.category_id,
+            subcategory_id=callback_data.subcategory_id,
+            quantity=callback_data.quantity,
             cart_id=cart.id
         )
         await CartRepository.add_to_cart(cart_item, cart, session)
         await session_commit(session)
+        caption = Localizator.get_text(BotEntity.USER, "item_added_to_cart")
+        bot_photo_id = get_bot_photo_id()
+        media = InputMediaPhoto(media=bot_photo_id, caption=caption)
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.row(callback_data.get_back_button(0))
+        return media, kb_builder
 
     @staticmethod
-    async def create_buttons(message: Message | CallbackQuery, session: AsyncSession | Session):
+    async def create_buttons(message: Message | CallbackQuery, session: AsyncSession) -> tuple[InputMediaPhoto |
+                                                                                               InputMediaVideo |
+                                                                                               InputMediaAnimation,
+    InlineKeyboardBuilder]:
         user = await UserRepository.get_by_tgid(message.from_user.id, session)
         page = 0 if isinstance(message, Message) else CartCallback.unpack(message.data).page
         cart_items = await CartItemRepository.get_by_user_id(user.id, 0, session)
@@ -64,9 +78,13 @@ class CartService:
             kb_builder = await add_pagination_buttons(kb_builder, unpacked_cb,
                                                       CartItemRepository.get_maximum_page(user.id, session),
                                                       None)
-            return Localizator.get_text(BotEntity.USER, "cart"), kb_builder
+            caption = Localizator.get_text(BotEntity.USER, "cart")
         else:
-            return Localizator.get_text(BotEntity.USER, "no_cart_items"), kb_builder
+            caption = Localizator.get_text(BotEntity.USER, "no_cart_items")
+
+        button_media = await ButtonMediaRepository.get_by_button(KeyboardButton.CART, session)
+        media = MediaService.convert_to_media(button_media.media_id, caption=caption)
+        return media, kb_builder
 
     @staticmethod
     async def delete_cart_item(callback: CallbackQuery, session: AsyncSession | Session):
@@ -108,7 +126,8 @@ class CartService:
         return message_text
 
     @staticmethod
-    async def checkout_processing(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
+    async def checkout_processing(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[
+        str, InlineKeyboardBuilder]:
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
         cart_items = await CartItemRepository.get_all_by_user_id(user.id, session)
         message_text = await CartService.__create_checkout_msg(cart_items, session)
@@ -121,7 +140,8 @@ class CartService:
         return message_text, kb_builder
 
     @staticmethod
-    async def buy_processing(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
+    async def buy_processing(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[
+        str, InlineKeyboardBuilder]:
         unpacked_cb = CartCallback.unpack(callback.data)
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
         cart_items = await CartItemRepository.get_all_by_user_id(user.id, session)
@@ -143,7 +163,8 @@ class CartService:
                 price = await ItemRepository.get_price(ItemDTO(category_id=cart_item.category_id,
                                                                subcategory_id=cart_item.subcategory_id), session)
                 purchased_items = await ItemRepository.get_purchased_items(cart_item.category_id,
-                                                                           cart_item.subcategory_id, cart_item.quantity, session)
+                                                                           cart_item.subcategory_id, cart_item.quantity,
+                                                                           session)
                 buy_dto = BuyDTO(buyer_id=user.id, quantity=cart_item.quantity, total_price=cart_item.quantity * price)
                 buy_id = await BuyRepository.create(buy_dto, session)
                 buy_item_dto_list = [BuyItemDTO(item_id=item.id, buy_id=buy_id) for item in purchased_items]

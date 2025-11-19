@@ -39,3 +39,7 @@ class UserManagementStates(StatesGroup):
 
 class WalletStates(StatesGroup):
     crypto_address = State()
+
+
+class MediaManagementStates(StatesGroup):
+    media = State()

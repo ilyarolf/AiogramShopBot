@@ -1,20 +1,22 @@
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, InputMediaPhoto, InputMediaVideo, InputMediaAnimation
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-
 from callbacks import MyProfileCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
+from enums.keyboardbutton import KeyboardButton
 from handlers.common.common import add_pagination_buttons
 from models.user import User, UserDTO
+from repositories.button_media import ButtonMediaRepository
 from repositories.buy import BuyRepository
 from repositories.buyItem import BuyItemRepository
 from repositories.cart import CartRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
+from services.media import MediaService
 from utils.localizator import Localizator
 
 
@@ -40,8 +42,10 @@ class UserService:
         return await UserRepository.get_by_tgid(user_dto.telegram_id, session)
 
     @staticmethod
-    async def get_my_profile_buttons(telegram_id: int, session: Session | AsyncSession) -> tuple[
-        str, InlineKeyboardBuilder]:
+    async def get_my_profile_buttons(telegram_id: int,
+                                     session: AsyncSession) -> tuple[InputMediaPhoto |
+                                                                     InputMediaVideo |
+                                                                     InputMediaAnimation, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(text=Localizator.get_text(BotEntity.USER, "top_up_balance_button"),
                           callback_data=MyProfileCallback.create(1, "top_up"))
@@ -49,12 +53,14 @@ class UserService:
                           callback_data=MyProfileCallback.create(4, "purchase_history"))
         user = await UserRepository.get_by_tgid(telegram_id, session)
         fiat_balance = round(user.top_up_amount - user.consume_records, 2)
-        message = (Localizator.get_text(BotEntity.USER, "my_profile_msg")
+        caption = (Localizator.get_text(BotEntity.USER, "my_profile_msg")
                    .format(telegram_id=user.telegram_id,
                            fiat_balance=fiat_balance,
                            currency_text=Localizator.get_currency_text(),
                            currency_sym=Localizator.get_currency_symbol()))
-        return message, kb_builder
+        button_media = await ButtonMediaRepository.get_by_button(KeyboardButton.MY_PROFILE, session)
+        media = MediaService.convert_to_media(button_media.media_id, caption=caption)
+        return media, kb_builder
 
     @staticmethod
     async def get_top_up_buttons(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:

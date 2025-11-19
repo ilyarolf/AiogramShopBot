@@ -1,5 +1,5 @@
 from aiogram import types, Router, F
-from aiogram.types import CallbackQuery, Message
+from aiogram.types import CallbackQuery, Message, InputMediaPhoto, InputMediaVideo
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -29,41 +29,56 @@ class MyProfileConstants:
 async def my_profile(**kwargs):
     message: Message | CallbackQuery = kwargs.get("message") or kwargs.get("callback")
     session: Session | AsyncSession = kwargs.get("session")
-    msg_text, kb_builder = await UserService.get_my_profile_buttons(message.from_user.id, session)
+    media, kb_builder = await UserService.get_my_profile_buttons(message.from_user.id, session)
     if isinstance(message, Message):
-        await message.answer(msg_text, reply_markup=kb_builder.as_markup())
+        if isinstance(media, InputMediaPhoto):
+            await message.answer_photo(photo=media.media,
+                                       caption=media.caption,
+                                       reply_markup=kb_builder.as_markup())
+        elif isinstance(media, InputMediaVideo):
+            await message.answer_video(video=media.media,
+                                       caption=media.caption,
+                                       reply_markup=kb_builder.as_markup())
+        else:
+            await message.answer_animation(animation=media.media,
+                                           caption=media.caption,
+                                           reply_markup=kb_builder.as_markup())
     elif isinstance(message, CallbackQuery):
         callback = message
-        await callback.message.edit_text(msg_text, reply_markup=kb_builder.as_markup())
+        await callback.message.edit_media(media=media,
+                                          reply_markup=kb_builder.as_markup())
 
 
 async def top_up_balance(**kwargs):
-    callback = kwargs.get("callback")
+    callback: CallbackQuery = kwargs.get("callback")
     msg_text, kb_builder = await UserService.get_top_up_buttons(callback)
-    await callback.message.edit_text(text=msg_text, reply_markup=kb_builder.as_markup())
+    await callback.message.edit_caption(caption=msg_text, reply_markup=kb_builder.as_markup())
 
 
 async def purchase_history(**kwargs):
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
+    callback: CallbackQuery = kwargs.get("callback")
+    session: AsyncSession = kwargs.get("session")
     msg_text, kb_builder = await UserService.get_purchase_history_buttons(callback, session)
-    await callback.message.edit_text(text=msg_text, reply_markup=kb_builder.as_markup())
+    await callback.message.edit_caption(caption=msg_text, reply_markup=kb_builder.as_markup())
 
 
 async def get_order_from_history(**kwargs):
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
+    callback: CallbackQuery = kwargs.get("callback")
+    session: AsyncSession = kwargs.get("session")
     msg, kb_builder = await BuyService.get_purchase(callback, session)
-    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+    await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
 
 
 async def create_payment(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
-    session: AsyncSession | Session = kwargs.get("session")
+    session: AsyncSession = kwargs.get("session")
     unpacked_cb = MyProfileCallback.unpack(callback.data)
-    msg = await callback.message.edit_text(Localizator.get_text(BotEntity.USER, "loading"))
-    text = await PaymentService.create(Cryptocurrency(unpacked_cb.args_for_action), msg, session)
-    await msg.edit_text(text=text)
+    msg = await callback.message.edit_caption(caption=Localizator.get_text(BotEntity.USER, "loading"))
+    response = await PaymentService.create(Cryptocurrency(unpacked_cb.args_for_action), msg, session)
+    if isinstance(response, str):
+        await msg.edit_caption(caption=response)
+    else:
+        await msg.edit_media(media=response)
 
 
 @my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())

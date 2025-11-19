@@ -1,10 +1,14 @@
-from enum import IntEnum
-
 from aiogram import types
 from aiogram.filters.callback_data import CallbackData
-
+from enums.add_type import AddType
+from enums.announcement_type import AnnouncementType
 from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
+from enums.entity_type import EntityType
+from enums.keyboardbutton import KeyboardButton
+from enums.statistics_entity import StatisticsEntity
+from enums.statistics_timedelta import StatisticsTimeDelta
+from enums.user_management_operation import UserManagementOperation
 from utils.localizator import Localizator
 
 
@@ -25,7 +29,6 @@ class BaseCallback(CallbackData, prefix="base"):
 class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
     category_id: int
     subcategory_id: int
-    price: float
     quantity: int
     confirmation: bool
     page: int
@@ -34,11 +37,10 @@ class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
     def create(level: int,
                category_id: int = -1,
                subcategory_id: int = -1,
-               price: float = 0.0,
                quantity: int = 0,
                confirmation: bool = False,
                page: int = 0) -> 'AllCategoriesCallback':
-        return AllCategoriesCallback(level=level, category_id=category_id, subcategory_id=subcategory_id, price=price,
+        return AllCategoriesCallback(level=level, category_id=category_id, subcategory_id=subcategory_id,
                                      quantity=quantity, confirmation=confirmation, page=page)
 
 
@@ -75,29 +77,12 @@ class AdminMenuCallback(BaseCallback, prefix="admin_menu"):
         return AdminMenuCallback(level=level, action=action, args_to_action=args_to_action, page=page)
 
 
-class AnnouncementType(IntEnum):
-    RESTOCKING = 1
-    CURRENT_STOCK = 2
-    FROM_RECEIVING_MESSAGE = 3
-
-
 class AdminAnnouncementCallback(BaseCallback, prefix="announcement"):
     announcement_type: AnnouncementType | None
 
     @staticmethod
     def create(level: int, announcement_type: AnnouncementType | None = None):
         return AdminAnnouncementCallback(level=level, announcement_type=announcement_type)
-
-
-class AddType(IntEnum):
-    JSON = 1
-    TXT = 2
-
-
-class EntityType(IntEnum):
-    CATEGORY = 1
-    SUBCATEGORY = 2
-    ITEM = 3
 
 
 class AdminInventoryManagementCallback(BaseCallback, prefix="inventory_management"):
@@ -118,12 +103,6 @@ class AdminInventoryManagementCallback(BaseCallback, prefix="inventory_managemen
                                                 confirmation=confirmation)
 
 
-class UserManagementOperation(IntEnum):
-    REFUND = 1
-    ADD_BALANCE = 2
-    REDUCE_BALANCE = 3
-
-
 class UserManagementCallback(BaseCallback, prefix="user_management"):
     operation: UserManagementOperation | None
     page: int
@@ -135,18 +114,6 @@ class UserManagementCallback(BaseCallback, prefix="user_management"):
                buy_id: int | None = None):
         return UserManagementCallback(level=level, operation=operation, page=page, confirmation=confirmation,
                                       buy_id=buy_id)
-
-
-class StatisticsEntity(IntEnum):
-    USERS = 1
-    BUYS = 2
-    DEPOSITS = 3
-
-
-class StatisticsTimeDelta(IntEnum):
-    DAY = 1
-    WEEK = 7
-    MONTH = 30
 
 
 class StatisticsCallback(BaseCallback, prefix="statistics"):
@@ -166,3 +133,20 @@ class WalletCallback(BaseCallback, prefix="wallet"):
     @staticmethod
     def create(level: int, cryptocurrency: Cryptocurrency | None = None):
         return WalletCallback(level=level, cryptocurrency=cryptocurrency)
+
+
+class MediaManagementCallback(BaseCallback, prefix="media"):
+    entity_type: EntityType | None
+    entity_id: int | None = None
+    keyboard_button: KeyboardButton | None = None
+    page: int
+
+    @staticmethod
+    def create(level: int, entity_type: EntityType | None = None,
+               keyboard_button: KeyboardButton | None = None,
+               entity_id: int | None = None, page: int = 0):
+        return MediaManagementCallback(level=level,
+                                       entity_type=entity_type,
+                                       entity_id=entity_id,
+                                       keyboard_button=keyboard_button,
+                                       page=page)

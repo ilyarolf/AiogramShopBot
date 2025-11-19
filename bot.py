@@ -1,6 +1,6 @@
 import logging
 import traceback
-
+from pathlib import Path
 from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.types import BufferedInputFile
@@ -13,6 +13,7 @@ from db import create_db_and_tables
 import uvicorn
 from fastapi.responses import JSONResponse
 from processing.processing import processing_router
+from repositories.button_media import ButtonMediaRepository
 from services.notification import NotificationService
 
 redis = Redis(host=config.REDIS_HOST, password=config.REDIS_PASSWORD)
@@ -44,6 +45,15 @@ async def on_startup():
         url=config.WEBHOOK_URL,
         secret_token=config.WEBHOOK_SECRET_TOKEN
     )
+    static = Path("static")
+    if static.exists() is False:
+        static.mkdir()
+    me = await bot.get_me()
+    photos = await bot.get_user_profile_photos(me.id)
+    bot_photo_id = photos.photos[0][-1].file_id
+    with open("static/no_image.jpeg", "w") as f:
+        f.write(bot_photo_id)
+    await ButtonMediaRepository.init_buttons_media()
     for admin in config.ADMIN_ID_LIST:
         try:
             await bot.send_message(admin, 'Bot is working')

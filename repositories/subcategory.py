@@ -1,6 +1,6 @@
 import math
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -8,11 +8,14 @@ import config
 from db import session_execute, session_flush
 from models.item import Item
 from models.subcategory import Subcategory, SubcategoryDTO
+from utils.utils import get_bot_photo_id
 
 
 class SubcategoryRepository:
     @staticmethod
-    async def get_paginated_by_category_id(category_id: int, page: int, session: Session | AsyncSession) -> list[SubcategoryDTO]:
+    async def get_paginated_by_category_id(category_id: int,
+                                           page: int,
+                                           session: Session | AsyncSession) -> list[SubcategoryDTO]:
         stmt = (select(Subcategory)
                 .join(Item, Item.subcategory_id == Subcategory.id)
                 .where(Item.category_id == category_id, Item.is_sold == False)
@@ -76,10 +79,17 @@ class SubcategoryRepository:
         subcategory = await session_execute(stmt, session)
         subcategory = subcategory.scalar()
         if subcategory is None:
-            new_category_obj = Subcategory(name=subcategory_name)
+            bot_photo_id = get_bot_photo_id()
+            new_category_obj = Subcategory(name=subcategory_name, media_id=f"0{bot_photo_id}")
             session.add(new_category_obj)
             await session_flush(session)
             return new_category_obj
         else:
             return subcategory
 
+    @staticmethod
+    async def update(subcategory_dto: SubcategoryDTO, session: AsyncSession):
+        stmt = (update(Subcategory)
+                .where(Subcategory.id == subcategory_dto.id)
+                .values(**subcategory_dto.model_dump()))
+        await session_execute(stmt, session)
