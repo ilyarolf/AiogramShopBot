@@ -1,20 +1,25 @@
-from aiogram.types import InputMediaPhoto
+from aiogram.types import InputMediaPhoto, InputMediaVideo, InputMediaAnimation
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from callbacks import AllCategoriesCallback
 from enums.bot_entity import BotEntity
+from enums.keyboardbutton import KeyboardButton
 from handlers.common.common import add_pagination_buttons
+from repositories.button_media import ButtonMediaRepository
 from repositories.category import CategoryRepository
+from services.media import MediaService
 from utils.localizator import Localizator
-from utils.utils import get_bot_photo_id
 
 
 class CategoryService:
 
     @staticmethod
     async def get_buttons(session: AsyncSession,
-                          callback_data: AllCategoriesCallback | None) -> tuple[InputMediaPhoto, InlineKeyboardBuilder]:
+                          callback_data: AllCategoriesCallback | None) -> tuple[InputMediaPhoto |
+                                                                                InputMediaVideo |
+                                                                                InputMediaAnimation,
+    InlineKeyboardBuilder]:
         if callback_data is None:
             callback_data = AllCategoriesCallback.create(0)
         categories = await CategoryRepository.get(callback_data.page, session)
@@ -31,5 +36,6 @@ class CategoryService:
             caption = Localizator.get_text(BotEntity.USER, "no_categories")
         else:
             caption = Localizator.get_text(BotEntity.USER, "all_categories")
-        bot_photo_id = get_bot_photo_id()
-        return InputMediaPhoto(media=bot_photo_id, caption=caption), kb_builder
+        button_media = await ButtonMediaRepository.get_by_button(KeyboardButton.ALL_CATEGORIES, session)
+        media = MediaService.convert_to_media(button_media.media_id, caption=caption)
+        return media, kb_builder

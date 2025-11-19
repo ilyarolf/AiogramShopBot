@@ -5,6 +5,7 @@ from enums.announcement_type import AnnouncementType
 from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
 from enums.entity_type import EntityType
+from enums.keyboardbutton import KeyboardButton
 from enums.statistics_entity import StatisticsEntity
 from enums.statistics_timedelta import StatisticsTimeDelta
 from enums.user_management_operation import UserManagementOperation
@@ -137,11 +138,15 @@ class WalletCallback(BaseCallback, prefix="wallet"):
 class MediaManagementCallback(BaseCallback, prefix="media"):
     entity_type: EntityType | None
     entity_id: int | None = None
+    keyboard_button: KeyboardButton | None = None
     page: int
 
     @staticmethod
-    def create(level: int, entity_type: EntityType | None = None, entity_id: int | None = None, page: int = 0):
+    def create(level: int, entity_type: EntityType | None = None,
+               keyboard_button: KeyboardButton | None = None,
+               entity_id: int | None = None, page: int = 0):
         return MediaManagementCallback(level=level,
                                        entity_type=entity_type,
                                        entity_id=entity_id,
+                                       keyboard_button=keyboard_button,
                                        page=page)

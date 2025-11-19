@@ -7,7 +7,10 @@ from callbacks import MediaManagementCallback, AdminMenuCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.entity_type import EntityType
+from enums.keyboardbutton import KeyboardButton
 from handlers.admin.constants import MediaManagementStates
+from models.category import CategoryDTO
+from repositories.button_media import ButtonMediaRepository
 from repositories.category import CategoryRepository
 from repositories.subcategory import SubcategoryRepository
 from services.notification import NotificationService
@@ -36,6 +39,16 @@ class MediaService:
                 entity_type=EntityType.SUBCATEGORY
             )
         )
+        for button in KeyboardButton:
+            kb_builder.button(
+                text=Localizator.get_text(BotEntity.ADMIN, "edit_media").format(
+                    entity=Localizator.get_text(BotEntity.USER, button.value.lower())
+                ),
+                callback_data=MediaManagementCallback.create(
+                    level=callback_data.level + 2,
+                    keyboard_button=button
+                )
+            )
         kb_builder.button(
             text=Localizator.get_text(BotEntity.COMMON, "back_button"),
             callback_data=AdminMenuCallback.create(0)
@@ -47,19 +60,27 @@ class MediaService:
     async def set_entity_media_edit(callback_data: MediaManagementCallback,
                                     state: FSMContext,
                                     session: AsyncSession) -> tuple[str, InlineKeyboardBuilder]:
-        await state.update_data(entity_type=callback_data.entity_type, entity_id=callback_data.entity_id)
+        await state.update_data(entity_type=callback_data.entity_type,
+                                entity_id=callback_data.entity_id,
+                                keyboard_button=callback_data.keyboard_button.value)
         await state.set_state(MediaManagementStates.media)
         if callback_data.entity_type == EntityType.CATEGORY:
             entity = await CategoryRepository.get_by_id(callback_data.entity_id, session)
-        else:
+            entity_type_localized = callback_data.entity_type.get_localized()
+        elif callback_data.entity_type == EntityType.SUBCATEGORY:
             entity = await SubcategoryRepository.get_by_id(callback_data.entity_id, session)
+            entity_type_localized = callback_data.entity_type.get_localized()
+        else:
+            entity = CategoryDTO(name=Localizator.get_text(BotEntity.USER,
+                                                           callback_data.keyboard_button.value.lower()))
+            entity_type_localized = callback_data.keyboard_button.get_localized()
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(
             text=Localizator.get_text(BotEntity.COMMON, "cancel"),
             callback_data=MediaManagementCallback.create(0)
         )
         return Localizator.get_text(BotEntity.ADMIN, "edit_media_request").format(
-            entity=callback_data.entity_type.get_localized(),
+            entity=entity_type_localized,
             entity_name=entity.name
         ), kb_builder
 
@@ -82,15 +103,23 @@ class MediaService:
             prefix = "2"
         state_data = await state.get_data()
         media = f"{prefix}{file_id}"
-        entity_type = EntityType(state_data['entity_type'])
-        if entity_type == EntityType.CATEGORY:
-            entity_dto = await CategoryRepository.get_by_id(state_data['entity_id'], session)
-            entity_dto.media_id = media
-            await CategoryRepository.update(entity_dto, session)
+        entity_type = state_data.get("entity_type")
+        if entity_type is None:
+            entity_type = KeyboardButton(state_data.get("keyboard_button"))
+            button_media_dto = await ButtonMediaRepository.get_by_button(entity_type, session)
+            button_media_dto.media_id = media
+            await ButtonMediaRepository.update(button_media_dto, session)
+            entity_dto = CategoryDTO(name=Localizator.get_text(BotEntity.USER, entity_type.value.lower()))
         else:
-            entity_dto = await SubcategoryRepository.get_by_id(state_data['entity_id'], session)
-            entity_dto.media_id = media
-            await SubcategoryRepository.update(entity_dto, session)
+            entity_type = EntityType(entity_type)
+            if entity_type == EntityType.CATEGORY:
+                entity_dto = await CategoryRepository.get_by_id(state_data['entity_id'], session)
+                entity_dto.media_id = media
+                await CategoryRepository.update(entity_dto, session)
+            else:
+                entity_dto = await SubcategoryRepository.get_by_id(state_data['entity_id'], session)
+                entity_dto.media_id = media
+                await SubcategoryRepository.update(entity_dto, session)
         await session_commit(session)
         await state.clear()
         kb_builder.button(

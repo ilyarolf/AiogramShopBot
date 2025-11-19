@@ -1,5 +1,5 @@
 from aiogram import types, Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, InputMediaPhoto, InputMediaVideo
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -26,9 +26,18 @@ async def all_categories(**kwargs):
     session: AsyncSession = kwargs.get("session")
     if isinstance(message, Message):
         media, kb_builder = await CategoryService.get_buttons(session, callback_data)
-        await message.answer_photo(photo=media.media,
-                                   caption=media.caption,
-                                   reply_markup=kb_builder.as_markup())
+        if isinstance(media, InputMediaPhoto):
+            await message.answer_photo(photo=media.media,
+                                       caption=media.caption,
+                                       reply_markup=kb_builder.as_markup())
+        elif isinstance(media, InputMediaVideo):
+            await message.answer_video(video=media.media,
+                                       caption=media.caption,
+                                       reply_markup=kb_builder.as_markup())
+        else:
+            await message.answer_animation(animation=media.media,
+                                           caption=media.caption,
+                                           reply_markup=kb_builder.as_markup())
     elif isinstance(message, CallbackQuery):
         callback = message
         media, kb_builder = await CategoryService.get_buttons(session, callback_data)

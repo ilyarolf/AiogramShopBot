@@ -13,6 +13,7 @@ from db import create_db_and_tables
 import uvicorn
 from fastapi.responses import JSONResponse
 from processing.processing import processing_router
+from repositories.button_media import ButtonMediaRepository
 from services.notification import NotificationService
 
 redis = Redis(host=config.REDIS_HOST, password=config.REDIS_PASSWORD)
@@ -52,6 +53,7 @@ async def on_startup():
     bot_photo_id = photos.photos[0][-1].file_id
     with open("static/no_image.jpeg", "w") as f:
         f.write(bot_photo_id)
+    await ButtonMediaRepository.init_buttons_media()
     for admin in config.ADMIN_ID_LIST:
         try:
             await bot.send_message(admin, 'Bot is working')

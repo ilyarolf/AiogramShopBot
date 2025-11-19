@@ -65,6 +65,16 @@ class NotificationService:
             await bot.session.close()
 
     @staticmethod
+    async def edit_caption(caption: str, source_message_id: int, chat_id: int):
+        bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+        try:
+            await bot.edit_message_caption(caption=caption, chat_id=chat_id, message_id=source_message_id)
+        except Exception as e:
+            logging.error(e)
+        finally:
+            await bot.session.close()
+
+    @staticmethod
     async def payment_expired(user_dto: UserDTO, payment_dto: ProcessingPaymentDTO, table_payment_dto: TablePaymentDTO):
         msg = Localizator.get_text(BotEntity.USER, "notification_payment_expired").format(
             payment_id=payment_dto.id
@@ -77,7 +87,7 @@ class NotificationService:
             currency_text=Localizator.get_currency_text(),
             status=Localizator.get_text(BotEntity.USER, "status_expired")
         )
-        await NotificationService.edit_message(edited_payment_message, table_payment_dto.message_id,
+        await NotificationService.edit_caption(edited_payment_message, table_payment_dto.message_id,
                                                user_dto.telegram_id)
         await NotificationService.send_to_user(msg, user_dto.telegram_id)
 
@@ -98,7 +108,7 @@ class NotificationService:
             currency_text=Localizator.get_currency_text(),
             status=Localizator.get_text(BotEntity.USER, "status_paid")
         )
-        await NotificationService.edit_message(edited_payment_message, table_payment_dto.message_id,
+        await NotificationService.edit_caption(edited_payment_message, table_payment_dto.message_id,
                                                user_dto.telegram_id)
         if user_dto.telegram_username:
             message = Localizator.get_text(BotEntity.ADMIN, "notification_new_deposit_username").format(

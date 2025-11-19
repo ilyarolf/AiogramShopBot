@@ -81,7 +81,7 @@
     "media_management": "📷 Media management",
     "edit_media": "📷 Edit {entity} media",
     "edit_media_request": "📷 Please send new media for the {entity} with name {entity_name}.\nThe media can be a gif, a picture, or a video.",
-    "entity_media_successfully_edited": "📷 Media for {entity} with {entity_name} edited successfully!"
+    "entity_media_successfully_edited": "📷 Media for {entity} with name {entity_name} edited successfully!"
   },
   "common": {
     "back_button": "⬅️ Back",
@@ -111,7 +111,8 @@
     "gbp_text": "GBP",
     "category": "Category",
     "subcategory": "Subcategory",
-    "item": "Item"
+    "item": "Item",
+    "button": "Button"
   },
   "user": {
     "all_categories": "🗂️ All categories",

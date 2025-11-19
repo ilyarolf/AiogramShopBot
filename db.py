@@ -27,6 +27,8 @@ from models.buyItem import BuyItem
 from models.category import Category
 from models.subcategory import Subcategory
 from models.deposit import Deposit
+from models.button_media import ButtonMedia
+from models.payment import Payment
 
 url = ""
 engine = None
