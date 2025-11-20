@@ -112,7 +112,12 @@
     "category": "Category",
     "subcategory": "Subcategory",
     "item": "Item",
-    "button": "Button"
+    "button": "Button",
+    "name": "Name",
+    "price": "Price",
+    "asc": "🔼",
+    "desc": "🔽",
+    "sort": "Sorting: "
   },
   "user": {
     "all_categories": "🗂️ All categories",

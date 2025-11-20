@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 
 import config
 from db import session_execute, session_flush
+from enums.sort_order import SortOrder
+from enums.sort_property import SortProperty
 from models.category import Category, CategoryDTO
 from models.item import Item
 from utils.utils import get_bot_photo_id
@@ -13,14 +15,17 @@ from utils.utils import get_bot_photo_id
 
 class CategoryRepository:
     @staticmethod
-    async def get(page: int, session: Session | AsyncSession) -> list[CategoryDTO]:
+    async def get(sort_property: SortProperty, sort_order: SortOrder,
+                  page: int, session: AsyncSession) -> list[CategoryDTO]:
+        sort_column = getattr(Category, sort_property.name.lower())
+        sort_method = getattr(sort_column, sort_order.name.lower())
         stmt = (select(Category)
                 .join(Item, Item.category_id == Category.id)
                 .where(Item.is_sold == False)
                 .distinct()
                 .limit(config.PAGE_ENTRIES)
                 .offset(page * config.PAGE_ENTRIES)
-                .group_by(Category.name))
+                .order_by(sort_method()))
         category_names = await session_execute(stmt, session)
         categories = category_names.scalars().all()
         return [CategoryDTO.model_validate(category, from_attributes=True) for category in categories]

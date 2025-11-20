@@ -6,6 +6,8 @@ from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
 from enums.entity_type import EntityType
 from enums.keyboardbutton import KeyboardButton
+from enums.sort_order import SortOrder
+from enums.sort_property import SortProperty
 from enums.statistics_entity import StatisticsEntity
 from enums.statistics_timedelta import StatisticsTimeDelta
 from enums.user_management_operation import UserManagementOperation
@@ -31,6 +33,8 @@ class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
     subcategory_id: int
     quantity: int
     confirmation: bool
+    sort_order: SortOrder
+    sort_property: SortProperty
     page: int
 
     @staticmethod
@@ -38,9 +42,13 @@ class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
                category_id: int = -1,
                subcategory_id: int = -1,
                quantity: int = 0,
+               sort_order: SortOrder = SortOrder.ASC,
+               sort_property: SortProperty = SortProperty.NAME,
                confirmation: bool = False,
                page: int = 0) -> 'AllCategoriesCallback':
-        return AllCategoriesCallback(level=level, category_id=category_id, subcategory_id=subcategory_id,
+        return AllCategoriesCallback(level=level,
+                                     category_id=category_id, subcategory_id=subcategory_id,
+                                     sort_order=sort_order, sort_property=sort_property,
                                      quantity=quantity, confirmation=confirmation, page=page)
 
 

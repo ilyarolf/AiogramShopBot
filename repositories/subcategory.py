@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 
 import config
 from db import session_execute, session_flush
+from enums.sort_order import SortOrder
+from enums.sort_property import SortProperty
 from models.item import Item
 from models.subcategory import Subcategory, SubcategoryDTO
 from utils.utils import get_bot_photo_id
@@ -13,15 +15,21 @@ from utils.utils import get_bot_photo_id
 
 class SubcategoryRepository:
     @staticmethod
-    async def get_paginated_by_category_id(category_id: int,
-                                           page: int,
+    async def get_paginated_by_category_id(sort_property: SortProperty, sort_order: SortOrder,
+                                           category_id: int, page: int,
                                            session: Session | AsyncSession) -> list[SubcategoryDTO]:
+        if sort_property == SortProperty.PRICE:
+            sort_column = getattr(Item, sort_property.name.lower())
+        else:
+            sort_column = getattr(Subcategory, sort_property.name.lower())
+        sort_method = getattr(sort_column, sort_order.name.lower())
         stmt = (select(Subcategory)
                 .join(Item, Item.subcategory_id == Subcategory.id)
                 .where(Item.category_id == category_id, Item.is_sold == False)
                 .distinct()
                 .limit(config.PAGE_ENTRIES)
-                .offset(page * config.PAGE_ENTRIES))
+                .offset(page * config.PAGE_ENTRIES)
+                .order_by(sort_method()))
         subcategories = await session_execute(stmt, session)
         subcategories = subcategories.scalars().all()
         return [SubcategoryDTO.model_validate(subcategory, from_attributes=True) for subcategory in subcategories]
