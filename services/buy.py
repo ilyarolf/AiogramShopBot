@@ -1,14 +1,14 @@
-from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-
 from callbacks import MyProfileCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
 from models.buy import BuyDTO
 from repositories.buy import BuyRepository
+from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
+from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
 from services.message import MessageService
 from services.notification import NotificationService
@@ -44,10 +44,24 @@ class BuyService:
                 currency_sym=Localizator.get_currency_symbol())
 
     @staticmethod
-    async def get_purchase(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
-        unpacked_cb = MyProfileCallback.unpack(callback.data)
-        items = await ItemRepository.get_by_buy_id(unpacked_cb.args_for_action, session)
-        msg = MessageService.create_message_with_bought_items(items)
+    async def get_purchase(callback_data: MyProfileCallback,
+                           session: AsyncSession) -> tuple[str, InlineKeyboardBuilder]:
+        buy = await BuyRepository.get_by_id(callback_data.buy_id, session)
+        items = await ItemRepository.get_by_buy_id(callback_data.buy_id, session)
+        purchased_items_msg = MessageService.create_message_with_bought_items(items)
+        category = await CategoryRepository.get_by_id(items[0].category_id, session)
+        subcategory = await SubcategoryRepository.get_by_id(items[0].subcategory_id, session)
+        us_datetime_12h = buy.buy_datetime.strftime("%m/%d/%Y, %I:%M %p")
+        msg = Localizator.get_text(BotEntity.USER, "purchase_details").format(
+            category_name=category.name,
+            subcategory_name=subcategory.name,
+            currency_sym=Localizator.get_currency_symbol(),
+            total_fiat_price=items[0].price*len(items),
+            fiat_price=items[0].price,
+            qty=len(items),
+            purchase_datetime=us_datetime_12h,
+            purchased_items=purchased_items_msg
+        )
         kb_builder = InlineKeyboardBuilder()
-        kb_builder.row(unpacked_cb.get_back_button())
+        kb_builder.row(callback_data.get_back_button())
         return msg, kb_builder

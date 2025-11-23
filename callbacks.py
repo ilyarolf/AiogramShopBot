@@ -53,13 +53,14 @@ class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
 
 
 class MyProfileCallback(BaseCallback, prefix="my_profile"):
-    action: str
-    args_for_action: int | str
+    buy_id: int | None = None
+    cryptocurrency: Cryptocurrency | None = None
     page: int
 
     @staticmethod
-    def create(level: int, action: str = "", args_for_action="", page=0) -> 'MyProfileCallback':
-        return MyProfileCallback(level=level, action=action, args_for_action=args_for_action, page=page)
+    def create(level: int, buy_id: int | None = None,
+               cryptocurrency: Cryptocurrency | None = None, page=0) -> 'MyProfileCallback':
+        return MyProfileCallback(level=level, buy_id=buy_id, cryptocurrency=cryptocurrency, page=page)
 
 
 class CartCallback(BaseCallback, prefix="cart"):

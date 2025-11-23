@@ -17,9 +17,11 @@ from models.user import User
 
 class BuyRepository:
     @staticmethod
-    async def get_by_buyer_id(user_id: int, page: int, session: Session | AsyncSession) -> list[BuyDTO]:
-        stmt = select(Buy).where(Buy.buyer_id == user_id).limit(config.PAGE_ENTRIES).offset(
-            page * config.PAGE_ENTRIES)
+    async def get_by_buyer_id(user_id: int, page: int, session: AsyncSession) -> list[BuyDTO]:
+        stmt = (select(Buy)
+                .where(Buy.buyer_id == user_id)
+                .limit(config.PAGE_ENTRIES)
+                .offset(page * config.PAGE_ENTRIES))
         buys = await session_execute(stmt, session)
         return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]
 

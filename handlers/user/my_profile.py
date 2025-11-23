@@ -1,11 +1,8 @@
 from aiogram import types, Router, F
 from aiogram.types import CallbackQuery, Message, InputMediaPhoto, InputMediaVideo
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
-
 from callbacks import MyProfileCallback
 from enums.bot_entity import BotEntity
-from enums.cryptocurrency import Cryptocurrency
 from services.buy import BuyService
 from services.payment import PaymentService
 from services.user import UserService
@@ -16,7 +13,7 @@ my_profile_router = Router()
 
 
 @my_profile_router.message(F.text == Localizator.get_text(BotEntity.USER, "my_profile"), IsUserExistFilter())
-async def my_profile_text_message(message: types.message, session: Session | AsyncSession):
+async def my_profile_text_message(message: types.message, session: AsyncSession):
     await my_profile(message=message, session=session)
 
 
@@ -28,7 +25,7 @@ class MyProfileConstants:
 
 async def my_profile(**kwargs):
     message: Message | CallbackQuery = kwargs.get("message") or kwargs.get("callback")
-    session: Session | AsyncSession = kwargs.get("session")
+    session: AsyncSession = kwargs.get("session")
     media, kb_builder = await UserService.get_my_profile_buttons(message.from_user.id, session)
     if isinstance(message, Message):
         if isinstance(media, InputMediaPhoto):
@@ -51,30 +48,33 @@ async def my_profile(**kwargs):
 
 async def top_up_balance(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
-    msg_text, kb_builder = await UserService.get_top_up_buttons(callback)
+    callback_data: MyProfileCallback = kwargs.get("callback_data")
+    msg_text, kb_builder = await UserService.get_top_up_buttons(callback_data)
     await callback.message.edit_caption(caption=msg_text, reply_markup=kb_builder.as_markup())
 
 
 async def purchase_history(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
+    callback_data: MyProfileCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
-    msg_text, kb_builder = await UserService.get_purchase_history_buttons(callback, session)
+    msg_text, kb_builder = await UserService.get_purchase_history_buttons(callback, callback_data, session)
     await callback.message.edit_caption(caption=msg_text, reply_markup=kb_builder.as_markup())
 
 
 async def get_order_from_history(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
+    callback_data: MyProfileCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
-    msg, kb_builder = await BuyService.get_purchase(callback, session)
+    msg, kb_builder = await BuyService.get_purchase(callback_data, session)
     await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
 
 
 async def create_payment(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     session: AsyncSession = kwargs.get("session")
-    unpacked_cb = MyProfileCallback.unpack(callback.data)
+    callback_data: MyProfileCallback = kwargs.get("callback_data")
     msg = await callback.message.edit_caption(caption=Localizator.get_text(BotEntity.USER, "loading"))
-    response = await PaymentService.create(Cryptocurrency(unpacked_cb.args_for_action), msg, session)
+    response = await PaymentService.create(callback_data.cryptocurrency, msg, session)
     if isinstance(response, str):
         await msg.edit_caption(caption=response)
     else:
@@ -82,7 +82,7 @@ async def create_payment(**kwargs):
 
 
 @my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())
-async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback, session: AsyncSession | Session):
+async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback, session: AsyncSession):
     current_level = callback_data.level
 
     levels = {
@@ -98,6 +98,7 @@ async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback, se
     kwargs = {
         "callback": callback,
         "session": session,
+        "callback_data": callback_data
     }
 
     await current_level_function(**kwargs)
