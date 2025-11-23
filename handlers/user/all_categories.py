@@ -1,8 +1,7 @@
-from aiogram import types, Router, F
+from aiogram import Router, F
+from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto, InputMediaVideo
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
-
 from callbacks import AllCategoriesCallback
 from enums.bot_entity import BotEntity
 from services.cart import CartService
@@ -16,16 +15,18 @@ all_categories_router = Router()
 
 @all_categories_router.message(F.text == Localizator.get_text(BotEntity.USER, "all_categories"),
                                IsUserExistFilter())
-async def all_categories_text_message(message: types.message, session: AsyncSession | Session):
-    await all_categories(callback=message, session=session)
+async def all_categories_text_message(message: Message, session: AsyncSession, state: FSMContext):
+    await all_categories(callback=message, session=session, state=state)
 
 
 async def all_categories(**kwargs):
     message: CallbackQuery | Message = kwargs.get("callback")
     callback_data: AllCategoriesCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
+    state: FSMContext = kwargs.get("state")
+    await state.clear()
     if isinstance(message, Message):
-        media, kb_builder = await CategoryService.get_buttons(session, callback_data)
+        media, kb_builder = await CategoryService.get_buttons(callback_data, state, session)
         if isinstance(media, InputMediaPhoto):
             await message.answer_photo(photo=media.media,
                                        caption=media.caption,
@@ -40,7 +41,7 @@ async def all_categories(**kwargs):
                                            reply_markup=kb_builder.as_markup())
     elif isinstance(message, CallbackQuery):
         callback = message
-        media, kb_builder = await CategoryService.get_buttons(session, callback_data)
+        media, kb_builder = await CategoryService.get_buttons(callback_data, state, session)
         await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
 
 
@@ -48,7 +49,8 @@ async def show_subcategories_in_category(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     callback_data: AllCategoriesCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
-    media, kb_builder = await SubcategoryService.get_buttons(callback_data, session)
+    state: FSMContext = kwargs.get("state")
+    media, kb_builder = await SubcategoryService.get_buttons(callback_data, state, session)
     await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
 
 
@@ -78,7 +80,7 @@ async def add_to_cart(**kwargs):
 
 @all_categories_router.callback_query(AllCategoriesCallback.filter(), IsUserExistFilter())
 async def navigate_categories(callback: CallbackQuery, callback_data: AllCategoriesCallback,
-                              session: AsyncSession | Session):
+                              session: AsyncSession, state: FSMContext):
     current_level = callback_data.level
 
     levels = {
@@ -94,7 +96,8 @@ async def navigate_categories(callback: CallbackQuery, callback_data: AllCategor
     kwargs = {
         "callback": callback,
         "session": session,
-        "callback_data": callback_data
+        "callback_data": callback_data,
+        "state": state
     }
 
     await current_level_function(**kwargs)

@@ -40,17 +40,23 @@ async def add_pagination_buttons(keyboard_builder: InlineKeyboardBuilder, callba
 
 
 async def add_sorting_buttons(keyboard_builder: InlineKeyboardBuilder, sort_property_list: list[SortProperty],
-                              callback_data: AllCategoriesCallback) -> InlineKeyboardBuilder:
+                              callback_data: AllCategoriesCallback, sort_pairs: dict[str, int]) -> InlineKeyboardBuilder:
     sort_cb_copy = callback_data.__copy__()
     buttons = []
+    if len(keyboard_builder.as_markup().inline_keyboard) == 0:
+        return keyboard_builder
     for sort_property in sort_property_list:
         sort_cb_copy.sort_property = sort_property
+        sort_order_value = sort_pairs.get(str(sort_property.value))
+        if sort_order_value is not None:
+            sort_order = SortOrder(sort_order_value)
+        else:
+            sort_order = SortOrder.DISABLE
         buttons.append(
             InlineKeyboardButton(
-                text=f"{sort_property.get_localized()} {sort_cb_copy.sort_order.get_localized()}",
+                text=f"{sort_property.get_localized()} {sort_order.get_localized()}",
                 callback_data=callback_data.create(**{**sort_cb_copy.model_dump(),
-                                                      "sort_order": SortOrder(
-                                                          not callback_data.sort_order.value)}).pack()
+                                                      "sort_order": sort_order.next()}).pack()
             )
         )
     keyboard_builder.row(*buttons)

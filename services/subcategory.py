@@ -1,3 +1,4 @@
+from aiogram.fsm.context import FSMContext
 from aiogram.types import InputMediaVideo, InputMediaAnimation, InputMediaPhoto
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,12 +20,16 @@ class SubcategoryService:
 
     @staticmethod
     async def get_buttons(callback_data: AllCategoriesCallback,
+                          state: FSMContext,
                           session: AsyncSession) -> tuple[InputMediaPhoto |
                                                           InputMediaAnimation |
                                                           InputMediaVideo, InlineKeyboardBuilder]:
+        state_data = await state.get_data()
+        sort_pairs = state_data.get("sort_pairs") or {}
+        sort_pairs[str(callback_data.sort_property.value)] = callback_data.sort_order.value
+        await state.update_data(sort_pairs=sort_pairs)
         kb_builder = InlineKeyboardBuilder()
-        subcategories = await SubcategoryRepository.get_paginated_by_category_id(callback_data.sort_property,
-                                                                                 callback_data.sort_order,
+        subcategories = await SubcategoryRepository.get_paginated_by_category_id(sort_pairs,
                                                                                  callback_data.category_id,
                                                                                  callback_data.page, session)
         for subcategory in subcategories:
@@ -43,7 +48,8 @@ class SubcategoryService:
                 )
             )
         kb_builder.adjust(1)
-        kb_builder = await add_sorting_buttons(kb_builder, [SortProperty.NAME, SortProperty.PRICE], callback_data)
+        kb_builder = await add_sorting_buttons(kb_builder, [SortProperty.NAME, SortProperty.PRICE],
+                                               callback_data, sort_pairs)
         kb_builder = await add_pagination_buttons(kb_builder, callback_data,
                                                   SubcategoryRepository.max_page(callback_data.category_id, session),
                                                   callback_data.get_back_button())

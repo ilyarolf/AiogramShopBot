@@ -10,3 +10,6 @@ class SortProperty(IntEnum):
 
     def get_localized(self):
         return f"{Localizator.get_text(BotEntity.COMMON, "sort")}{Localizator.get_text(BotEntity.COMMON, self.name.lower())}"
+
+    def get_column(self, table):
+        return getattr(table, self.name.lower())

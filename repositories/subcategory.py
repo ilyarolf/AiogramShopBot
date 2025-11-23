@@ -15,21 +15,24 @@ from utils.utils import get_bot_photo_id
 
 class SubcategoryRepository:
     @staticmethod
-    async def get_paginated_by_category_id(sort_property: SortProperty, sort_order: SortOrder,
+    async def get_paginated_by_category_id(sort_pairs: dict[SortProperty, SortOrder],
                                            category_id: int, page: int,
                                            session: Session | AsyncSession) -> list[SubcategoryDTO]:
-        if sort_property == SortProperty.PRICE:
-            sort_column = getattr(Item, sort_property.name.lower())
-        else:
-            sort_column = getattr(Subcategory, sort_property.name.lower())
-        sort_method = getattr(sort_column, sort_order.name.lower())
+        sort_methods = []
+        for sort_property, sort_order in sort_pairs.items():
+            sort_property, sort_order = SortProperty(int(sort_property)), SortOrder(sort_order)
+            if sort_order != SortOrder.DISABLE:
+                table = Subcategory if sort_property == SortProperty.NAME else Item
+                sort_column = sort_property.get_column(table)
+                sort_method = (getattr(sort_column, sort_order.name.lower()))
+                sort_methods.append(sort_method())
         stmt = (select(Subcategory)
                 .join(Item, Item.subcategory_id == Subcategory.id)
                 .where(Item.category_id == category_id, Item.is_sold == False)
                 .distinct()
                 .limit(config.PAGE_ENTRIES)
                 .offset(page * config.PAGE_ENTRIES)
-                .order_by(sort_method()))
+                .order_by(*sort_methods))
         subcategories = await session_execute(stmt, session)
         subcategories = subcategories.scalars().all()
         return [SubcategoryDTO.model_validate(subcategory, from_attributes=True) for subcategory in subcategories]
