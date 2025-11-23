@@ -42,14 +42,14 @@ async def delete_cart_item(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     session: AsyncSession = kwargs.get("session")
     msg, kb_builder = await CartService.delete_cart_item(callback, session)
-    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+    await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
 
 
 async def checkout_processing(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     session: AsyncSession = kwargs.get("session")
     msg, kb_builder = await CartService.checkout_processing(callback, session)
-    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+    await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
 
 
 async def buy_processing(**kwargs):
@@ -57,7 +57,7 @@ async def buy_processing(**kwargs):
     session: AsyncSession = kwargs.get("session")
     await callback.message.edit_reply_markup()
     msg, kb_builder = await CartService.buy_processing(callback, session)
-    await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
+    await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
 
 
 @cart_router.callback_query(CartCallback.filter(), IsUserExistFilter())
