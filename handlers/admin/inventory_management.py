@@ -31,7 +31,8 @@ async def add_items(**kwargs):
         msg, kb_builder = await InventoryManagementService.get_add_items_type(callback_data)
     else:
         msg, kb_builder = await InventoryManagementService.get_add_item_msg(callback_data, state)
-    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+    message = await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+    await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
 
 
 async def delete_entity(**kwargs):
@@ -67,6 +68,17 @@ async def add_items_document(message: Message, state: FSMContext, session: Async
     msg = await ItemService.add_items(file_name, add_type, session)
     await message.answer(text=msg)
     await state.clear()
+
+
+@inventory_management.message(AdminIdFilter(), F.text, StateFilter(AdminInventoryManagementStates.category,
+                                                                   AdminInventoryManagementStates.subcategory,
+                                                                   AdminInventoryManagementStates.price,
+                                                                   AdminInventoryManagementStates.description,
+                                                                   AdminInventoryManagementStates.private_data))
+async def add_items_menu(message: Message, state: FSMContext, session: AsyncSession):
+    msg, kb_builder = await InventoryManagementService.add_item_menu(message, state, session)
+    message = await message.answer(text=msg, reply_markup=kb_builder.as_markup())
+    await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
 
 
 @inventory_management.callback_query(AdminIdFilter(), InventoryManagementCallback.filter())

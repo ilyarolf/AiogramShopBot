@@ -27,6 +27,11 @@ class AdminAnnouncementsConstants:
 
 class AdminInventoryManagementStates(StatesGroup):
     document = State()
+    category = State()
+    subcategory = State()
+    description = State()
+    price = State()
+    private_data = State()
 
 
 class AdminAnnouncementStates(StatesGroup):
