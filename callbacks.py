@@ -55,8 +55,8 @@ class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
 class MyProfileCallback(BaseCallback, prefix="my_profile"):
     buy_id: int | None = None
     cryptocurrency: Cryptocurrency | None = None
-    sort_order: SortOrder = SortOrder.DISABLE
-    sort_property: SortProperty = SortProperty.BUY_DATETIME
+    sort_order: SortOrder
+    sort_property: SortProperty
     page: int
 
     @staticmethod
@@ -119,15 +119,20 @@ class AdminInventoryManagementCallback(BaseCallback, prefix="inventory_managemen
 
 class UserManagementCallback(BaseCallback, prefix="user_management"):
     operation: UserManagementOperation | None
+    buy_id: int | None
+    sort_order: SortOrder
+    sort_property: SortProperty
     page: int
     confirmation: bool
-    buy_id: int | None
 
     @staticmethod
-    def create(level: int, operation: UserManagementOperation | None = None, page: int = 0, confirmation: bool = False,
-               buy_id: int | None = None):
-        return UserManagementCallback(level=level, operation=operation, page=page, confirmation=confirmation,
-                                      buy_id=buy_id)
+    def create(level: int, operation: UserManagementOperation | None = None,
+               sort_order: SortOrder = SortOrder.DISABLE, sort_property: SortProperty = SortProperty.BUY_DATETIME,
+               buy_id: int | None = None, page: int = 0, confirmation: bool = False):
+        return UserManagementCallback(level=level, operation=operation,
+                                      sort_order=sort_order, sort_property=sort_property,
+                                      buy_id=buy_id,
+                                      page=page, confirmation=confirmation)
 
 
 class StatisticsCallback(BaseCallback, prefix="statistics"):

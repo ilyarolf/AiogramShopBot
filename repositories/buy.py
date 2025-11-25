@@ -54,7 +54,15 @@ class BuyRepository:
             return math.trunc(not_refunded_buys / config.PAGE_ENTRIES)
 
     @staticmethod
-    async def get_refund_data(page: int, session: Session | AsyncSession) -> list[RefundDTO]:
+    async def get_refund_data(sort_pairs: dict[SortProperty, SortOrder],
+                              page: int, session: AsyncSession) -> list[RefundDTO]:
+        sort_methods = []
+        for sort_property, sort_order in sort_pairs.items():
+            sort_property, sort_order = SortProperty(int(sort_property)), SortOrder(sort_order)
+            if sort_order != SortOrder.DISABLE:
+                sort_column = sort_property.get_column(Buy)
+                sort_method = (getattr(sort_column, sort_order.name.lower()))
+                sort_methods.append(sort_method())
         stmt = (select(Buy.total_price,
                        Buy.quantity,
                        Buy.id.label("buy_id"),
@@ -69,7 +77,8 @@ class BuyRepository:
                 .where(Buy.is_refunded == False)
                 .distinct()
                 .limit(config.PAGE_ENTRIES)
-                .offset(config.PAGE_ENTRIES * page))
+                .offset(config.PAGE_ENTRIES * page)
+                .order_by(*sort_methods))
         refund_data = await session_execute(stmt, session)
         return [RefundDTO.model_validate(refund_item, from_attributes=True) for refund_item in
                 refund_data.mappings().all()]
