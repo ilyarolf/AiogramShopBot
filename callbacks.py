@@ -6,6 +6,8 @@ from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
 from enums.entity_type import EntityType
 from enums.keyboardbutton import KeyboardButton
+from enums.sort_order import SortOrder
+from enums.sort_property import SortProperty
 from enums.statistics_entity import StatisticsEntity
 from enums.statistics_timedelta import StatisticsTimeDelta
 from enums.user_management_operation import UserManagementOperation
@@ -31,6 +33,8 @@ class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
     subcategory_id: int
     quantity: int
     confirmation: bool
+    sort_order: SortOrder
+    sort_property: SortProperty
     page: int
 
     @staticmethod
@@ -38,20 +42,30 @@ class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
                category_id: int = -1,
                subcategory_id: int = -1,
                quantity: int = 0,
+               sort_order: SortOrder = SortOrder.DISABLE,
+               sort_property: SortProperty = SortProperty.NAME,
                confirmation: bool = False,
                page: int = 0) -> 'AllCategoriesCallback':
-        return AllCategoriesCallback(level=level, category_id=category_id, subcategory_id=subcategory_id,
+        return AllCategoriesCallback(level=level,
+                                     category_id=category_id, subcategory_id=subcategory_id,
+                                     sort_order=sort_order, sort_property=sort_property,
                                      quantity=quantity, confirmation=confirmation, page=page)
 
 
 class MyProfileCallback(BaseCallback, prefix="my_profile"):
-    action: str
-    args_for_action: int | str
+    buy_id: int | None = None
+    cryptocurrency: Cryptocurrency | None = None
+    sort_order: SortOrder
+    sort_property: SortProperty
     page: int
 
     @staticmethod
-    def create(level: int, action: str = "", args_for_action="", page=0) -> 'MyProfileCallback':
-        return MyProfileCallback(level=level, action=action, args_for_action=args_for_action, page=page)
+    def create(level: int, buy_id: int | None = None,
+               sort_order: SortOrder = SortOrder.DISABLE, sort_property: SortProperty = SortProperty.BUY_DATETIME,
+               cryptocurrency: Cryptocurrency | None = None, page=0) -> 'MyProfileCallback':
+        return MyProfileCallback(level=level, buy_id=buy_id,
+                                 sort_order=sort_order, sort_property=sort_property,
+                                 cryptocurrency=cryptocurrency, page=page)
 
 
 class CartCallback(BaseCallback, prefix="cart"):
@@ -105,15 +119,20 @@ class AdminInventoryManagementCallback(BaseCallback, prefix="inventory_managemen
 
 class UserManagementCallback(BaseCallback, prefix="user_management"):
     operation: UserManagementOperation | None
+    buy_id: int | None
+    sort_order: SortOrder
+    sort_property: SortProperty
     page: int
     confirmation: bool
-    buy_id: int | None
 
     @staticmethod
-    def create(level: int, operation: UserManagementOperation | None = None, page: int = 0, confirmation: bool = False,
-               buy_id: int | None = None):
-        return UserManagementCallback(level=level, operation=operation, page=page, confirmation=confirmation,
-                                      buy_id=buy_id)
+    def create(level: int, operation: UserManagementOperation | None = None,
+               sort_order: SortOrder = SortOrder.DISABLE, sort_property: SortProperty = SortProperty.BUY_DATETIME,
+               buy_id: int | None = None, page: int = 0, confirmation: bool = False):
+        return UserManagementCallback(level=level, operation=operation,
+                                      sort_order=sort_order, sort_property=sort_property,
+                                      buy_id=buy_id,
+                                      page=page, confirmation=confirmation)
 
 
 class StatisticsCallback(BaseCallback, prefix="statistics"):

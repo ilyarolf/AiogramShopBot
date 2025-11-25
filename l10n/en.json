@@ -112,7 +112,16 @@
     "category": "Category",
     "subcategory": "Subcategory",
     "item": "Item",
-    "button": "Button"
+    "button": "Button",
+    "name": "Name",
+    "price": "Price",
+    "total_price": "Total price",
+    "quantity": "Quantity",
+    "buy_datetime": "Purchase datetime",
+    "asc": "🔺",
+    "desc": "🔻",
+    "disable": "❌",
+    "sort": "📊 Sorting: "
   },
   "user": {
     "all_categories": "🗂️ All categories",
@@ -141,6 +150,7 @@
     "no_categories": "⚠️ No categories",
     "no_purchases": "⚠️ You haven't had any purchases yet",
     "out_of_stock": "\u26A0\uFE0F<b>The following items are sold out or have insufficient stock:</b>\n\n",
+    "purchase_details": "🛒 Purchase Details\n\nCategory: {category_name}\nSubcategory: {subcategory_name}\nPrice Paid: {currency_sym}{total_fiat_price:.2f}\nPrice per item: {currency_sym}{fiat_price:.2f}\nQty: {qty} pcs\nDate of Purchase: {purchase_datetime}\nItems:\n{purchased_items}",
     "purchased_item": "📦 Item#{count}\nData:<code>{private_data}</code>\n",
     "purchase_history_button": "🧾 Purchase History  ",
     "purchase_history_item": "📦 {subcategory_name} | Total Price: {total_price:.2f}{currency_sym} | Quantity: {quantity} pcs",
