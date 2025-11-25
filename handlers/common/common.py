@@ -1,6 +1,5 @@
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-
 from callbacks import AllCategoriesCallback
 from enums.bot_entity import BotEntity
 from enums.sort_order import SortOrder
@@ -59,5 +58,7 @@ async def add_sorting_buttons(keyboard_builder: InlineKeyboardBuilder, sort_prop
                                                       "sort_order": sort_order.next()}).pack()
             )
         )
-    keyboard_builder.row(*buttons)
+    chunked = [buttons[i:i+2] for i in range(0, len(buttons), 2)]
+    for chunk in chunked:
+        keyboard_builder.row(*chunk)
     return keyboard_builder

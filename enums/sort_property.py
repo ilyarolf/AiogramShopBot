@@ -7,6 +7,9 @@ from utils.localizator import Localizator
 class SortProperty(IntEnum):
     NAME = 1
     PRICE = 2
+    QUANTITY = 3
+    BUY_DATETIME = 4
+    TOTAL_PRICE = 5
 
     def get_localized(self):
         return f"{Localizator.get_text(BotEntity.COMMON, "sort")}{Localizator.get_text(BotEntity.COMMON, self.name.lower())}"

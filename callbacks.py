@@ -55,12 +55,17 @@ class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
 class MyProfileCallback(BaseCallback, prefix="my_profile"):
     buy_id: int | None = None
     cryptocurrency: Cryptocurrency | None = None
+    sort_order: SortOrder = SortOrder.DISABLE
+    sort_property: SortProperty = SortProperty.BUY_DATETIME
     page: int
 
     @staticmethod
     def create(level: int, buy_id: int | None = None,
+               sort_order: SortOrder = SortOrder.DISABLE, sort_property: SortProperty = SortProperty.BUY_DATETIME,
                cryptocurrency: Cryptocurrency | None = None, page=0) -> 'MyProfileCallback':
-        return MyProfileCallback(level=level, buy_id=buy_id, cryptocurrency=cryptocurrency, page=page)
+        return MyProfileCallback(level=level, buy_id=buy_id,
+                                 sort_order=sort_order, sort_property=sort_property,
+                                 cryptocurrency=cryptocurrency, page=page)
 
 
 class CartCallback(BaseCallback, prefix="cart"):

@@ -1,3 +1,4 @@
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InputMediaPhoto, InputMediaVideo, InputMediaAnimation
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,7 +8,8 @@ from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
 from enums.keyboardbutton import KeyboardButton
-from handlers.common.common import add_pagination_buttons
+from enums.sort_property import SortProperty
+from handlers.common.common import add_pagination_buttons, add_sorting_buttons
 from models.user import User, UserDTO
 from repositories.button_media import ButtonMediaRepository
 from repositories.buy import BuyRepository
@@ -88,10 +90,15 @@ class UserService:
 
     @staticmethod
     async def get_purchase_history_buttons(callback: CallbackQuery, callback_data: MyProfileCallback,
+                                           state: FSMContext,
                                            session: AsyncSession) \
             -> tuple[str, InlineKeyboardBuilder]:
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
-        buys = await BuyRepository.get_by_buyer_id(user.id, callback_data.page, session)
+        state_data = await state.get_data()
+        sort_pairs = state_data.get("sort_pairs") or {}
+        sort_pairs[str(callback_data.sort_property.value)] = callback_data.sort_order.value
+        await state.update_data(sort_pairs=sort_pairs)
+        buys = await BuyRepository.get_by_buyer_id(sort_pairs, user.id, callback_data.page, session)
         kb_builder = InlineKeyboardBuilder()
         for buy in buys:
             buy_item = await BuyItemRepository.get_single_by_buy_id(buy.id, session)
@@ -107,6 +114,10 @@ class UserService:
                     buy_id=buy.id
                 ))
         kb_builder.adjust(1)
+        kb_builder = await add_sorting_buttons(kb_builder, [SortProperty.TOTAL_PRICE,
+                                                            SortProperty.QUANTITY,
+                                                            SortProperty.BUY_DATETIME],
+                                               callback_data, sort_pairs)
         kb_builder = await add_pagination_buttons(kb_builder, callback_data,
                                                   BuyRepository.get_max_page_purchase_history(user.id, session),
                                                   callback_data.get_back_button(0))

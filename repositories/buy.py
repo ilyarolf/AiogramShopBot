@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 import config
 from callbacks import StatisticsTimeDelta
 from db import session_execute, session_flush
+from enums.sort_order import SortOrder
+from enums.sort_property import SortProperty
 from models.buy import Buy, BuyDTO, RefundDTO
 from models.buyItem import BuyItem
 from models.item import Item
@@ -17,11 +19,20 @@ from models.user import User
 
 class BuyRepository:
     @staticmethod
-    async def get_by_buyer_id(user_id: int, page: int, session: AsyncSession) -> list[BuyDTO]:
+    async def get_by_buyer_id(sort_pairs: dict[SortProperty, SortOrder],
+                              user_id: int, page: int, session: AsyncSession) -> list[BuyDTO]:
+        sort_methods = []
+        for sort_property, sort_order in sort_pairs.items():
+            sort_property, sort_order = SortProperty(int(sort_property)), SortOrder(sort_order)
+            if sort_order != SortOrder.DISABLE:
+                sort_column = sort_property.get_column(Buy)
+                sort_method = (getattr(sort_column, sort_order.name.lower()))
+                sort_methods.append(sort_method())
         stmt = (select(Buy)
                 .where(Buy.buyer_id == user_id)
                 .limit(config.PAGE_ENTRIES)
-                .offset(page * config.PAGE_ENTRIES))
+                .offset(page * config.PAGE_ENTRIES)
+                .order_by(*sort_methods))
         buys = await session_execute(stmt, session)
         return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]
 

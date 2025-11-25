@@ -1,4 +1,5 @@
 from aiogram import types, Router, F
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message, InputMediaPhoto, InputMediaVideo
 from sqlalchemy.ext.asyncio import AsyncSession
 from callbacks import MyProfileCallback
@@ -57,7 +58,8 @@ async def purchase_history(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     callback_data: MyProfileCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
-    msg_text, kb_builder = await UserService.get_purchase_history_buttons(callback, callback_data, session)
+    state: FSMContext = kwargs.get("state")
+    msg_text, kb_builder = await UserService.get_purchase_history_buttons(callback, callback_data, state, session)
     await callback.message.edit_caption(caption=msg_text, reply_markup=kb_builder.as_markup())
 
 
@@ -82,7 +84,8 @@ async def create_payment(**kwargs):
 
 
 @my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())
-async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback, session: AsyncSession):
+async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback, session: AsyncSession,
+                   state: FSMContext):
     current_level = callback_data.level
 
     levels = {
@@ -98,7 +101,8 @@ async def navigate(callback: CallbackQuery, callback_data: MyProfileCallback, se
     kwargs = {
         "callback": callback,
         "session": session,
-        "callback_data": callback_data
+        "callback_data": callback_data,
+        "state": state
     }
 
     await current_level_function(**kwargs)
