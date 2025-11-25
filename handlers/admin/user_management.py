@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from callbacks import UserManagementCallback
 from handlers.admin.constants import UserManagementStates
 from models.buy import BuyDTO
-from services.admin import AdminService
 from services.buy import BuyService
+from services.user_management import UserManagementService
 from utils.custom_filters import AdminIdFilter
 
 user_management = Router()
@@ -17,7 +17,7 @@ async def user_management_menu(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     state: FSMContext = kwargs.get("state")
     await state.clear()
-    msg, kb_builder = await AdminService.get_user_management_menu()
+    msg, kb_builder = await UserManagementService.get_user_management_menu()
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
@@ -25,12 +25,11 @@ async def credit_management(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     callback_data: UserManagementCallback = kwargs.get("callback_data")
     state: FSMContext = kwargs.get("state")
-    unpacked_cb = UserManagementCallback.unpack(callback.data)
-    if unpacked_cb.operation is None:
-        msg, kb_builder = await AdminService.get_credit_management_menu(callback_data)
+    if callback_data.operation is None:
+        msg, kb_builder = await UserManagementService.get_credit_management_menu(callback_data)
         await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
     else:
-        msg, kb_builder = await AdminService.request_user_entity(callback_data, state)
+        msg, kb_builder = await UserManagementService.request_user_entity(callback_data, state)
         message = await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
         await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
 
@@ -41,11 +40,11 @@ async def balance_management(message: Message, state: FSMContext, session: Async
     current_state = await state.get_state()
     match current_state:
         case UserManagementStates.user_entity:
-            msg, kb_builder = await AdminService.request_balance_amount(message, state)
+            msg, kb_builder = await UserManagementCallback.request_balance_amount(message, state)
             message = await message.answer(text=msg, reply_markup=kb_builder.as_markup())
             await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
         case UserManagementStates.balance_amount:
-            msg = await AdminService.balance_management(message, state, session)
+            msg = await UserManagementCallback.balance_management(message, state, session)
             await message.answer(text=msg)
 
 
@@ -54,7 +53,7 @@ async def refund_buy(**kwargs):
     callback_data: UserManagementCallback = kwargs.get("callback_data")
     state: FSMContext = kwargs.get("state")
     session: AsyncSession = kwargs.get("session")
-    msg, kb_builder = await AdminService.get_refund_menu(callback_data, state, session)
+    msg, kb_builder = await UserManagementService.get_refund_menu(callback_data, state, session)
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
@@ -66,7 +65,7 @@ async def refund_confirmation(**kwargs):
         msg = await BuyService.refund(BuyDTO(id=callback_data.buy_id), session)
         await callback.message.edit_text(text=msg)
     else:
-        msg, kb_builder = await AdminService.refund_confirmation(callback_data, session)
+        msg, kb_builder = await UserManagementService.refund_confirmation(callback_data, session)
         await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
