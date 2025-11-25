@@ -56,9 +56,6 @@ async def confirm_delete(**kwargs):
 
 @inventory_management.message(AdminIdFilter(), F.document, StateFilter(AdminInventoryManagementStates.document))
 async def add_items_document(message: Message, state: FSMContext, session: AsyncSession):
-    if message.text and message.text.lower() == 'cancel':
-        await state.clear()
-        await message.answer(Localizator.get_text(BotEntity.COMMON, "cancelled"))
     state_data = await state.get_data()
     add_type = AddType(int(state_data['add_type']))
     file_name = message.document.file_name
