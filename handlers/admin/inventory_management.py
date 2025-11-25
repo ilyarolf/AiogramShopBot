@@ -3,12 +3,11 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
-
 from callbacks import InventoryManagementCallback, AddType
 from enums.bot_entity import BotEntity
 from handlers.admin.constants import AdminInventoryManagementStates
 from services.admin import AdminService
+from services.inventory_management import InventoryManagementService
 from services.item import ItemService
 from utils.custom_filters import AdminIdFilter
 from utils.localizator import Localizator
@@ -17,47 +16,45 @@ inventory_management = Router()
 
 
 async def inventory_management_menu(**kwargs):
-    callback = kwargs.get("callback")
-    state = kwargs.get("state")
+    callback: CallbackQuery = kwargs.get("callback")
+    state: FSMContext = kwargs.get("state")
     await state.clear()
-    msg, kb_builder = await AdminService.get_inventory_management_menu()
+    msg, kb_builder = await InventoryManagementService.get_inventory_management_menu()
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
 async def add_items(**kwargs):
-    callback = kwargs.get("callback")
-    state = kwargs.get("state")
-    unpacked_cb = InventoryManagementCallback.unpack(callback.data)
-    if unpacked_cb.add_type is None:
-        msg, kb_builder = await AdminService.get_add_items_type(callback)
-        await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+    callback: CallbackQuery = kwargs.get("callback")
+    callback_data: InventoryManagementCallback = kwargs.get("callback_data")
+    state: FSMContext = kwargs.get("state")
+    if callback_data.add_type is None:
+        msg, kb_builder = await InventoryManagementService.get_add_items_type(callback_data)
     else:
-        msg, kb_builder = await AdminService.get_add_item_msg(callback, state)
-        await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+        msg, kb_builder = await InventoryManagementService.get_add_item_msg(callback_data, state)
+    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
 async def delete_entity(**kwargs):
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
+    callback: CallbackQuery = kwargs.get("callback")
+    session: AsyncSession = kwargs.get("session")
     callback_data = kwargs.get("callback_data")
     msg, kb_builder = await AdminService.get_entity_picker(callback_data, session)
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
 async def confirm_delete(**kwargs):
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
-    unpacked_cb = InventoryManagementCallback.unpack(callback.data)
-    if unpacked_cb.confirmation is False:
-        msg, kb_builder = await AdminService.delete_confirmation(callback, session)
-        await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+    callback: CallbackQuery = kwargs.get("callback")
+    callback_data: InventoryManagementCallback = kwargs.get("callback_data")
+    session: AsyncSession = kwargs.get("session")
+    if callback_data.confirmation is False:
+        msg, kb_builder = await InventoryManagementService.delete_confirmation(callback_data, session)
     else:
-        msg, kb_builder = await AdminService.delete_entity(callback, session)
-        await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+        msg, kb_builder = await InventoryManagementService.delete_entity(callback_data, session)
+    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
 @inventory_management.message(AdminIdFilter(), F.document, StateFilter(AdminInventoryManagementStates.document))
-async def add_items_document(message: Message, state: FSMContext, session: AsyncSession | Session):
+async def add_items_document(message: Message, state: FSMContext, session: AsyncSession):
     if message.text and message.text.lower() == 'cancel':
         await state.clear()
         await message.answer(Localizator.get_text(BotEntity.COMMON, "cancelled"))
@@ -75,7 +72,7 @@ async def add_items_document(message: Message, state: FSMContext, session: Async
 @inventory_management.callback_query(AdminIdFilter(), InventoryManagementCallback.filter())
 async def inventory_management_navigation(callback: CallbackQuery, state: FSMContext,
                                           callback_data: InventoryManagementCallback,
-                                          session: AsyncSession | Session):
+                                          session: AsyncSession):
     current_level = callback_data.level
 
     levels = {
