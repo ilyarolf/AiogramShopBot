@@ -141,19 +141,26 @@ class InventoryManagementService:
             msg = Localizator.get_text(BotEntity.ADMIN, "add_items_price").format(
                 currency_text=Localizator.get_currency_text())
         else:
-            await state.update_data(price=message.html_text)
-            state_data = await state.get_data()
-            category = await CategoryRepository.get_or_create(state_data['category_name'], session)
-            subcategory = await SubcategoryRepository.get_or_create(state_data['subcategory_name'], session)
-            items_list = [ItemDTO(category_id=category.id,
-                                  subcategory_id=subcategory.id,
-                                  description=state_data['description'],
-                                  price=float(state_data['price']),
-                                  private_data=private_data) for private_data in state_data['private_data'].split('\n')]
-            await ItemRepository.add_many(items_list, session)
-            await session_commit(session)
-            await state.clear()
-            msg = Localizator.get_text(BotEntity.ADMIN, "add_items_success").format(adding_result=len(items_list))
-            cancel_button.text = Localizator.get_text(BotEntity.COMMON, "back_button")
+            try:
+                price = float(message.html_text)
+                assert (price > 0)
+                await state.update_data(price=message.html_text)
+                state_data = await state.get_data()
+                category = await CategoryRepository.get_or_create(state_data['category_name'], session)
+                subcategory = await SubcategoryRepository.get_or_create(state_data['subcategory_name'], session)
+                items_list = [ItemDTO(category_id=category.id,
+                                      subcategory_id=subcategory.id,
+                                      description=state_data['description'],
+                                      price=float(state_data['price']),
+                                      private_data=private_data) for private_data in
+                              state_data['private_data'].split('\n')]
+                await ItemRepository.add_many(items_list, session)
+                await session_commit(session)
+                await state.clear()
+                msg = Localizator.get_text(BotEntity.ADMIN, "add_items_success").format(adding_result=len(items_list))
+                cancel_button.text = Localizator.get_text(BotEntity.COMMON, "back_button")
+            except Exception as _:
+                msg = Localizator.get_text(BotEntity.ADMIN, "add_items_price").format(
+                    currency_text=Localizator.get_currency_text())
         kb_builder.row(cancel_button)
         return msg, kb_builder
