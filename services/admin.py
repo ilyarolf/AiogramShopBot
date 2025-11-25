@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 import config
-from callbacks import AdminAnnouncementCallback, AnnouncementType, AdminInventoryManagementCallback, EntityType, \
+from callbacks import AnnouncementCallback, AnnouncementType, InventoryManagementCallback, EntityType, \
     AddType, UserManagementCallback, UserManagementOperation, StatisticsCallback, StatisticsEntity, StatisticsTimeDelta, \
     WalletCallback, MediaManagementCallback
 from crypto_api.CryptoApiWrapper import CryptoApiWrapper
@@ -33,23 +33,13 @@ from utils.localizator import Localizator
 
 class AdminService:
 
-    @staticmethod
-    async def get_announcement_menu() -> tuple[str, InlineKeyboardBuilder]:
-        kb_builder = InlineKeyboardBuilder()
-        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "send_everyone"),
-                          callback_data=AdminAnnouncementCallback.create(1))
-        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "restocking"),
-                          callback_data=AdminAnnouncementCallback.create(2, AnnouncementType.RESTOCKING))
-        kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "stock"),
-                          callback_data=AdminAnnouncementCallback.create(2, AnnouncementType.CURRENT_STOCK))
-        kb_builder.row(AdminConstants.back_to_main_button)
-        kb_builder.adjust(1)
-        return Localizator.get_text(BotEntity.ADMIN, "announcements"), kb_builder
 
     @staticmethod
     async def send_announcement(callback: CallbackQuery, session: AsyncSession | Session):
-        unpacked_cb = AdminAnnouncementCallback.unpack(callback.data)
-        await callback.message.edit_reply_markup()
+        unpacked_cb = AnnouncementCallback.unpack(callback.data)
+        await NotificationService.edit_reply_markup(callback.bot,
+                                                    callback.message.chat.id,
+                                                    callback.message.message_id)
         active_users = await UserRepository.get_active(session)
         all_users_count = await UserRepository.get_all_count(session)
         counter = 0
@@ -79,35 +69,35 @@ class AdminService:
     async def get_inventory_management_menu() -> tuple[str, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "add_items"),
-                          callback_data=AdminInventoryManagementCallback.create(level=1, entity_type=EntityType.ITEM))
+                          callback_data=InventoryManagementCallback.create(level=1, entity_type=EntityType.ITEM))
         kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "delete_entity").format(
             entity=EntityType.CATEGORY.get_localized()
         ),
-            callback_data=AdminInventoryManagementCallback.create(level=2,
-                                                                  entity_type=EntityType.CATEGORY))
+            callback_data=InventoryManagementCallback.create(level=2,
+                                                             entity_type=EntityType.CATEGORY))
         kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "delete_entity").format(
             entity=EntityType.SUBCATEGORY.get_localized()
         ),
-            callback_data=AdminInventoryManagementCallback.create(level=2,
-                                                                  entity_type=EntityType.SUBCATEGORY))
+            callback_data=InventoryManagementCallback.create(level=2,
+                                                             entity_type=EntityType.SUBCATEGORY))
         kb_builder.adjust(1)
         kb_builder.row(AdminConstants.back_to_main_button)
         return Localizator.get_text(BotEntity.ADMIN, "inventory_management"), kb_builder
 
     @staticmethod
     async def get_add_items_type(callback: CallbackQuery) -> tuple[str, InlineKeyboardBuilder]:
-        unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
+        unpacked_cb = InventoryManagementCallback.unpack(callback.data)
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "add_items_json"),
-                          callback_data=AdminInventoryManagementCallback.create(1, AddType.JSON, EntityType.ITEM))
+                          callback_data=InventoryManagementCallback.create(1, AddType.JSON, EntityType.ITEM))
         kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "add_items_txt"),
-                          callback_data=AdminInventoryManagementCallback.create(1, AddType.TXT, EntityType.ITEM))
+                          callback_data=InventoryManagementCallback.create(1, AddType.TXT, EntityType.ITEM))
         kb_builder.adjust(1)
         kb_builder.row(unpacked_cb.get_back_button())
         return Localizator.get_text(BotEntity.ADMIN, "add_items_msg"), kb_builder
 
     @staticmethod
-    async def get_entity_picker(callback_data: AdminInventoryManagementCallback | MediaManagementCallback,
+    async def get_entity_picker(callback_data: InventoryManagementCallback | MediaManagementCallback,
                                 session: AsyncSession | Session):
         kb_builder = InlineKeyboardBuilder()
         match callback_data.entity_type:
@@ -116,8 +106,8 @@ class AdminService:
             case _:
                 entities = await SubcategoryRepository.get_to_delete(callback_data.page, session)
         for entity in entities:
-            if isinstance(callback_data, AdminInventoryManagementCallback):
-                kb_builder.button(text=entity.name, callback_data=AdminInventoryManagementCallback.create(
+            if isinstance(callback_data, InventoryManagementCallback):
+                kb_builder.button(text=entity.name, callback_data=InventoryManagementCallback.create(
                     level=3,
                     entity_type=callback_data.entity_type,
                     entity_id=entity.id,
@@ -134,7 +124,7 @@ class AdminService:
         kb_builder = await add_pagination_buttons(kb_builder, callback_data,
                                                   SubcategoryRepository.get_maximum_page_to_delete(session),
                                                   callback_data.get_back_button(0))
-        if isinstance(callback_data, AdminInventoryManagementCallback):
+        if isinstance(callback_data, InventoryManagementCallback):
             msg_text = Localizator.get_text(BotEntity.ADMIN, "delete_entity").format(
                 entity=callback_data.entity_type.get_localized()
             )
@@ -147,13 +137,13 @@ class AdminService:
     @staticmethod
     async def delete_confirmation(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[
         str, InlineKeyboardBuilder]:
-        unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
+        unpacked_cb = InventoryManagementCallback.unpack(callback.data)
         unpacked_cb.confirmation = True
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
                           callback_data=unpacked_cb)
         kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
-                          callback_data=AdminInventoryManagementCallback.create(0))
+                          callback_data=InventoryManagementCallback.create(0))
         match unpacked_cb.entity_type:
             case EntityType.CATEGORY:
                 category = await CategoryRepository.get_by_id(unpacked_cb.entity_id, session)
@@ -171,7 +161,7 @@ class AdminService:
     @staticmethod
     async def delete_entity(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[
         str, InlineKeyboardBuilder]:
-        unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
+        unpacked_cb = InventoryManagementCallback.unpack(callback.data)
         kb_builder = InlineKeyboardBuilder()
         kb_builder.row(AdminConstants.back_to_main_button)
         match unpacked_cb.entity_type:
@@ -192,10 +182,10 @@ class AdminService:
 
     @staticmethod
     async def get_add_item_msg(callback: CallbackQuery, state: FSMContext):
-        unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
+        unpacked_cb = InventoryManagementCallback.unpack(callback.data)
         kb_markup = InlineKeyboardBuilder()
         kb_markup.button(text=Localizator.get_text(BotEntity.COMMON, 'cancel'),
-                         callback_data=AdminInventoryManagementCallback.create(0))
+                         callback_data=InventoryManagementCallback.create(0))
         await state.update_data(add_type=unpacked_cb.add_type.value)
         await state.set_state()
         match unpacked_cb.add_type:

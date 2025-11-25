@@ -5,7 +5,7 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from callbacks import AdminInventoryManagementCallback, AddType
+from callbacks import InventoryManagementCallback, AddType
 from enums.bot_entity import BotEntity
 from handlers.admin.constants import AdminInventoryManagementStates
 from services.admin import AdminService
@@ -27,7 +27,7 @@ async def inventory_management_menu(**kwargs):
 async def add_items(**kwargs):
     callback = kwargs.get("callback")
     state = kwargs.get("state")
-    unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
+    unpacked_cb = InventoryManagementCallback.unpack(callback.data)
     if unpacked_cb.add_type is None:
         msg, kb_builder = await AdminService.get_add_items_type(callback)
         await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
@@ -47,7 +47,7 @@ async def delete_entity(**kwargs):
 async def confirm_delete(**kwargs):
     callback = kwargs.get("callback")
     session = kwargs.get("session")
-    unpacked_cb = AdminInventoryManagementCallback.unpack(callback.data)
+    unpacked_cb = InventoryManagementCallback.unpack(callback.data)
     if unpacked_cb.confirmation is False:
         msg, kb_builder = await AdminService.delete_confirmation(callback, session)
         await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
@@ -72,9 +72,9 @@ async def add_items_document(message: Message, state: FSMContext, session: Async
     await state.clear()
 
 
-@inventory_management.callback_query(AdminIdFilter(), AdminInventoryManagementCallback.filter())
+@inventory_management.callback_query(AdminIdFilter(), InventoryManagementCallback.filter())
 async def inventory_management_navigation(callback: CallbackQuery, state: FSMContext,
-                                          callback_data: AdminInventoryManagementCallback,
+                                          callback_data: InventoryManagementCallback,
                                           session: AsyncSession | Session):
     current_level = callback_data.level
 

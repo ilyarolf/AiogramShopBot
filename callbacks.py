@@ -82,24 +82,21 @@ class CartCallback(BaseCallback, prefix="cart"):
 
 
 class AdminMenuCallback(BaseCallback, prefix="admin_menu"):
-    action: str
-    args_to_action: str | int
-    page: int
 
     @staticmethod
-    def create(level: int, action: str = "", args_to_action: str = "", page: int = 0):
-        return AdminMenuCallback(level=level, action=action, args_to_action=args_to_action, page=page)
+    def create(level: int):
+        return AdminMenuCallback(level=level)
 
 
-class AdminAnnouncementCallback(BaseCallback, prefix="announcement"):
+class AnnouncementCallback(BaseCallback, prefix="announcement"):
     announcement_type: AnnouncementType | None
 
     @staticmethod
     def create(level: int, announcement_type: AnnouncementType | None = None):
-        return AdminAnnouncementCallback(level=level, announcement_type=announcement_type)
+        return AnnouncementCallback(level=level, announcement_type=announcement_type)
 
 
-class AdminInventoryManagementCallback(BaseCallback, prefix="inventory_management"):
+class InventoryManagementCallback(BaseCallback, prefix="inventory_management"):
     add_type: AddType | None
     entity_type: EntityType | None
     entity_id: int | None
@@ -109,12 +106,12 @@ class AdminInventoryManagementCallback(BaseCallback, prefix="inventory_managemen
     @staticmethod
     def create(level: int, add_type: AddType | None = None, entity_type: EntityType | None = None,
                entity_id: int | None = None, page: int = 0, confirmation: bool = False):
-        return AdminInventoryManagementCallback(level=level,
-                                                add_type=add_type,
-                                                entity_type=entity_type,
-                                                entity_id=entity_id,
-                                                page=page,
-                                                confirmation=confirmation)
+        return InventoryManagementCallback(level=level,
+                                           add_type=add_type,
+                                           entity_type=entity_type,
+                                           entity_id=entity_id,
+                                           page=page,
+                                           confirmation=confirmation)
 
 
 class UserManagementCallback(BaseCallback, prefix="user_management"):
