@@ -7,9 +7,9 @@ from callbacks import AnnouncementCallback, AnnouncementType
 from enums.bot_entity import BotEntity
 from handlers.admin.constants import AdminAnnouncementStates, AdminAnnouncementsConstants
 from services.announcement import AnnouncementService
+from services.item import ItemService
 from utils.custom_filters import AdminIdFilter
 from utils.localizator import Localizator
-from utils.new_items_manager import NewItemsManager
 
 announcement_router = Router()
 
@@ -43,12 +43,8 @@ async def send_generated_msg(**kwargs):
     session: AsyncSession = kwargs.get("session")
     callback_data: AnnouncementCallback = kwargs.get("callback_data")
     kb_builder = AdminAnnouncementsConstants.get_confirmation_builder(callback_data.announcement_type)
-    if callback_data.announcement_type == AnnouncementType.RESTOCKING:
-        msg = await NewItemsManager.generate_restocking_message(session)
-        await callback.message.answer(msg, reply_markup=kb_builder.as_markup())
-    else:
-        msg = await NewItemsManager.generate_in_stock_message(session)
-        await callback.message.answer(msg, reply_markup=kb_builder.as_markup())
+    msg = await ItemService.create_announcement_message(callback_data.announcement_type, session)
+    await callback.message.answer(text=msg, reply_markup=kb_builder.as_markup())
 
 
 async def send_confirmation(**kwargs):

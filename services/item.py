@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from callbacks import AddType
 from db import session_commit
+from enums.announcement_type import AnnouncementType
 from enums.bot_entity import BotEntity
 from models.item import ItemDTO
 from repositories.category import CategoryRepository
@@ -15,6 +16,36 @@ from utils.localizator import Localizator
 
 
 class ItemService:
+
+    @staticmethod
+    async def create_announcement_message(announcement_type: AnnouncementType, session: AsyncSession):
+        if announcement_type == AnnouncementType.CURRENT_STOCK:
+            items = await ItemRepository.get_in_stock(session)
+            header = Localizator.get_text(BotEntity.ADMIN, "current_stock_header")
+        else:
+            items = await ItemRepository.get_new(session)
+            header = Localizator.get_text(BotEntity.ADMIN, "restocking_message_header")
+        filtered_items = {}
+        for item in items:
+            category = await CategoryRepository.get_by_id(item.category_id, session)
+            subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
+            if category.name not in filtered_items:
+                filtered_items[category.name] = {}
+            if subcategory.name not in filtered_items[category.name]:
+                filtered_items[category.name][subcategory.name] = []
+            filtered_items[category.name][subcategory.name].append(item)
+        message = header
+        for category, subcategory_item_dict in filtered_items.items():
+            message += Localizator.get_text(BotEntity.ADMIN, "restocking_message_category").format(
+                category=category)
+            for subcategory, item in subcategory_item_dict.items():
+                message += Localizator.get_text(BotEntity.USER, "subcategory_button").format(
+                    subcategory_name=subcategory,
+                    available_quantity=len(item),
+                    subcategory_price=item[0].price,
+                    currency_sym=Localizator.get_currency_symbol()) + "\n"
+        message = f"<b>{message}</b>"
+        return message
 
     @staticmethod
     async def get_new(session: AsyncSession | Session) -> list[ItemDTO]:
