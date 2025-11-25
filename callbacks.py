@@ -28,13 +28,16 @@ class BaseCallback(CallbackData, prefix="base"):
             callback_data=cb_copy.create(**cb_copy.model_dump()).pack())
 
 
-class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
+class SortingCallback(CallbackData, prefix="sorting"):
+    sort_order: SortOrder
+    sort_property: SortProperty
+
+
+class AllCategoriesCallback(BaseCallback, SortingCallback, prefix="all_categories"):
     category_id: int
     subcategory_id: int
     quantity: int
     confirmation: bool
-    sort_order: SortOrder
-    sort_property: SortProperty
     page: int
 
     @staticmethod
@@ -52,11 +55,9 @@ class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
                                      quantity=quantity, confirmation=confirmation, page=page)
 
 
-class MyProfileCallback(BaseCallback, prefix="my_profile"):
+class MyProfileCallback(BaseCallback, SortingCallback, prefix="my_profile"):
     buy_id: int | None = None
     cryptocurrency: Cryptocurrency | None = None
-    sort_order: SortOrder
-    sort_property: SortProperty
     page: int
 
     @staticmethod
@@ -114,11 +115,9 @@ class InventoryManagementCallback(BaseCallback, prefix="inventory_management"):
                                            confirmation=confirmation)
 
 
-class UserManagementCallback(BaseCallback, prefix="user_management"):
+class UserManagementCallback(BaseCallback, SortingCallback, prefix="user_management"):
     operation: UserManagementOperation | None
     buy_id: int | None
-    sort_order: SortOrder
-    sort_property: SortProperty
     page: int
     confirmation: bool
 

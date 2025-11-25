@@ -24,12 +24,14 @@ admin_router.include_routers(announcement_router,
 
 
 @admin_router.message(F.text == Localizator.get_text(BotEntity.ADMIN, "menu"), AdminIdFilter())
-async def admin_command_handler(message: Message):
-    await admin(message=message)
+async def admin_command_handler(message: Message, state: FSMContext):
+    await admin(message=message, state=state)
 
 
 async def admin(**kwargs):
     message: Message | CallbackQuery = kwargs.get("message") or kwargs.get("callback")
+    state: FSMContext = kwargs.get("state")
+    await state.clear()
     kb_builder = InlineKeyboardBuilder()
     kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "announcements"),
                       callback_data=AnnouncementCallback.create(level=0))

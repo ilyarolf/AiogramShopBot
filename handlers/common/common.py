@@ -1,6 +1,6 @@
 from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from callbacks import AllCategoriesCallback
+from callbacks import SortingCallback
 from enums.bot_entity import BotEntity
 from enums.sort_order import SortOrder
 from enums.sort_property import SortProperty
@@ -39,7 +39,7 @@ async def add_pagination_buttons(keyboard_builder: InlineKeyboardBuilder, callba
 
 
 async def add_sorting_buttons(keyboard_builder: InlineKeyboardBuilder, sort_property_list: list[SortProperty],
-                              callback_data: AllCategoriesCallback, sort_pairs: dict[str, int]) -> InlineKeyboardBuilder:
+                              callback_data: SortingCallback, sort_pairs: dict[str, int]) -> InlineKeyboardBuilder:
     sort_cb_copy = callback_data.__copy__()
     buttons = []
     if len(keyboard_builder.as_markup().inline_keyboard) == 0:
@@ -58,7 +58,7 @@ async def add_sorting_buttons(keyboard_builder: InlineKeyboardBuilder, sort_prop
                                                       "sort_order": sort_order.next()}).pack()
             )
         )
-    chunked = [buttons[i:i+2] for i in range(0, len(buttons), 2)]
+    chunked = [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
     for chunk in chunked:
         keyboard_builder.row(*chunk)
     return keyboard_builder

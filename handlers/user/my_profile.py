@@ -14,8 +14,8 @@ my_profile_router = Router()
 
 
 @my_profile_router.message(F.text == Localizator.get_text(BotEntity.USER, "my_profile"), IsUserExistFilter())
-async def my_profile_text_message(message: types.message, session: AsyncSession):
-    await my_profile(message=message, session=session)
+async def my_profile_text_message(message: Message, session: AsyncSession, state: FSMContext):
+    await my_profile(message=message, session=session, state=state)
 
 
 class MyProfileConstants:
@@ -27,6 +27,8 @@ class MyProfileConstants:
 async def my_profile(**kwargs):
     message: Message | CallbackQuery = kwargs.get("message") or kwargs.get("callback")
     session: AsyncSession = kwargs.get("session")
+    state: FSMContext = kwargs.get("state")
+    await state.clear()
     media, kb_builder = await UserService.get_my_profile_buttons(message.from_user.id, session)
     if isinstance(message, Message):
         if isinstance(media, InputMediaPhoto):
