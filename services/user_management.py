@@ -56,8 +56,7 @@ class UserManagementService:
                           callback_data=UserManagementCallback.create(0))
         await state.update_data(user_entity=message.text)
         await state.set_state(UserManagementStates.balance_amount)
-        data = await state.get_data()
-        operation = UserManagementOperation(int(data['operation']))
+        operation = UserManagementOperation(int(state_data['operation']))
         match operation:
             case UserManagementOperation.ADD_BALANCE:
                 return Localizator.get_text(BotEntity.ADMIN, "credit_management_plus_operation").format(
@@ -67,30 +66,44 @@ class UserManagementService:
                     currency_text=Localizator.get_currency_text()), kb_builder
 
     @staticmethod
-    async def balance_management(message: Message, state: FSMContext, session: AsyncSession) -> str:
-        state_data = await state.get_data()
-        await state.clear()
-        await NotificationService.edit_reply_markup(message.bot, state_data['chat_id'], state_data['msg_id'])
-        user = await UserRepository.get_user_entity(state_data['user_entity'].replace("@", ""), session)
-        operation = UserManagementOperation(int(state_data['operation']))
-        if user is None:
-            return Localizator.get_text(BotEntity.ADMIN, "credit_management_user_not_found")
-        elif operation == UserManagementOperation.ADD_BALANCE:
-            user.top_up_amount += float(message.text)
-            await UserRepository.update(user, session)
-            await session_commit(session)
-            return Localizator.get_text(BotEntity.ADMIN, "credit_management_added_success").format(
-                amount=message.text,
-                telegram_id=user.telegram_id,
-                currency_text=Localizator.get_currency_text())
-        else:
-            user.consume_records += float(message.text)
-            await UserRepository.update(user, session)
-            await session_commit(session)
-            return Localizator.get_text(BotEntity.ADMIN, "credit_management_reduced_success").format(
-                amount=message.text,
-                telegram_id=user.telegram_id,
-                currency_text=Localizator.get_currency_text())
+    async def balance_management(message: Message,
+                                 state: FSMContext,
+                                 session: AsyncSession) -> tuple[str, InlineKeyboardBuilder]:
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.button(
+            text=Localizator.get_text(BotEntity.COMMON, "back_button"),
+            callback_data=UserManagementCallback.create(level=1)
+        )
+        try:
+            state_data = await state.get_data()
+            await NotificationService.edit_reply_markup(message.bot, state_data['chat_id'], state_data['msg_id'])
+            user = await UserRepository.get_user_entity(state_data['user_entity'].replace("@", ""), session)
+            operation = UserManagementOperation(int(state_data['operation']))
+            amount = float(message.text)
+            assert (amount > 0)
+            if user is None:
+                msg = Localizator.get_text(BotEntity.ADMIN, "credit_management_user_not_found")
+            elif operation == UserManagementOperation.ADD_BALANCE:
+                user.top_up_amount += float(message.text)
+                await UserRepository.update(user, session)
+                await session_commit(session)
+                msg = Localizator.get_text(BotEntity.ADMIN, "credit_management_added_success").format(
+                    amount=message.text,
+                    telegram_id=user.telegram_id,
+                    currency_text=Localizator.get_currency_text())
+            else:
+                user.consume_records += float(message.text)
+                await UserRepository.update(user, session)
+                await session_commit(session)
+                msg = Localizator.get_text(BotEntity.ADMIN, "credit_management_reduced_success").format(
+                    amount=message.text,
+                    telegram_id=user.telegram_id,
+                    currency_text=Localizator.get_currency_text())
+            await state.clear()
+            return msg, kb_builder
+        except Exception as _:
+            return await UserManagementService.request_balance_amount(message, state)
+
 
     @staticmethod
     async def get_refund_menu(callback_data: UserManagementCallback,

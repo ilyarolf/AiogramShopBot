@@ -38,14 +38,12 @@ async def credit_management(**kwargs):
                                                               UserManagementStates.balance_amount))
 async def balance_management(message: Message, state: FSMContext, session: AsyncSession):
     current_state = await state.get_state()
-    match current_state:
-        case UserManagementStates.user_entity:
-            msg, kb_builder = await UserManagementCallback.request_balance_amount(message, state)
-            message = await message.answer(text=msg, reply_markup=kb_builder.as_markup())
-            await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
-        case UserManagementStates.balance_amount:
-            msg = await UserManagementCallback.balance_management(message, state, session)
-            await message.answer(text=msg)
+    if current_state == UserManagementStates.user_entity:
+        msg, kb_builder = await UserManagementService.request_balance_amount(message, state)
+    else:
+        msg, kb_builder = await UserManagementService.balance_management(message, state, session)
+    message = await message.answer(text=msg, reply_markup=kb_builder.as_markup())
+    await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
 
 
 async def refund_buy(**kwargs):
