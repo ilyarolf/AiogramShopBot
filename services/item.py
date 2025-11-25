@@ -48,14 +48,6 @@ class ItemService:
         return message
 
     @staticmethod
-    async def get_new(session: AsyncSession | Session) -> list[ItemDTO]:
-        return await ItemRepository.get_new(session)
-
-    @staticmethod
-    async def get_in_stock_items(session: AsyncSession | Session):
-        return await ItemRepository.get_in_stock(session)
-
-    @staticmethod
     async def parse_items_json(path_to_file: str, session: AsyncSession | Session):
         with open(path_to_file, 'r', encoding='utf-8') as file:
             items = load(file)
