@@ -6,11 +6,6 @@ from models.withdrawal import WithdrawalDTO
 
 
 class CryptoApiWrapper:
-    LTC_API_BASENAME_TX = "https://litecoinspace.org/tx/"
-    BTC_API_BASENAME_TX = "https://mempool.space/tx/"
-    SOL_API_BASENAME_TX = "https://solscan.io/tx/"
-    ETH_API_BASENAME_TX = "https://etherscan.io/tx/"
-    BNB_API_BASENAME_TX = "https://bscscan.com/tx/"
 
     @staticmethod
     async def fetch_api_request(url: str, params: dict | None = None, method: str = "GET", data: str | None = None,

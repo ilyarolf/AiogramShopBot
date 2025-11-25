@@ -3,28 +3,26 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
-
-from callbacks import AdminAnnouncementCallback, AnnouncementType
+from callbacks import AnnouncementCallback, AnnouncementType
 from enums.bot_entity import BotEntity
 from handlers.admin.constants import AdminAnnouncementStates, AdminAnnouncementsConstants
-from services.admin import AdminService
+from services.announcement import AnnouncementService
+from services.item import ItemService
 from utils.custom_filters import AdminIdFilter
 from utils.localizator import Localizator
-from utils.new_items_manager import NewItemsManager
 
 announcement_router = Router()
 
 
 async def announcement_menu(**kwargs):
-    callback = kwargs.get("callback")
-    msg, kb_builder = await AdminService.get_announcement_menu()
+    callback: CallbackQuery = kwargs.get("callback")
+    msg, kb_builder = await AnnouncementService.get_announcement_menu()
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
 async def send_everyone(**kwargs):
-    callback = kwargs.get("callback")
-    state = kwargs.get("state")
+    callback: CallbackQuery = kwargs.get("callback")
+    state: FSMContext = kwargs.get("state")
     await callback.message.edit_text(Localizator.get_text(BotEntity.ADMIN, "receive_msg_request"))
     await state.set_state(AdminAnnouncementStates.announcement_msg)
 
@@ -41,22 +39,19 @@ async def receive_admin_message(message: Message, state: FSMContext):
 
 
 async def send_generated_msg(**kwargs):
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
-    unpacked_cb = AdminAnnouncementCallback.unpack(callback.data)
-    kb_builder = AdminAnnouncementsConstants.get_confirmation_builder(unpacked_cb.announcement_type)
-    if unpacked_cb.announcement_type == AnnouncementType.RESTOCKING:
-        msg = await NewItemsManager.generate_restocking_message(session)
-        await callback.message.answer(msg, reply_markup=kb_builder.as_markup())
-    else:
-        msg = await NewItemsManager.generate_in_stock_message(session)
-        await callback.message.answer(msg, reply_markup=kb_builder.as_markup())
+    callback: CallbackQuery = kwargs.get("callback")
+    session: AsyncSession = kwargs.get("session")
+    callback_data: AnnouncementCallback = kwargs.get("callback_data")
+    kb_builder = AdminAnnouncementsConstants.get_confirmation_builder(callback_data.announcement_type)
+    msg = await ItemService.create_announcement_message(callback_data.announcement_type, session)
+    await callback.message.answer(text=msg, reply_markup=kb_builder.as_markup())
 
 
 async def send_confirmation(**kwargs):
-    callback = kwargs.get("callback")
-    session = kwargs.get("session")
-    msg = await AdminService.send_announcement(callback, session)
+    callback: CallbackQuery = kwargs.get("callback")
+    callback_data: AnnouncementCallback = kwargs.get("callback_data")
+    session: AsyncSession = kwargs.get("session")
+    msg = await AnnouncementService.send_announcement(callback, callback_data, session)
     if callback.message.caption:
         await callback.message.delete()
         await callback.message.answer(text=msg)
@@ -64,9 +59,9 @@ async def send_confirmation(**kwargs):
         await callback.message.edit_text(text=msg)
 
 
-@announcement_router.callback_query(AdminIdFilter(), AdminAnnouncementCallback.filter())
-async def announcement_navigation(callback: CallbackQuery, state: FSMContext, callback_data: AdminAnnouncementCallback,
-                                  session: AsyncSession | Session):
+@announcement_router.callback_query(AdminIdFilter(), AnnouncementCallback.filter())
+async def announcement_navigation(callback: CallbackQuery, state: FSMContext, callback_data: AnnouncementCallback,
+                                  session: AsyncSession):
     current_level = callback_data.level
 
     levels = {
@@ -82,6 +77,7 @@ async def announcement_navigation(callback: CallbackQuery, state: FSMContext, ca
         "callback": callback,
         "state": state,
         "session": session,
+        "callback_data": callback_data
     }
 
     await current_level_function(**kwargs)

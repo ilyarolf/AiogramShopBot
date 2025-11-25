@@ -28,13 +28,16 @@ class BaseCallback(CallbackData, prefix="base"):
             callback_data=cb_copy.create(**cb_copy.model_dump()).pack())
 
 
-class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
+class SortingCallback(CallbackData, prefix="sorting"):
+    sort_order: SortOrder
+    sort_property: SortProperty
+
+
+class AllCategoriesCallback(BaseCallback, SortingCallback, prefix="all_categories"):
     category_id: int
     subcategory_id: int
     quantity: int
     confirmation: bool
-    sort_order: SortOrder
-    sort_property: SortProperty
     page: int
 
     @staticmethod
@@ -52,11 +55,9 @@ class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
                                      quantity=quantity, confirmation=confirmation, page=page)
 
 
-class MyProfileCallback(BaseCallback, prefix="my_profile"):
+class MyProfileCallback(BaseCallback, SortingCallback, prefix="my_profile"):
     buy_id: int | None = None
     cryptocurrency: Cryptocurrency | None = None
-    sort_order: SortOrder
-    sort_property: SortProperty
     page: int
 
     @staticmethod
@@ -82,24 +83,21 @@ class CartCallback(BaseCallback, prefix="cart"):
 
 
 class AdminMenuCallback(BaseCallback, prefix="admin_menu"):
-    action: str
-    args_to_action: str | int
-    page: int
 
     @staticmethod
-    def create(level: int, action: str = "", args_to_action: str = "", page: int = 0):
-        return AdminMenuCallback(level=level, action=action, args_to_action=args_to_action, page=page)
+    def create(level: int):
+        return AdminMenuCallback(level=level)
 
 
-class AdminAnnouncementCallback(BaseCallback, prefix="announcement"):
+class AnnouncementCallback(BaseCallback, prefix="announcement"):
     announcement_type: AnnouncementType | None
 
     @staticmethod
     def create(level: int, announcement_type: AnnouncementType | None = None):
-        return AdminAnnouncementCallback(level=level, announcement_type=announcement_type)
+        return AnnouncementCallback(level=level, announcement_type=announcement_type)
 
 
-class AdminInventoryManagementCallback(BaseCallback, prefix="inventory_management"):
+class InventoryManagementCallback(BaseCallback, prefix="inventory_management"):
     add_type: AddType | None
     entity_type: EntityType | None
     entity_id: int | None
@@ -109,19 +107,17 @@ class AdminInventoryManagementCallback(BaseCallback, prefix="inventory_managemen
     @staticmethod
     def create(level: int, add_type: AddType | None = None, entity_type: EntityType | None = None,
                entity_id: int | None = None, page: int = 0, confirmation: bool = False):
-        return AdminInventoryManagementCallback(level=level,
-                                                add_type=add_type,
-                                                entity_type=entity_type,
-                                                entity_id=entity_id,
-                                                page=page,
-                                                confirmation=confirmation)
+        return InventoryManagementCallback(level=level,
+                                           add_type=add_type,
+                                           entity_type=entity_type,
+                                           entity_id=entity_id,
+                                           page=page,
+                                           confirmation=confirmation)
 
 
-class UserManagementCallback(BaseCallback, prefix="user_management"):
+class UserManagementCallback(BaseCallback, SortingCallback, prefix="user_management"):
     operation: UserManagementOperation | None
     buy_id: int | None
-    sort_order: SortOrder
-    sort_property: SortProperty
     page: int
     confirmation: bool
 

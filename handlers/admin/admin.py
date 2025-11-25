@@ -1,8 +1,8 @@
-from aiogram import types, Router, F
+from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from callbacks import AdminMenuCallback, AdminAnnouncementCallback, AdminInventoryManagementCallback, \
+from callbacks import AdminMenuCallback, AnnouncementCallback, InventoryManagementCallback, \
     UserManagementCallback, StatisticsCallback, WalletCallback, MediaManagementCallback
 from enums.bot_entity import BotEntity
 from handlers.admin.announcement import announcement_router
@@ -24,33 +24,35 @@ admin_router.include_routers(announcement_router,
 
 
 @admin_router.message(F.text == Localizator.get_text(BotEntity.ADMIN, "menu"), AdminIdFilter())
-async def admin_command_handler(message: types.message):
-    await admin(message=message)
+async def admin_command_handler(message: Message, state: FSMContext):
+    await admin(message=message, state=state)
 
 
 async def admin(**kwargs):
-    message = kwargs.get("message") or kwargs.get("callback")
-    admin_menu_builder = InlineKeyboardBuilder()
-    admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "announcements"),
-                              callback_data=AdminAnnouncementCallback.create(level=0))
-    admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "inventory_management"),
-                              callback_data=AdminInventoryManagementCallback.create(level=0))
-    admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "user_management"),
-                              callback_data=UserManagementCallback.create(level=0))
-    admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "statistics"),
-                              callback_data=StatisticsCallback.create(level=0))
-    admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "crypto_withdraw"),
-                              callback_data=WalletCallback.create(level=0))
-    admin_menu_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "media_management"),
-                              callback_data=MediaManagementCallback.create(level=0))
-    admin_menu_builder.adjust(2)
+    message: Message | CallbackQuery = kwargs.get("message") or kwargs.get("callback")
+    state: FSMContext = kwargs.get("state")
+    await state.clear()
+    kb_builder = InlineKeyboardBuilder()
+    kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "announcements"),
+                      callback_data=AnnouncementCallback.create(level=0))
+    kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "inventory_management"),
+                      callback_data=InventoryManagementCallback.create(level=0))
+    kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "user_management"),
+                      callback_data=UserManagementCallback.create(level=0))
+    kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "statistics"),
+                      callback_data=StatisticsCallback.create(level=0))
+    kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "crypto_withdraw"),
+                      callback_data=WalletCallback.create(level=0))
+    kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "media_management"),
+                      callback_data=MediaManagementCallback.create(level=0))
+    kb_builder.adjust(2)
     if isinstance(message, Message):
         await message.answer(Localizator.get_text(BotEntity.ADMIN, "menu"),
-                             reply_markup=admin_menu_builder.as_markup())
+                             reply_markup=kb_builder.as_markup())
     elif isinstance(message, CallbackQuery):
         callback = message
         await callback.message.edit_text(Localizator.get_text(BotEntity.ADMIN, "menu"),
-                                         reply_markup=admin_menu_builder.as_markup())
+                                         reply_markup=kb_builder.as_markup())
 
 
 @admin_router.callback_query(AdminIdFilter(), AdminMenuCallback.filter())

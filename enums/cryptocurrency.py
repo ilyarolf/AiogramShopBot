@@ -1,7 +1,5 @@
 from enum import Enum
 
-import config
-
 
 class Cryptocurrency(str, Enum):
     BNB = "BNB"
@@ -35,3 +33,16 @@ class Cryptocurrency(str, Enum):
                 return "binancecoin"
             case Cryptocurrency.SOL:
                 return "solana"
+
+    def get_explorer_base_url(self) -> str:
+        match self:
+            case Cryptocurrency.BTC:
+                return "https://mempool.space"
+            case Cryptocurrency.LTC:
+                return "https://litecoinspace.org"
+            case Cryptocurrency.ETH:
+                return "https://etherscan.io"
+            case Cryptocurrency.BNB:
+                return "https://bscscan.com"
+            case Cryptocurrency.SOL:
+                return "https://solscan.io"
