@@ -51,22 +51,22 @@ class CartService:
         return media, kb_builder
 
     @staticmethod
-    async def create_buttons(message: Message | CallbackQuery, session: AsyncSession) -> tuple[InputMediaPhoto |
-                                                                                               InputMediaVideo |
-                                                                                               InputMediaAnimation,
+    async def create_buttons(message: Message | CallbackQuery,
+                             session: AsyncSession) -> tuple[InputMediaPhoto |
+                                                             InputMediaVideo |
+                                                             InputMediaAnimation,
     InlineKeyboardBuilder]:
         user = await UserRepository.get_by_tgid(message.from_user.id, session)
         page = 0 if isinstance(message, Message) else CartCallback.unpack(message.data).page
         cart_items = await CartItemRepository.get_by_user_id(user.id, 0, session)
         kb_builder = InlineKeyboardBuilder()
         for cart_item in cart_items:
-            item_dto = ItemDTO(category_id=cart_item.category_id, subcategory_id=cart_item.subcategory_id)
-            price = await ItemRepository.get_price(item_dto, session)
+            item = await ItemRepository.get_single(cart_item.category_id, cart_item.subcategory_id, session)
             subcategory = await SubcategoryRepository.get_by_id(cart_item.subcategory_id, session)
             kb_builder.button(text=Localizator.get_text(BotEntity.USER, "cart_item_button").format(
                 subcategory_name=subcategory.name,
                 qty=cart_item.quantity,
-                total_price=cart_item.quantity * price,
+                total_price=cart_item.quantity * item.price,
                 currency_sym=Localizator.get_currency_symbol()),
                 callback_data=CartCallback.create(1, page, cart_item_id=cart_item.id))
         if len(kb_builder.as_markup().inline_keyboard) > 0:
@@ -110,10 +110,11 @@ class CartService:
         cart_grand_total = 0.0
 
         for cart_item in cart_items:
-            item_dto = ItemDTO(category_id=cart_item.category_id, subcategory_id=cart_item.subcategory_id)
-            price = await ItemRepository.get_price(item_dto, session)
+            item = await ItemRepository.get_single(category_id=cart_item.category_id,
+                                                   subcategory_id=cart_item.subcategory_id,
+                                                   session=session)
             subcategory = await SubcategoryRepository.get_by_id(cart_item.subcategory_id, session)
-            line_item_total = price * cart_item.quantity
+            line_item_total = item.price * cart_item.quantity
             cart_line_item = Localizator.get_text(BotEntity.USER, "cart_item_button").format(
                 subcategory_name=subcategory.name, qty=cart_item.quantity,
                 total_price=line_item_total, currency_sym=Localizator.get_currency_symbol()
@@ -148,10 +149,13 @@ class CartService:
         cart_total = 0.0
         out_of_stock = []
         for cart_item in cart_items:
-            item_dto = ItemDTO(category_id=cart_item.category_id, subcategory_id=cart_item.subcategory_id)
-            price = await ItemRepository.get_price(item_dto, session)
-            cart_total += price * cart_item.quantity
-            is_in_stock = await ItemRepository.get_available_qty(item_dto, session) >= cart_item.quantity
+            item = await ItemRepository.get_single(category_id=cart_item.category_id,
+                                                   subcategory_id=cart_item.subcategory_id,
+                                                   session=session)
+            cart_total += item.price * cart_item.quantity
+            is_in_stock = await ItemRepository.get_available_qty(category_id=cart_item.category_id,
+                                                                 subcategory_id=cart_item.subcategory_id,
+                                                                 session=session) >= cart_item.quantity
             if is_in_stock is False:
                 out_of_stock.append(cart_item)
         is_enough_money = (user.top_up_amount - user.consume_records) >= cart_total
@@ -160,12 +164,14 @@ class CartService:
             sold_items = []
             msg = ""
             for cart_item in cart_items:
-                price = await ItemRepository.get_price(ItemDTO(category_id=cart_item.category_id,
-                                                               subcategory_id=cart_item.subcategory_id), session)
+                item = await ItemRepository.get_single(category_id=cart_item.category_id,
+                                                       subcategory_id=cart_item.subcategory_id,
+                                                       session=session)
                 purchased_items = await ItemRepository.get_purchased_items(cart_item.category_id,
                                                                            cart_item.subcategory_id, cart_item.quantity,
                                                                            session)
-                buy_dto = BuyDTO(buyer_id=user.id, quantity=cart_item.quantity, total_price=cart_item.quantity * price)
+                buy_dto = BuyDTO(buyer_id=user.id, quantity=cart_item.quantity,
+                                 total_price=cart_item.quantity * item.price)
                 buy_id = await BuyRepository.create(buy_dto, session)
                 buy_item_dto_list = [BuyItemDTO(item_id=item.id, buy_id=buy_id) for item in purchased_items]
                 await BuyItemRepository.create_many(buy_item_dto_list, session)

@@ -1,6 +1,6 @@
 import math
 
-from sqlalchemy import select, func, update
+from sqlalchemy import select, func, update, or_, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -16,8 +16,15 @@ from utils.utils import get_bot_photo_id
 class CategoryRepository:
     @staticmethod
     async def get(sort_pairs: dict[SortProperty, SortOrder],
+                  filters: list[str] | None,
                   page: int, session: AsyncSession) -> list[CategoryDTO]:
         sort_methods = []
+        conditions = [
+            Item.is_sold == False
+        ]
+        if filters is not None:
+            filter_conditions = [Category.name.icontains(name) for name in filters]
+            conditions.append(or_(*filter_conditions))
         for sort_property, sort_order in sort_pairs.items():
             sort_property, sort_order = SortProperty(int(sort_property)), SortOrder(sort_order)
             if sort_order != SortOrder.DISABLE:
@@ -27,7 +34,7 @@ class CategoryRepository:
                 sort_methods.append(sort_method())
         stmt = (select(Category)
                 .join(Item, Item.category_id == Category.id)
-                .where(Item.is_sold == False)
+                .where(and_(*conditions))
                 .distinct()
                 .limit(config.PAGE_ENTRIES)
                 .offset(page * config.PAGE_ENTRIES)
@@ -37,14 +44,18 @@ class CategoryRepository:
         return [CategoryDTO.model_validate(category, from_attributes=True) for category in categories]
 
     @staticmethod
-    async def get_maximum_page(session: Session | AsyncSession) -> int:
-        unique_categories_subquery = (
+    async def get_maximum_page(filters: list[str] | None, session: AsyncSession) -> int:
+        conditions = [Item.is_sold == False]
+        if filters is not None:
+            filter_conditions = [Category.name.icontains(name) for name in filters]
+            conditions.append(or_(*filter_conditions))
+        sub_stmt = (
             select(Category.id)
             .join(Item, Item.category_id == Category.id)
-            .filter(Item.is_sold == 0)
+            .where(and_(*conditions))
             .distinct()
         ).alias('unique_categories')
-        stmt = select(func.count()).select_from(unique_categories_subquery)
+        stmt = select(func.count()).select_from(sub_stmt)
         max_page = await session_execute(stmt, session)
         max_page = max_page.scalar_one()
         if max_page % config.PAGE_ENTRIES == 0:

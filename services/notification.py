@@ -134,11 +134,12 @@ class NotificationService:
         cart_grand_total = 0.0
         message = ""
         for item in sold_items:
-            price = await ItemRepository.get_price(ItemDTO(subcategory_id=item.subcategory_id,
-                                                           category_id=item.category_id), session)
+            item = await ItemRepository.get_single(subcategory_id=item.subcategory_id,
+                                                   category_id=item.category_id,
+                                                   session=session)
             category = await CategoryRepository.get_by_id(item.category_id, session)
             subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
-            cart_item_total = price * item.quantity
+            cart_item_total = item.price * item.quantity
             cart_grand_total += cart_item_total
             if user.telegram_username:
                 message += Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_tgid").format(

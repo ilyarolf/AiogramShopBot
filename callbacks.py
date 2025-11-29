@@ -31,28 +31,31 @@ class BaseCallback(CallbackData, prefix="base"):
 class SortingCallback(CallbackData, prefix="sorting"):
     sort_order: SortOrder
     sort_property: SortProperty
+    is_filter_enabled: bool = False
 
 
 class AllCategoriesCallback(BaseCallback, SortingCallback, prefix="all_categories"):
-    category_id: int
-    subcategory_id: int
-    quantity: int
+    category_id: int | None
+    subcategory_id: int | None
+    quantity: int | None
     confirmation: bool
     page: int
 
     @staticmethod
     def create(level: int,
-               category_id: int = -1,
-               subcategory_id: int = -1,
-               quantity: int = 0,
+               category_id: int | None = None,
+               subcategory_id: int | None = None,
+               quantity: int | None = None,
                sort_order: SortOrder = SortOrder.DISABLE,
                sort_property: SortProperty = SortProperty.NAME,
+               is_filter_enabled: bool = False,
                confirmation: bool = False,
                page: int = 0) -> 'AllCategoriesCallback':
         return AllCategoriesCallback(level=level,
                                      category_id=category_id, subcategory_id=subcategory_id,
                                      sort_order=sort_order, sort_property=sort_property,
-                                     quantity=quantity, confirmation=confirmation, page=page)
+                                     quantity=quantity, is_filter_enabled=is_filter_enabled,
+                                     confirmation=confirmation, page=page)
 
 
 class MyProfileCallback(BaseCallback, SortingCallback, prefix="my_profile"):
