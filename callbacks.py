@@ -105,7 +105,7 @@ class AnnouncementCallback(BaseCallback, prefix="announcement"):
         return AnnouncementCallback(level=level, announcement_type=announcement_type)
 
 
-class InventoryManagementCallback(BaseCallback, prefix="inventory_management"):
+class InventoryManagementCallback(BaseCallback, SortingCallback, prefix="inventory_management"):
     add_type: AddType | None
     entity_type: EntityType | None
     entity_id: int | None
@@ -113,12 +113,22 @@ class InventoryManagementCallback(BaseCallback, prefix="inventory_management"):
     confirmation: bool
 
     @staticmethod
-    def create(level: int, add_type: AddType | None = None, entity_type: EntityType | None = None,
-               entity_id: int | None = None, page: int = 0, confirmation: bool = False):
+    def create(level: int,
+               add_type: AddType | None = None,
+               entity_type: EntityType | None = None,
+               entity_id: int | None = None,
+               sort_order: SortOrder = SortOrder.DISABLE,
+               sort_property: SortProperty = SortProperty.NAME,
+               is_filter_enabled: bool = False,
+               page: int = 0,
+               confirmation: bool = False):
         return InventoryManagementCallback(level=level,
                                            add_type=add_type,
                                            entity_type=entity_type,
                                            entity_id=entity_id,
+                                           sort_order=sort_order,
+                                           sort_property=sort_property,
+                                           is_filter_enabled=is_filter_enabled,
                                            page=page,
                                            confirmation=confirmation)
 
@@ -160,7 +170,7 @@ class WalletCallback(BaseCallback, prefix="wallet"):
         return WalletCallback(level=level, cryptocurrency=cryptocurrency)
 
 
-class MediaManagementCallback(BaseCallback, prefix="media"):
+class MediaManagementCallback(BaseCallback, SortingCallback, prefix="media"):
     entity_type: EntityType | None
     entity_id: int | None = None
     keyboard_button: KeyboardButton | None = None
@@ -169,9 +179,15 @@ class MediaManagementCallback(BaseCallback, prefix="media"):
     @staticmethod
     def create(level: int, entity_type: EntityType | None = None,
                keyboard_button: KeyboardButton | None = None,
+               sort_order: SortOrder = SortOrder.DISABLE,
+               sort_property: SortProperty = SortProperty.NAME,
+               is_filter_enabled: bool = False,
                entity_id: int | None = None, page: int = 0):
         return MediaManagementCallback(level=level,
                                        entity_type=entity_type,
                                        entity_id=entity_id,
+                                       sort_order=sort_order,
+                                       sort_property=sort_property,
+                                       is_filter_enabled=is_filter_enabled,
                                        keyboard_button=keyboard_button,
                                        page=page)

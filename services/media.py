@@ -60,9 +60,10 @@ class MediaService:
     async def set_entity_media_edit(callback_data: MediaManagementCallback,
                                     state: FSMContext,
                                     session: AsyncSession) -> tuple[str, InlineKeyboardBuilder]:
-        await state.update_data(entity_type=callback_data.entity_type,
-                                entity_id=callback_data.entity_id,
-                                keyboard_button=callback_data.keyboard_button.value)
+        await state.update_data(
+            entity_type=callback_data.entity_type,
+            entity_id=callback_data.entity_id,
+            keyboard_button=callback_data.keyboard_button.value if callback_data.keyboard_button else None)
         await state.set_state(MediaManagementStates.media)
         if callback_data.entity_type == EntityType.CATEGORY:
             entity = await CategoryRepository.get_by_id(callback_data.entity_id, session)

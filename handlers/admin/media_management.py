@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from callbacks import MediaManagementCallback
 from handlers.admin.constants import MediaManagementStates
+from handlers.common.common import enable_search
 from services.admin import AdminService
 from services.media import MediaService
 from utils.custom_filters import AdminIdFilter
@@ -26,7 +27,19 @@ async def get_entity_picker(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     callback_data: MediaManagementCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
-    msg, kb_builder = await AdminService.get_entity_picker(callback_data, session)
+    state: FSMContext = kwargs.get("state")
+    state_data = await state.get_data()
+    if callback_data.is_filter_enabled and state_data.get('filter') is not None:
+        msg, kb_builder = await AdminService.get_entity_picker(callback_data, session, state)
+    elif callback_data.is_filter_enabled:
+        media, kb_builder = await enable_search(callback_data, callback_data.entity_type,
+                                                state, MediaManagementStates.filter_entity)
+        await state.update_data(entity_type=callback_data.entity_type.value, callback_prefix=callback_data.__prefix__)
+        msg = media.caption
+    else:
+        await state.update_data(filter=None)
+        await state.set_state()
+        msg, kb_builder = await AdminService.get_entity_picker(callback_data, session, state)
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
@@ -38,6 +51,13 @@ async def entity_media_edit(**kwargs):
     msg, kb_builder = await MediaService.set_entity_media_edit(callback_data, state, session)
     message = await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
     await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
+
+
+@media_management.message(AdminIdFilter(), F.text, StateFilter(MediaManagementStates.filter_entity))
+async def receive_filter_message(message: Message, state: FSMContext, session: AsyncSession):
+    await state.update_data(filter=message.html_text)
+    msg, kb_builder = await AdminService.get_entity_picker(None, session, state)
+    await message.answer(text=msg, reply_markup=kb_builder.as_markup())
 
 
 @media_management.message(AdminIdFilter(), F.photo | F.video | F.animation, StateFilter(MediaManagementStates.media))

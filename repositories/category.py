@@ -70,14 +70,29 @@ class CategoryRepository:
         return CategoryDTO.model_validate(category.scalar(), from_attributes=True)
 
     @staticmethod
-    async def get_to_delete(page: int, session: Session | AsyncSession) -> list[CategoryDTO]:
+    async def get_to_delete(sort_pairs: dict[str, int],
+                            filters: list[str],
+                            page: int, session:AsyncSession) -> list[CategoryDTO]:
+        sort_methods = []
+        for sort_property, sort_order in sort_pairs.items():
+            sort_property, sort_order = SortProperty(int(sort_property)), SortOrder(sort_order)
+            if sort_order != SortOrder.DISABLE:
+                sort_column = sort_property.get_column(Category)
+                sort_method = (getattr(sort_column, sort_order.name.lower()))
+                sort_methods.append(sort_method())
+        conditions = [
+            Item.is_sold == False
+        ]
+        if filters is not None:
+            filter_conditions = [Category.name.icontains(name) for name in filters]
+            conditions.append(or_(*filter_conditions))
         stmt = (select(Category)
                 .join(Item, Item.category_id == Category.id)
-                .where(Item.is_sold == False)
+                .where(*conditions)
                 .distinct()
                 .limit(config.PAGE_ENTRIES)
                 .offset(page * config.PAGE_ENTRIES)
-                .order_by(Category.name))
+                .order_by(*sort_methods))
         categories = await session_execute(stmt, session)
         return [CategoryDTO.model_validate(category, from_attributes=True) for category in
                 categories.scalars().all()]

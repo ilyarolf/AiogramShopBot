@@ -54,7 +54,7 @@ class SubcategoryRepository:
         return [ItemDTO.model_validate(item, from_attributes=True) for item in items]
 
     @staticmethod
-    async def get_maximum_page(category_id: int | None, filters: list[str], session: Session | AsyncSession) -> int:
+    async def get_maximum_page(category_id: int | None, filters: list[str], session: AsyncSession) -> int:
         conditions = [
             Item.is_sold == False
         ]
@@ -82,14 +82,28 @@ class SubcategoryRepository:
         return SubcategoryDTO.model_validate(subcategory.scalar(), from_attributes=True)
 
     @staticmethod
-    async def get_to_delete(page: int, session: AsyncSession) -> list[SubcategoryDTO]:
+    async def get_to_delete(sort_pairs: dict[str, int],
+                            filters: list[str], page: int, session: AsyncSession) -> list[SubcategoryDTO]:
+        sort_methods = []
+        for sort_property, sort_order in sort_pairs.items():
+            sort_property, sort_order = SortProperty(int(sort_property)), SortOrder(sort_order)
+            if sort_order != SortOrder.DISABLE:
+                sort_column = sort_property.get_column(Subcategory)
+                sort_method = (getattr(sort_column, sort_order.name.lower()))
+                sort_methods.append(sort_method())
+        conditions = [
+            Item.is_sold == False
+        ]
+        if filters is not None:
+            filter_conditions = [Subcategory.name.icontains(name) for name in filters]
+            conditions.append(or_(*filter_conditions))
         stmt = (select(Subcategory)
                 .join(Item, Item.subcategory_id == Subcategory.id)
-                .where(Item.is_sold == False)
+                .where(and_(*conditions))
                 .distinct()
                 .limit(config.PAGE_ENTRIES)
                 .offset(page * config.PAGE_ENTRIES)
-                .order_by(Subcategory.name))
+                .order_by(*sort_methods))
         subcategories = await session_execute(stmt, session=session)
         return [SubcategoryDTO.model_validate(subcategory, from_attributes=True) for subcategory in
                 subcategories.scalars().all()]

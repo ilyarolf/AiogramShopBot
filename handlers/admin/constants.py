@@ -13,7 +13,7 @@ class AdminConstants:
                                                callback_data=AdminMenuCallback.create(level=0).pack())
 
 
-class AdminAnnouncementsConstants:
+class AnnouncementsConstants:
     @staticmethod
     def get_confirmation_builder(announcement_type: AnnouncementType) -> InlineKeyboardBuilder:
         kb_builder = InlineKeyboardBuilder()
@@ -25,16 +25,17 @@ class AdminAnnouncementsConstants:
         return kb_builder
 
 
-class AdminInventoryManagementStates(StatesGroup):
+class InventoryManagementStates(StatesGroup):
     document = State()
     category = State()
     subcategory = State()
     description = State()
     price = State()
     private_data = State()
+    filter_entity = State()
 
 
-class AdminAnnouncementStates(StatesGroup):
+class AnnouncementStates(StatesGroup):
     announcement_msg = State()
 
 
@@ -50,3 +51,4 @@ class WalletStates(StatesGroup):
 
 class MediaManagementStates(StatesGroup):
     media = State()
+    filter_entity = State()
