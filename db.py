@@ -119,8 +119,6 @@ async def create_db_and_tables():
         else:
             if isinstance(session, AsyncSession):
                 async with engine.begin() as conn:
-                    await conn.run_sync(Base.metadata.drop_all)
                     await conn.run_sync(Base.metadata.create_all)
             else:
-                Base.metadata.drop_all(bind=engine)
                 Base.metadata.create_all(bind=engine)
