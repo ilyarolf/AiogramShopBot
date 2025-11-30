@@ -15,6 +15,7 @@ from models.buy import RefundDTO
 from models.cartItem import CartItemDTO
 from models.payment import ProcessingPaymentDTO, TablePaymentDTO
 from models.user import UserDTO
+from models.withdrawal import WithdrawalDTO
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
@@ -206,3 +207,13 @@ class NotificationService:
             await message.answer_animation(animation=media.media,
                                            caption=media.caption,
                                            reply_markup=reply_markup)
+
+    @staticmethod
+    async def withdrawal(withdraw_dto: WithdrawalDTO):
+        kb_builder = InlineKeyboardBuilder()
+        [kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "transaction"),
+                           url=f"{withdraw_dto.cryptoCurrency.get_explorer_base_url}/tx/{tx_id}")
+         for tx_id in withdraw_dto.txIdList]
+        msg_text = Localizator.get_text(BotEntity.ADMIN, "transaction_broadcasted")
+        kb_builder.adjust(1)
+        await NotificationService.send_to_admins(msg_text, kb_builder.as_markup())

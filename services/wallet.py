@@ -110,7 +110,7 @@ class WalletService:
         return Localizator.get_text(BotEntity.ADMIN, "transaction_broadcasted"), kb_builder
 
     @staticmethod
-    async def validate_withdrawal_address(address: str, cryptocurrency: Cryptocurrency) -> bool:
+    def validate_withdrawal_address(address: str, cryptocurrency: Cryptocurrency) -> bool:
         address_regex = {
             Cryptocurrency.BTC: re.compile(r'^bc1[a-zA-HJ-NP-Z0-9]{25,39}$'),
             Cryptocurrency.LTC: re.compile(r'^ltc1[a-zA-HJ-NP-Z0-9]{26,}$'),

@@ -6,6 +6,7 @@ import re
 from fastapi import APIRouter, Request, HTTPException
 
 import config
+from crypto_api.CryptoApiWrapper import CryptoApiWrapper
 from db import get_db_session, session_commit
 from models.deposit import DepositDTO
 from models.payment import ProcessingPaymentDTO
@@ -51,6 +52,14 @@ async def fetch_crypto_event(payment_dto: ProcessingPaymentDTO, request: Request
                 ), session)
                 await session_commit(session)
                 await NotificationService.new_deposit(payment_dto, user, table_payment_dto)
+                if config.CRYPTO_FORWARDING_MODE:
+                    withdraw_dto = await CryptoApiWrapper.withdrawal(
+                        payment_dto.cryptoCurrency,
+                        payment_dto.cryptoCurrency.get_forwarding_address(),
+                        False,
+                        payment_dto.id,
+                    )
+                    await NotificationService.withdrawal(withdraw_dto)
             elif payment_dto.isPaid is False:
                 await NotificationService.payment_expired(user, payment_dto, table_payment_dto)
             else:
