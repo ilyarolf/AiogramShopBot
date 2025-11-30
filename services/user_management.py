@@ -6,10 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from callbacks import UserManagementCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
+from enums.entity_type import EntityType
 from enums.sort_property import SortProperty
 from enums.user_management_operation import UserManagementOperation
 from handlers.admin.constants import AdminConstants, UserManagementStates
-from handlers.common.common import add_sorting_buttons, add_pagination_buttons
+from handlers.common.common import add_sorting_buttons, add_pagination_buttons, get_filters_settings, add_search_button
 from repositories.buy import BuyRepository
 from repositories.user import UserRepository
 from services.notification import NotificationService
@@ -104,16 +105,13 @@ class UserManagementService:
         except Exception as _:
             return await UserManagementService.request_balance_amount(message, state)
 
-
     @staticmethod
-    async def get_refund_menu(callback_data: UserManagementCallback,
+    async def get_refund_menu(callback_data: UserManagementCallback | None,
                               state: FSMContext, session: AsyncSession) -> tuple[str, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
-        state_data = await state.get_data()
-        sort_pairs = state_data.get("sort_pairs") or {}
-        sort_pairs[str(callback_data.sort_property.value)] = callback_data.sort_order.value
-        await state.update_data(sort_pairs=sort_pairs)
-        refund_data = await BuyRepository.get_refund_data(sort_pairs, callback_data.page, session)
+        callback_data = callback_data or UserManagementCallback.create(2)
+        sort_pairs, filters = await get_filters_settings(state, callback_data)
+        refund_data = await BuyRepository.get_refund_data(sort_pairs, filters, callback_data.page, session)
         for refund_item in refund_data:
             callback = UserManagementCallback.create(
                 callback_data.level + 1,
@@ -134,13 +132,14 @@ class UserManagementService:
                     currency_sym=Localizator.get_currency_symbol()),
                     callback_data=callback)
         kb_builder.adjust(1)
+        kb_builder = await add_search_button(kb_builder, EntityType.USER, callback_data, filters,)
         kb_builder = await add_sorting_buttons(kb_builder, [SortProperty.QUANTITY,
                                                             SortProperty.TOTAL_PRICE,
                                                             SortProperty.BUY_DATETIME],
                                                callback_data,
                                                sort_pairs)
         kb_builder = await add_pagination_buttons(kb_builder, callback_data,
-                                                  BuyRepository.get_max_refund_page(session),
+                                                  BuyRepository.get_max_refund_page(filters, session),
                                                   callback_data.get_back_button(0))
         return Localizator.get_text(BotEntity.ADMIN, "refund_menu"), kb_builder
 

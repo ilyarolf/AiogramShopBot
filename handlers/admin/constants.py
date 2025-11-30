@@ -41,6 +41,7 @@ class AdminAnnouncementStates(StatesGroup):
 class UserManagementStates(StatesGroup):
     balance_amount = State()
     user_entity = State()
+    filter_username = State()
 
 
 class WalletStates(StatesGroup):
