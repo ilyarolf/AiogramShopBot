@@ -46,7 +46,7 @@ async def withdraw_confirmation(**kwargs):
 async def receive_address(message: Message, state: FSMContext):
     state_data = await state.get_data()
     cryptocurrency = Cryptocurrency(state_data['cryptocurrency'])
-    is_address_valid = await WalletService.validate_withdrawal_address(message.text, cryptocurrency)
+    is_address_valid = WalletService.validate_withdrawal_address(message.text, cryptocurrency)
     if is_address_valid:
         msg, kb_builder = await WalletService.calculate_withdrawal(message, state)
     else:

@@ -1,4 +1,5 @@
 import logging
+import sys
 import traceback
 from pathlib import Path
 from aiogram.client.default import DefaultBotProperties
@@ -12,9 +13,11 @@ from fastapi import FastAPI, Request, status, HTTPException
 from db import create_db_and_tables
 import uvicorn
 from fastapi.responses import JSONResponse
+from enums.cryptocurrency import Cryptocurrency
 from processing.processing import processing_router
 from repositories.button_media import ButtonMediaRepository
 from services.notification import NotificationService
+from services.wallet import WalletService
 
 redis = Redis(host=config.REDIS_HOST, password=config.REDIS_PASSWORD)
 bot = Bot(config.TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
@@ -54,6 +57,17 @@ async def on_startup():
     with open("static/no_image.jpeg", "w") as f:
         f.write(bot_photo_id)
     await ButtonMediaRepository.init_buttons_media()
+    if config.CRYPTO_FORWARDING_MODE:
+        for cryptocurrency in Cryptocurrency:
+            is_addr_valid = WalletService.validate_withdrawal_address(
+                cryptocurrency.get_forwarding_address(),
+                cryptocurrency
+            )
+            if is_addr_valid is False:
+                logging.debug(
+                    f"Your withdrawal address for {cryptocurrency.name} cryptocurrency is not valid!"
+                )
+                sys.exit()
     for admin in config.ADMIN_ID_LIST:
         try:
             await bot.send_message(admin, 'Bot is working')
