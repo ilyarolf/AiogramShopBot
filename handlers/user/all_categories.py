@@ -88,7 +88,7 @@ async def add_to_cart(**kwargs):
     await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
 
 
-@all_categories_router.message(IsUserExistFilter(), StateFilter(UserStates.filter_items))
+@all_categories_router.message(IsUserExistFilter(), F.text, StateFilter(UserStates.filter_items))
 async def receive_filter_message(message: Message, state: FSMContext, session: AsyncSession):
     await state.update_data(filter=message.html_text)
     state_data = await state.get_data()

@@ -92,7 +92,7 @@ async def create_payment(**kwargs):
         await msg.edit_media(media=response)
 
 
-@my_profile_router.message(IsUserExistFilter(), StateFilter(UserStates.filter_purchase_history))
+@my_profile_router.message(IsUserExistFilter(), F.text, StateFilter(UserStates.filter_purchase_history))
 async def receive_filter_message(message: Message, state: FSMContext, session: AsyncSession):
     await state.update_data(filter=message.html_text)
     caption, kb_builder = await UserService.get_purchase_history_buttons(message.from_user.id,

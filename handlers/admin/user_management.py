@@ -79,7 +79,7 @@ async def refund_confirmation(**kwargs):
         await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
-@user_management.message(AdminIdFilter(), StateFilter(UserManagementStates.filter_username))
+@user_management.message(AdminIdFilter(), F.text, StateFilter(UserManagementStates.filter_username))
 async def receive_filter_message(message: Message, state: FSMContext, session: AsyncSession):
     await state.update_data(filter=message.html_text)
     msg, kb_builder = await UserManagementService.get_refund_menu(None, state, session)
