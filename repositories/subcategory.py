@@ -1,6 +1,6 @@
 import math
 
-from sqlalchemy import select, func, update, and_
+from sqlalchemy import select, func, update, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -16,7 +16,8 @@ from utils.utils import get_bot_photo_id
 
 class SubcategoryRepository:
     @staticmethod
-    async def get_paginated_by_category_id(sort_pairs: dict[SortProperty, SortOrder],
+    async def get_paginated_by_category_id(sort_pairs: dict[str, int],
+                                           filters: list[str],
                                            category_id: int | None, page: int,
                                            session: AsyncSession) -> list[ItemDTO]:
         sort_methods = []
@@ -32,6 +33,9 @@ class SubcategoryRepository:
         ]
         if category_id:
             conditions.append(Item.category_id == category_id)
+        if filters:
+            filter_conditions = [Subcategory.name.icontains(name) for name in filters]
+            conditions.append(or_(*filter_conditions))
         stmt = (select(Item.category_id,
                        Item.subcategory_id,
                        Item.description,
@@ -50,12 +54,15 @@ class SubcategoryRepository:
         return [ItemDTO.model_validate(item, from_attributes=True) for item in items]
 
     @staticmethod
-    async def max_page(category_id: int | None, session: Session | AsyncSession) -> int:
+    async def get_maximum_page(category_id: int | None, filters: list[str], session: Session | AsyncSession) -> int:
         conditions = [
             Item.is_sold == False
         ]
         if category_id:
             conditions.append(Item.category_id == category_id)
+        if filters is not None:
+            filter_conditions = [Subcategory.name.icontains(name) for name in filters]
+            conditions.append(or_(*filter_conditions))
         subquery = (select(Subcategory.id)
                     .join(Item, Item.subcategory_id == Subcategory.id)
                     .where(and_(*conditions))

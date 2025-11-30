@@ -1,10 +1,11 @@
 from aiogram import types, Router, F
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message, InputMediaPhoto, InputMediaVideo
+from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from callbacks import MyProfileCallback
 from enums.bot_entity import BotEntity
 from services.buy import BuyService
+from services.notification import NotificationService
 from services.payment import PaymentService
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
@@ -31,18 +32,7 @@ async def my_profile(**kwargs):
     await state.clear()
     media, kb_builder = await UserService.get_my_profile_buttons(message.from_user.id, session)
     if isinstance(message, Message):
-        if isinstance(media, InputMediaPhoto):
-            await message.answer_photo(photo=media.media,
-                                       caption=media.caption,
-                                       reply_markup=kb_builder.as_markup())
-        elif isinstance(media, InputMediaVideo):
-            await message.answer_video(video=media.media,
-                                       caption=media.caption,
-                                       reply_markup=kb_builder.as_markup())
-        else:
-            await message.answer_animation(animation=media.media,
-                                           caption=media.caption,
-                                           reply_markup=kb_builder.as_markup())
+        await NotificationService.answer_media(message, media, kb_builder.as_markup())
     elif isinstance(message, CallbackQuery):
         callback = message
         await callback.message.edit_media(media=media,

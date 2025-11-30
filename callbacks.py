@@ -64,11 +64,16 @@ class MyProfileCallback(BaseCallback, SortingCallback, prefix="my_profile"):
     page: int
 
     @staticmethod
-    def create(level: int, buy_id: int | None = None,
-               sort_order: SortOrder = SortOrder.DISABLE, sort_property: SortProperty = SortProperty.BUY_DATETIME,
-               cryptocurrency: Cryptocurrency | None = None, page=0) -> 'MyProfileCallback':
+    def create(level: int,
+               buy_id: int | None = None,
+               sort_order: SortOrder = SortOrder.DISABLE,
+               sort_property: SortProperty = SortProperty.BUY_DATETIME,
+               is_filter_enabled: bool = False,
+               cryptocurrency: Cryptocurrency | None = None,
+               page=0) -> 'MyProfileCallback':
         return MyProfileCallback(level=level, buy_id=buy_id,
                                  sort_order=sort_order, sort_property=sort_property,
+                                 is_filter_enabled=is_filter_enabled,
                                  cryptocurrency=cryptocurrency, page=page)
 
 
@@ -127,9 +132,11 @@ class UserManagementCallback(BaseCallback, SortingCallback, prefix="user_managem
     @staticmethod
     def create(level: int, operation: UserManagementOperation | None = None,
                sort_order: SortOrder = SortOrder.DISABLE, sort_property: SortProperty = SortProperty.BUY_DATETIME,
+               is_filter_enabled: bool = False,
                buy_id: int | None = None, page: int = 0, confirmation: bool = False):
         return UserManagementCallback(level=level, operation=operation,
                                       sort_order=sort_order, sort_property=sort_property,
+                                      is_filter_enabled=is_filter_enabled,
                                       buy_id=buy_id,
                                       page=page, confirmation=confirmation)
 

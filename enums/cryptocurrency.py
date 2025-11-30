@@ -1,7 +1,10 @@
 from enum import Enum
 
+from enums.bot_entity import BotEntity
+from utils.localizator import Localizator
 
-class Cryptocurrency(str, Enum):
+
+class Cryptocurrency(Enum):
     BNB = "BNB"
     BTC = "BTC"
     LTC = "LTC"
@@ -46,3 +49,9 @@ class Cryptocurrency(str, Enum):
                 return "https://bscscan.com"
             case Cryptocurrency.SOL:
                 return "https://solscan.io"
+
+    def __str__(self):
+        return self.name
+
+    def get_localized(self):
+        return Localizator.get_text(BotEntity.COMMON, f"{self.name.lower()}_top_up")

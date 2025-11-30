@@ -15,7 +15,7 @@ from utils.utils import get_bot_photo_id
 
 class CategoryRepository:
     @staticmethod
-    async def get(sort_pairs: dict[SortProperty, SortOrder],
+    async def get(sort_pairs: dict[str, int],
                   filters: list[str] | None,
                   page: int, session: AsyncSession) -> list[CategoryDTO]:
         sort_methods = []

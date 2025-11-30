@@ -9,7 +9,7 @@ from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
 from enums.keyboardbutton import KeyboardButton
 from enums.sort_property import SortProperty
-from handlers.common.common import add_pagination_buttons, add_sorting_buttons
+from handlers.common.common import add_pagination_buttons, add_sorting_buttons, get_filters_settings
 from models.user import User, UserDTO
 from repositories.button_media import ButtonMediaRepository
 from repositories.buy import BuyRepository
@@ -67,22 +67,12 @@ class UserService:
     @staticmethod
     async def get_top_up_buttons(callback_data: MyProfileCallback) -> tuple[str, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
-        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "btc_top_up"),
-                          callback_data=MyProfileCallback.create(level=callback_data.level + 1,
-                                                                 cryptocurrency=Cryptocurrency.BTC))
-        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "ltc_top_up"),
-                          callback_data=MyProfileCallback.create(level=callback_data.level + 1,
-                                                                 cryptocurrency=Cryptocurrency.LTC))
-        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "sol_top_up"),
-                          callback_data=MyProfileCallback.create(level=callback_data.level + 1,
-                                                                 cryptocurrency=Cryptocurrency.SOL))
-        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "eth_top_up"),
-                          callback_data=MyProfileCallback.create(level=callback_data.level + 1,
-                                                                 cryptocurrency=Cryptocurrency.ETH))
-        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "bnb_top_up"),
-                          callback_data=MyProfileCallback.create(level=callback_data.level + 1,
-                                                                 cryptocurrency=Cryptocurrency.BNB))
-
+        for cryptocurrency in Cryptocurrency:
+            kb_builder.button(
+                text=cryptocurrency.get_localized(),
+                callback_data=MyProfileCallback.create(level=callback_data.level+1,
+                                                       cryptocurrency=cryptocurrency)
+            )
         kb_builder.adjust(1)
         kb_builder.row(callback_data.get_back_button())
         msg_text = Localizator.get_text(BotEntity.USER, "choose_top_up_method")
@@ -94,10 +84,7 @@ class UserService:
                                            session: AsyncSession) \
             -> tuple[str, InlineKeyboardBuilder]:
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
-        state_data = await state.get_data()
-        sort_pairs = state_data.get("sort_pairs") or {}
-        sort_pairs[str(callback_data.sort_property.value)] = callback_data.sort_order.value
-        await state.update_data(sort_pairs=sort_pairs)
+        sort_pairs, filters = await get_filters_settings(state, callback_data)
         buys = await BuyRepository.get_by_buyer_id(sort_pairs, user.id, callback_data.page, session)
         kb_builder = InlineKeyboardBuilder()
         for buy in buys:

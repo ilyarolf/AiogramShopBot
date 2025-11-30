@@ -125,7 +125,8 @@
     "search": "🔎 Search by {entity} {field}",
     "search_by_field_request": "<b>🔎 Search by {entity} {field}\nIf you want to search by more than one name, enter them separated by commas.</b>",
     "pick_all_categories": "🗂️ Pick all categories",
-    "all": "All"
+    "all": "All",
+    "cancel_search": "❌ Cancel Search"
   },
   "user": {
     "all_categories": "🗂️ All categories",

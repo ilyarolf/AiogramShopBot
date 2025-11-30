@@ -19,7 +19,7 @@ from models.user import User
 
 class BuyRepository:
     @staticmethod
-    async def get_by_buyer_id(sort_pairs: dict[SortProperty, SortOrder],
+    async def get_by_buyer_id(sort_pairs: dict[str, int],
                               user_id: int, page: int, session: AsyncSession) -> list[BuyDTO]:
         sort_methods = []
         for sort_property, sort_order in sort_pairs.items():

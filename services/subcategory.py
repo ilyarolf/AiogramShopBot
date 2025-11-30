@@ -6,9 +6,9 @@ from sqlalchemy.orm import Session
 
 from callbacks import AllCategoriesCallback
 from enums.bot_entity import BotEntity
+from enums.entity_type import EntityType
 from enums.sort_property import SortProperty
-from handlers.common.common import add_pagination_buttons, add_sorting_buttons
-from models.item import ItemDTO
+from handlers.common.common import add_pagination_buttons, add_sorting_buttons, get_filters_settings, add_search_button
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
@@ -25,14 +25,10 @@ class SubcategoryService:
                           session: AsyncSession) -> tuple[InputMediaPhoto |
                                                           InputMediaAnimation |
                                                           InputMediaVideo, InlineKeyboardBuilder]:
-        state_data = await state.get_data()
-        if callback_data is None:
-            callback_data = AllCategoriesCallback.create(1)
-        sort_pairs = state_data.get("sort_pairs") or {}
-        sort_pairs[str(callback_data.sort_property.value)] = callback_data.sort_order.value
-        await state.update_data(sort_pairs=sort_pairs)
+        callback_data = callback_data or AllCategoriesCallback.create(1)
+        sort_pairs, filters = await get_filters_settings(state, callback_data)
         kb_builder = InlineKeyboardBuilder()
-        items = await SubcategoryRepository.get_paginated_by_category_id(sort_pairs,
+        items = await SubcategoryRepository.get_paginated_by_category_id(sort_pairs, filters,
                                                                          callback_data.category_id,
                                                                          callback_data.page, session)
         for item in items:
@@ -51,10 +47,11 @@ class SubcategoryService:
                 )
             )
         kb_builder.adjust(1)
+        kb_builder = await add_search_button(kb_builder, EntityType.SUBCATEGORY, callback_data, filters)
         kb_builder = await add_sorting_buttons(kb_builder, [SortProperty.NAME, SortProperty.PRICE],
                                                callback_data, sort_pairs)
         kb_builder = await add_pagination_buttons(kb_builder, callback_data,
-                                                  SubcategoryRepository.max_page(callback_data.category_id, session),
+                                                  SubcategoryRepository.get_maximum_page(callback_data.category_id, filters, session),
                                                   callback_data.get_back_button())
         caption = Localizator.get_text(BotEntity.USER, "pick_subcategory")
         if callback_data.category_id:

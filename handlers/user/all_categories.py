@@ -1,14 +1,16 @@
 from aiogram import Router, F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery, InputMediaPhoto, InputMediaVideo
+from aiogram.types import Message, CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 from callbacks import AllCategoriesCallback
 from enums.bot_entity import BotEntity
 from enums.entity_type import EntityType
+from handlers.common.common import enable_search
 from handlers.user.constants import UserStates
 from services.cart import CartService
 from services.category import CategoryService
+from services.notification import NotificationService
 from services.subcategory import SubcategoryService
 from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator
@@ -30,26 +32,17 @@ async def all_categories(**kwargs):
     if isinstance(message, Message):
         await state.clear()
         media, kb_builder = await CategoryService.get_buttons(callback_data, state, session)
-        if isinstance(media, InputMediaPhoto):
-            await message.answer_photo(photo=media.media,
-                                       caption=media.caption,
-                                       reply_markup=kb_builder.as_markup())
-        elif isinstance(media, InputMediaVideo):
-            await message.answer_video(video=media.media,
-                                       caption=media.caption,
-                                       reply_markup=kb_builder.as_markup())
-        else:
-            await message.answer_animation(animation=media.media,
-                                           caption=media.caption,
-                                           reply_markup=kb_builder.as_markup())
+        await NotificationService.answer_media(message, media, kb_builder.as_markup())
     elif isinstance(message, CallbackQuery):
         callback = message
         state_data = await state.get_data()
         if callback_data.is_filter_enabled and state_data.get('filter') is not None:
             media, kb_builder = await CategoryService.get_buttons(callback_data, state, session)
         elif callback_data.is_filter_enabled:
-            media, kb_builder = await CategoryService.enable_search(callback_data, EntityType.CATEGORY, state)
+            media, kb_builder = await enable_search(callback_data, EntityType.CATEGORY, state, UserStates.filter)
         else:
+            await state.update_data(filter=None)
+            await state.set_state()
             media, kb_builder = await CategoryService.get_buttons(callback_data, state, session)
         await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
 
@@ -59,7 +52,15 @@ async def show_subcategories_in_category(**kwargs):
     callback_data: AllCategoriesCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
     state: FSMContext = kwargs.get("state")
-    media, kb_builder = await SubcategoryService.get_buttons(callback_data, state, session)
+    state_data = await state.get_data()
+    if callback_data.is_filter_enabled and state_data.get('filter') is not None:
+        media, kb_builder = await SubcategoryService.get_buttons(callback_data, state, session)
+    elif callback_data.is_filter_enabled:
+        media, kb_builder = await enable_search(callback_data, EntityType.SUBCATEGORY, state, UserStates.filter)
+    else:
+        await state.update_data(filter=None)
+        await state.set_state()
+        media, kb_builder = await SubcategoryService.get_buttons(callback_data, state, session)
     await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
 
 
@@ -96,18 +97,7 @@ async def receive_filter_message(message: Message, state: FSMContext, session: A
         media, kb_builder = await CategoryService.get_buttons(None, state, session)
     else:
         media, kb_builder = await SubcategoryService.get_buttons(None, state, session)
-    if isinstance(media, InputMediaPhoto):
-        await message.answer_photo(photo=media.media,
-                                   caption=media.caption,
-                                   reply_markup=kb_builder.as_markup())
-    elif isinstance(media, InputMediaVideo):
-        await message.answer_video(video=media.media,
-                                   caption=media.caption,
-                                   reply_markup=kb_builder.as_markup())
-    else:
-        await message.answer_animation(animation=media.media,
-                                       caption=media.caption,
-                                       reply_markup=kb_builder.as_markup())
+    await NotificationService.answer_media(message, media, kb_builder.as_markup())
 
 
 @all_categories_router.callback_query(AllCategoriesCallback.filter(), IsUserExistFilter())
