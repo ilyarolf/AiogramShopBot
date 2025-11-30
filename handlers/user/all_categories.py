@@ -39,7 +39,7 @@ async def all_categories(**kwargs):
         if callback_data.is_filter_enabled and state_data.get('filter') is not None:
             media, kb_builder = await CategoryService.get_buttons(callback_data, state, session)
         elif callback_data.is_filter_enabled:
-            media, kb_builder = await enable_search(callback_data, EntityType.CATEGORY, state, UserStates.filter)
+            media, kb_builder = await enable_search(callback_data, EntityType.CATEGORY, state, UserStates.filter_items)
         else:
             await state.update_data(filter=None)
             await state.set_state()
@@ -56,7 +56,7 @@ async def show_subcategories_in_category(**kwargs):
     if callback_data.is_filter_enabled and state_data.get('filter') is not None:
         media, kb_builder = await SubcategoryService.get_buttons(callback_data, state, session)
     elif callback_data.is_filter_enabled:
-        media, kb_builder = await enable_search(callback_data, EntityType.SUBCATEGORY, state, UserStates.filter)
+        media, kb_builder = await enable_search(callback_data, EntityType.SUBCATEGORY, state, UserStates.filter_items)
     else:
         await state.update_data(filter=None)
         await state.set_state()
@@ -88,7 +88,7 @@ async def add_to_cart(**kwargs):
     await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
 
 
-@all_categories_router.message(IsUserExistFilter(), StateFilter(UserStates.filter))
+@all_categories_router.message(IsUserExistFilter(), StateFilter(UserStates.filter_items))
 async def receive_filter_message(message: Message, state: FSMContext, session: AsyncSession):
     await state.update_data(filter=message.html_text)
     state_data = await state.get_data()

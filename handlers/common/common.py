@@ -110,7 +110,7 @@ async def get_filters_settings(state: FSMContext,
 async def enable_search(callback_data: SortingCallback,
                         entity_type: EntityType,
                         state: FSMContext,
-                        search_state: State) -> [InputMediaPhoto, InlineKeyboardBuilder]:
+                        search_state: State) -> tuple[InputMediaPhoto, InlineKeyboardBuilder]:
     kb_builder = InlineKeyboardBuilder()
     callback_data.is_filter_enabled = False
     kb_builder.button(

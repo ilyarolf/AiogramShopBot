@@ -1,5 +1,5 @@
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, InputMediaPhoto, InputMediaVideo, InputMediaAnimation
+from aiogram.types import InputMediaPhoto, InputMediaVideo, InputMediaAnimation
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -7,9 +7,10 @@ from callbacks import MyProfileCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
+from enums.entity_type import EntityType
 from enums.keyboardbutton import KeyboardButton
 from enums.sort_property import SortProperty
-from handlers.common.common import add_pagination_buttons, add_sorting_buttons, get_filters_settings
+from handlers.common.common import add_pagination_buttons, add_sorting_buttons, get_filters_settings, add_search_button
 from models.user import User, UserDTO
 from repositories.button_media import ButtonMediaRepository
 from repositories.buy import BuyRepository
@@ -70,7 +71,7 @@ class UserService:
         for cryptocurrency in Cryptocurrency:
             kb_builder.button(
                 text=cryptocurrency.get_localized(),
-                callback_data=MyProfileCallback.create(level=callback_data.level+1,
+                callback_data=MyProfileCallback.create(level=callback_data.level + 1,
                                                        cryptocurrency=cryptocurrency)
             )
         kb_builder.adjust(1)
@@ -79,13 +80,14 @@ class UserService:
         return msg_text, kb_builder
 
     @staticmethod
-    async def get_purchase_history_buttons(callback: CallbackQuery, callback_data: MyProfileCallback,
+    async def get_purchase_history_buttons(telegram_id: int, callback_data: MyProfileCallback | None,
                                            state: FSMContext,
                                            session: AsyncSession) \
             -> tuple[str, InlineKeyboardBuilder]:
-        user = await UserRepository.get_by_tgid(callback.from_user.id, session)
+        callback_data = callback_data or MyProfileCallback.create(level=4)
+        user = await UserRepository.get_by_tgid(telegram_id, session)
         sort_pairs, filters = await get_filters_settings(state, callback_data)
-        buys = await BuyRepository.get_by_buyer_id(sort_pairs, user.id, callback_data.page, session)
+        buys = await BuyRepository.get_by_buyer_id(sort_pairs, filters, user.id, callback_data.page, session)
         kb_builder = InlineKeyboardBuilder()
         for buy in buys:
             buy_item = await BuyItemRepository.get_single_by_buy_id(buy.id, session)
@@ -101,12 +103,14 @@ class UserService:
                     buy_id=buy.id
                 ))
         kb_builder.adjust(1)
+        kb_builder = await add_search_button(kb_builder, EntityType.SUBCATEGORY, callback_data, filters)
         kb_builder = await add_sorting_buttons(kb_builder, [SortProperty.TOTAL_PRICE,
                                                             SortProperty.QUANTITY,
                                                             SortProperty.BUY_DATETIME],
                                                callback_data, sort_pairs)
         kb_builder = await add_pagination_buttons(kb_builder, callback_data,
-                                                  BuyRepository.get_max_page_purchase_history(user.id, session),
+                                                  BuyRepository.get_max_page_purchase_history(user.id, filters,
+                                                                                              session),
                                                   callback_data.get_back_button(0))
         if len(kb_builder.as_markup().inline_keyboard) > 1:
             return Localizator.get_text(BotEntity.USER, "purchases"), kb_builder
