@@ -8,6 +8,7 @@ class EntityType(IntEnum):
     CATEGORY = 1
     SUBCATEGORY = 2
     ITEM = 3
+    USER = 4
 
     def get_localized(self):
         match self:
@@ -17,3 +18,5 @@ class EntityType(IntEnum):
                 return Localizator.get_text(BotEntity.COMMON, "subcategory")
             case EntityType.ITEM:
                 return Localizator.get_text(BotEntity.COMMON, "item")
+            case EntityType.USER:
+                return Localizator.get_text(BotEntity.COMMON, "user")

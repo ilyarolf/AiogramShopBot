@@ -4,13 +4,13 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from callbacks import InventoryManagementCallback, AddType
-from enums.bot_entity import BotEntity
-from handlers.admin.constants import AdminInventoryManagementStates
+from handlers.admin.constants import InventoryManagementStates
+from handlers.common.common import enable_search
 from services.admin import AdminService
 from services.inventory_management import InventoryManagementService
 from services.item import ItemService
+from services.notification import NotificationService
 from utils.custom_filters import AdminIdFilter
-from utils.localizator import Localizator
 
 inventory_management = Router()
 
@@ -38,8 +38,20 @@ async def add_items(**kwargs):
 async def delete_entity(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     session: AsyncSession = kwargs.get("session")
-    callback_data = kwargs.get("callback_data")
-    msg, kb_builder = await AdminService.get_entity_picker(callback_data, session)
+    callback_data: InventoryManagementCallback = kwargs.get("callback_data")
+    state: FSMContext = kwargs.get("state")
+    state_data = await state.get_data()
+    if callback_data.is_filter_enabled and state_data.get('filter') is not None:
+        msg, kb_builder = await AdminService.get_entity_picker(callback_data, session, state)
+    elif callback_data.is_filter_enabled:
+        media, kb_builder = await enable_search(callback_data, callback_data.entity_type,
+                                                state, InventoryManagementStates.filter_entity)
+        await state.update_data(entity_type=callback_data.entity_type.value, callback_prefix=callback_data.__prefix__)
+        msg = media.caption
+    else:
+        await state.update_data(filter=None)
+        await state.set_state()
+        msg, kb_builder = await AdminService.get_entity_picker(callback_data, session, state)
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
@@ -54,9 +66,12 @@ async def confirm_delete(**kwargs):
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
-@inventory_management.message(AdminIdFilter(), F.document, StateFilter(AdminInventoryManagementStates.document))
+@inventory_management.message(AdminIdFilter(), F.document, StateFilter(InventoryManagementStates.document))
 async def add_items_document(message: Message, state: FSMContext, session: AsyncSession):
     state_data = await state.get_data()
+    await NotificationService.edit_reply_markup(message.bot,
+                                                state_data['chat_id'],
+                                                state_data['msg_id'])
     add_type = AddType(int(state_data['add_type']))
     file_name = message.document.file_name
     file_id = message.document.file_id
@@ -67,15 +82,22 @@ async def add_items_document(message: Message, state: FSMContext, session: Async
     await state.clear()
 
 
-@inventory_management.message(AdminIdFilter(), F.text, StateFilter(AdminInventoryManagementStates.category,
-                                                                   AdminInventoryManagementStates.subcategory,
-                                                                   AdminInventoryManagementStates.price,
-                                                                   AdminInventoryManagementStates.description,
-                                                                   AdminInventoryManagementStates.private_data))
+@inventory_management.message(AdminIdFilter(), F.text, StateFilter(InventoryManagementStates.category,
+                                                                   InventoryManagementStates.subcategory,
+                                                                   InventoryManagementStates.price,
+                                                                   InventoryManagementStates.description,
+                                                                   InventoryManagementStates.private_data))
 async def add_items_menu(message: Message, state: FSMContext, session: AsyncSession):
     msg, kb_builder = await InventoryManagementService.add_item_menu(message, state, session)
     message = await message.answer(text=msg, reply_markup=kb_builder.as_markup())
     await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
+
+
+@inventory_management.message(AdminIdFilter(), F.text, StateFilter(InventoryManagementStates.filter_entity))
+async def receive_filter_message(message: Message, state: FSMContext, session: AsyncSession):
+    await state.update_data(filter=message.html_text)
+    msg, kb_builder = await AdminService.get_entity_picker(None, session, state)
+    await message.answer(text=msg, reply_markup=kb_builder.as_markup())
 
 
 @inventory_management.callback_query(AdminIdFilter(), InventoryManagementCallback.filter())

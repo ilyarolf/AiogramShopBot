@@ -1,14 +1,20 @@
 from aiogram import types, Router, F
+from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
-from aiogram.types import CallbackQuery, Message, InputMediaPhoto, InputMediaVideo
+from aiogram.types import CallbackQuery, Message, InputMediaPhoto
 from sqlalchemy.ext.asyncio import AsyncSession
 from callbacks import MyProfileCallback
 from enums.bot_entity import BotEntity
+from enums.entity_type import EntityType
+from handlers.common.common import enable_search
+from handlers.user.constants import UserStates
 from services.buy import BuyService
+from services.notification import NotificationService
 from services.payment import PaymentService
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator
+from utils.utils import get_bot_photo_id
 
 my_profile_router = Router()
 
@@ -31,18 +37,7 @@ async def my_profile(**kwargs):
     await state.clear()
     media, kb_builder = await UserService.get_my_profile_buttons(message.from_user.id, session)
     if isinstance(message, Message):
-        if isinstance(media, InputMediaPhoto):
-            await message.answer_photo(photo=media.media,
-                                       caption=media.caption,
-                                       reply_markup=kb_builder.as_markup())
-        elif isinstance(media, InputMediaVideo):
-            await message.answer_video(video=media.media,
-                                       caption=media.caption,
-                                       reply_markup=kb_builder.as_markup())
-        else:
-            await message.answer_animation(animation=media.media,
-                                           caption=media.caption,
-                                           reply_markup=kb_builder.as_markup())
+        await NotificationService.answer_media(message, media, kb_builder.as_markup())
     elif isinstance(message, CallbackQuery):
         callback = message
         await callback.message.edit_media(media=media,
@@ -61,7 +56,19 @@ async def purchase_history(**kwargs):
     callback_data: MyProfileCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
     state: FSMContext = kwargs.get("state")
-    msg_text, kb_builder = await UserService.get_purchase_history_buttons(callback, callback_data, state, session)
+    state_data = await state.get_data()
+    if callback_data.is_filter_enabled and state_data.get('filter') is not None:
+        msg_text, kb_builder = await UserService.get_purchase_history_buttons(callback.from_user.id, callback_data,
+                                                                              state, session)
+    elif callback_data.is_filter_enabled:
+        media, kb_builder = await enable_search(callback_data, EntityType.SUBCATEGORY, state,
+                                                UserStates.filter_purchase_history)
+        msg_text = media.caption
+    else:
+        await state.update_data(filter=None)
+        await state.set_state()
+        msg_text, kb_builder = await UserService.get_purchase_history_buttons(callback.from_user.id, callback_data,
+                                                                              state, session)
     await callback.message.edit_caption(caption=msg_text, reply_markup=kb_builder.as_markup())
 
 
@@ -83,6 +90,17 @@ async def create_payment(**kwargs):
         await msg.edit_caption(caption=response)
     else:
         await msg.edit_media(media=response)
+
+
+@my_profile_router.message(IsUserExistFilter(), F.text, StateFilter(UserStates.filter_purchase_history))
+async def receive_filter_message(message: Message, state: FSMContext, session: AsyncSession):
+    await state.update_data(filter=message.html_text)
+    caption, kb_builder = await UserService.get_purchase_history_buttons(message.from_user.id,
+                                                                         None, state, session)
+    bot_photo_id = get_bot_photo_id()
+    media = InputMediaPhoto(media=bot_photo_id,
+                            caption=caption)
+    await NotificationService.answer_media(message, media, kb_builder.as_markup())
 
 
 @my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())

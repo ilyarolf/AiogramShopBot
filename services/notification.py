@@ -3,7 +3,8 @@ import traceback
 from aiogram import types, Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.types import InlineKeyboardMarkup, BufferedInputFile
+from aiogram.types import InlineKeyboardMarkup, BufferedInputFile, Message, InputMediaPhoto, InputMediaVideo, \
+    InputMediaAnimation
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -12,7 +13,6 @@ from config import ADMIN_ID_LIST, TOKEN
 from enums.bot_entity import BotEntity
 from models.buy import RefundDTO
 from models.cartItem import CartItemDTO
-from models.item import ItemDTO
 from models.payment import ProcessingPaymentDTO, TablePaymentDTO
 from models.user import UserDTO
 from repositories.category import CategoryRepository
@@ -134,11 +134,12 @@ class NotificationService:
         cart_grand_total = 0.0
         message = ""
         for item in sold_items:
-            price = await ItemRepository.get_price(ItemDTO(subcategory_id=item.subcategory_id,
-                                                           category_id=item.category_id), session)
+            item = await ItemRepository.get_single(subcategory_id=item.subcategory_id,
+                                                   category_id=item.category_id,
+                                                   session=session)
             category = await CategoryRepository.get_by_id(item.category_id, session)
             subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
-            cart_item_total = price * item.quantity
+            cart_item_total = item.price * item.quantity
             cart_grand_total += cart_item_total
             if user.telegram_username:
                 message += Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_tgid").format(
@@ -188,3 +189,20 @@ class NotificationService:
                 f"Stack trace:\n{traceback_str}"
             )
             logging.error(admin_notification)
+
+    @staticmethod
+    async def answer_media(message: Message,
+                           media: InputMediaPhoto | InputMediaVideo | InputMediaAnimation,
+                           reply_markup: InlineKeyboardMarkup | None = None):
+        if isinstance(media, InputMediaPhoto):
+            await message.answer_photo(photo=media.media,
+                                       caption=media.caption,
+                                       reply_markup=reply_markup)
+        elif isinstance(media, InputMediaVideo):
+            await message.answer_video(video=media.media,
+                                       caption=media.caption,
+                                       reply_markup=reply_markup)
+        else:
+            await message.answer_animation(animation=media.media,
+                                           caption=media.caption,
+                                           reply_markup=reply_markup)

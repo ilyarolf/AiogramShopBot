@@ -121,7 +121,13 @@
     "asc": "🔺",
     "desc": "🔻",
     "disable": "❌",
-    "sort": "📊 Sorting: "
+    "sort": "📊 Sorting: ",
+    "search": "🔎 Search by {entity} {field}",
+    "search_by_field_request": "<b>🔎 Search by {entity} {field}\nIf you want to search by more than one name, enter them separated by commas.</b>",
+    "pick_all_categories": "🗂️ Pick all categories",
+    "all": "All",
+    "cancel_search": "❌ Cancel Search",
+    "user": "User"
   },
   "user": {
     "all_categories": "🗂️ All categories",
@@ -157,7 +163,7 @@
     "purchases": "🧾 <b>Your purchases:</b>",
     "refresh_balance_button": "🔄 Refresh balance",
     "refund_notification": "↩️ You have been refunded {currency_sym}{total_price:.2f} for the purchase of {quantity} pieces of {subcategory}",
-    "select_quantity": "🛒 <b>Category: {category_name}\nSubcategory: {subcategory_name}\nPrice: {currency_sym}{price:.2f}\nDescription: {description}\nQuantity available: {quantity}</b>",
+    "select_quantity": "<b>🗂️ Category: <code>{category_name}</code>\n📦 Subcategory: <code>{subcategory_name}</code>\n💸Price: <code>{currency_sym}{price:.2f}</code>\n✍️Description: <i>{description}</i>\n🔢Quantity available: {quantity} pcs.\n🔢Pick Quantity:</b>",
     "subcategory_button": "📦 {subcategory_name}| Price: {currency_sym}{subcategory_price:.2f} | Qty: {available_quantity}",
     "subcategories": "📦 <b>Subcategories:</b>",
     "top_up_balance_button": "➕ Top Up Balance",
@@ -177,6 +183,8 @@
     "status_pending": "\uD83D\uDFE1 Pending.",
     "status_paid": "\uD83D\uDFE2 Paid.",
     "status_expired": "\uD83D\uDD34 Expired.",
-    "too_many_payment_request": "<b>⏳ Too many payment request!\nPlease wait and try again later.</b>"
+    "too_many_payment_request": "<b>⏳ Too many payment request!\nPlease wait and try again later.</b>",
+    "pick_category": "<b>🗂️Pick category:</b>",
+    "pick_subcategory": "<b>🗂️Category: <code>{category_name}</code>\n📦 Pick Subcategory:</b>"
   }
 }

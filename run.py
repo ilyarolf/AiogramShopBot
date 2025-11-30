@@ -59,15 +59,7 @@ async def faq(message: Message, session: AsyncSession):
     button_media = await ButtonMediaRepository.get_by_button(KeyboardButton.FAQ, session)
     media = MediaService.convert_to_media(button_media.media_id,
                                           caption=Localizator.get_text(BotEntity.USER, "faq_string"))
-    if isinstance(media, InputMediaPhoto):
-        await message.answer_photo(photo=media.media,
-                                   caption=media.caption)
-    elif isinstance(media, InputMediaVideo):
-        await message.answer_video(video=media.media,
-                                   caption=media.caption)
-    else:
-        await message.answer_animation(animation=media.media,
-                                       caption=media.caption)
+    await NotificationService.answer_media(message, media)
 
 
 @main_router.message(F.text == Localizator.get_text(BotEntity.USER, "help"), IsUserExistFilter())
@@ -77,18 +69,7 @@ async def support(message: Message, session: AsyncSession):
     button_media = await ButtonMediaRepository.get_by_button(KeyboardButton.HELP, session)
     media = MediaService.convert_to_media(button_media.media_id,
                                           caption=Localizator.get_text(BotEntity.USER, "help_string"))
-    if isinstance(media, InputMediaPhoto):
-        await message.answer_photo(photo=media.media,
-                                   caption=media.caption,
-                                   reply_markup=kb_builder.as_markup())
-    elif isinstance(media, InputMediaVideo):
-        await message.answer_video(video=media.media,
-                                   caption=media.caption,
-                                   reply_markup=kb_builder.as_markup())
-    else:
-        await message.answer_animation(animation=media.media,
-                                       caption=media.caption,
-                                       reply_markup=kb_builder.as_markup())
+    await NotificationService.answer_media(message, media)
 
 
 @main_router.error(F.update.message.as_("message"))

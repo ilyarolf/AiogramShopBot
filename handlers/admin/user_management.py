@@ -4,7 +4,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from callbacks import UserManagementCallback
+from enums.entity_type import EntityType
 from handlers.admin.constants import UserManagementStates
+from handlers.common.common import enable_search
 from models.buy import BuyDTO
 from services.buy import BuyService
 from services.user_management import UserManagementService
@@ -51,7 +53,17 @@ async def refund_buy(**kwargs):
     callback_data: UserManagementCallback = kwargs.get("callback_data")
     state: FSMContext = kwargs.get("state")
     session: AsyncSession = kwargs.get("session")
-    msg, kb_builder = await UserManagementService.get_refund_menu(callback_data, state, session)
+    state_data = await state.get_data()
+    if callback_data.is_filter_enabled and state_data.get('filter') is not None:
+        msg, kb_builder = await UserManagementService.get_refund_menu(callback_data, state, session)
+    elif callback_data.is_filter_enabled:
+        media, kb_builder = await enable_search(callback_data, EntityType.USER, state,
+                                                UserManagementStates.filter_username)
+        msg = media.caption
+    else:
+        await state.update_data(filter=None)
+        await state.set_state()
+        msg, kb_builder = await UserManagementService.get_refund_menu(callback_data, state, session)
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
@@ -65,6 +77,13 @@ async def refund_confirmation(**kwargs):
     else:
         msg, kb_builder = await UserManagementService.refund_confirmation(callback_data, session)
         await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+
+
+@user_management.message(AdminIdFilter(), F.text, StateFilter(UserManagementStates.filter_username))
+async def receive_filter_message(message: Message, state: FSMContext, session: AsyncSession):
+    await state.update_data(filter=message.html_text)
+    msg, kb_builder = await UserManagementService.get_refund_menu(None, state, session)
+    await message.answer(text=msg, reply_markup=kb_builder.as_markup())
 
 
 @user_management.callback_query(AdminIdFilter(), UserManagementCallback.filter())

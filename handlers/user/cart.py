@@ -1,10 +1,11 @@
 from aiogram import F, Router
-from aiogram.types import CallbackQuery, Message, InputMediaPhoto, InputMediaVideo
+from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from callbacks import CartCallback
 from enums.bot_entity import BotEntity
 from services.cart import CartService
+from services.notification import NotificationService
 from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator
 
@@ -21,18 +22,7 @@ async def show_cart(**kwargs):
     session: AsyncSession = kwargs.get("session")
     media, kb_builder = await CartService.create_buttons(message, session)
     if isinstance(message, Message):
-        if isinstance(media, InputMediaPhoto):
-            await message.answer_photo(photo=media.media,
-                                       caption=media.caption,
-                                       reply_markup=kb_builder.as_markup())
-        elif isinstance(media, InputMediaVideo):
-            await message.answer_video(video=media.media,
-                                       caption=media.caption,
-                                       reply_markup=kb_builder.as_markup())
-        else:
-            await message.answer_animation(animation=media.media,
-                                           caption=media.caption,
-                                           reply_markup=kb_builder.as_markup())
+        await NotificationService.answer_media(message, media, kb_builder.as_markup())
     elif isinstance(message, CallbackQuery):
         callback = message
         await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())

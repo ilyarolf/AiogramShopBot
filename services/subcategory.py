@@ -6,67 +6,78 @@ from sqlalchemy.orm import Session
 
 from callbacks import AllCategoriesCallback
 from enums.bot_entity import BotEntity
+from enums.entity_type import EntityType
 from enums.sort_property import SortProperty
-from handlers.common.common import add_pagination_buttons, add_sorting_buttons
-from models.item import ItemDTO
+from handlers.common.common import add_pagination_buttons, add_sorting_buttons, get_filters_settings, add_search_button
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
 from services.media import MediaService
 from utils.localizator import Localizator
+from utils.utils import get_bot_photo_id
 
 
 class SubcategoryService:
 
     @staticmethod
-    async def get_buttons(callback_data: AllCategoriesCallback,
+    async def get_buttons(callback_data: AllCategoriesCallback | None,
                           state: FSMContext,
                           session: AsyncSession) -> tuple[InputMediaPhoto |
                                                           InputMediaAnimation |
                                                           InputMediaVideo, InlineKeyboardBuilder]:
-        state_data = await state.get_data()
-        sort_pairs = state_data.get("sort_pairs") or {}
-        sort_pairs[str(callback_data.sort_property.value)] = callback_data.sort_order.value
-        await state.update_data(sort_pairs=sort_pairs)
+        callback_data = callback_data or AllCategoriesCallback.create(1)
+        sort_pairs, filters = await get_filters_settings(state, callback_data)
         kb_builder = InlineKeyboardBuilder()
-        subcategories = await SubcategoryRepository.get_paginated_by_category_id(sort_pairs,
-                                                                                 callback_data.category_id,
-                                                                                 callback_data.page, session)
-        for subcategory in subcategories:
-            item = await ItemRepository.get_single(callback_data.category_id, subcategory.id, session)
-            available_qty = await ItemRepository.get_available_qty(ItemDTO(category_id=callback_data.category_id,
-                                                                           subcategory_id=subcategory.id), session)
+        items = await SubcategoryRepository.get_paginated_by_category_id(sort_pairs, filters,
+                                                                         callback_data.category_id,
+                                                                         callback_data.page, session)
+        for item in items:
+            available_qty = await ItemRepository.get_available_qty(category_id=item.category_id,
+                                                                   subcategory_id=item.subcategory_id,
+                                                                   session=session)
             kb_builder.button(text=Localizator.get_text(BotEntity.USER, "subcategory_button").format(
-                subcategory_name=subcategory.name,
+                subcategory_name=item.subcategory_name,
                 subcategory_price=item.price,
                 available_quantity=available_qty,
                 currency_sym=Localizator.get_currency_symbol()),
                 callback_data=AllCategoriesCallback.create(
-                    callback_data.level + 1,
-                    callback_data.category_id,
-                    subcategory.id
+                    level=callback_data.level + 1,
+                    category_id=item.category_id,
+                    subcategory_id=item.subcategory_id
                 )
             )
         kb_builder.adjust(1)
+        kb_builder = await add_search_button(kb_builder, EntityType.SUBCATEGORY, callback_data, filters)
         kb_builder = await add_sorting_buttons(kb_builder, [SortProperty.NAME, SortProperty.PRICE],
                                                callback_data, sort_pairs)
         kb_builder = await add_pagination_buttons(kb_builder, callback_data,
-                                                  SubcategoryRepository.max_page(callback_data.category_id, session),
+                                                  SubcategoryRepository.get_maximum_page(callback_data.category_id, filters, session),
                                                   callback_data.get_back_button())
-        category_dto = await CategoryRepository.get_by_id(callback_data.category_id, session)
-        caption = Localizator.get_text(BotEntity.USER, "subcategories")
-        media = MediaService.convert_to_media(category_dto.media_id, caption)
+        caption = Localizator.get_text(BotEntity.USER, "pick_subcategory")
+        if callback_data.category_id:
+            category_dto = await CategoryRepository.get_by_id(callback_data.category_id, session)
+            caption = caption.format(
+                category_name=category_dto.name
+            )
+            media = MediaService.convert_to_media(category_dto.media_id, caption)
+        else:
+            caption = caption.format(
+                category_name=Localizator.get_text(BotEntity.COMMON, "all")
+            )
+            media = InputMediaPhoto(media=get_bot_photo_id(), caption=caption)
         return media, kb_builder
 
     @staticmethod
     async def get_select_quantity_buttons(callback_data: AllCategoriesCallback,
                                           session: AsyncSession) -> tuple[InputMediaPhoto |
-                                                          InputMediaAnimation |
-                                                          InputMediaVideo, InlineKeyboardBuilder]:
+                                                                          InputMediaAnimation |
+                                                                          InputMediaVideo, InlineKeyboardBuilder]:
         item_dto = await ItemRepository.get_single(callback_data.category_id, callback_data.subcategory_id, session)
         subcategory_dto = await SubcategoryRepository.get_by_id(callback_data.subcategory_id, session)
         category_dto = await CategoryRepository.get_by_id(callback_data.category_id, session)
-        available_qty = await ItemRepository.get_available_qty(item_dto, session)
+        available_qty = await ItemRepository.get_available_qty(category_id=callback_data.category_id,
+                                                               subcategory_id=callback_data.subcategory_id,
+                                                               session=session)
         caption = Localizator.get_text(BotEntity.USER, "select_quantity").format(
             category_name=category_dto.name,
             subcategory_name=subcategory_dto.name,
