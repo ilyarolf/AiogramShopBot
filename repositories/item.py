@@ -55,7 +55,8 @@ class ItemRepository:
     @staticmethod
     async def update(item_dto_list: list[ItemDTO], session: AsyncSession):
         for item in item_dto_list:
-            stmt = update(Item).where(Item.id == item.id).values(**item.model_dump())
+            item = Item.get_model_filtered_dict(item, Item)
+            stmt = update(Item).where(Item.id == item.id).values(**item.model_dump(exclude_none=True))
             await session_execute(stmt, session)
 
     @staticmethod
