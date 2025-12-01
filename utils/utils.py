@@ -1,4 +1,7 @@
+import os
 import urllib.request
+
+from pyngrok import ngrok
 
 
 def get_sslipio_external_url():
@@ -11,3 +14,11 @@ def get_sslipio_external_url():
 def get_bot_photo_id() -> str:
     with open("static/no_image.jpeg", "r") as f:
         return f.read()
+
+
+def start_ngrok():
+    ngrok_token = os.environ.get("NGROK_TOKEN")
+    port = os.environ.get("WEBAPP_PORT")
+    ngrok.set_auth_token(ngrok_token)
+    http_tunnel = ngrok.connect(f":{port}", "http")
+    return http_tunnel.public_url
