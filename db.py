@@ -30,15 +30,13 @@ from models.deposit import Deposit
 from models.button_media import ButtonMedia
 from models.payment import Payment
 
-url = ""
-engine = None
-session_maker = None
+
 if config.DB_ENCRYPTION:
-    url += f"sqlite+pysqlcipher://:{config.DB_PASS}@/data/{DB_NAME}"
+    url = f"sqlite+pysqlcipher://:{config.DB_PASS}@/data/{DB_NAME}"
     engine = create_engine(url, echo=True, module=sqlcipher)
     session_maker = sessionmaker(engine, expire_on_commit=False)
 else:
-    url += f"sqlite+aiosqlite:///data/{DB_NAME}"
+    url = f"sqlite+aiosqlite:///data/{DB_NAME}"
     engine = create_async_engine(url, echo=True)
     session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
