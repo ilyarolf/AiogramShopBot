@@ -132,34 +132,35 @@ class NotificationService:
     @staticmethod
     async def new_buy(sold_items: list[CartItemDTO], user: UserDTO, session: AsyncSession | Session):
         user_button = await NotificationService.make_user_button(user.telegram_username)
-        cart_grand_total = 0.0
-        message = ""
-        for item in sold_items:
-            item = await ItemRepository.get_single(subcategory_id=item.subcategory_id,
-                                                   category_id=item.category_id,
-                                                   session=session)
-            category = await CategoryRepository.get_by_id(item.category_id, session)
-            subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
-            cart_item_total = item.price * item.quantity
-            cart_grand_total += cart_item_total
+        cart_total_price = 0.0
+        cart_content = []
+        for cart_item in sold_items:
+            item_example = await ItemRepository.get_single(subcategory_id=cart_item.subcategory_id,
+                                                           category_id=cart_item.category_id,
+                                                           session=session)
+            category = await CategoryRepository.get_by_id(cart_item.category_id, session)
+            subcategory = await SubcategoryRepository.get_by_id(cart_item.subcategory_id, session)
+            cart_item_total = item_example.price * cart_item.quantity
+            cart_total_price += cart_item_total
             if user.telegram_username:
-                message += Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_tgid").format(
+                cart_content.append(Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_tgid").format(
                     username=user.telegram_username,
                     total_price=cart_item_total,
-                    quantity=item.quantity,
+                    quantity=cart_item.quantity,
                     category_name=category.name,
                     subcategory_name=subcategory.name,
-                    currency_sym=Localizator.get_currency_symbol()) + "\n"
+                    currency_sym=Localizator.get_currency_symbol()))
             else:
-                message += Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_username").format(
+                cart_content.append(Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_username").format(
                     telegram_id=user.telegram_id,
                     total_price=cart_item_total,
-                    quantity=item.quantity,
+                    quantity=cart_item.quantity,
                     category_name=category.name,
                     subcategory_name=subcategory.name,
-                    currency_sym=Localizator.get_currency_symbol()) + "\n"
-        message += Localizator.get_text(BotEntity.USER, "cart_grand_total_string").format(
-            cart_grand_total=cart_grand_total, currency_sym=Localizator.get_currency_symbol())
+                    currency_sym=Localizator.get_currency_symbol()))
+        message = "\n\n".join(cart_content)+"\n\n"
+        message += Localizator.get_text(BotEntity.USER, "cart_total_price").format(
+            cart_total_price=cart_total_price, currency_sym=Localizator.get_currency_symbol())
         await NotificationService.send_to_admins(message, user_button)
 
     @staticmethod

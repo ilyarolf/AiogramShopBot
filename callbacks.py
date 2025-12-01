@@ -3,6 +3,7 @@ from aiogram.filters.callback_data import CallbackData
 from enums.add_type import AddType
 from enums.announcement_type import AnnouncementType
 from enums.bot_entity import BotEntity
+from enums.cart_action import CartAction
 from enums.cryptocurrency import Cryptocurrency
 from enums.entity_type import EntityType
 from enums.keyboardbutton import KeyboardButton
@@ -81,12 +82,21 @@ class CartCallback(BaseCallback, prefix="cart"):
     page: int
     cart_id: int
     cart_item_id: int
+    cart_action: CartAction | None
     confirmation: bool
 
     @staticmethod
-    def create(level: int = 0, page: int = 0, cart_id: int = -1, cart_item_id: int = -1,
-               confirmation=False):
-        return CartCallback(level=level, page=page, cart_id=cart_id, cart_item_id=cart_item_id,
+    def create(level: int = 0,
+               cart_id: int = -1,
+               cart_item_id: int = -1,
+               cart_action: CartAction | None = None,
+               confirmation=False,
+               page: int = 0):
+        return CartCallback(level=level,
+                            cart_id=cart_id,
+                            cart_item_id=cart_item_id,
+                            cart_action=cart_action,
+                            page=page,
                             confirmation=confirmation)
 
 

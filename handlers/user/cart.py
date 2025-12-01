@@ -19,8 +19,9 @@ async def cart_text_message(message: Message, session: AsyncSession):
 
 async def show_cart(**kwargs):
     message: Message | CallbackQuery = kwargs.get("message") or kwargs.get("callback")
+    callback_data: CartCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
-    media, kb_builder = await CartService.create_buttons(message, session)
+    media, kb_builder = await CartService.create_buttons(message.from_user.id, callback_data, session)
     if isinstance(message, Message):
         await NotificationService.answer_media(message, media, kb_builder.as_markup())
     elif isinstance(message, CallbackQuery):
@@ -28,10 +29,11 @@ async def show_cart(**kwargs):
         await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
 
 
-async def delete_cart_item(**kwargs):
+async def show_cart_item(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
+    callback_data: CartCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
-    msg, kb_builder = await CartService.delete_cart_item(callback, session)
+    msg, kb_builder = await CartService.show_cart_item(callback_data, session)
     await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
 
 
@@ -56,7 +58,7 @@ async def navigate_cart_process(callback: CallbackQuery, callback_data: CartCall
 
     levels = {
         0: show_cart,
-        1: delete_cart_item,
+        1: show_cart_item,
         2: checkout_processing,
         3: buy_processing
     }
@@ -66,6 +68,7 @@ async def navigate_cart_process(callback: CallbackQuery, callback_data: CartCall
     kwargs = {
         "callback": callback,
         "session": session,
+        "callback_data": callback_data
     }
 
     await current_level_function(**kwargs)
