@@ -176,11 +176,10 @@ class CartService:
             coupon_dto = await CouponRepository.get_by_id(coupon_id, session)
             if coupon_dto.type == CouponType.PERCENTAGE:
                 cart_total_price = ((100 - coupon_dto.value) / 100) * cart_total_price
-                discount_amount = cart_total_price_before_discount - cart_total_price
             else:
-                discount_amount = coupon_dto.value
                 cart_total_price = cart_total_price - coupon_dto.value
                 cart_total_price = max(cart_total_price, 1)
+            discount_amount = cart_total_price_before_discount - cart_total_price
             message_text = Localizator.get_text(
                 BotEntity.USER,
                 "cart_confirm_checkout_process_with_coupon").format(
@@ -239,11 +238,10 @@ class CartService:
                 await CouponRepository.update(coupon_dto, session)
             if coupon_dto.type == CouponType.PERCENTAGE:
                 cart_total_price = ((100 - coupon_dto.value) / 100) * cart_total_price
-                total_discount_amount = cart_total_price_before_discount - cart_total_price
             else:
-                total_discount_amount = coupon_dto.value
                 cart_total_price = cart_total_price - coupon_dto.value
                 cart_total_price = max(cart_total_price, 1)
+            total_discount_amount = cart_total_price_before_discount - cart_total_price
         is_enough_money = (user.top_up_amount - user.consume_records) >= cart_total_price
         kb_builder = InlineKeyboardBuilder()
         if unpacked_cb.confirmation and len(out_of_stock) == 0 and is_enough_money:
