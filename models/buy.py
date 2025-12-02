@@ -17,6 +17,7 @@ class Buy(Base):
     total_price = Column(Float, nullable=False)
     buy_datetime = Column(DateTime, default=func.now())
     is_refunded = Column(Boolean, default=False)
+    coupon_id = Column(Integer, ForeignKey('coupons.id'), nullable=True)
 
     __table_args__ = (
         CheckConstraint('quantity > 0', name='check_quantity_positive'),
@@ -31,6 +32,7 @@ class BuyDTO(BaseModel):
     total_price: float | None = None
     buy_datetime: datetime | None = None
     is_refunded: bool | None = None
+    coupon_id: int | None = None
 
 
 class RefundDTO(BaseModel):

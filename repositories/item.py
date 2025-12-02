@@ -47,8 +47,11 @@ class ItemRepository:
     async def get_purchased_items(category_id: int, subcategory_id: int, quantity: int,
                                   session: Session | AsyncSession) -> list[ItemDTO]:
         stmt = (select(Item)
-                .where(Item.category_id == category_id, Item.subcategory_id == subcategory_id,
-                       Item.is_sold == False).limit(quantity))
+                .where(Item.category_id == category_id,
+                       Item.subcategory_id == subcategory_id,
+                       Item.is_sold == False)
+                .limit(quantity)
+                .with_for_update())
         items = await session_execute(stmt, session)
         return [ItemDTO.model_validate(item, from_attributes=True) for item in items.scalars().all()]
 

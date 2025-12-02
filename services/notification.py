@@ -11,11 +11,11 @@ from sqlalchemy.orm import Session
 
 from config import ADMIN_ID_LIST, TOKEN
 from enums.bot_entity import BotEntity
-from models.buy import RefundDTO
-from models.cartItem import CartItemDTO
+from models.buy import RefundDTO, BuyDTO
 from models.payment import ProcessingPaymentDTO, TablePaymentDTO
 from models.user import UserDTO
 from models.withdrawal import WithdrawalDTO
+from repositories.buyItem import BuyItemRepository
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
@@ -130,35 +130,33 @@ class NotificationService:
         await NotificationService.send_to_admins(message, user_button)
 
     @staticmethod
-    async def new_buy(sold_items: list[CartItemDTO], user: UserDTO, session: AsyncSession | Session):
+    async def new_buy(buys: list[BuyDTO], user: UserDTO, session: AsyncSession | Session):
         user_button = await NotificationService.make_user_button(user.telegram_username)
         cart_total_price = 0.0
         cart_content = []
-        for cart_item in sold_items:
-            item_example = await ItemRepository.get_single(subcategory_id=cart_item.subcategory_id,
-                                                           category_id=cart_item.category_id,
-                                                           session=session)
-            category = await CategoryRepository.get_by_id(cart_item.category_id, session)
-            subcategory = await SubcategoryRepository.get_by_id(cart_item.subcategory_id, session)
-            cart_item_total = item_example.price * cart_item.quantity
-            cart_total_price += cart_item_total
+        for buy in buys:
+            buy_item_dto_list = await BuyItemRepository.get_all_by_buy_id(buy.id, session)
+            item_example = await ItemRepository.get_by_id(buy_item_dto_list[0].item_id, session)
+            category = await CategoryRepository.get_by_id(item_example.category_id, session)
+            subcategory = await SubcategoryRepository.get_by_id(item_example.subcategory_id, session)
+            cart_total_price += buy.total_price
             if user.telegram_username:
                 cart_content.append(Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_tgid").format(
                     username=user.telegram_username,
-                    total_price=cart_item_total,
-                    quantity=cart_item.quantity,
+                    total_price=buy.total_price,
+                    quantity=len(buy_item_dto_list),
                     category_name=category.name,
                     subcategory_name=subcategory.name,
                     currency_sym=Localizator.get_currency_symbol()))
             else:
                 cart_content.append(Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_username").format(
                     telegram_id=user.telegram_id,
-                    total_price=cart_item_total,
-                    quantity=cart_item.quantity,
+                    total_price=buy.total_price,
+                    quantity=len(buy_item_dto_list),
                     category_name=category.name,
                     subcategory_name=subcategory.name,
                     currency_sym=Localizator.get_currency_symbol()))
-        message = "\n\n".join(cart_content)+"\n\n"
+        message = "\n\n".join(cart_content) + "\n\n"
         message += Localizator.get_text(BotEntity.USER, "cart_total_price").format(
             cart_total_price=cart_total_price, currency_sym=Localizator.get_currency_symbol())
         await NotificationService.send_to_admins(message, user_button)
@@ -195,19 +193,20 @@ class NotificationService:
     @staticmethod
     async def answer_media(message: Message,
                            media: InputMediaPhoto | InputMediaVideo | InputMediaAnimation,
-                           reply_markup: InlineKeyboardMarkup | None = None):
+                           reply_markup: InlineKeyboardMarkup | None = None) -> Message:
         if isinstance(media, InputMediaPhoto):
-            await message.answer_photo(photo=media.media,
-                                       caption=media.caption,
-                                       reply_markup=reply_markup)
+            message = await message.answer_photo(photo=media.media,
+                                                 caption=media.caption,
+                                                 reply_markup=reply_markup)
         elif isinstance(media, InputMediaVideo):
-            await message.answer_video(video=media.media,
-                                       caption=media.caption,
-                                       reply_markup=reply_markup)
+            message = await message.answer_video(video=media.media,
+                                                 caption=media.caption,
+                                                 reply_markup=reply_markup)
         else:
-            await message.answer_animation(animation=media.media,
-                                           caption=media.caption,
-                                           reply_markup=reply_markup)
+            message = await message.answer_animation(animation=media.media,
+                                                     caption=media.caption,
+                                                     reply_markup=reply_markup)
+        return message
 
     @staticmethod
     async def withdrawal(withdraw_dto: WithdrawalDTO):

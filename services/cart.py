@@ -1,4 +1,6 @@
-from aiogram.types import CallbackQuery, InputMediaPhoto, InputMediaVideo, InputMediaAnimation
+from aiogram.fsm.context import FSMContext
+from aiogram.types import CallbackQuery, InputMediaPhoto, InputMediaVideo, InputMediaAnimation, Message, \
+    InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -7,8 +9,10 @@ from callbacks import AllCategoriesCallback, CartCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.cart_action import CartAction
+from enums.coupon_type import CouponType
 from enums.keyboardbutton import KeyboardButton
 from handlers.common.common import add_pagination_buttons
+from handlers.user.constants import UserStates
 from models.buy import BuyDTO
 from models.buyItem import BuyItemDTO
 from models.cartItem import CartItemDTO
@@ -18,6 +22,7 @@ from repositories.buyItem import BuyItemRepository
 from repositories.cart import CartRepository
 from repositories.cartItem import CartItemRepository
 from repositories.category import CategoryRepository
+from repositories.coupon import CouponRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
@@ -143,14 +148,13 @@ class CartService:
             ), kb_builder
 
     @staticmethod
-    async def checkout_processing(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[
-        str, InlineKeyboardBuilder]:
+    async def checkout_processing(callback: CallbackQuery,
+                                  state: FSMContext,
+                                  session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
         cart_items = await CartItemRepository.get_all_by_user_id(user.id, session)
-        message_text = Localizator.get_text(BotEntity.USER, "cart_confirm_checkout_process")
         cart_content = []
         cart_total_price = 0.0
-
         for cart_item in cart_items:
             item = await ItemRepository.get_single(category_id=cart_item.category_id,
                                                    subcategory_id=cart_item.subcategory_id,
@@ -165,42 +169,87 @@ class CartService:
                     currency_sym=Localizator.get_currency_symbol()
                 ))
             cart_total_price += line_item_total
-        message_text = message_text.format(
-            cart_content="\n".join(cart_content),
-            cart_total_price=cart_total_price,
-            currency_sym=Localizator.get_currency_symbol()
-        )
+        state_data = await state.get_data()
+        coupon_id = state_data.get('coupon_id')
+        if coupon_id is not None:
+            cart_total_price_before_discount = cart_total_price
+            coupon_dto = await CouponRepository.get_by_id(coupon_id, session)
+            if coupon_dto.type == CouponType.PERCENTAGE:
+                cart_total_price = ((100 - coupon_dto.value) / 100) * cart_total_price
+                discount_amount = cart_total_price_before_discount - cart_total_price
+            else:
+                discount_amount = coupon_dto.value
+                cart_total_price = cart_total_price - coupon_dto.value
+                cart_total_price = max(cart_total_price, 1)
+            message_text = Localizator.get_text(
+                BotEntity.USER,
+                "cart_confirm_checkout_process_with_coupon").format(
+                cart_content="\n".join(cart_content),
+                cart_total_price_before_discount=cart_total_price_before_discount,
+                cart_total_price=cart_total_price,
+                discount_amount=discount_amount,
+                currency_sym=Localizator.get_currency_symbol()
+            )
+        else:
+            message_text = Localizator.get_text(BotEntity.USER, "cart_confirm_checkout_process").format(
+                cart_content="\n".join(cart_content),
+                cart_total_price=cart_total_price,
+                currency_sym=Localizator.get_currency_symbol()
+            )
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
-                          callback_data=CartCallback.create(3,
+                          callback_data=CartCallback.create(level=4,
                                                             confirmation=True))
         kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
-                          callback_data=CartCallback.create(0))
+                          callback_data=CartCallback.create(level=0))
+        if coupon_id is None:
+            kb_builder.row(InlineKeyboardButton(
+                text=Localizator.get_text(BotEntity.COMMON, "coupon"),
+                callback_data=CartCallback.create(level=3).pack()
+            ))
         return message_text, kb_builder
 
     @staticmethod
-    async def buy_processing(callback: CallbackQuery, session: AsyncSession | Session) -> tuple[
+    async def buy_processing(callback: CallbackQuery, state: FSMContext, session: AsyncSession | Session) -> tuple[
         str, InlineKeyboardBuilder]:
         unpacked_cb = CartCallback.unpack(callback.data)
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
         cart_items = await CartItemRepository.get_all_by_user_id(user.id, session)
-        cart_total = 0.0
+        cart_total_price = 0.0
         out_of_stock = []
         for cart_item in cart_items:
             item = await ItemRepository.get_single(category_id=cart_item.category_id,
                                                    subcategory_id=cart_item.subcategory_id,
                                                    session=session)
-            cart_total += item.price * cart_item.quantity
+            cart_total_price += item.price * cart_item.quantity
             is_in_stock = await ItemRepository.get_available_qty(category_id=cart_item.category_id,
                                                                  subcategory_id=cart_item.subcategory_id,
                                                                  session=session) >= cart_item.quantity
             if is_in_stock is False:
                 out_of_stock.append(cart_item)
-        is_enough_money = (user.top_up_amount - user.consume_records) >= cart_total
+        total_discount_amount = 0
+        state_data = await state.get_data()
+        coupon_id = state_data.get('coupon_id')
+        if coupon_id is not None:
+            cart_total_price_before_discount = cart_total_price
+            coupon_dto = await CouponRepository.get_by_id(coupon_id, session)
+            if coupon_dto.usage_limit == 1:
+                coupon_dto.is_active = False
+                coupon_dto.usage_count += 1
+                await CouponRepository.update(coupon_dto, session)
+            if coupon_dto.type == CouponType.PERCENTAGE:
+                cart_total_price = ((100 - coupon_dto.value) / 100) * cart_total_price
+                total_discount_amount = cart_total_price_before_discount - cart_total_price
+            else:
+                total_discount_amount = coupon_dto.value
+                cart_total_price = cart_total_price - coupon_dto.value
+                cart_total_price = max(cart_total_price, 1)
+        is_enough_money = (user.top_up_amount - user.consume_records) >= cart_total_price
         kb_builder = InlineKeyboardBuilder()
         if unpacked_cb.confirmation and len(out_of_stock) == 0 and is_enough_money:
-            sold_items = []
+            buys = []
             msg = ""
+            discount_per_position = total_discount_amount / len(cart_items)
             for cart_item in cart_items:
                 item = await ItemRepository.get_single(category_id=cart_item.category_id,
                                                        subcategory_id=cart_item.subcategory_id,
@@ -209,20 +258,21 @@ class CartService:
                                                                            cart_item.subcategory_id, cart_item.quantity,
                                                                            session)
                 buy_dto = BuyDTO(buyer_id=user.id, quantity=cart_item.quantity,
-                                 total_price=cart_item.quantity * item.price)
-                buy_id = await BuyRepository.create(buy_dto, session)
-                buy_item_dto_list = [BuyItemDTO(item_id=item.id, buy_id=buy_id) for item in purchased_items]
+                                 total_price=(cart_item.quantity * item.price) - discount_per_position,
+                                 coupon_id=coupon_id)
+                buy_dto = await BuyRepository.create(buy_dto, session)
+                buy_item_dto_list = [BuyItemDTO(item_id=item.id, buy_id=buy_dto.id) for item in purchased_items]
                 await BuyItemRepository.create_many(buy_item_dto_list, session)
                 for item in purchased_items:
                     item.is_sold = True
                 await ItemRepository.update(purchased_items, session)
                 await CartItemRepository.remove_from_cart(cart_item.id, session)
-                sold_items.append(cart_item)
+                buys.append(buy_dto)
                 msg += MessageService.create_message_with_bought_items(purchased_items)
-            user.consume_records = user.consume_records + cart_total
+            user.consume_records = user.consume_records + cart_total_price
             await UserRepository.update(user, session)
             await session_commit(session)
-            await NotificationService.new_buy(sold_items, user, session)
+            await NotificationService.new_buy(buys, user, session)
             return msg, kb_builder
         elif unpacked_cb.confirmation is False:
             kb_builder.row(unpacked_cb.get_back_button(0))
@@ -282,3 +332,37 @@ class CartService:
             qty=cart_item_dto.quantity,
             total_price=cart_item_dto.quantity * item_dto.price
         ), kb_builder
+
+    @staticmethod
+    async def set_coupon(state: FSMContext):
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.button(
+            text=Localizator.get_text(BotEntity.COMMON, "pagination_next"),
+            callback_data=CartCallback.create(2)
+        )
+        kb_builder.adjust(1)
+        await state.set_state(UserStates.coupon)
+        return Localizator.get_text(BotEntity.USER, "request_coupon"), kb_builder
+
+    @staticmethod
+    async def apply_coupon(message: Message,
+                           state: FSMContext,
+                           session: AsyncSession) -> tuple[
+        InputMediaPhoto | InputMediaVideo | InputMediaVideo, InlineKeyboardBuilder]:
+        state_data = await state.get_data()
+        await state.set_state()
+        await NotificationService.edit_reply_markup(message.bot, state_data['chat_id'], state_data['msg_id'])
+        coupon_dto = await CouponRepository.get_by_code(message.text, session)
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.button(
+            text=Localizator.get_text(BotEntity.COMMON, "pagination_next"),
+            callback_data=CartCallback.create(2)
+        )
+        if coupon_dto is None:
+            caption = Localizator.get_text(BotEntity.USER, "coupon_not_found")
+        else:
+            await state.update_data(coupon_id=coupon_dto.id)
+            caption = Localizator.get_text(BotEntity.USER, "coupon_applied")
+        button_media = await ButtonMediaRepository.get_by_button(KeyboardButton.CART, session)
+        media = MediaService.convert_to_media(button_media.media_id, caption=caption)
+        return media, kb_builder

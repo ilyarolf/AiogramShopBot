@@ -47,11 +47,11 @@ class BuyRepository:
         return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]
 
     @staticmethod
-    async def create(buy_dto: BuyDTO, session: Session | AsyncSession) -> int:
+    async def create(buy_dto: BuyDTO, session: Session | AsyncSession) -> BuyDTO:
         buy = Buy(**buy_dto.model_dump())
         session.add(buy)
         await session_flush(session)
-        return buy.id
+        return BuyDTO.model_validate(buy, from_attributes=True)
 
     @staticmethod
     async def get_max_refund_page(filters: list[str], session: AsyncSession):
