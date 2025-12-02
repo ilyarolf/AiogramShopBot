@@ -10,8 +10,8 @@ class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
-    telegram_username = Column(String, unique=True)
-    telegram_id = Column(Integer, nullable=False, unique=True)
+    telegram_username = Column(String, unique=True, index=True)
+    telegram_id = Column(Integer, nullable=False, unique=True, index=True)
     top_up_amount = Column(Float, default=0.0)
     consume_records = Column(Float, default=0.0)
     registered_at = Column(DateTime, default=func.now())

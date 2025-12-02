@@ -81,7 +81,22 @@
     "media_management": "📷 Media management",
     "edit_media": "📷 Edit {entity} media",
     "edit_media_request": "📷 Please send new media for the {entity} with name {entity_name}.\nThe media can be a gif, a picture, or a video.",
-    "entity_media_successfully_edited": "📷 Media for {entity} with name {entity_name} edited successfully!"
+    "entity_media_successfully_edited": "📷 Media for {entity} with name {entity_name} edited successfully!",
+    "create_new_coupon": "🎫 Create new coupon",
+    "view_all_coupons": "📋 View all coupons",
+    "coupons_management": "🎪 Coupons management",
+    "percentage_coupon": "📊 Percentage coupon",
+    "fixed_coupon": "💰 Fixed coupon",
+    "pick_type_of_coupon": "🎯 Please pick coupon type:",
+    "infinity_usage": "♾️ Infinity usages",
+    "single_usage": "1️⃣ Single usage",
+    "pick_usage_number": "🔢 Please pick numbers of usage:",
+    "request_coupon_value": "💵 Please send coupon value:\nIf it is a coupon type-\"Percentage coupon\", enter the value of how much percent to make the discount, if the coupon type-\"Fixed coupon\", then enter the value of how much the discount will be in {currency_text}\nCoupon type: {coupon_type}\nNumber of uses: {number_of_uses}",
+    "create_coupon_confirmation": "✅ Are you sure you want to create a coupon?\nCoupon Type: {coupon_type}\nNumber of uses: {number_of_uses}\nDiscount amount: {coupon_value}{symbol}",
+    "coupon_created_successfully": "🎉 Coupon successfully created.\nCoupon type: {coupon_type}\nNumber of uses: {number_of_uses}\nUse before: {use_before}\nValue: {coupon_value}{symbol}\nCode: <code>{code}</code>",
+    "coupon_info": "🎟️ Coupon type: {coupon_type}\n🔄 Number of uses: {number_of_uses}\n📅 Use before: {use_before}\n💰 Value: {coupon_value}{symbol}\n🔢 Code: <code>{code}</code>\n👥 Usage count: {usage_count}",
+    "coupon": "🎟️ Coupon #{id}",
+    "disable": "❌ Disable"
   },
   "common": {
     "back_button": "⬅️ Back",
@@ -131,7 +146,8 @@
     "minus_one": "➖1\uFE0F⃣",
     "plus_one": "➕1\uFE0F⃣",
     "max": "♾\uFE0F",
-    "remove_all": "\uD83D\uDDD1"
+    "remove_all": "\uD83D\uDDD1",
+    "coupon": "🎟️ I have a coupon"
   },
   "user": {
     "all_categories": "🗂️ All categories",
@@ -146,6 +162,7 @@
     "cart_total_price": "Cart total price: <code>{currency_sym}{cart_total_price:.2f}</code>",
     "cart_line_item": "{cart_item_subcategory_name} ({cart_item_quantity!s}) = {cart_item_total:.2f}{cart_item_currency!s} \n",
     "cart_confirm_checkout_process": "<b>{cart_content}\n\n\uD83D\uDCB8 Cart total price: <code>{currency_sym}{cart_total_price:.2f}</code>\n\n\uD83D\uDED2 Checkout cart?</b>",
+    "cart_confirm_checkout_process_with_coupon": "<b>{cart_content}\n\n\uD83D\uDCB8 Cart total price before discount: <code>{currency_sym}{cart_total_price_before_discount:.2f}</code>\n\uD83D\uDCB8 Cart total price after discount: <code>{currency_sym}{cart_total_price:.2f}</code>\n\uD83D\uDCB8 Discount: <code>{currency_sym}{discount_amount:.2f}</code>\n\n\uD83D\uDED2 Checkout cart?</b>",
     "new_cart_item_confirmation": "New item added to cart!",
     "no_cart_items": "⚠️ You have no items in your cart yet",
     "choose_top_up_method": "💵 Choose a top-up method:",
@@ -189,6 +206,9 @@
     "too_many_payment_request": "<b>⏳ Too many payment request!\nPlease wait and try again later.</b>",
     "pick_category": "<b>🗂️Pick category:</b>",
     "pick_subcategory": "<b>🗂️Category: <code>{category_name}</code>\n📦 Pick Subcategory:</b>",
-    "cart_item_preview": "<b>🗂️ Category: <code>{category_name}</code>\n📦 Subcategory: <code>{subcategory_name}</code>\n💸 Price for each: <code>{currency_sym}{price:.2f}</code>\n✍️Description: <i>{description}</i>\n🔢Quantity: <code>{qty}</code> pcs.\n\uD83D\uDD22Available quantity: <code>{available_qty}</code> pcs.\nTotal price: <code>{currency_sym}{total_price:.2f}</code></b>"
+    "cart_item_preview": "<b>🗂️ Category: <code>{category_name}</code>\n📦 Subcategory: <code>{subcategory_name}</code>\n💸 Price for each: <code>{currency_sym}{price:.2f}</code>\n✍️Description: <i>{description}</i>\n🔢Quantity: <code>{qty}</code> pcs.\n\uD83D\uDD22Available quantity: <code>{available_qty}</code> pcs.\nTotal price: <code>{currency_sym}{total_price:.2f}</code></b>",
+    "request_coupon": "🎟️ Please send your coupon if you have one. If not, press 'Next'",
+    "coupon_not_found": "❌ Coupon not found, expired, or already used",
+    "coupon_applied": "✅ Coupon applied successfully!"
   }
 }

@@ -4,6 +4,7 @@ from enums.add_type import AddType
 from enums.announcement_type import AnnouncementType
 from enums.bot_entity import BotEntity
 from enums.cart_action import CartAction
+from enums.coupon_type import CouponType
 from enums.cryptocurrency import Cryptocurrency
 from enums.entity_type import EntityType
 from enums.keyboardbutton import KeyboardButton
@@ -12,6 +13,7 @@ from enums.sort_property import SortProperty
 from enums.statistics_entity import StatisticsEntity
 from enums.statistics_timedelta import StatisticsTimeDelta
 from enums.user_management_operation import UserManagementOperation
+from enums.coupon_number_of_uses import CouponNumberOfUses
 from utils.localizator import Localizator
 
 
@@ -201,3 +203,21 @@ class MediaManagementCallback(BaseCallback, SortingCallback, prefix="media"):
                                        is_filter_enabled=is_filter_enabled,
                                        keyboard_button=keyboard_button,
                                        page=page)
+
+
+class CouponManagementCallback(BaseCallback, prefix="coupons"):
+    coupon_id: int | None = None
+    coupon_type: CouponType | None = None
+    number_of_uses: CouponNumberOfUses | None = None
+    page: int
+    confirmation: bool
+
+    @staticmethod
+    def create(level: int, coupon_id: int | None = None, coupon_type: CouponType | None = None,
+               number_of_uses: CouponNumberOfUses | None = None, confirmation: bool = False, page: int = 0):
+        return CouponManagementCallback(level=level,
+                                        coupon_id=coupon_id,
+                                        coupon_type=coupon_type,
+                                        number_of_uses=number_of_uses,
+                                        confirmation=confirmation,
+                                        page=page)

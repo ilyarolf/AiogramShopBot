@@ -52,3 +52,7 @@ class WalletStates(StatesGroup):
 class MediaManagementStates(StatesGroup):
     media = State()
     filter_entity = State()
+
+
+class CouponsManagementStates(StatesGroup):
+    coupon_value = State()

@@ -8,7 +8,7 @@ class Subcategory(Base):
     __tablename__ = 'subcategories'
 
     id = Column(Integer, primary_key=True, unique=True)
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, index=True)
     media_id = Column(String, nullable=False)
 
 

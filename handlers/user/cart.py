@@ -1,9 +1,12 @@
 from aiogram import F, Router
+from aiogram.filters import StateFilter
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from callbacks import CartCallback
 from enums.bot_entity import BotEntity
+from handlers.user.constants import UserStates
 from services.cart import CartService
 from services.notification import NotificationService
 from utils.custom_filters import IsUserExistFilter
@@ -13,14 +16,16 @@ cart_router = Router()
 
 
 @cart_router.message(F.text == Localizator.get_text(BotEntity.USER, "cart"), IsUserExistFilter())
-async def cart_text_message(message: Message, session: AsyncSession):
-    await show_cart(message=message, session=session)
+async def cart_text_message(message: Message, session: AsyncSession, state: FSMContext):
+    await show_cart(message=message, session=session, state=state)
 
 
 async def show_cart(**kwargs):
     message: Message | CallbackQuery = kwargs.get("message") or kwargs.get("callback")
     callback_data: CartCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
+    state: FSMContext = kwargs.get("state")
+    await state.clear()
     media, kb_builder = await CartService.create_buttons(message.from_user.id, callback_data, session)
     if isinstance(message, Message):
         await NotificationService.answer_media(message, media, kb_builder.as_markup())
@@ -40,27 +45,48 @@ async def show_cart_item(**kwargs):
 async def checkout_processing(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     session: AsyncSession = kwargs.get("session")
-    msg, kb_builder = await CartService.checkout_processing(callback, session)
+    state: FSMContext = kwargs.get("state")
+    msg, kb_builder = await CartService.checkout_processing(callback, state, session)
     await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
 
 
 async def buy_processing(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     session: AsyncSession = kwargs.get("session")
+    state: FSMContext = kwargs.get("state")
     await callback.message.edit_reply_markup()
-    msg, kb_builder = await CartService.buy_processing(callback, session)
+    msg, kb_builder = await CartService.buy_processing(callback, state, session)
     await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
 
 
+async def set_coupon(**kwargs):
+    callback: CallbackQuery = kwargs.get("callback")
+    state: FSMContext = kwargs.get("state")
+    msg, kb_builder = await CartService.set_coupon(state)
+    message = await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
+    await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
+
+
+@cart_router.message(F.text, IsUserExistFilter(), StateFilter(UserStates.coupon))
+async def receive_coupon(message: Message, state: FSMContext, session: AsyncSession):
+    media, kb_builder = await CartService.apply_coupon(message, state, session)
+    message = await NotificationService.answer_media(message, media, kb_builder.as_markup())
+    await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
+
+
 @cart_router.callback_query(CartCallback.filter(), IsUserExistFilter())
-async def navigate_cart_process(callback: CallbackQuery, callback_data: CartCallback, session: AsyncSession | Session):
+async def navigate_cart_process(callback: CallbackQuery,
+                                callback_data: CartCallback,
+                                session: AsyncSession | Session,
+                                state: FSMContext):
     current_level = callback_data.level
 
     levels = {
         0: show_cart,
         1: show_cart_item,
         2: checkout_processing,
-        3: buy_processing
+        3: set_coupon,
+        4: buy_processing
     }
 
     current_level_function = levels[current_level]
@@ -68,7 +94,8 @@ async def navigate_cart_process(callback: CallbackQuery, callback_data: CartCall
     kwargs = {
         "callback": callback,
         "session": session,
-        "callback_data": callback_data
+        "callback_data": callback_data,
+        "state": state
     }
 
     await current_level_function(**kwargs)

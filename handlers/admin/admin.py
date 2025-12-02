@@ -3,9 +3,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from callbacks import AdminMenuCallback, AnnouncementCallback, InventoryManagementCallback, \
-    UserManagementCallback, StatisticsCallback, WalletCallback, MediaManagementCallback
+    UserManagementCallback, StatisticsCallback, WalletCallback, MediaManagementCallback, CouponManagementCallback
 from enums.bot_entity import BotEntity
 from handlers.admin.announcement import announcement_router
+from handlers.admin.coupon_management import coupons_management
 from handlers.admin.inventory_management import inventory_management
 from handlers.admin.media_management import media_management
 from handlers.admin.statistics import statistics
@@ -20,7 +21,8 @@ admin_router.include_routers(announcement_router,
                              user_management,
                              statistics,
                              wallet,
-                             media_management)
+                             media_management,
+                             coupons_management)
 
 
 @admin_router.message(F.text == Localizator.get_text(BotEntity.ADMIN, "menu"), AdminIdFilter())
@@ -45,6 +47,8 @@ async def admin(**kwargs):
                       callback_data=WalletCallback.create(level=0))
     kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "media_management"),
                       callback_data=MediaManagementCallback.create(level=0))
+    kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "coupons_management"),
+                      callback_data=CouponManagementCallback.create(level=0))
     kb_builder.adjust(2)
     if isinstance(message, Message):
         await message.answer(Localizator.get_text(BotEntity.ADMIN, "menu"),
