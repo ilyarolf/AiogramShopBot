@@ -20,7 +20,7 @@ class KeyboardButton(Enum):
 
     @staticmethod
     def get_localized_set(button: 'KeyboardButton') -> set[str]:
-        locale_files = list(Path("./l10n").glob("*.json"))
+        locale_files = list(Path("./i18n").glob("*.json"))
         localized = []
         bot_entity = BotEntity.ADMIN if button == KeyboardButton.ADMIN_MENU else BotEntity.USER
         for locale_file in locale_files:
