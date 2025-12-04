@@ -3,6 +3,7 @@ from aiogram.types import Message, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import config
 from callbacks import InventoryManagementCallback
 from db import session_commit
 from enums.add_type import AddType
@@ -139,7 +140,7 @@ class InventoryManagementService:
             await state.update_data(private_data=message.html_text)
             await state.set_state(InventoryManagementStates.price)
             msg = Localizator.get_text(BotEntity.ADMIN, "add_items_price").format(
-                currency_text=Localizator.get_currency_text())
+                currency_text=config.CURRENCY.get_localized_text())
         else:
             try:
                 price = float(message.html_text)
@@ -161,6 +162,6 @@ class InventoryManagementService:
                 cancel_button.text = Localizator.get_text(BotEntity.COMMON, "back_button")
             except Exception as _:
                 msg = Localizator.get_text(BotEntity.ADMIN, "add_items_price").format(
-                    currency_text=Localizator.get_currency_text())
+                    currency_text=config.CURRENCY.get_localized_text())
         kb_builder.row(cancel_button)
         return msg, kb_builder

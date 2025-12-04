@@ -4,6 +4,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+import config
 from callbacks import AllCategoriesCallback
 from enums.bot_entity import BotEntity
 from enums.entity_type import EntityType
@@ -39,7 +40,7 @@ class SubcategoryService:
                 subcategory_name=item.subcategory_name,
                 subcategory_price=item.price,
                 available_quantity=available_qty,
-                currency_sym=Localizator.get_currency_symbol()),
+                currency_sym=config.CURRENCY.get_localized_symbol()),
                 callback_data=AllCategoriesCallback.create(
                     level=callback_data.level + 1,
                     category_id=item.category_id,
@@ -84,7 +85,7 @@ class SubcategoryService:
             price=item_dto.price,
             description=item_dto.description,
             quantity=available_qty,
-            currency_sym=Localizator.get_currency_symbol()
+            currency_sym=config.CURRENCY.get_localized_symbol()
         )
         kb_builder = InlineKeyboardBuilder()
         for i in range(1, 11):
@@ -112,7 +113,7 @@ class SubcategoryService:
             description=item.description,
             quantity=callback_data.quantity,
             total_price=item.price * callback_data.quantity,
-            currency_sym=Localizator.get_currency_symbol())
+            currency_sym=config.CURRENCY.get_localized_symbol())
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
                           callback_data=AllCategoriesCallback.create(

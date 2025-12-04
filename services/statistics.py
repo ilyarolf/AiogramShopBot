@@ -83,7 +83,7 @@ class StatisticsService:
                 return Localizator.get_text(BotEntity.ADMIN, "sales_statistics").format(
                     timedelta=callback_data.timedelta,
                     total_profit=total_profit, items_sold=items_sold,
-                    buys_count=len(buys), currency_sym=Localizator.get_currency_symbol()), kb_builder
+                    buys_count=len(buys), currency_sym=config.CURRENCY.get_localized_symbol()), kb_builder
             case StatisticsEntity.DEPOSITS:
                 deposits = await DepositRepository.get_by_timedelta(callback_data.timedelta, session)
                 fiat_amount = 0.0
@@ -118,4 +118,4 @@ class StatisticsService:
                     btc_amount=btc_amount, ltc_amount=ltc_amount,
                     sol_amount=sol_amount, eth_amount=eth_amount,
                     bnb_amount=bnb_amount,
-                    fiat_amount=fiat_amount, currency_text=Localizator.get_currency_text()), kb_builder
+                    fiat_amount=fiat_amount, currency_text=config.CURRENCY.get_localized_text()), kb_builder

@@ -82,7 +82,7 @@ class WalletService:
             crypto_name=cryptocurrency.value,
             withdrawal_amount=withdraw_dto.totalWithdrawalAmount,
             withdrawal_amount_fiat=withdraw_dto.totalWithdrawalAmount * price,
-            currency_text=Localizator.get_currency_text(),
+            currency_text=config.CURRENCY.get_localized_text(),
             blockchain_fee_amount=withdraw_dto.blockchainFeeAmount,
             blockchain_fee_fiat=withdraw_dto.blockchainFeeAmount * price,
             service_fee_amount=withdraw_dto.serviceFeeAmount,

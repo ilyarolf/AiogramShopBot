@@ -49,7 +49,7 @@ class PaymentService:
                     addr=payment_dto.address,
                     crypto_amount=payment_dto.cryptoAmount,
                     fiat_amount=payment_dto.fiatAmount,
-                    currency_text=Localizator.get_currency_text(),
+                    currency_text=config.CURRENCY.get_localized_text(),
                     status=Localizator.get_text(BotEntity.USER, "status_pending")
                 )
                 qr = qrcode.QRCode()

@@ -6,6 +6,7 @@ from aiogram.types import Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import config
 from callbacks import CouponManagementCallback
 from enums.bot_entity import BotEntity
 from enums.coupon_type import CouponType
@@ -89,7 +90,7 @@ class CouponManagementService:
             "request_coupon_value").format(
             coupon_type=callback_data.coupon_type.get_localized(),
             number_of_uses=callback_data.number_of_uses.get_localized(),
-            currency_text=Localizator.get_currency_text()
+            currency_text=config.CURRENCY.get_localized_text()
         ), kb_builder
 
     @staticmethod
@@ -124,7 +125,7 @@ class CouponManagementService:
                 coupon_type=coupon_type.get_localized(),
                 number_of_uses=number_of_uses.get_localized(),
                 coupon_value=coupon_value,
-                symbol=Localizator.get_currency_symbol() if coupon_type == CouponType.FIXED else "%"
+                symbol=config.CURRENCY.get_localized_symbol() if coupon_type == CouponType.FIXED else "%"
             )
             return msg, kb_builder
         except Exception as _:
@@ -137,7 +138,7 @@ class CouponManagementService:
                 "request_coupon_value").format(
                 coupon_type=coupon_type.get_localized(),
                 number_of_uses=number_of_uses.get_localized(),
-                currency_text=Localizator.get_currency_text()
+                currency_text=config.CURRENCY.get_localized_text()
             ), kb_builder
 
     @staticmethod
@@ -164,7 +165,7 @@ class CouponManagementService:
             coupon_type=callback_data.coupon_type.get_localized(),
             number_of_uses=callback_data.number_of_uses.get_localized(),
             coupon_value=coupon_value,
-            symbol=Localizator.get_currency_symbol() if callback_data.coupon_type == CouponType.FIXED else "%",
+            symbol=config.CURRENCY.get_localized_symbol() if callback_data.coupon_type == CouponType.FIXED else "%",
             use_before=coupon_dto.expire_datetime.strftime("%m/%d/%Y, %I:%M %p"),
             code=coupon_dto.code
         ), kb_builder
@@ -221,7 +222,7 @@ class CouponManagementService:
             coupon_type=coupon_dto.type.get_localized(),
             number_of_uses=number_of_uses,
             coupon_value=coupon_dto.value,
-            symbol=Localizator.get_currency_symbol() if coupon_dto.type == CouponType.FIXED else "%",
+            symbol=config.CURRENCY.get_localized_symbol() if coupon_dto.type == CouponType.FIXED else "%",
             use_before=coupon_dto.expire_datetime.strftime("%m/%d/%Y, %I:%M %p"),
             code=coupon_dto.code,
             usage_count=coupon_dto.usage_count

@@ -3,6 +3,8 @@ from aiogram.types import InputMediaPhoto, InputMediaVideo, InputMediaAnimation
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
+
+import config
 from callbacks import MyProfileCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
@@ -59,8 +61,8 @@ class UserService:
         caption = (Localizator.get_text(BotEntity.USER, "my_profile_msg")
                    .format(telegram_id=user.telegram_id,
                            fiat_balance=fiat_balance,
-                           currency_text=Localizator.get_currency_text(),
-                           currency_sym=Localizator.get_currency_symbol()))
+                           currency_text=config.CURRENCY.get_localized_text(),
+                           currency_sym=config.CURRENCY.get_localized_symbol()))
         button_media = await ButtonMediaRepository.get_by_button(KeyboardButton.MY_PROFILE, session)
         media = MediaService.convert_to_media(button_media.media_id, caption=caption)
         return media, kb_builder
@@ -97,7 +99,7 @@ class UserService:
                 subcategory_name=subcategory.name,
                 total_price=buy.total_price,
                 quantity=buy.quantity,
-                currency_sym=Localizator.get_currency_symbol()),
+                currency_sym=config.CURRENCY.get_localized_symbol()),
                 callback_data=MyProfileCallback.create(
                     level=callback_data.level + 1,
                     buy_id=buy.id

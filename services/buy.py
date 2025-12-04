@@ -1,6 +1,8 @@
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
+
+import config
 from callbacks import MyProfileCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
@@ -34,14 +36,14 @@ class BuyService:
                 telegram_username=refund_data.telegram_username,
                 quantity=refund_data.quantity,
                 subcategory=refund_data.subcategory_name,
-                currency_sym=Localizator.get_currency_symbol())
+                currency_sym=config.CURRENCY.get_localized_symbol())
         else:
             return Localizator.get_text(BotEntity.ADMIN, "successfully_refunded_with_tgid").format(
                 total_price=refund_data.total_price,
                 telegram_id=refund_data.telegram_id,
                 quantity=refund_data.quantity,
                 subcategory=refund_data.subcategory_name,
-                currency_sym=Localizator.get_currency_symbol())
+                currency_sym=config.CURRENCY.get_localized_symbol())
 
     @staticmethod
     async def get_purchase(callback_data: MyProfileCallback,
@@ -55,7 +57,7 @@ class BuyService:
         msg = Localizator.get_text(BotEntity.USER, "purchase_details").format(
             category_name=category.name,
             subcategory_name=subcategory.name,
-            currency_sym=Localizator.get_currency_symbol(),
+            currency_sym=config.CURRENCY.get_localized_symbol(),
             total_fiat_price=items[0].price*len(items),
             fiat_price=items[0].price,
             qty=len(items),

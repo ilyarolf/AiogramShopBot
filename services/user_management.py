@@ -3,6 +3,7 @@ from aiogram.types import Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import config
 from callbacks import UserManagementCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
@@ -61,10 +62,10 @@ class UserManagementService:
         match operation:
             case UserManagementOperation.ADD_BALANCE:
                 return Localizator.get_text(BotEntity.ADMIN, "credit_management_plus_operation").format(
-                    currency_text=Localizator.get_currency_text()), kb_builder
+                    currency_text=config.CURRENCY.get_localized_text()), kb_builder
             case UserManagementOperation.REDUCE_BALANCE:
                 return Localizator.get_text(BotEntity.ADMIN, "credit_management_minus_operation").format(
-                    currency_text=Localizator.get_currency_text()), kb_builder
+                    currency_text=config.CURRENCY.get_localized_text()), kb_builder
 
     @staticmethod
     async def balance_management(message: Message,
@@ -91,7 +92,7 @@ class UserManagementService:
                 msg = Localizator.get_text(BotEntity.ADMIN, "credit_management_added_success").format(
                     amount=message.text,
                     telegram_id=user.telegram_id,
-                    currency_text=Localizator.get_currency_text())
+                    currency_text=config.CURRENCY.get_localized_text())
             else:
                 user.consume_records += float(message.text)
                 await UserRepository.update(user, session)
@@ -99,7 +100,7 @@ class UserManagementService:
                 msg = Localizator.get_text(BotEntity.ADMIN, "credit_management_reduced_success").format(
                     amount=message.text,
                     telegram_id=user.telegram_id,
-                    currency_text=Localizator.get_currency_text())
+                    currency_text=config.CURRENCY.get_localized_text())
             await state.clear()
             return msg, kb_builder
         except Exception as _:
@@ -122,14 +123,14 @@ class UserManagementService:
                     telegram_username=refund_item.telegram_username,
                     total_price=refund_item.total_price,
                     subcategory=refund_item.subcategory_name,
-                    currency_sym=Localizator.get_currency_symbol()),
+                    currency_sym=config.CURRENCY.get_localized_symbol()),
                     callback_data=callback)
             else:
                 kb_builder.button(text=Localizator.get_text(BotEntity.ADMIN, "refund_by_tgid").format(
                     telegram_id=refund_item.telegram_id,
                     total_price=refund_item.total_price,
                     subcategory=refund_item.subcategory_name,
-                    currency_sym=Localizator.get_currency_symbol()),
+                    currency_sym=config.CURRENCY.get_localized_symbol()),
                     callback_data=callback)
         kb_builder.adjust(1)
         kb_builder = await add_search_button(kb_builder, EntityType.USER, callback_data, filters,)
@@ -158,11 +159,11 @@ class UserManagementService:
                 quantity=refund_data.quantity,
                 subcategory=refund_data.subcategory_name,
                 total_price=refund_data.total_price,
-                currency_sym=Localizator.get_currency_symbol()), kb_builder
+                currency_sym=config.CURRENCY.get_localized_symbol()), kb_builder
         else:
             return Localizator.get_text(BotEntity.ADMIN, "refund_confirmation_by_tgid").format(
                 telegram_id=refund_data.telegram_id,
                 quantity=refund_data.quantity,
                 subcategory=refund_data.subcategory_name,
                 total_price=refund_data.total_price,
-                currency_sym=Localizator.get_currency_symbol()), kb_builder
+                currency_sym=config.CURRENCY.get_localized_symbol()), kb_builder

@@ -5,6 +5,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+import config
 from callbacks import AllCategoriesCallback, CartCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
@@ -90,7 +91,7 @@ class CartService:
                     subcategory_name=subcategory.name,
                     qty=cart_item.quantity,
                     total_price=cart_item.quantity * item.price,
-                    currency_sym=Localizator.get_currency_symbol()
+                    currency_sym=config.CURRENCY.get_localized_symbol()
                 ),
                 callback_data=CartCallback.create(
                     level=callback_data.level + 1,
@@ -143,7 +144,7 @@ class CartService:
                 category_name=category.name,
                 subcategory_name=subcategory.name,
                 price=item_dto.price,
-                currency_sym=Localizator.get_currency_symbol(),
+                currency_sym=config.CURRENCY.get_localized_symbol(),
                 description=item_dto.description,
             ), kb_builder
 
@@ -166,7 +167,7 @@ class CartService:
                     subcategory_name=subcategory.name,
                     qty=cart_item.quantity,
                     total_price=line_item_total,
-                    currency_sym=Localizator.get_currency_symbol()
+                    currency_sym=config.CURRENCY.get_localized_symbol()
                 ))
             cart_total_price += line_item_total
         state_data = await state.get_data()
@@ -187,13 +188,13 @@ class CartService:
                 cart_total_price_before_discount=cart_total_price_before_discount,
                 cart_total_price=cart_total_price,
                 discount_amount=discount_amount,
-                currency_sym=Localizator.get_currency_symbol()
+                currency_sym=config.CURRENCY.get_localized_symbol()
             )
         else:
             message_text = Localizator.get_text(BotEntity.USER, "cart_confirm_checkout_process").format(
                 cart_content="\n".join(cart_content),
                 cart_total_price=cart_total_price,
-                currency_sym=Localizator.get_currency_symbol()
+                currency_sym=config.CURRENCY.get_localized_symbol()
             )
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
@@ -324,7 +325,7 @@ class CartService:
             category_name=category.name,
             subcategory_name=subcategory.name,
             price=item_dto.price,
-            currency_sym=Localizator.get_currency_symbol(),
+            currency_sym=config.CURRENCY.get_localized_symbol(),
             description=item_dto.description,
             available_qty=available_qty,
             qty=cart_item_dto.quantity,

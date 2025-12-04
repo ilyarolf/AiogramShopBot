@@ -9,6 +9,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+import config
 from config import ADMIN_ID_LIST, TOKEN
 from enums.bot_entity import BotEntity
 from models.buy import RefundDTO, BuyDTO
@@ -85,7 +86,7 @@ class NotificationService:
             addr="***",
             crypto_amount=payment_dto.cryptoAmount,
             fiat_amount=payment_dto.fiatAmount,
-            currency_text=Localizator.get_currency_text(),
+            currency_text=config.CURRENCY.get_localized_text(),
             status=Localizator.get_text(BotEntity.USER, "status_expired")
         )
         await NotificationService.edit_caption(edited_payment_message, table_payment_dto.message_id,
@@ -97,7 +98,7 @@ class NotificationService:
         user_button = await NotificationService.make_user_button(user_dto.telegram_username)
         user_notification_msg = Localizator.get_text(BotEntity.USER, "notification_new_deposit").format(
             fiat_amount=payment_dto.fiatAmount,
-            currency_text=Localizator.get_currency_text(),
+            currency_text=config.CURRENCY.get_localized_text(),
             payment_id=payment_dto.id
         )
         await NotificationService.send_to_user(user_notification_msg, user_dto.telegram_id)
@@ -106,7 +107,7 @@ class NotificationService:
             addr="***",
             crypto_amount=payment_dto.cryptoAmount,
             fiat_amount=payment_dto.fiatAmount,
-            currency_text=Localizator.get_currency_text(),
+            currency_text=config.CURRENCY.get_localized_text(),
             status=Localizator.get_text(BotEntity.USER, "status_paid")
         )
         await NotificationService.edit_caption(edited_payment_message, table_payment_dto.message_id,
@@ -115,7 +116,7 @@ class NotificationService:
             message = Localizator.get_text(BotEntity.ADMIN, "notification_new_deposit_username").format(
                 username=user_dto.telegram_username,
                 deposit_amount_fiat=payment_dto.fiatAmount,
-                currency_sym=Localizator.get_currency_symbol(),
+                currency_sym=config.CURRENCY.get_localized_symbol(),
                 value=payment_dto.cryptoAmount,
                 crypto_name=payment_dto.cryptoCurrency.name
             )
@@ -123,7 +124,7 @@ class NotificationService:
             message = Localizator.get_text(BotEntity.ADMIN, "notification_new_deposit_id").format(
                 telegram_id=user_dto.telegram_id,
                 deposit_amount_fiat=payment_dto.fiatAmount,
-                currency_sym=Localizator.get_currency_symbol(),
+                currency_sym=config.CURRENCY.get_localized_symbol(),
                 value=payment_dto.cryptoAmount,
                 crypto_name=payment_dto.cryptoCurrency.name
             )
@@ -147,7 +148,7 @@ class NotificationService:
                     quantity=len(buy_item_dto_list),
                     category_name=category.name,
                     subcategory_name=subcategory.name,
-                    currency_sym=Localizator.get_currency_symbol()))
+                    currency_sym=config.CURRENCY.get_localized_symbol()))
             else:
                 cart_content.append(Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_username").format(
                     telegram_id=user.telegram_id,
@@ -155,10 +156,10 @@ class NotificationService:
                     quantity=len(buy_item_dto_list),
                     category_name=category.name,
                     subcategory_name=subcategory.name,
-                    currency_sym=Localizator.get_currency_symbol()))
+                    currency_sym=config.CURRENCY.get_localized_symbol()))
         message = "\n\n".join(cart_content) + "\n\n"
         message += Localizator.get_text(BotEntity.USER, "cart_total_price").format(
-            cart_total_price=cart_total_price, currency_sym=Localizator.get_currency_symbol())
+            cart_total_price=cart_total_price, currency_sym=config.CURRENCY.get_localized_symbol())
         await NotificationService.send_to_admins(message, user_button)
 
     @staticmethod
@@ -167,7 +168,7 @@ class NotificationService:
             total_price=refund_data.total_price,
             quantity=refund_data.quantity,
             subcategory=refund_data.subcategory_name,
-            currency_sym=Localizator.get_currency_symbol())
+            currency_sym=config.CURRENCY.get_localized_symbol())
         try:
             bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
             await bot.send_message(refund_data.telegram_id, text=user_notification)

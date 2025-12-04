@@ -4,6 +4,7 @@ from pathlib import Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+import config
 from callbacks import AddType
 from db import session_commit
 from enums.announcement_type import AnnouncementType
@@ -43,7 +44,7 @@ class ItemService:
                     subcategory_name=subcategory,
                     available_quantity=len(item),
                     subcategory_price=item[0].price,
-                    currency_sym=Localizator.get_currency_symbol()) + "\n"
+                    currency_sym=config.CURRENCY.get_localized_symbol()) + "\n"
         message = f"<b>{message}</b>"
         return message
 
