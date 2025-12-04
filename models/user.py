@@ -1,8 +1,9 @@
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func, CheckConstraint
+from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func, CheckConstraint, Enum
 
+from enums.language import Language
 from models.base import Base
 
 
@@ -16,6 +17,7 @@ class User(Base):
     consume_records = Column(Float, default=0.0)
     registered_at = Column(DateTime, default=func.now())
     can_receive_messages = Column(Boolean, default=True)
+    language = Column(Enum(Language), default=Language.EN)
 
     __table_args__ = (
         CheckConstraint('top_up_amount >= 0', name='check_top_up_amount_positive'),
@@ -31,3 +33,4 @@ class UserDTO(BaseModel):
     consume_records: float | None = None
     registered_at: datetime | None = None
     can_receive_messages: bool | None = None
+    language: Language = Language.EN

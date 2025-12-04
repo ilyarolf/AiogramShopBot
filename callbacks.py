@@ -7,27 +7,28 @@ from enums.cart_action import CartAction
 from enums.coupon_type import CouponType
 from enums.cryptocurrency import Cryptocurrency
 from enums.entity_type import EntityType
-from enums.keyboardbutton import KeyboardButton
+from enums.keyboard_button import KeyboardButton
+from enums.language import Language
 from enums.sort_order import SortOrder
 from enums.sort_property import SortProperty
 from enums.statistics_entity import StatisticsEntity
 from enums.statistics_timedelta import StatisticsTimeDelta
 from enums.user_management_operation import UserManagementOperation
 from enums.coupon_number_of_uses import CouponNumberOfUses
-from utils.localizator import Localizator
+from utils.utils import get_text
 
 
 class BaseCallback(CallbackData, prefix="base"):
     level: int
 
-    def get_back_button(self, lvl: int | None = None):
+    def get_back_button(self, language: Language, lvl: int | None = None):
         cb_copy = self.__copy__()
         if lvl is None:
             cb_copy.level = cb_copy.level - 1
         else:
             cb_copy.level = lvl
         return types.InlineKeyboardButton(
-            text=Localizator.get_text(BotEntity.COMMON, "back_button"),
+            text=get_text(language, BotEntity.COMMON, "back_button"),
             callback_data=cb_copy.create(**cb_copy.model_dump()).pack())
 
 

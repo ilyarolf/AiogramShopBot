@@ -6,6 +6,7 @@ import config
 from callbacks import MyProfileCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
+from enums.language import Language
 from models.buy import BuyDTO
 from repositories.buy import BuyRepository
 from repositories.category import CategoryRepository
@@ -14,13 +15,13 @@ from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
 from services.message import MessageService
 from services.notification import NotificationService
-from utils.localizator import Localizator
+from utils.utils import get_text
 
 
 class BuyService:
 
     @staticmethod
-    async def refund(buy_dto: BuyDTO, session: AsyncSession | Session) -> str:
+    async def refund(buy_dto: BuyDTO, session: AsyncSession | Session, language: Language) -> str:
         refund_data = await BuyRepository.get_refund_data_single(buy_dto.id, session)
         buy = await BuyRepository.get_by_id(buy_dto.id, session)
         buy.is_refunded = True
@@ -31,14 +32,14 @@ class BuyService:
         await session_commit(session)
         await NotificationService.refund(refund_data)
         if refund_data.telegram_username:
-            return Localizator.get_text(BotEntity.ADMIN, "successfully_refunded_with_username").format(
+            return get_text(language, BotEntity.ADMIN, "successfully_refunded_with_username").format(
                 total_price=refund_data.total_price,
                 telegram_username=refund_data.telegram_username,
                 quantity=refund_data.quantity,
                 subcategory=refund_data.subcategory_name,
                 currency_sym=config.CURRENCY.get_localized_symbol())
         else:
-            return Localizator.get_text(BotEntity.ADMIN, "successfully_refunded_with_tgid").format(
+            return get_text(language, BotEntity.ADMIN, "successfully_refunded_with_tgid").format(
                 total_price=refund_data.total_price,
                 telegram_id=refund_data.telegram_id,
                 quantity=refund_data.quantity,
@@ -47,14 +48,15 @@ class BuyService:
 
     @staticmethod
     async def get_purchase(callback_data: MyProfileCallback,
-                           session: AsyncSession) -> tuple[str, InlineKeyboardBuilder]:
+                           session: AsyncSession,
+                           language: Language) -> tuple[str, InlineKeyboardBuilder]:
         buy = await BuyRepository.get_by_id(callback_data.buy_id, session)
         items = await ItemRepository.get_by_buy_id(callback_data.buy_id, session)
-        purchased_items_msg = MessageService.create_message_with_bought_items(items)
+        purchased_items_msg = MessageService.create_message_with_bought_items(items, language)
         category = await CategoryRepository.get_by_id(items[0].category_id, session)
         subcategory = await SubcategoryRepository.get_by_id(items[0].subcategory_id, session)
         us_datetime_12h = buy.buy_datetime.strftime("%m/%d/%Y, %I:%M %p")
-        msg = Localizator.get_text(BotEntity.USER, "purchase_details").format(
+        msg = get_text(language, BotEntity.USER, "purchase_details").format(
             category_name=category.name,
             subcategory_name=subcategory.name,
             currency_sym=config.CURRENCY.get_localized_symbol(),
@@ -65,5 +67,5 @@ class BuyService:
             purchased_items=purchased_items_msg
         )
         kb_builder = InlineKeyboardBuilder()
-        kb_builder.row(callback_data.get_back_button())
+        kb_builder.row(callback_data.get_back_button(language))
         return msg, kb_builder

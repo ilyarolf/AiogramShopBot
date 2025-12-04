@@ -2,7 +2,8 @@ from enum import Enum
 
 import config
 from enums.bot_entity import BotEntity
-from utils.localizator import Localizator
+from enums.language import Language
+from utils.utils import get_text
 
 
 class Cryptocurrency(Enum):
@@ -54,8 +55,8 @@ class Cryptocurrency(Enum):
     def __str__(self):
         return self.name
 
-    def get_localized(self):
-        return Localizator.get_text(BotEntity.COMMON, f"{self.name.lower()}_top_up")
+    def get_localized(self, language: Language):
+        return get_text(language, BotEntity.COMMON, f"{self.name.lower()}_top_up")
 
     def get_forwarding_address(self):
         match self:

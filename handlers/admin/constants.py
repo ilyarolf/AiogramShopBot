@@ -4,23 +4,25 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from callbacks import AdminMenuCallback, AnnouncementCallback, AnnouncementType
 from enums.bot_entity import BotEntity
-from utils.localizator import Localizator
+from enums.language import Language
+from utils.utils import get_text
 
 
 class AdminConstants:
-    back_to_main_button = InlineKeyboardButton(text=Localizator.get_text(BotEntity.ADMIN,
-                                                                         "back_to_menu"),
-                                               callback_data=AdminMenuCallback.create(level=0).pack())
+    @staticmethod
+    def back_to_main_button(language: Language):
+        return InlineKeyboardButton(text=get_text(language, BotEntity.ADMIN, "back_to_menu"),
+                                    callback_data=AdminMenuCallback.create(level=0).pack())
 
 
 class AnnouncementsConstants:
     @staticmethod
-    def get_confirmation_builder(announcement_type: AnnouncementType) -> InlineKeyboardBuilder:
+    def get_confirmation_builder(announcement_type: AnnouncementType, language: Language) -> InlineKeyboardBuilder:
         kb_builder = InlineKeyboardBuilder()
-        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
+        kb_builder.button(text=get_text(language, BotEntity.COMMON, "confirm"),
                           callback_data=AnnouncementCallback.create(level=3,
                                                                     announcement_type=announcement_type))
-        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
+        kb_builder.button(text=get_text(language, BotEntity.COMMON, "cancel"),
                           callback_data=AnnouncementCallback.create(level=0))
         return kb_builder
 

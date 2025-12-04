@@ -7,23 +7,24 @@ from callbacks import MediaManagementCallback, AdminMenuCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.entity_type import EntityType
-from enums.keyboardbutton import KeyboardButton
+from enums.keyboard_button import KeyboardButton
+from enums.language import Language
 from handlers.admin.constants import MediaManagementStates
 from models.category import CategoryDTO
 from repositories.button_media import ButtonMediaRepository
 from repositories.category import CategoryRepository
 from repositories.subcategory import SubcategoryRepository
 from services.notification import NotificationService
-from utils.localizator import Localizator
+from utils.utils import get_text
 
 
 class MediaService:
     @staticmethod
-    async def get_menu(callback_data: MediaManagementCallback):
+    async def get_menu(callback_data: MediaManagementCallback, language: Language):
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(
-            text=Localizator.get_text(BotEntity.ADMIN, "edit_media").format(
-                entity=EntityType.CATEGORY.get_localized()
+            text=get_text(language, BotEntity.ADMIN, "edit_media").format(
+                entity=EntityType.CATEGORY.get_localized(language)
             ),
             callback_data=MediaManagementCallback.create(
                 level=callback_data.level + 1,
@@ -31,18 +32,20 @@ class MediaService:
             )
         )
         kb_builder.button(
-            text=Localizator.get_text(BotEntity.ADMIN, "edit_media").format(
-                entity=EntityType.SUBCATEGORY.get_localized()
+            text=get_text(language, BotEntity.ADMIN, "edit_media").format(
+                entity=EntityType.SUBCATEGORY.get_localized(language)
             ),
             callback_data=MediaManagementCallback.create(
                 level=callback_data.level + 1,
                 entity_type=EntityType.SUBCATEGORY
             )
         )
-        for button in KeyboardButton:
+        buttons = [button for button in KeyboardButton]
+        buttons.remove(KeyboardButton.ADMIN_MENU)
+        for button in buttons:
             kb_builder.button(
-                text=Localizator.get_text(BotEntity.ADMIN, "edit_media").format(
-                    entity=Localizator.get_text(BotEntity.USER, button.value.lower())
+                text=get_text(language, BotEntity.ADMIN, "edit_media").format(
+                    entity=get_text(language, BotEntity.USER, button.value.lower())
                 ),
                 callback_data=MediaManagementCallback.create(
                     level=callback_data.level + 2,
@@ -50,16 +53,17 @@ class MediaService:
                 )
             )
         kb_builder.button(
-            text=Localizator.get_text(BotEntity.COMMON, "back_button"),
+            text=get_text(language, BotEntity.COMMON, "back_button"),
             callback_data=AdminMenuCallback.create(0)
         )
         kb_builder.adjust(1)
-        return Localizator.get_text(BotEntity.ADMIN, "media_management"), kb_builder
+        return get_text(language, BotEntity.ADMIN, "media_management"), kb_builder
 
     @staticmethod
     async def set_entity_media_edit(callback_data: MediaManagementCallback,
                                     state: FSMContext,
-                                    session: AsyncSession) -> tuple[str, InlineKeyboardBuilder]:
+                                    session: AsyncSession,
+                                    language: Language) -> tuple[str, InlineKeyboardBuilder]:
         await state.update_data(
             entity_type=callback_data.entity_type,
             entity_id=callback_data.entity_id,
@@ -67,26 +71,29 @@ class MediaService:
         await state.set_state(MediaManagementStates.media)
         if callback_data.entity_type == EntityType.CATEGORY:
             entity = await CategoryRepository.get_by_id(callback_data.entity_id, session)
-            entity_type_localized = callback_data.entity_type.get_localized()
+            entity_type_localized = callback_data.entity_type.get_localized(language)
         elif callback_data.entity_type == EntityType.SUBCATEGORY:
             entity = await SubcategoryRepository.get_by_id(callback_data.entity_id, session)
-            entity_type_localized = callback_data.entity_type.get_localized()
+            entity_type_localized = callback_data.entity_type.get_localized(language)
         else:
-            entity = CategoryDTO(name=Localizator.get_text(BotEntity.USER,
-                                                           callback_data.keyboard_button.value.lower()))
-            entity_type_localized = callback_data.keyboard_button.get_localized()
+            entity = CategoryDTO(name=get_text(language, BotEntity.USER,
+                                               callback_data.keyboard_button.value.lower()))
+            entity_type_localized = callback_data.keyboard_button.get_localized(language)
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(
-            text=Localizator.get_text(BotEntity.COMMON, "cancel"),
+            text=get_text(language, BotEntity.COMMON, "cancel"),
             callback_data=MediaManagementCallback.create(0)
         )
-        return Localizator.get_text(BotEntity.ADMIN, "edit_media_request").format(
+        return get_text(language, BotEntity.ADMIN, "edit_media_request").format(
             entity=entity_type_localized,
             entity_name=entity.name
         ), kb_builder
 
     @staticmethod
-    async def receive_new_entity_media(message: Message, state: FSMContext, session: AsyncSession):
+    async def receive_new_entity_media(message: Message,
+                                       state: FSMContext,
+                                       session: AsyncSession,
+                                       language: Language):
         state_data = await state.get_data()
         kb_builder = InlineKeyboardBuilder()
         await NotificationService.edit_reply_markup(message.bot,
@@ -110,7 +117,7 @@ class MediaService:
             button_media_dto = await ButtonMediaRepository.get_by_button(entity_type, session)
             button_media_dto.media_id = media
             await ButtonMediaRepository.update(button_media_dto, session)
-            entity_dto = CategoryDTO(name=Localizator.get_text(BotEntity.USER, entity_type.value.lower()))
+            entity_dto = CategoryDTO(name=get_text(language, BotEntity.USER, entity_type.value.lower()))
         else:
             entity_type = EntityType(entity_type)
             if entity_type == EntityType.CATEGORY:
@@ -124,11 +131,11 @@ class MediaService:
         await session_commit(session)
         await state.clear()
         kb_builder.button(
-            text=Localizator.get_text(BotEntity.COMMON, "back_button"),
+            text=get_text(language, BotEntity.COMMON, "back_button"),
             callback_data=MediaManagementCallback.create(0)
         )
-        return Localizator.get_text(BotEntity.ADMIN, "entity_media_successfully_edited").format(
-            entity=entity_type.get_localized(),
+        return get_text(language, BotEntity.ADMIN, "entity_media_successfully_edited").format(
+            entity=entity_type.get_localized(language),
             entity_name=entity_dto.name
         ), kb_builder
 

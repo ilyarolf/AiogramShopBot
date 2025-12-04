@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from sqlalchemy import Integer, Column, String, Enum
 
-from enums.keyboardbutton import KeyboardButton
+from enums.keyboard_button import KeyboardButton
 from models.base import Base
 
 

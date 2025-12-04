@@ -117,6 +117,7 @@ class BuyRepository:
                        User.telegram_id,
                        User.telegram_username,
                        User.id.label("user_id"),
+                       User.language,
                        Subcategory.name.label("subcategory_name"))
                 .join(BuyItem, BuyItem.buy_id == Buy.id)
                 .join(User, User.id == Buy.buyer_id)

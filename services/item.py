@@ -9,23 +9,26 @@ from callbacks import AddType
 from db import session_commit
 from enums.announcement_type import AnnouncementType
 from enums.bot_entity import BotEntity
+from enums.language import Language
 from models.item import ItemDTO
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
-from utils.localizator import Localizator
+from utils.utils import get_text
 
 
 class ItemService:
 
     @staticmethod
-    async def create_announcement_message(announcement_type: AnnouncementType, session: AsyncSession):
+    async def create_announcement_message(announcement_type: AnnouncementType,
+                                          session: AsyncSession,
+                                          language: Language):
         if announcement_type == AnnouncementType.CURRENT_STOCK:
             items = await ItemRepository.get_in_stock(session)
-            header = Localizator.get_text(BotEntity.ADMIN, "current_stock_header")
+            header = get_text(language, BotEntity.ADMIN, "current_stock_header")
         else:
             items = await ItemRepository.get_new(session)
-            header = Localizator.get_text(BotEntity.ADMIN, "restocking_message_header")
+            header = get_text(language, BotEntity.ADMIN, "restocking_message_header")
         filtered_items = {}
         for item in items:
             category = await CategoryRepository.get_by_id(item.category_id, session)
@@ -37,10 +40,10 @@ class ItemService:
             filtered_items[category.name][subcategory.name].append(item)
         message = header
         for category, subcategory_item_dict in filtered_items.items():
-            message += Localizator.get_text(BotEntity.ADMIN, "restocking_message_category").format(
+            message += get_text(language, BotEntity.ADMIN, "restocking_message_category").format(
                 category=category)
             for subcategory, item in subcategory_item_dict.items():
-                message += Localizator.get_text(BotEntity.USER, "subcategory_button").format(
+                message += get_text(language, BotEntity.USER, "subcategory_button").format(
                     subcategory_name=subcategory,
                     available_quantity=len(item),
                     subcategory_price=item[0].price,
@@ -84,7 +87,10 @@ class ItemService:
             return items_list
 
     @staticmethod
-    async def add_items(path_to_file: str, add_type: AddType, session: AsyncSession | Session) -> str:
+    async def add_items(path_to_file: str,
+                        add_type: AddType,
+                        session: AsyncSession | Session,
+                        language: Language) -> str:
         try:
             items = []
             if add_type == AddType.JSON:
@@ -93,8 +99,8 @@ class ItemService:
                 items += await ItemService.parse_items_txt(path_to_file, session)
             await ItemRepository.add_many(items, session)
             await session_commit(session)
-            return Localizator.get_text(BotEntity.ADMIN, "add_items_success").format(adding_result=len(items))
+            return get_text(language, BotEntity.ADMIN, "add_items_success").format(adding_result=len(items))
         except Exception as e:
-            return Localizator.get_text(BotEntity.ADMIN, "add_items_err").format(adding_result=e)
+            return get_text(language, BotEntity.ADMIN, "add_items_err").format(adding_result=e)
         finally:
             Path(path_to_file).unlink(missing_ok=True)

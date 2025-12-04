@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from sqlalchemy import Column, Integer, Float, DateTime, Boolean, ForeignKey, func, CheckConstraint
 from sqlalchemy.orm import relationship
 
+from enums.language import Language
 from models.base import Base
 
 
@@ -42,3 +43,4 @@ class RefundDTO(BaseModel):
     total_price: float | None = None
     quantity: int | None = None
     buy_id: int | None = None
+    language: Language

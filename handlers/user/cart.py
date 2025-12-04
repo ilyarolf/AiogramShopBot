@@ -5,19 +5,19 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from callbacks import CartCallback
-from enums.bot_entity import BotEntity
+from enums.keyboard_button import KeyboardButton as KB
+from enums.language import Language
 from handlers.user.constants import UserStates
 from services.cart import CartService
 from services.notification import NotificationService
 from utils.custom_filters import IsUserExistFilter
-from utils.localizator import Localizator
 
 cart_router = Router()
 
 
-@cart_router.message(F.text == Localizator.get_text(BotEntity.USER, "cart"), IsUserExistFilter())
-async def cart_text_message(message: Message, session: AsyncSession, state: FSMContext):
-    await show_cart(message=message, session=session, state=state)
+@cart_router.message(F.text.in_(KB.get_localized_set(KB.CART)), IsUserExistFilter())
+async def cart_text_message(message: Message, session: AsyncSession, state: FSMContext, language: Language):
+    await show_cart(message=message, session=session, state=state, language=language)
 
 
 async def show_cart(**kwargs):
@@ -25,8 +25,9 @@ async def show_cart(**kwargs):
     callback_data: CartCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
     state: FSMContext = kwargs.get("state")
+    language: Language = kwargs.get("language")
     await state.clear()
-    media, kb_builder = await CartService.create_buttons(message.from_user.id, callback_data, session)
+    media, kb_builder = await CartService.create_buttons(message.from_user.id, callback_data, session, language)
     if isinstance(message, Message):
         await NotificationService.answer_media(message, media, kb_builder.as_markup())
     elif isinstance(message, CallbackQuery):
@@ -38,7 +39,8 @@ async def show_cart_item(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     callback_data: CartCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
-    msg, kb_builder = await CartService.show_cart_item(callback_data, session)
+    language: Language = kwargs.get("language")
+    msg, kb_builder = await CartService.show_cart_item(callback_data, session, language)
     await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
 
 
@@ -46,7 +48,8 @@ async def checkout_processing(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     session: AsyncSession = kwargs.get("session")
     state: FSMContext = kwargs.get("state")
-    msg, kb_builder = await CartService.checkout_processing(callback, state, session)
+    language: Language = kwargs.get("language")
+    msg, kb_builder = await CartService.checkout_processing(callback, state, session, language)
     await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
 
 
@@ -54,22 +57,24 @@ async def buy_processing(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     session: AsyncSession = kwargs.get("session")
     state: FSMContext = kwargs.get("state")
+    language: Language = kwargs.get("language")
     await callback.message.edit_reply_markup()
-    msg, kb_builder = await CartService.buy_processing(callback, state, session)
+    msg, kb_builder = await CartService.buy_processing(callback, state, session, language)
     await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
 
 
 async def set_coupon(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     state: FSMContext = kwargs.get("state")
-    msg, kb_builder = await CartService.set_coupon(state)
+    language: Language = kwargs.get("language")
+    msg, kb_builder = await CartService.set_coupon(state, language)
     message = await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
     await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
 
 
 @cart_router.message(F.text, IsUserExistFilter(), StateFilter(UserStates.coupon))
-async def receive_coupon(message: Message, state: FSMContext, session: AsyncSession):
-    media, kb_builder = await CartService.apply_coupon(message, state, session)
+async def receive_coupon(message: Message, state: FSMContext, session: AsyncSession, language: Language):
+    media, kb_builder = await CartService.apply_coupon(message, state, session, language)
     message = await NotificationService.answer_media(message, media, kb_builder.as_markup())
     await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
 
@@ -78,7 +83,8 @@ async def receive_coupon(message: Message, state: FSMContext, session: AsyncSess
 async def navigate_cart_process(callback: CallbackQuery,
                                 callback_data: CartCallback,
                                 session: AsyncSession | Session,
-                                state: FSMContext):
+                                state: FSMContext,
+                                language: Language):
     current_level = callback_data.level
 
     levels = {
@@ -95,7 +101,8 @@ async def navigate_cart_process(callback: CallbackQuery,
         "callback": callback,
         "session": session,
         "callback_data": callback_data,
-        "state": state
+        "state": state,
+        "language": language
     }
 
     await current_level_function(**kwargs)

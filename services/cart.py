@@ -11,7 +11,8 @@ from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.cart_action import CartAction
 from enums.coupon_type import CouponType
-from enums.keyboardbutton import KeyboardButton
+from enums.keyboard_button import KeyboardButton
+from enums.language import Language
 from handlers.common.common import add_pagination_buttons
 from handlers.user.constants import UserStates
 from models.buy import BuyDTO
@@ -30,7 +31,7 @@ from repositories.user import UserRepository
 from services.media import MediaService
 from services.message import MessageService
 from services.notification import NotificationService
-from utils.localizator import Localizator
+from utils.utils import get_text
 from utils.utils import get_bot_photo_id
 
 
@@ -39,7 +40,8 @@ class CartService:
     @staticmethod
     async def add_to_cart(callback: CallbackQuery,
                           callback_data: AllCategoriesCallback,
-                          session: AsyncSession) -> tuple[InputMediaPhoto, InlineKeyboardBuilder]:
+                          session: AsyncSession,
+                          language: Language) -> tuple[InputMediaPhoto, InlineKeyboardBuilder]:
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
         cart = await CartRepository.get_or_create(user.id, session)
         cart_item = CartItemDTO(
@@ -60,21 +62,22 @@ class CartService:
         else:
             await CartItemRepository.create(cart_item, session)
         await session_commit(session)
-        caption = Localizator.get_text(BotEntity.USER, "item_added_to_cart")
+        caption = get_text(language, BotEntity.USER, "item_added_to_cart")
         bot_photo_id = get_bot_photo_id()
         media = InputMediaPhoto(media=bot_photo_id, caption=caption)
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(
-            text=Localizator.get_text(BotEntity.USER, "cart"),
+            text=get_text(language, BotEntity.USER, "cart"),
             callback_data=CartCallback.create(0)
         )
-        kb_builder.row(callback_data.get_back_button(0))
+        kb_builder.row(callback_data.get_back_button(language, 0))
         return media, kb_builder
 
     @staticmethod
     async def create_buttons(telegram_id: int,
                              callback_data: CartCallback | None,
-                             session: AsyncSession) -> tuple[InputMediaPhoto |
+                             session: AsyncSession,
+                             language: Language) -> tuple[InputMediaPhoto |
                                                              InputMediaVideo |
                                                              InputMediaAnimation,
     InlineKeyboardBuilder]:
@@ -87,7 +90,7 @@ class CartService:
             item = await ItemRepository.get_single(cart_item.category_id, cart_item.subcategory_id, session)
             subcategory = await SubcategoryRepository.get_by_id(cart_item.subcategory_id, session)
             kb_builder.button(
-                text=Localizator.get_text(BotEntity.USER, "cart_item_button").format(
+                text=get_text(language, BotEntity.USER, "cart_item_button").format(
                     subcategory_name=subcategory.name,
                     qty=cart_item.quantity,
                     total_price=cart_item.quantity * item.price,
@@ -100,7 +103,7 @@ class CartService:
             )
         if len(kb_builder.as_markup().inline_keyboard) > 0:
             cart = await CartRepository.get_or_create(user.id, session)
-            kb_builder.button(text=Localizator.get_text(BotEntity.USER, "checkout"),
+            kb_builder.button(text=get_text(language, BotEntity.USER, "checkout"),
                               callback_data=CartCallback.create(
                                   level=2,
                                   cart_id=cart.id,
@@ -111,36 +114,39 @@ class CartService:
                 kb_builder,
                 callback_data,
                 CartItemRepository.get_maximum_page(user.id, session),
-                None)
-            caption = Localizator.get_text(BotEntity.USER, "cart")
+                None,
+                language)
+            caption = get_text(language, BotEntity.USER, "cart")
         else:
-            caption = Localizator.get_text(BotEntity.USER, "no_cart_items")
+            caption = get_text(language, BotEntity.USER, "no_cart_items")
 
         button_media = await ButtonMediaRepository.get_by_button(KeyboardButton.CART, session)
         media = MediaService.convert_to_media(button_media.media_id, caption=caption)
         return media, kb_builder
 
     @staticmethod
-    async def delete_cart_item(callback_data: CartCallback, session: AsyncSession | Session):
+    async def delete_cart_item(callback_data: CartCallback,
+                               session: AsyncSession | Session,
+                               language: Language):
         kb_builder = InlineKeyboardBuilder()
         if callback_data.confirmation:
             await CartItemRepository.remove_from_cart(callback_data.cart_item_id, session)
             await session_commit(session)
             kb_builder.button(
-                text=Localizator.get_text(BotEntity.USER, "cart"),
+                text=get_text(language, BotEntity.USER, "cart"),
                 callback_data=CartCallback.create(0)
             )
-            return Localizator.get_text(BotEntity.USER, "delete_cart_item_confirmation_text"), kb_builder
+            return get_text(language, BotEntity.USER, "delete_cart_item_confirmation_text"), kb_builder
         else:
             cart_item_dto = await CartItemRepository.get_by_primary_key(callback_data.cart_item_id, session)
             category = await CategoryRepository.get_by_id(cart_item_dto.category_id, session)
             subcategory = await SubcategoryRepository.get_by_id(cart_item_dto.subcategory_id, session)
             item_dto = await ItemRepository.get_single(cart_item_dto.category_id, cart_item_dto.subcategory_id, session)
-            kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
+            kb_builder.button(text=get_text(language, BotEntity.COMMON, "confirm"),
                               callback_data=callback_data.model_copy(update={'confirmation': True}))
-            kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
+            kb_builder.button(text=get_text(language, BotEntity.COMMON, "cancel"),
                               callback_data=CartCallback.create(0))
-            return Localizator.get_text(BotEntity.USER, "delete_cart_item_confirmation").format(
+            return get_text(language, BotEntity.USER, "delete_cart_item_confirmation").format(
                 category_name=category.name,
                 subcategory_name=subcategory.name,
                 price=item_dto.price,
@@ -151,7 +157,8 @@ class CartService:
     @staticmethod
     async def checkout_processing(callback: CallbackQuery,
                                   state: FSMContext,
-                                  session: AsyncSession | Session) -> tuple[str, InlineKeyboardBuilder]:
+                                  session: AsyncSession | Session,
+                                  language: Language) -> tuple[str, InlineKeyboardBuilder]:
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
         cart_items = await CartItemRepository.get_all_by_user_id(user.id, session)
         cart_content = []
@@ -163,7 +170,7 @@ class CartService:
             subcategory = await SubcategoryRepository.get_by_id(cart_item.subcategory_id, session)
             line_item_total = item.price * cart_item.quantity
             cart_content.append(
-                Localizator.get_text(BotEntity.USER, "cart_item_button").format(
+                get_text(language, BotEntity.USER, "cart_item_button").format(
                     subcategory_name=subcategory.name,
                     qty=cart_item.quantity,
                     total_price=line_item_total,
@@ -181,7 +188,8 @@ class CartService:
                 cart_total_price = cart_total_price - coupon_dto.value
                 cart_total_price = max(cart_total_price, 1)
             discount_amount = cart_total_price_before_discount - cart_total_price
-            message_text = Localizator.get_text(
+            message_text = get_text(
+                language,
                 BotEntity.USER,
                 "cart_confirm_checkout_process_with_coupon").format(
                 cart_content="\n".join(cart_content),
@@ -191,27 +199,29 @@ class CartService:
                 currency_sym=config.CURRENCY.get_localized_symbol()
             )
         else:
-            message_text = Localizator.get_text(BotEntity.USER, "cart_confirm_checkout_process").format(
+            message_text = get_text(language, BotEntity.USER, "cart_confirm_checkout_process").format(
                 cart_content="\n".join(cart_content),
                 cart_total_price=cart_total_price,
                 currency_sym=config.CURRENCY.get_localized_symbol()
             )
         kb_builder = InlineKeyboardBuilder()
-        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
+        kb_builder.button(text=get_text(language, BotEntity.COMMON, "confirm"),
                           callback_data=CartCallback.create(level=4,
                                                             confirmation=True))
-        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
+        kb_builder.button(text=get_text(language, BotEntity.COMMON, "cancel"),
                           callback_data=CartCallback.create(level=0))
         if coupon_id is None:
             kb_builder.row(InlineKeyboardButton(
-                text=Localizator.get_text(BotEntity.COMMON, "coupon"),
+                text=get_text(language, BotEntity.COMMON, "coupon"),
                 callback_data=CartCallback.create(level=3).pack()
             ))
         return message_text, kb_builder
 
     @staticmethod
-    async def buy_processing(callback: CallbackQuery, state: FSMContext, session: AsyncSession | Session) -> tuple[
-        str, InlineKeyboardBuilder]:
+    async def buy_processing(callback: CallbackQuery,
+                             state: FSMContext,
+                             session: AsyncSession | Session,
+                             language: Language) -> tuple[str, InlineKeyboardBuilder]:
         unpacked_cb = CartCallback.unpack(callback.data)
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
         cart_items = await CartItemRepository.get_all_by_user_id(user.id, session)
@@ -267,40 +277,42 @@ class CartService:
                 await ItemRepository.update(purchased_items, session)
                 await CartItemRepository.remove_from_cart(cart_item.id, session)
                 buys.append(buy_dto)
-                msg += MessageService.create_message_with_bought_items(purchased_items)
+                msg += MessageService.create_message_with_bought_items(purchased_items, language)
             user.consume_records = user.consume_records + cart_total_price
             await UserRepository.update(user, session)
             await session_commit(session)
             await NotificationService.new_buy(buys, user, session)
             return msg, kb_builder
         elif unpacked_cb.confirmation is False:
-            kb_builder.row(unpacked_cb.get_back_button(0))
-            return Localizator.get_text(BotEntity.USER, "purchase_confirmation_declined"), kb_builder
+            kb_builder.row(unpacked_cb.get_back_button(language, 0))
+            return get_text(language, BotEntity.USER, "purchase_confirmation_declined"), kb_builder
         elif is_enough_money is False:
-            kb_builder.row(unpacked_cb.get_back_button(0))
-            return Localizator.get_text(BotEntity.USER, "insufficient_funds"), kb_builder
+            kb_builder.row(unpacked_cb.get_back_button(language, 0))
+            return get_text(language, BotEntity.USER, "insufficient_funds"), kb_builder
         elif len(out_of_stock) > 0:
-            kb_builder.row(unpacked_cb.get_back_button(0))
-            msg = Localizator.get_text(BotEntity.USER, "out_of_stock")
+            kb_builder.row(unpacked_cb.get_back_button(language, 0))
+            msg = get_text(language, BotEntity.USER, "out_of_stock")
             for item in out_of_stock:
                 subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
                 msg += subcategory.name + "\n"
             return msg, kb_builder
 
     @staticmethod
-    async def show_cart_item(callback_data: CartCallback, session: AsyncSession):
+    async def show_cart_item(callback_data: CartCallback,
+                             session: AsyncSession,
+                             language: Language):
         cart_item_dto = await CartItemRepository.get_by_primary_key(callback_data.cart_item_id, session)
         available_qty = await ItemRepository.get_available_qty(cart_item_dto.category_id,
                                                                cart_item_dto.subcategory_id,
                                                                session)
         if callback_data.cart_action == CartAction.REMOVE_ALL or cart_item_dto.quantity == 0:
-            return await CartService.delete_cart_item(callback_data, session)
+            return await CartService.delete_cart_item(callback_data, session, language)
         elif callback_data.cart_action in [CartAction.PLUS_ONE, CartAction.MINUS_ONE]:
             cart_item_dto.quantity += callback_data.cart_action.value
             if cart_item_dto.quantity > available_qty:
                 cart_item_dto.quantity = available_qty
             elif cart_item_dto.quantity == 0:
-                return await CartService.delete_cart_item(callback_data, session)
+                return await CartService.delete_cart_item(callback_data, session, language)
             await CartItemRepository.update(cart_item_dto, session)
             await session_commit(session)
         elif callback_data.cart_action == CartAction.MAX:
@@ -317,11 +329,11 @@ class CartService:
         kb_builder = InlineKeyboardBuilder()
         for cart_action in cart_actions:
             kb_builder.button(
-                text=cart_action.get_localized(),
+                text=cart_action.get_localized(language),
                 callback_data=callback_data.model_copy(update={'cart_action': cart_action})
             )
-        kb_builder.row(callback_data.get_back_button(0))
-        return Localizator.get_text(BotEntity.USER, "cart_item_preview").format(
+        kb_builder.row(callback_data.get_back_button(language, 0))
+        return get_text(language, BotEntity.USER, "cart_item_preview").format(
             category_name=category.name,
             subcategory_name=subcategory.name,
             price=item_dto.price,
@@ -333,20 +345,21 @@ class CartService:
         ), kb_builder
 
     @staticmethod
-    async def set_coupon(state: FSMContext):
+    async def set_coupon(state: FSMContext, language: Language):
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(
-            text=Localizator.get_text(BotEntity.COMMON, "pagination_next"),
+            text=get_text(language, BotEntity.COMMON, "pagination_next"),
             callback_data=CartCallback.create(2)
         )
         kb_builder.adjust(1)
         await state.set_state(UserStates.coupon)
-        return Localizator.get_text(BotEntity.USER, "request_coupon"), kb_builder
+        return get_text(language, BotEntity.USER, "request_coupon"), kb_builder
 
     @staticmethod
     async def apply_coupon(message: Message,
                            state: FSMContext,
-                           session: AsyncSession) -> tuple[
+                           session: AsyncSession,
+                           language: Language) -> tuple[
         InputMediaPhoto | InputMediaVideo | InputMediaVideo, InlineKeyboardBuilder]:
         state_data = await state.get_data()
         await state.set_state()
@@ -354,14 +367,14 @@ class CartService:
         coupon_dto = await CouponRepository.get_by_code(message.text, session)
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(
-            text=Localizator.get_text(BotEntity.COMMON, "pagination_next"),
+            text=get_text(language,     BotEntity.COMMON, "pagination_next"),
             callback_data=CartCallback.create(2)
         )
         if coupon_dto is None:
-            caption = Localizator.get_text(BotEntity.USER, "coupon_not_found")
+            caption = get_text(language,    BotEntity.USER, "coupon_not_found")
         else:
             await state.update_data(coupon_id=coupon_dto.id)
-            caption = Localizator.get_text(BotEntity.USER, "coupon_applied")
+            caption = get_text(language,    BotEntity.USER, "coupon_applied")
         button_media = await ButtonMediaRepository.get_by_button(KeyboardButton.CART, session)
         media = MediaService.convert_to_media(button_media.media_id, caption=caption)
         return media, kb_builder
