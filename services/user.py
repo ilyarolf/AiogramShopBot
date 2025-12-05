@@ -40,6 +40,7 @@ class UserService:
                 update_user_dto = UserDTO(**user.model_dump())
                 update_user_dto.can_receive_messages = True
                 update_user_dto.telegram_username = user_dto.telegram_username
+                update_user_dto.language = user_dto.language
                 await UserRepository.update(update_user_dto, session)
                 await session_commit(session)
 
