@@ -52,13 +52,16 @@ class UserService:
     async def get_my_profile_buttons(telegram_id: int,
                                      session: AsyncSession,
                                      language: Language) -> tuple[InputMediaPhoto |
-                                                                     InputMediaVideo |
-                                                                     InputMediaAnimation, InlineKeyboardBuilder]:
+                                                                  InputMediaVideo |
+                                                                  InputMediaAnimation, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(text=get_text(language, BotEntity.USER, "top_up_balance_button"),
                           callback_data=MyProfileCallback.create(level=1))
         kb_builder.button(text=get_text(language, BotEntity.USER, "purchase_history_button"),
                           callback_data=MyProfileCallback.create(level=4))
+        kb_builder.button(text=get_text(Language.EN, BotEntity.USER, "language"),
+                          callback_data=MyProfileCallback.create(level=6))
+        kb_builder.adjust(2)
         user = await UserRepository.get_by_tgid(telegram_id, session)
         fiat_balance = round(user.top_up_amount - user.consume_records, 2)
         caption = (get_text(language, BotEntity.USER, "my_profile_msg")
@@ -123,3 +126,42 @@ class UserService:
             return get_text(language, BotEntity.USER, "purchases"), kb_builder
         else:
             return get_text(language, BotEntity.USER, "no_purchases"), kb_builder
+
+    @staticmethod
+    async def edit_language(telegram_id: int,
+                            callback_data: MyProfileCallback,
+                            session: AsyncSession) -> tuple[str, InlineKeyboardBuilder]:
+        kb_builder = InlineKeyboardBuilder()
+        default_language = Language.EN
+        back_button = callback_data.get_back_button(default_language, 0)
+        if callback_data.language is None:
+            msg = get_text(default_language, BotEntity.USER, "edit_language")
+            for language_object in Language:
+                kb_builder.button(
+                    text=f"{language_object.get_flag_emoji()} {language_object.name}",
+                    callback_data=callback_data.model_copy(update={"language": language_object})
+                )
+            kb_builder.row(callback_data.get_back_button(default_language, 0))
+        elif callback_data.language is not None and callback_data.confirmation is False:
+            user_dto = await UserRepository.get_by_tgid(telegram_id, session)
+            msg = get_text(default_language, BotEntity.USER, "edit_language_confirmation").format(
+                current_language=user_dto.language.name,
+                update_language=callback_data.language.name
+            )
+            kb_builder.button(
+                text=get_text(default_language, BotEntity.COMMON, "confirm"),
+                callback_data=callback_data.model_copy(update={"confirmation": True})
+            )
+            kb_builder.button(
+                text=get_text(default_language, BotEntity.COMMON, "cancel"),
+                callback_data=back_button.callback_data
+            )
+        else:
+            user_dto = await UserRepository.get_by_tgid(telegram_id, session)
+            user_dto.language = callback_data.language
+            await UserRepository.update(user_dto, session)
+            await session_commit(session)
+            msg = get_text(default_language, BotEntity.USER, "language_edited_successfully")
+            kb_builder.row(back_button)
+        kb_builder.adjust(1)
+        return msg, kb_builder

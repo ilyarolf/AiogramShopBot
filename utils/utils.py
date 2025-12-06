@@ -27,5 +27,5 @@ def start_ngrok():
 
 
 def get_text(language: Language, entity: BotEntity, key: str) -> str:
-    with open(f"./l10n/{language.value}.json", "r", encoding="UTF-8") as f:
+    with open(f"./i18n/{language.value}.json", "r", encoding="UTF-8") as f:
         return json.loads(f.read())[entity.name.lower()][key]

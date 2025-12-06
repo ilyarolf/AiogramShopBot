@@ -209,6 +209,10 @@
     "cart_item_preview": "<b>🗂️ Kategorie: <code>{category_name}</code>\n📦 Unterkategorie: <code>{subcategory_name}</code>\n💸 Preis pro Stück: <code>{currency_sym}{price:.2f}</code>\n✍️ Beschreibung: <i>{description}</i>\n🔢 Menge: <code>{qty}</code> Stk.\n🧮 Verfügbar: <code>{available_qty}</code> Stk.\nGesamtpreis: <code>{currency_sym}{total_price:.2f}</code></b>",
     "request_coupon": "🎟️ Bitte sende deinen Coupon, falls du einen hast. Falls nicht — klicke „Weiter“",
     "coupon_not_found": "❌ Coupon nicht gefunden, abgelaufen oder bereits verwendet",
-    "coupon_applied": "✅ Coupon erfolgreich angewendet!"
+    "coupon_applied": "✅ Coupon erfolgreich angewendet!",
+    "language": "🌍 Sprache",
+    "edit_language": "<b>🌍 Sprache auswählen:</b>",
+    "edit_language_confirmation": "<b>🌍 Sind Sie sicher, dass Sie die Sprache von <i>{current_language}</i> auf <i>{update_language}</i> ändern möchten?</b>",
+    "language_edited_successfully": "<b>🌍 Sprache erfolgreich geändert!</b>\n🔄 Aktualisieren Sie Ihre Antwort-Tastatur mit dem Befehl \"/start\"."
   }
 }

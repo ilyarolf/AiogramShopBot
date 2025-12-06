@@ -209,6 +209,10 @@
     "cart_item_preview": "<b>🗂️ Category: <code>{category_name}</code>\n📦 Subcategory: <code>{subcategory_name}</code>\n💸 Price for each: <code>{currency_sym}{price:.2f}</code>\n✍️Description: <i>{description}</i>\n🔢Quantity: <code>{qty}</code> pcs.\n\uD83D\uDD22Available quantity: <code>{available_qty}</code> pcs.\nTotal price: <code>{currency_sym}{total_price:.2f}</code></b>",
     "request_coupon": "🎟️ Please send your coupon if you have one. If not, press 'Next'",
     "coupon_not_found": "❌ Coupon not found, expired, or already used",
-    "coupon_applied": "✅ Coupon applied successfully!"
+    "coupon_applied": "✅ Coupon applied successfully!",
+    "language": "🌍 Language",
+    "edit_language": "<b>🌍 Pick language:</b>",
+    "edit_language_confirmation": "<b>🌍 Are you sure you want to change the language from <i>{current_language}</i> to <i>{update_language}</i>?</b>",
+    "language_edited_successfully": "<b>🌍 Language edited successfully!</b>\n🔄 Refresh your reply keyboard with \"/start\" command."
   }
 }

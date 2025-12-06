@@ -92,6 +92,14 @@ async def create_payment(**kwargs):
         await msg.edit_media(media=response)
 
 
+async def edit_language(**kwargs):
+    callback: CallbackQuery = kwargs.get("callback")
+    session: AsyncSession = kwargs.get("session")
+    callback_data: MyProfileCallback = kwargs.get("callback_data")
+    msg, kb_builder = await UserService.edit_language(callback.from_user.id, callback_data, session)
+    await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
+
+
 @my_profile_router.message(IsUserExistFilter(), F.text, StateFilter(UserStates.filter_purchase_history))
 async def receive_filter_message(message: Message, state: FSMContext, session: AsyncSession, language: Language):
     await state.update_data(filter=message.html_text)
@@ -116,7 +124,8 @@ async def navigate(callback: CallbackQuery,
         1: top_up_balance,
         2: create_payment,
         4: purchase_history,
-        5: get_order_from_history
+        5: get_order_from_history,
+        6: edit_language,
     }
 
     current_level_function = levels[current_level]

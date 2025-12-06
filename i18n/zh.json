@@ -209,6 +209,10 @@
     "cart_item_preview": "<b>🗂️ 分类：<code>{category_name}</code>\n📦 子分类：<code>{subcategory_name}</code>\n💸 单价：<code>{currency_sym}{price:.2f}</code>\n✍️ 描述：<i>{description}</i>\n🔢 数量：<code>{qty}</code> 件\n🧮 库存：<code>{available_qty}</code> 件\n总价：<code>{currency_sym}{total_price:.2f}</code></b>",
     "request_coupon": "🎟️ 如果您有优惠券，请发送。否则请点击“下一步”。",
     "coupon_not_found": "❌ 优惠券不存在、已过期或已被使用",
-    "coupon_applied": "✅ 优惠券应用成功！"
+    "coupon_applied": "✅ 优惠券应用成功！",
+    "language": "🌍 语言",
+    "edit_language": "<b>🌍 选择语言：</b>",
+    "edit_language_confirmation": "<b>🌍 您确定要将语言从 <i>{current_language}</i> 更改为 <i>{update_language}</i> 吗？</b>",
+    "language_edited_successfully": "<b>🌍 语言修改成功！</b>\n🔄 使用 \"/start\" 命令刷新您的回复键盘。"
   }
 }
