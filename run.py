@@ -1,7 +1,7 @@
 import traceback
 from aiogram import types, F, Router
 from aiogram.filters import Command
-from aiogram.types import ErrorEvent, Message, BufferedInputFile, InputMediaPhoto, InputMediaVideo
+from aiogram.types import ErrorEvent, Message, BufferedInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 import config
@@ -9,8 +9,10 @@ from config import SUPPORT_LINK
 import logging
 from bot import dp, main, redis
 from enums.bot_entity import BotEntity
-from enums.keyboardbutton import KeyboardButton
+from enums.keyboard_button import KeyboardButton
+from enums.language import Language
 from middleware.database import DBSessionMiddleware
+from middleware.language import I18nMiddleware
 from middleware.throttling_middleware import ThrottlingMiddleware
 from models.user import UserDTO
 from multibot import main as main_multibot
@@ -23,25 +25,25 @@ from services.media import MediaService
 from services.notification import NotificationService
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
-from utils.localizator import Localizator
-from utils.utils import get_bot_photo_id
+from utils.utils import get_bot_photo_id, get_text
 
 logging.basicConfig(level=logging.INFO)
 main_router = Router()
 
 
 @main_router.message(Command(commands=["start", "help"]))
-async def start(message: Message, session: AsyncSession):
-    all_categories_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "all_categories"))
-    my_profile_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "my_profile"))
-    faq_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "faq"))
-    help_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "help"))
-    admin_menu_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.ADMIN, "menu"))
-    cart_button = types.KeyboardButton(text=Localizator.get_text(BotEntity.USER, "cart"))
+async def start(message: Message, session: AsyncSession, language: Language):
+    all_categories_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "all_categories"))
+    my_profile_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "my_profile"))
+    faq_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "faq"))
+    help_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "help"))
+    admin_menu_button = types.KeyboardButton(text=get_text(language, BotEntity.ADMIN, "menu"))
+    cart_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "cart"))
     telegram_id = message.from_user.id
     await UserService.create_if_not_exist(UserDTO(
         telegram_username=message.from_user.username,
-        telegram_id=telegram_id
+        telegram_id=telegram_id,
+        language=language
     ), session)
     keyboard = [[all_categories_button, my_profile_button], [faq_button, help_button],
                 [cart_button]]
@@ -50,25 +52,25 @@ async def start(message: Message, session: AsyncSession):
     start_markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2, keyboard=keyboard)
     bot_photo_id = get_bot_photo_id()
     await message.answer_photo(photo=bot_photo_id,
-                               caption=Localizator.get_text(BotEntity.COMMON, "start_message"),
+                               caption=get_text(language, BotEntity.COMMON, "start_message"),
                                reply_markup=start_markup)
 
 
-@main_router.message(F.text == Localizator.get_text(BotEntity.USER, "faq"), IsUserExistFilter())
-async def faq(message: Message, session: AsyncSession):
+@main_router.message(F.text.in_(KeyboardButton.get_localized_set(KeyboardButton.FAQ)), IsUserExistFilter())
+async def faq(message: Message, session: AsyncSession, language: Language):
     button_media = await ButtonMediaRepository.get_by_button(KeyboardButton.FAQ, session)
     media = MediaService.convert_to_media(button_media.media_id,
-                                          caption=Localizator.get_text(BotEntity.USER, "faq_string"))
+                                          caption=get_text(language, BotEntity.USER, "faq_string"))
     await NotificationService.answer_media(message, media)
 
 
-@main_router.message(F.text == Localizator.get_text(BotEntity.USER, "help"), IsUserExistFilter())
-async def support(message: Message, session: AsyncSession):
+@main_router.message(F.text.in_(KeyboardButton.get_localized_set(KeyboardButton.HELP)), IsUserExistFilter())
+async def support(message: Message, session: AsyncSession, language: Language):
     kb_builder = InlineKeyboardBuilder()
-    kb_builder.button(text=Localizator.get_text(BotEntity.USER, "help_button"), url=SUPPORT_LINK)
+    kb_builder.button(text=get_text(language, BotEntity.USER, "help_button"), url=SUPPORT_LINK)
     button_media = await ButtonMediaRepository.get_by_button(KeyboardButton.HELP, session)
     media = MediaService.convert_to_media(button_media.media_id,
-                                          caption=Localizator.get_text(BotEntity.USER, "help_string"))
+                                          caption=get_text(language, BotEntity.USER, "help_string"))
     await NotificationService.answer_media(message, media)
 
 
@@ -99,6 +101,8 @@ main_router.include_router(admin_router)
 main_router.include_routers(users_routers)
 main_router.message.middleware(DBSessionMiddleware())
 main_router.callback_query.middleware(DBSessionMiddleware())
+main_router.message.middleware(I18nMiddleware())
+main_router.callback_query.middleware(I18nMiddleware())
 
 if __name__ == '__main__':
     if config.MULTIBOT:

@@ -1,7 +1,8 @@
-from enum import Enum, IntEnum
+from enum import IntEnum
 
 from enums.bot_entity import BotEntity
-from utils.localizator import Localizator
+from enums.language import Language
+from utils.utils import get_text
 
 
 class SortOrder(IntEnum):
@@ -9,8 +10,8 @@ class SortOrder(IntEnum):
     DESC = 1
     DISABLE = 2
 
-    def get_localized(self):
-        return Localizator.get_text(BotEntity.COMMON, self.name.lower())
+    def get_localized(self, language: Language):
+        return get_text(language, BotEntity.COMMON, self.name.lower())
 
     def next(self):
         next_value = (self.value + 1) % len(SortOrder)

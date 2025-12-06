@@ -1,7 +1,10 @@
+import json
+import logging
 import os
 import urllib.request
-
 from pyngrok import ngrok
+from enums.bot_entity import BotEntity
+from enums.language import Language
 
 
 def get_sslipio_external_url():
@@ -22,3 +25,12 @@ def start_ngrok():
     ngrok.set_auth_token(ngrok_token)
     http_tunnel = ngrok.connect(f":{port}", "http")
     return http_tunnel.public_url
+
+
+def get_text(language: Language, entity: BotEntity, key: str) -> str:
+    try:
+        with open(f"./i18n/{language.value}.json", "r", encoding="UTF-8") as f:
+            return json.loads(f.read())[entity.name.lower()][key]
+    except Exception as e:
+        logging.error(e)
+        return get_text(Language.EN, entity, key)

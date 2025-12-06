@@ -1,22 +1,22 @@
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 from callbacks import InventoryManagementCallback, EntityType, \
     MediaManagementCallback
 from enums.bot_entity import BotEntity
+from enums.language import Language
 from enums.sort_property import SortProperty
 from handlers.common.common import add_pagination_buttons, add_sorting_buttons, get_filters_settings, add_search_button
 from repositories.category import CategoryRepository
 from repositories.subcategory import SubcategoryRepository
-from utils.localizator import Localizator
+from utils.utils import get_text
 
 
 class AdminService:
 
     @staticmethod
     async def get_entity_picker(callback_data: InventoryManagementCallback | MediaManagementCallback | None,
-                                session: AsyncSession, state: FSMContext):
+                                session: AsyncSession, state: FSMContext, language: Language):
         kb_builder = InlineKeyboardBuilder()
         state_data = await state.get_data()
         if callback_data is None:
@@ -58,20 +58,20 @@ class AdminService:
         kb_builder = await add_search_button(kb_builder,
                                              callback_data.entity_type,
                                              callback_data,
-                                             filters)
+                                             filters, language)
         kb_builder = await add_sorting_buttons(kb_builder,
                                                [SortProperty.NAME],
                                                callback_data,
-                                               sort_pairs)
+                                               sort_pairs, language)
         if isinstance(callback_data, InventoryManagementCallback):
-            msg_text = Localizator.get_text(BotEntity.ADMIN, "delete_entity").format(
-                entity=callback_data.entity_type.get_localized()
+            msg_text = get_text(language, BotEntity.ADMIN, "delete_entity").format(
+                entity=callback_data.entity_type.get_localized(language)
             )
         else:
-            msg_text = Localizator.get_text(BotEntity.ADMIN, "edit_media").format(
-                entity=callback_data.entity_type.get_localized()
+            msg_text = get_text(language, BotEntity.ADMIN, "edit_media").format(
+                entity=callback_data.entity_type.get_localized(language)
             )
         kb_builder = await add_pagination_buttons(kb_builder, callback_data,
                                                   max_page_method,
-                                                  callback_data.get_back_button(0))
+                                                  callback_data.get_back_button(language, 0), language)
         return msg_text, kb_builder

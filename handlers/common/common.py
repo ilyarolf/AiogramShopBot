@@ -1,18 +1,22 @@
+from typing import Awaitable
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State
 from aiogram.types import InlineKeyboardButton, InputMediaPhoto
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from callbacks import SortingCallback
+from callbacks import SortingCallback, BaseCallback
 from enums.bot_entity import BotEntity
 from enums.entity_type import EntityType
+from enums.language import Language
 from enums.sort_order import SortOrder
 from enums.sort_property import SortProperty
-from utils.localizator import Localizator
-from utils.utils import get_bot_photo_id
+from utils.utils import get_bot_photo_id, get_text
 
 
-async def add_pagination_buttons(keyboard_builder: InlineKeyboardBuilder, callback_data, max_page_function,
-                                 back_button) -> InlineKeyboardBuilder:
+async def add_pagination_buttons(keyboard_builder: InlineKeyboardBuilder,
+                                 callback_data: BaseCallback,
+                                 max_page_function: Awaitable[int],
+                                 back_button: InlineKeyboardButton | None,
+                                 language: Language) -> InlineKeyboardBuilder:
     maximum_page = await max_page_function
     buttons = []
     if callback_data.page > 0:
@@ -21,20 +25,20 @@ async def add_pagination_buttons(keyboard_builder: InlineKeyboardBuilder, callba
         first_page_callback = callback_data.__copy__()
         first_page_callback.page = 0
         buttons.append(
-            InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "pagination_first"),
+            InlineKeyboardButton(text=get_text(language, BotEntity.COMMON, "pagination_first"),
                                  callback_data=first_page_callback.pack()))
         buttons.append(
-            InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "pagination_previous"),
+            InlineKeyboardButton(text=get_text(language, BotEntity.COMMON, "pagination_previous"),
                                  callback_data=back_page_callback.pack()))
     if callback_data.page < maximum_page:
         last_page_callback = callback_data.__copy__()
         last_page_callback.page = maximum_page
         callback_data.page += 1
         buttons.append(
-            InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "pagination_next"),
+            InlineKeyboardButton(text=get_text(language, BotEntity.COMMON, "pagination_next"),
                                  callback_data=callback_data.pack()))
         buttons.append(
-            InlineKeyboardButton(text=Localizator.get_text(BotEntity.COMMON, "pagination_last"),
+            InlineKeyboardButton(text=get_text(language, BotEntity.COMMON, "pagination_last"),
                                  callback_data=last_page_callback.pack()))
     keyboard_builder.row(*buttons)
     if back_button:
@@ -42,8 +46,11 @@ async def add_pagination_buttons(keyboard_builder: InlineKeyboardBuilder, callba
     return keyboard_builder
 
 
-async def add_sorting_buttons(keyboard_builder: InlineKeyboardBuilder, sort_property_list: list[SortProperty],
-                              callback_data: SortingCallback, sort_pairs: dict[str, int]) -> InlineKeyboardBuilder:
+async def add_sorting_buttons(keyboard_builder: InlineKeyboardBuilder,
+                              sort_property_list: list[SortProperty],
+                              callback_data: SortingCallback,
+                              sort_pairs: dict[str, int],
+                              language: Language) -> InlineKeyboardBuilder:
     sort_cb_copy = callback_data.__copy__()
     buttons = []
     if len(keyboard_builder.as_markup().inline_keyboard) > 1:
@@ -56,7 +63,7 @@ async def add_sorting_buttons(keyboard_builder: InlineKeyboardBuilder, sort_prop
                 sort_order = SortOrder.DISABLE
             buttons.append(
                 InlineKeyboardButton(
-                    text=f"{sort_property.get_localized()} {sort_order.get_localized()}",
+                    text=f"{sort_property.get_localized(language)} {sort_order.get_localized(language)}",
                     callback_data=callback_data.create(**{**sort_cb_copy.model_dump(),
                                                           "sort_order": sort_order.next()}).pack()
                 )
@@ -70,15 +77,16 @@ async def add_sorting_buttons(keyboard_builder: InlineKeyboardBuilder, sort_prop
 async def add_search_button(keyboard_builder: InlineKeyboardBuilder,
                             entity_type: EntityType,
                             callback_data: SortingCallback,
-                            filters: list):
+                            filters: list,
+                            language: Language):
     is_search_mode = callback_data.is_filter_enabled or filters
     if len(keyboard_builder.as_markup().inline_keyboard) > 0 or is_search_mode:
         search_button_key = "cancel_search" if is_search_mode else "search"
-        search_button_text = Localizator.get_text(BotEntity.COMMON, search_button_key)
+        search_button_text = get_text(language, BotEntity.COMMON, search_button_key)
         if not is_search_mode:
             search_button_text = search_button_text.format(
-                entity=entity_type.get_localized(),
-                field=Localizator.get_text(BotEntity.COMMON, "name")
+                entity=entity_type.get_localized(language),
+                field=get_text(language, BotEntity.COMMON, "name")
             )
         callback_copy = callback_data.copy()
         callback_copy.is_filter_enabled = not callback_copy.is_filter_enabled
@@ -110,17 +118,18 @@ async def get_filters_settings(state: FSMContext,
 async def enable_search(callback_data: SortingCallback,
                         entity_type: EntityType,
                         state: FSMContext,
-                        search_state: State) -> tuple[InputMediaPhoto, InlineKeyboardBuilder]:
+                        search_state: State,
+                        language: Language) -> tuple[InputMediaPhoto, InlineKeyboardBuilder]:
     kb_builder = InlineKeyboardBuilder()
     callback_data.is_filter_enabled = False
     kb_builder.button(
-        text=Localizator.get_text(BotEntity.COMMON, "cancel_search"),
+        text=get_text(language, BotEntity.COMMON, "cancel_search"),
         callback_data=callback_data
     )
     await state.set_state(search_state)
     await state.update_data(entity_type=entity_type.value)
-    caption = Localizator.get_text(BotEntity.COMMON, "search_by_field_request").format(
-        entity=entity_type.get_localized(),
-        field=Localizator.get_text(BotEntity.COMMON, "name")
+    caption = get_text(language, BotEntity.COMMON, "search_by_field_request").format(
+        entity=entity_type.get_localized(language),
+        field=get_text(language, BotEntity.COMMON, "name")
     )
     return InputMediaPhoto(media=get_bot_photo_id(), caption=caption), kb_builder

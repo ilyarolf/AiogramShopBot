@@ -24,7 +24,6 @@ DB_ENCRYPTION = os.environ.get("DB_ENCRYPTION", False) == 'true'
 DB_NAME = os.environ.get("DB_NAME")
 DB_PASS = os.environ.get("DB_PASS")
 PAGE_ENTRIES = int(os.environ.get("PAGE_ENTRIES"))
-BOT_LANGUAGE = os.environ.get("BOT_LANGUAGE")
 MULTIBOT = os.environ.get("MULTIBOT", False) == 'true'
 CURRENCY = Currency(os.environ.get("CURRENCY"))
 KRYPTO_EXPRESS_API_KEY = os.environ.get("KRYPTO_EXPRESS_API_KEY")

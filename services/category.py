@@ -6,13 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from callbacks import AllCategoriesCallback
 from enums.bot_entity import BotEntity
 from enums.entity_type import EntityType
-from enums.keyboardbutton import KeyboardButton
+from enums.keyboard_button import KeyboardButton
+from enums.language import Language
 from enums.sort_property import SortProperty
 from handlers.common.common import add_pagination_buttons, add_sorting_buttons, add_search_button, get_filters_settings
 from repositories.button_media import ButtonMediaRepository
 from repositories.category import CategoryRepository
 from services.media import MediaService
-from utils.localizator import Localizator
+from utils.utils import get_text
 
 
 class CategoryService:
@@ -22,6 +23,7 @@ class CategoryService:
             callback_data: AllCategoriesCallback | None,
             state: FSMContext,
             session: AsyncSession,
+            language: Language
     ) -> tuple[InputMediaPhoto | InputMediaVideo | InputMediaAnimation, InlineKeyboardBuilder]:
         callback_data = callback_data or AllCategoriesCallback.create(0)
         sort_pairs, filters = await get_filters_settings(state, callback_data)
@@ -39,22 +41,22 @@ class CategoryService:
 
         has_categories = len(categories) > 0
         if not has_categories:
-            caption = Localizator.get_text(BotEntity.USER, "no_categories")
+            caption = get_text(language, BotEntity.USER, "no_categories")
         else:
             kb_builder.adjust(2)
-            caption = Localizator.get_text(BotEntity.USER, "pick_category")
+            caption = get_text(language, BotEntity.USER, "pick_category")
             kb_builder.row(
                 InlineKeyboardButton(
-                    text=Localizator.get_text(BotEntity.COMMON, "pick_all_categories"),
+                    text=get_text(language, BotEntity.COMMON, "pick_all_categories"),
                     callback_data=AllCategoriesCallback.create(level=1).pack()
                 )
             )
-        kb_builder = await add_search_button(kb_builder, EntityType.CATEGORY, callback_data, filters)
+        kb_builder = await add_search_button(kb_builder, EntityType.CATEGORY, callback_data, filters, language)
         kb_builder = await add_sorting_buttons(
-            kb_builder, [SortProperty.NAME], callback_data, sort_pairs
+            kb_builder, [SortProperty.NAME], callback_data, sort_pairs, language
         )
         kb_builder = await add_pagination_buttons(
-            kb_builder, callback_data, CategoryRepository.get_maximum_page(filters, session), None
+            kb_builder, callback_data, CategoryRepository.get_maximum_page(filters, session), None, language
         )
         button_media = await ButtonMediaRepository.get_by_button(
             KeyboardButton.ALL_CATEGORIES, session

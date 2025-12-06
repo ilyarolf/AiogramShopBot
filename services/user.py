@@ -3,12 +3,15 @@ from aiogram.types import InputMediaPhoto, InputMediaVideo, InputMediaAnimation
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
+
+import config
 from callbacks import MyProfileCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
 from enums.entity_type import EntityType
-from enums.keyboardbutton import KeyboardButton
+from enums.keyboard_button import KeyboardButton
+from enums.language import Language
 from enums.sort_property import SortProperty
 from handlers.common.common import add_pagination_buttons, add_sorting_buttons, get_filters_settings, add_search_button
 from models.user import User, UserDTO
@@ -20,7 +23,7 @@ from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
 from services.media import MediaService
-from utils.localizator import Localizator
+from utils.utils import get_text
 
 
 class UserService:
@@ -37,6 +40,7 @@ class UserService:
                 update_user_dto = UserDTO(**user.model_dump())
                 update_user_dto.can_receive_messages = True
                 update_user_dto.telegram_username = user_dto.telegram_username
+                update_user_dto.language = user_dto.language
                 await UserRepository.update(update_user_dto, session)
                 await session_commit(session)
 
@@ -46,44 +50,50 @@ class UserService:
 
     @staticmethod
     async def get_my_profile_buttons(telegram_id: int,
-                                     session: AsyncSession) -> tuple[InputMediaPhoto |
-                                                                     InputMediaVideo |
-                                                                     InputMediaAnimation, InlineKeyboardBuilder]:
+                                     session: AsyncSession,
+                                     language: Language) -> tuple[InputMediaPhoto |
+                                                                  InputMediaVideo |
+                                                                  InputMediaAnimation, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
-        kb_builder.button(text=Localizator.get_text(BotEntity.USER, "top_up_balance_button"),
+        kb_builder.button(text=get_text(language, BotEntity.USER, "top_up_balance_button"),
                           callback_data=MyProfileCallback.create(level=1))
-        kb_builder.button(text=Localizator.get_text(BotEntity.USER, "purchase_history_button"),
+        kb_builder.button(text=get_text(language, BotEntity.USER, "purchase_history_button"),
                           callback_data=MyProfileCallback.create(level=4))
+        kb_builder.button(text=get_text(Language.EN, BotEntity.USER, "language"),
+                          callback_data=MyProfileCallback.create(level=6))
+        kb_builder.adjust(2)
         user = await UserRepository.get_by_tgid(telegram_id, session)
         fiat_balance = round(user.top_up_amount - user.consume_records, 2)
-        caption = (Localizator.get_text(BotEntity.USER, "my_profile_msg")
+        caption = (get_text(language, BotEntity.USER, "my_profile_msg")
                    .format(telegram_id=user.telegram_id,
                            fiat_balance=fiat_balance,
-                           currency_text=Localizator.get_currency_text(),
-                           currency_sym=Localizator.get_currency_symbol()))
+                           currency_text=config.CURRENCY.get_localized_text(),
+                           currency_sym=config.CURRENCY.get_localized_symbol()))
         button_media = await ButtonMediaRepository.get_by_button(KeyboardButton.MY_PROFILE, session)
         media = MediaService.convert_to_media(button_media.media_id, caption=caption)
         return media, kb_builder
 
     @staticmethod
-    async def get_top_up_buttons(callback_data: MyProfileCallback) -> tuple[str, InlineKeyboardBuilder]:
+    async def get_top_up_buttons(callback_data: MyProfileCallback,
+                                 language: Language) -> tuple[str, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
         for cryptocurrency in Cryptocurrency:
             kb_builder.button(
-                text=cryptocurrency.get_localized(),
+                text=cryptocurrency.get_localized(language),
                 callback_data=MyProfileCallback.create(level=callback_data.level + 1,
                                                        cryptocurrency=cryptocurrency)
             )
         kb_builder.adjust(1)
-        kb_builder.row(callback_data.get_back_button())
-        msg_text = Localizator.get_text(BotEntity.USER, "choose_top_up_method")
+        kb_builder.row(callback_data.get_back_button(language))
+        msg_text = get_text(language, BotEntity.USER, "choose_top_up_method")
         return msg_text, kb_builder
 
     @staticmethod
-    async def get_purchase_history_buttons(telegram_id: int, callback_data: MyProfileCallback | None,
+    async def get_purchase_history_buttons(telegram_id: int,
+                                           callback_data: MyProfileCallback | None,
                                            state: FSMContext,
-                                           session: AsyncSession) \
-            -> tuple[str, InlineKeyboardBuilder]:
+                                           session: AsyncSession,
+                                           language: Language) -> tuple[str, InlineKeyboardBuilder]:
         callback_data = callback_data or MyProfileCallback.create(level=4)
         user = await UserRepository.get_by_tgid(telegram_id, session)
         sort_pairs, filters = await get_filters_settings(state, callback_data)
@@ -93,26 +103,65 @@ class UserService:
             buy_item = await BuyItemRepository.get_single_by_buy_id(buy.id, session)
             item = await ItemRepository.get_by_id(buy_item.item_id, session)
             subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
-            kb_builder.button(text=Localizator.get_text(BotEntity.USER, "purchase_history_item").format(
+            kb_builder.button(text=get_text(language, BotEntity.USER, "purchase_history_item").format(
                 subcategory_name=subcategory.name,
                 total_price=buy.total_price,
                 quantity=buy.quantity,
-                currency_sym=Localizator.get_currency_symbol()),
+                currency_sym=config.CURRENCY.get_localized_symbol()),
                 callback_data=MyProfileCallback.create(
                     level=callback_data.level + 1,
                     buy_id=buy.id
                 ))
         kb_builder.adjust(1)
-        kb_builder = await add_search_button(kb_builder, EntityType.SUBCATEGORY, callback_data, filters)
+        kb_builder = await add_search_button(kb_builder, EntityType.SUBCATEGORY, callback_data, filters, language)
         kb_builder = await add_sorting_buttons(kb_builder, [SortProperty.TOTAL_PRICE,
                                                             SortProperty.QUANTITY,
                                                             SortProperty.BUY_DATETIME],
-                                               callback_data, sort_pairs)
+                                               callback_data, sort_pairs, language)
         kb_builder = await add_pagination_buttons(kb_builder, callback_data,
                                                   BuyRepository.get_max_page_purchase_history(user.id, filters,
                                                                                               session),
-                                                  callback_data.get_back_button(0))
+                                                  callback_data.get_back_button(language, 0), language)
         if len(kb_builder.as_markup().inline_keyboard) > 1:
-            return Localizator.get_text(BotEntity.USER, "purchases"), kb_builder
+            return get_text(language, BotEntity.USER, "purchases"), kb_builder
         else:
-            return Localizator.get_text(BotEntity.USER, "no_purchases"), kb_builder
+            return get_text(language, BotEntity.USER, "no_purchases"), kb_builder
+
+    @staticmethod
+    async def edit_language(telegram_id: int,
+                            callback_data: MyProfileCallback,
+                            session: AsyncSession) -> tuple[str, InlineKeyboardBuilder]:
+        kb_builder = InlineKeyboardBuilder()
+        default_language = Language.EN
+        back_button = callback_data.get_back_button(default_language, 0)
+        if callback_data.language is None:
+            msg = get_text(default_language, BotEntity.USER, "edit_language")
+            for language_object in Language:
+                kb_builder.button(
+                    text=f"{language_object.get_flag_emoji()} {language_object.name}",
+                    callback_data=callback_data.model_copy(update={"language": language_object})
+                )
+            kb_builder.row(callback_data.get_back_button(default_language, 0))
+        elif callback_data.language is not None and callback_data.confirmation is False:
+            user_dto = await UserRepository.get_by_tgid(telegram_id, session)
+            msg = get_text(default_language, BotEntity.USER, "edit_language_confirmation").format(
+                current_language=user_dto.language.name,
+                update_language=callback_data.language.name
+            )
+            kb_builder.button(
+                text=get_text(default_language, BotEntity.COMMON, "confirm"),
+                callback_data=callback_data.model_copy(update={"confirmation": True})
+            )
+            kb_builder.button(
+                text=get_text(default_language, BotEntity.COMMON, "cancel"),
+                callback_data=back_button.callback_data
+            )
+        else:
+            user_dto = await UserRepository.get_by_tgid(telegram_id, session)
+            user_dto.language = callback_data.language
+            await UserRepository.update(user_dto, session)
+            await session_commit(session)
+            msg = get_text(default_language, BotEntity.USER, "language_edited_successfully")
+            kb_builder.row(back_button)
+        kb_builder.adjust(1)
+        return msg, kb_builder

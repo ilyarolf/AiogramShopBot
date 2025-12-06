@@ -2,7 +2,7 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import get_db_session, session_execute, session_commit
-from enums.keyboardbutton import KeyboardButton
+from enums.keyboard_button import KeyboardButton
 from models.button_media import ButtonMedia, ButtonMediaDTO
 from utils.utils import get_bot_photo_id
 
