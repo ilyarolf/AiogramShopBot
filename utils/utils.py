@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import urllib.request
 from pyngrok import ngrok
@@ -27,5 +28,9 @@ def start_ngrok():
 
 
 def get_text(language: Language, entity: BotEntity, key: str) -> str:
-    with open(f"./i18n/{language.value}.json", "r", encoding="UTF-8") as f:
-        return json.loads(f.read())[entity.name.lower()][key]
+    try:
+        with open(f"./i18n/{language.value}.json", "r", encoding="UTF-8") as f:
+            return json.loads(f.read())[entity.name.lower()][key]
+    except Exception as e:
+        logging.error(e)
+        return get_text(Language.EN, entity, key)
