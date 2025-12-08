@@ -25,7 +25,11 @@ async def timedelta_picker(**kwargs):
     callback_data: StatisticsCallback = kwargs.get("callback_data")
     language: Language = kwargs.get("language")
     msg, kb_builder = await StatisticsService.get_timedelta_menu(callback_data, language)
-    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+    if callback.message.caption:
+        await callback.message.delete()
+        await callback.message.answer(text=msg, reply_markup=kb_builder.as_markup())
+    else:
+        await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
 async def entity_statistics(**kwargs):
@@ -33,8 +37,9 @@ async def entity_statistics(**kwargs):
     callback_data: StatisticsCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
     language: Language = kwargs.get("language")
-    msg, kb_builder = await StatisticsService.get_statistics(callback_data, session, language)
-    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+    media, kb_builder = await StatisticsService.get_statistics(callback_data, session, language)
+    await callback.message.delete()
+    await callback.message.answer_photo(photo=media.media, caption=media.caption, reply_markup=kb_builder.as_markup())
 
 
 async def get_db_file(**kwargs):

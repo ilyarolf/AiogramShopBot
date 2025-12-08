@@ -63,27 +63,23 @@ class UserRepository:
             return UserDTO.model_validate(user, from_attributes=True)
 
     @staticmethod
-    async def get_by_timedelta(timedelta: StatisticsTimeDelta, page: int, session: Session | AsyncSession) -> tuple[list[UserDTO], int]:
-        current_time = datetime.datetime.now()
-        timedelta = datetime.timedelta(days=timedelta.value)
-        time_interval = current_time - timedelta
+    async def get_by_timedelta(timedelta: StatisticsTimeDelta,
+                               page: int, session: Session | AsyncSession) -> list[UserDTO]:
+        start, end = timedelta.get_time_range()
         users_stmt = (select(User)
-                      .where(User.registered_at >= time_interval, User.telegram_username != None)
+                      .where(User.registered_at >= start,
+                             User.registered_at <= end)
                       .limit(config.PAGE_ENTRIES)
                       .offset(config.PAGE_ENTRIES * page))
-        users_count_stmt = select(func.count(User.id)).where(User.registered_at >= time_interval)
         users = await session_execute(users_stmt, session)
-        users = [UserDTO.model_validate(user, from_attributes=True) for user in users.scalars().all()]
-        users_count = await session_execute(users_count_stmt, session)
-        return users, users_count.scalar_one()
+        return [UserDTO.model_validate(user, from_attributes=True) for user in users.scalars().all()]
 
     @staticmethod
     async def get_max_page_by_timedelta(timedelta: StatisticsTimeDelta, session: Session | AsyncSession) -> int:
-        current_time = datetime.datetime.now()
-        timedelta = datetime.timedelta(days=timedelta.value)
-        time_interval = current_time - timedelta
-        stmt = select(func.count(User.id)).where(User.registered_at >= time_interval,
-                                                 User.telegram_username != None)
+        start, end = timedelta.get_time_range()
+        stmt = select(func.count(User.id)).where(
+            User.registered_at >= start,
+            User.registered_at <= end)
         users = await session_execute(stmt, session)
         users = users.scalar_one()
         if users % config.PAGE_ENTRIES == 0:

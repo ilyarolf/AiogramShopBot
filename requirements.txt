@@ -28,6 +28,7 @@ grequests==0.7.0
 h11==0.16.0
 idna==3.10
 magic-filter==1.0.12
+matplotlib==3.10.7
 multidict==6.1.0
 propcache==0.2.0
 py-sr25519-bindings==0.2.0

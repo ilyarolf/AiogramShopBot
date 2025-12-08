@@ -145,10 +145,10 @@ class BuyRepository:
 
     @staticmethod
     async def get_by_timedelta(timedelta: StatisticsTimeDelta, session: Session | AsyncSession) -> list[BuyDTO]:
-        current_time = datetime.datetime.now()
-        timedelta = datetime.timedelta(days=timedelta.value)
-        time_interval = current_time - timedelta
-        stmt = select(Buy).where(Buy.buy_datetime >= time_interval, Buy.is_refunded == False)
+        start, end = timedelta.get_time_range()
+        stmt = select(Buy).where(Buy.buy_datetime >= start,
+                                 Buy.buy_datetime <= end,
+                                 Buy.is_refunded == False)
         buys = await session_execute(stmt, session)
         return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]
 

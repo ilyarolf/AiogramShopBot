@@ -3,8 +3,10 @@ from datetime import datetime
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func, CheckConstraint, Enum
 
+from enums.bot_entity import BotEntity
 from enums.language import Language
 from models.base import Base
+from utils.utils import get_text
 
 
 class User(Base):
@@ -34,3 +36,8 @@ class UserDTO(BaseModel):
     registered_at: datetime | None = None
     can_receive_messages: bool | None = None
     language: Language = Language.EN
+
+    @staticmethod
+    def get_chart_text(language: Language) -> tuple[str, str]:
+        return (get_text(language, BotEntity.ADMIN, "users_ylabel"),
+                get_text(language, BotEntity.ADMIN, "users_chart_title"))
