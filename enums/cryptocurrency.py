@@ -13,7 +13,7 @@ class Cryptocurrency(Enum):
     ETH = "ETH"
     SOL = "SOL"
 
-    def get_divider(self):
+    def get_decimals(self):
         match self:
             case Cryptocurrency.BTC:
                 return 8

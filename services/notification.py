@@ -27,12 +27,13 @@ from utils.utils import get_text
 class NotificationService:
 
     @staticmethod
-    async def make_user_button(username: str | None) -> InlineKeyboardMarkup:
-        user_button_builder = InlineKeyboardBuilder()
-        if username:
-            user_button_inline = types.InlineKeyboardButton(text=username, url=f"https://t.me/{username}")
-            user_button_builder.add(user_button_inline)
-        return user_button_builder.as_markup()
+    async def make_user_button(user_dto: UserDTO) -> InlineKeyboardMarkup:
+        kb_builder = InlineKeyboardBuilder()
+        kb_builder.button(
+            text=get_text(Language.EN, BotEntity.COMMON, "user"),
+            url=f"tg://user?id={user_dto.telegram_id}"
+        )
+        return kb_builder.as_markup()
 
     @staticmethod
     async def send_to_admins(message: str | BufferedInputFile, reply_markup: types.InlineKeyboardMarkup | None):
@@ -96,7 +97,7 @@ class NotificationService:
 
     @staticmethod
     async def new_deposit(payment_dto: ProcessingPaymentDTO, user_dto: UserDTO, table_payment_dto: TablePaymentDTO):
-        user_button = await NotificationService.make_user_button(user_dto.telegram_username)
+        user_button = await NotificationService.make_user_button(user_dto)
         user_notification_msg = get_text(user_dto.language, BotEntity.USER, "notification_new_deposit").format(
             fiat_amount=payment_dto.fiatAmount,
             currency_text=config.CURRENCY.get_localized_text(),
@@ -133,7 +134,7 @@ class NotificationService:
 
     @staticmethod
     async def new_buy(buys: list[BuyDTO], user: UserDTO, session: AsyncSession | Session):
-        user_button = await NotificationService.make_user_button(user.telegram_username)
+        user_button = await NotificationService.make_user_button(user)
         cart_total_price = 0.0
         cart_content = []
         for buy in buys:

@@ -53,13 +53,17 @@ async def admin(**kwargs):
     kb_builder.button(text=get_text(language, BotEntity.ADMIN, "coupons_management"),
                       callback_data=CouponManagementCallback.create(level=0))
     kb_builder.adjust(2)
+    msg_text = get_text(language, BotEntity.ADMIN, "menu")
     if isinstance(message, Message):
-        await message.answer(get_text(language, BotEntity.ADMIN, "menu"),
+        await message.answer(msg_text,
                              reply_markup=kb_builder.as_markup())
     elif isinstance(message, CallbackQuery):
         callback = message
-        await callback.message.edit_text(get_text(language, BotEntity.ADMIN, "menu"),
-                                         reply_markup=kb_builder.as_markup())
+        if callback.message.caption:
+            await callback.message.delete()
+            await callback.message.answer(text=msg_text, reply_markup=kb_builder.as_markup())
+        else:
+            await callback.message.edit_text(msg_text, reply_markup=kb_builder.as_markup())
 
 
 @admin_router.callback_query(AdminIdFilter(), AdminMenuCallback.filter())
