@@ -60,7 +60,7 @@ class StatisticsService:
             case StatisticsEntity.USERS:
                 users, users_count = await UserRepository.get_by_timedelta(callback_data.timedelta, callback_data.page,
                                                                            session)
-                [kb_builder.button(text=user.telegram_username, url=f't.me/{user.telegram_username}') for user in
+                [kb_builder.button(text=user.telegram_username, url=f'tg://user?id={user.telegram_id}') for user in
                  users
                  if user.telegram_username]
                 kb_builder.adjust(1)
