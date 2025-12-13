@@ -32,7 +32,6 @@ class Buy(Base):
 class BuyDTO(BaseModel):
     id: int | None = None
     buyer_id: int | None = None
-    quantity: int | None = None
     total_price: float | None = None
     buy_datetime: datetime | None = None
     is_refunded: bool | None = None

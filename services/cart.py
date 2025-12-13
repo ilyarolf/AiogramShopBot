@@ -258,19 +258,15 @@ class CartService:
         if unpacked_cb.confirmation and len(out_of_stock) == 0 and is_enough_money:
             buys = []
             msg = ""
-            discount_per_position = total_discount_amount / len(cart_items)
+            buy_dto = BuyDTO(buyer_id=user.id,
+                             total_price=cart_total_price - total_discount_amount,
+                             coupon_id=coupon_id)
+            buy_dto = await BuyRepository.create(buy_dto, session)
             for cart_item in cart_items:
-                item = await ItemRepository.get_single(category_id=cart_item.category_id,
-                                                       subcategory_id=cart_item.subcategory_id,
-                                                       session=session)
                 purchased_items = await ItemRepository.get_purchased_items(cart_item.category_id,
                                                                            cart_item.subcategory_id, cart_item.quantity,
                                                                            session)
-                buy_dto = BuyDTO(buyer_id=user.id, quantity=cart_item.quantity,
-                                 total_price=(cart_item.quantity * item.price) - discount_per_position,
-                                 coupon_id=coupon_id)
-                buy_dto = await BuyRepository.create(buy_dto, session)
-                buy_item_dto_list = [BuyItemDTO(item_id=item.id, buy_id=buy_dto.id) for item in purchased_items]
+                buy_item_dto_list = [BuyItemDTO(item_id=item.id, buy_id=buy_dto.id, quantity=cart_item.quantity) for item in purchased_items]
                 await BuyItemRepository.create_many(buy_item_dto_list, session)
                 for item in purchased_items:
                     item.is_sold = True

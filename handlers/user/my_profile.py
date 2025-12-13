@@ -70,7 +70,7 @@ async def purchase_history(**kwargs):
     await callback.message.edit_caption(caption=msg_text, reply_markup=kb_builder.as_markup())
 
 
-async def get_order_from_history(**kwargs):
+async def get_purchase(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     callback_data: MyProfileCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
@@ -124,7 +124,7 @@ async def navigate(callback: CallbackQuery,
         1: top_up_balance,
         2: create_payment,
         4: purchase_history,
-        5: get_order_from_history,
+        5: get_purchase,
         6: edit_language,
     }
 
