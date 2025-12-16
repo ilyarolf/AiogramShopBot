@@ -25,28 +25,40 @@ async def user_management_menu(**kwargs):
     await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
-async def credit_management(**kwargs):
+async def find_user(**kwargs):
+    callback: CallbackQuery = kwargs.get("callback")
+    callback_data: UserManagementCallback = kwargs.get("callback_data")
+    session: AsyncSession = kwargs.get("session")
+    state: FSMContext = kwargs.get("state")
+    language: Language = kwargs.get("language")
+    msg, kb_builder = await UserManagementService.find_user(callback_data, state, session, language)
+    message = await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+    await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
+
+
+async def user_operation(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     callback_data: UserManagementCallback = kwargs.get("callback_data")
     state: FSMContext = kwargs.get("state")
+    session: AsyncSession = kwargs.get("session")
     language: Language = kwargs.get("language")
-    if callback_data.operation is None:
-        msg, kb_builder = await UserManagementService.get_credit_management_menu(callback_data, language)
-        await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
-    else:
-        msg, kb_builder = await UserManagementService.request_user_entity(callback_data, state, language)
-        message = await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
-        await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
+    msg, kb_builder = await UserManagementService.user_operation(callback_data, state, session, language)
+    await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
 
 
-@user_management.message(AdminIdFilter(), F.text, StateFilter(UserManagementStates.user_entity,
-                                                              UserManagementStates.balance_amount))
-async def balance_management(message: Message, state: FSMContext, session: AsyncSession, language: Language):
-    current_state = await state.get_state()
-    if current_state == UserManagementStates.user_entity:
-        msg, kb_builder = await UserManagementService.request_balance_amount(message, state, language)
-    else:
-        msg, kb_builder = await UserManagementService.balance_management(message, state, session, language)
+@user_management.message(AdminIdFilter(), F.text, StateFilter(UserManagementStates.user_entity))
+async def receive_user_entity(message: Message, state: FSMContext, session: AsyncSession, language: Language):
+    msg, kb_builder = await UserManagementService.get_user(message, state, session, language)
+    message = await message.answer(text=msg, reply_markup=kb_builder.as_markup())
+    await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
+
+
+@user_management.message(AdminIdFilter(), F.text, StateFilter(UserManagementStates.balance_amount))
+async def receive_balance_management_value(message: Message,
+                                           state: FSMContext,
+                                           session: AsyncSession,
+                                           language: Language):
+    msg, kb_builder = await UserManagementService.balance_management(message, state, session, language)
     message = await message.answer(text=msg, reply_markup=kb_builder.as_markup())
     await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
 
@@ -101,9 +113,10 @@ async def inventory_management_navigation(callback: CallbackQuery,
 
     levels = {
         0: user_management_menu,
-        1: credit_management,
-        2: refund_buy,
-        3: refund_confirmation
+        1: find_user,
+        2: user_operation,
+        3: refund_buy,
+        4: refund_confirmation
     }
     current_level_function = levels[current_level]
 

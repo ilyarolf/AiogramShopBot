@@ -1,7 +1,7 @@
 import traceback
 from aiogram import types, F, Router
 from aiogram.filters import Command
-from aiogram.types import ErrorEvent, Message, BufferedInputFile
+from aiogram.types import ErrorEvent, Message, BufferedInputFile, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 import config
@@ -24,7 +24,7 @@ from repositories.button_media import ButtonMediaRepository
 from services.media import MediaService
 from services.notification import NotificationService
 from services.user import UserService
-from utils.custom_filters import IsUserExistFilter
+from utils.custom_filters import IsUserExistFilter, IsUserBannedFilter
 from utils.utils import get_bot_photo_id, get_text
 
 logging.basicConfig(level=logging.INFO)
@@ -103,6 +103,22 @@ main_router.message.middleware(DBSessionMiddleware())
 main_router.callback_query.middleware(DBSessionMiddleware())
 main_router.message.middleware(I18nMiddleware())
 main_router.callback_query.middleware(I18nMiddleware())
+
+
+@main_router.message(IsUserBannedFilter())
+async def banned_message(message: Message, language: Language):
+    await message.answer(text=get_text(language, BotEntity.COMMON, "banned"))
+
+
+@main_router.callback_query(IsUserBannedFilter())
+async def banned_message(callback: CallbackQuery, language: Language):
+    banned_text = get_text(language, BotEntity.COMMON, "banned")
+    if callback.message.text:
+        await callback.message.edit_text(banned_text)
+    else:
+        await callback.message.delete()
+        await callback.message.answer(banned_text)
+
 
 if __name__ == '__main__':
     if config.MULTIBOT:

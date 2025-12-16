@@ -157,20 +157,30 @@ class InventoryManagementCallback(BaseCallback, SortingCallback, prefix="invento
 
 class UserManagementCallback(BaseCallback, SortingCallback, prefix="user_management"):
     operation: UserManagementOperation | None
+    user_id: int | None
     buy_id: int | None
     page: int
     confirmation: bool
 
     @staticmethod
-    def create(level: int, operation: UserManagementOperation | None = None,
-               sort_order: SortOrder = SortOrder.DISABLE, sort_property: SortProperty = SortProperty.BUY_DATETIME,
+    def create(level: int,
+               operation: UserManagementOperation | None = None,
+               sort_order: SortOrder = SortOrder.DISABLE,
+               sort_property: SortProperty = SortProperty.BUY_DATETIME,
                is_filter_enabled: bool = False,
-               buy_id: int | None = None, page: int = 0, confirmation: bool = False):
-        return UserManagementCallback(level=level, operation=operation,
-                                      sort_order=sort_order, sort_property=sort_property,
+               user_id: int | None = None,
+               buy_id: int | None = None,
+               page: int = 0,
+               confirmation: bool = False):
+        return UserManagementCallback(level=level,
+                                      operation=operation,
+                                      sort_order=sort_order,
+                                      sort_property=sort_property,
                                       is_filter_enabled=is_filter_enabled,
+                                      user_id=user_id,
                                       buy_id=buy_id,
-                                      page=page, confirmation=confirmation)
+                                      page=page,
+                                      confirmation=confirmation)
 
 
 class StatisticsCallback(BaseCallback, prefix="statistics"):

@@ -156,3 +156,19 @@ class BuyRepository:
             return not_refunded_buys / config.PAGE_ENTRIES - 1
         else:
             return math.trunc(not_refunded_buys / config.PAGE_ENTRIES)
+
+    @staticmethod
+    async def get_qty_by_buyer_id(buyer_id: int, session: AsyncSession | Session) -> int:
+        stmt = (select(func.count(Buy.id))
+                .where(Buy.buyer_id == buyer_id,
+                       Buy.is_refunded == False))
+        qty = await session_execute(stmt, session)
+        return qty.scalar_one()
+
+    @staticmethod
+    async def get_spent_amount(buyer_id: int, session: AsyncSession) -> float:
+        stmt = func.coalesce((select(func.sum(Buy.total_price))
+                              .where(Buy.buyer_id == buyer_id,
+                                     Buy.is_refunded == False)), 0)
+        qty = await session_execute(stmt, session)
+        return qty.scalar_one()
