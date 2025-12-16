@@ -17,6 +17,7 @@ from models.buy import BuyDTO
 from models.deposit import DepositDTO
 from models.user import UserDTO
 from repositories.buy import BuyRepository
+from repositories.buyItem import BuyItemRepository
 from repositories.deposit import DepositRepository
 from repositories.user import UserRepository
 from utils.utils import get_text
@@ -171,7 +172,8 @@ class StatisticsService:
                 items_sold = 0
                 for buy in buys:
                     total_profit += buy.total_price
-                    items_sold += buy.quantity
+                    buyItem_list = await BuyItemRepository.get_all_by_buy_id(buy.id, session)
+                    items_sold += sum([len(buyItem.item_ids) for buyItem in buyItem_list])
                 kb_builder.row(AdminConstants.back_to_main_button(language), callback_data.get_back_button(language))
                 caption = get_text(language, BotEntity.ADMIN, "sales_statistics").format(
                     timedelta=timedelta_localized,

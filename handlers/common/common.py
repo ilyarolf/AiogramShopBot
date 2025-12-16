@@ -117,6 +117,7 @@ async def get_filters_settings(state: FSMContext,
 
 async def enable_search(callback_data: SortingCallback,
                         entity_type: EntityType,
+                        entity_id: int | None,
                         state: FSMContext,
                         search_state: State,
                         language: Language) -> tuple[InputMediaPhoto, InlineKeyboardBuilder]:
@@ -127,7 +128,7 @@ async def enable_search(callback_data: SortingCallback,
         callback_data=callback_data
     )
     await state.set_state(search_state)
-    await state.update_data(entity_type=entity_type.value)
+    await state.update_data(entity_type=entity_type.value, entity_id=entity_id)
     caption = get_text(language, BotEntity.COMMON, "search_by_field_request").format(
         entity=entity_type.get_localized(language),
         field=get_text(language, BotEntity.COMMON, "name")

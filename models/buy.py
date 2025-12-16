@@ -17,7 +17,6 @@ class Buy(Base):
     id = Column(Integer, primary_key=True, unique=True)
     buyer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     buyer = relationship('User', backref='buys')
-    quantity = Column(Integer, nullable=False)
     total_price = Column(Float, nullable=False)
     buy_datetime = Column(DateTime, default=func.now())
     is_refunded = Column(Boolean, default=False)
@@ -49,6 +48,6 @@ class RefundDTO(BaseModel):
     telegram_id: int | None = None
     subcategory_name: str | None = None
     total_price: float | None = None
-    quantity: int | None = None
+    item_ids: list[int] | None = None
     buy_id: int | None = None
     language: Language

@@ -19,9 +19,7 @@ from models.user import User
 
 class BuyRepository:
     @staticmethod
-    async def get_by_buyer_id(sort_pairs: dict[str, int],
-                              filters: list[str],
-                              user_id: int, page: int, session: AsyncSession) -> list[BuyDTO]:
+    async def get_by_buyer_id(sort_pairs: dict[str, int], user_id: int, page: int, session: AsyncSession) -> list[BuyDTO]:
         sort_methods = []
         for sort_property, sort_order in sort_pairs.items():
             sort_property, sort_order = SortProperty(int(sort_property)), SortOrder(sort_order)
@@ -32,13 +30,7 @@ class BuyRepository:
         conditions = [
             Buy.buyer_id == user_id
         ]
-        if filters is not None:
-            filter_conditions = [Subcategory.name.icontains(name) for name in filters]
-            conditions.append(or_(*filter_conditions))
         stmt = (select(Buy)
-                .join(BuyItem, BuyItem.buy_id == Buy.id)
-                .join(Item, Item.id == BuyItem.item_id)
-                .join(Subcategory, Subcategory.id == Item.subcategory_id)
                 .where(*conditions)
                 .limit(config.PAGE_ENTRIES)
                 .offset(page * config.PAGE_ENTRIES)
@@ -90,7 +82,7 @@ class BuyRepository:
             filter_conditions = [User.telegram_username.icontains(name) for name in filters]
             conditions.append(or_(*filter_conditions))
         stmt = (select(Buy.total_price,
-                       Buy.quantity,
+                       BuyItem.item_ids,
                        Buy.id.label("buy_id"),
                        User.telegram_id,
                        User.telegram_username,
@@ -112,7 +104,7 @@ class BuyRepository:
     @staticmethod
     async def get_refund_data_single(buy_id: int, session: Session | AsyncSession) -> RefundDTO:
         stmt = (select(Buy.total_price,
-                       Buy.quantity,
+                       BuyItem.item_ids,
                        Buy.id.label("buy_id"),
                        User.telegram_id,
                        User.telegram_username,
@@ -153,13 +145,10 @@ class BuyRepository:
         return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]
 
     @staticmethod
-    async def get_max_page_purchase_history(buyer_id: int, filters: list[str], session: AsyncSession) -> int:
+    async def get_max_page_purchase_history(buyer_id: int, session: AsyncSession) -> int:
         conditions = [
             Buy.buyer_id == buyer_id
         ]
-        if filters is not None:
-            filter_conditions = [Subcategory.name.icontains(name) for name in filters]
-            conditions.append(or_(*filter_conditions))
         stmt = select(func.count(Buy.id)).where(*conditions)
         not_refunded_buys = await session_execute(stmt, session)
         not_refunded_buys = not_refunded_buys.scalar_one()

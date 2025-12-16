@@ -58,7 +58,7 @@ class UserService:
         kb_builder.button(text=get_text(language, BotEntity.USER, "top_up_balance_button"),
                           callback_data=MyProfileCallback.create(level=1))
         kb_builder.button(text=get_text(language, BotEntity.USER, "purchase_history_button"),
-                          callback_data=MyProfileCallback.create(level=4))
+                          callback_data=MyProfileCallback.create(level=3))
         kb_builder.button(text=get_text(Language.EN, BotEntity.USER, "language"),
                           callback_data=MyProfileCallback.create(level=6))
         kb_builder.adjust(2)
@@ -94,33 +94,26 @@ class UserService:
                                            state: FSMContext,
                                            session: AsyncSession,
                                            language: Language) -> tuple[str, InlineKeyboardBuilder]:
-        callback_data = callback_data or MyProfileCallback.create(level=4)
+        callback_data = callback_data or MyProfileCallback.create(level=3)
         user = await UserRepository.get_by_tgid(telegram_id, session)
-        sort_pairs, filters = await get_filters_settings(state, callback_data)
-        buys = await BuyRepository.get_by_buyer_id(sort_pairs, filters, user.id, callback_data.page, session)
+        sort_pairs, _ = await get_filters_settings(state, callback_data)
+        buys = await BuyRepository.get_by_buyer_id(sort_pairs, user.id, callback_data.page, session)
         kb_builder = InlineKeyboardBuilder()
         for buy in buys:
-            buy_item = await BuyItemRepository.get_single_by_buy_id(buy.id, session)
-            item = await ItemRepository.get_by_id(buy_item.item_id, session)
-            subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
             kb_builder.button(text=get_text(language, BotEntity.USER, "purchase_history_item").format(
-                subcategory_name=subcategory.name,
+                buy_id=buy.id,
                 total_price=buy.total_price,
-                quantity=buy.quantity,
                 currency_sym=config.CURRENCY.get_localized_symbol()),
                 callback_data=MyProfileCallback.create(
                     level=callback_data.level + 1,
                     buy_id=buy.id
                 ))
         kb_builder.adjust(1)
-        kb_builder = await add_search_button(kb_builder, EntityType.SUBCATEGORY, callback_data, filters, language)
         kb_builder = await add_sorting_buttons(kb_builder, [SortProperty.TOTAL_PRICE,
-                                                            SortProperty.QUANTITY,
                                                             SortProperty.BUY_DATETIME],
                                                callback_data, sort_pairs, language)
         kb_builder = await add_pagination_buttons(kb_builder, callback_data,
-                                                  BuyRepository.get_max_page_purchase_history(user.id, filters,
-                                                                                              session),
+                                                  BuyRepository.get_max_page_purchase_history(user.id, session),
                                                   callback_data.get_back_button(language, 0), language)
         if len(kb_builder.as_markup().inline_keyboard) > 1:
             return get_text(language, BotEntity.USER, "purchases"), kb_builder

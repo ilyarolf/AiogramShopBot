@@ -133,32 +133,28 @@ class NotificationService:
         await NotificationService.send_to_admins(message, user_button)
 
     @staticmethod
-    async def new_buy(buys: list[BuyDTO], user: UserDTO, session: AsyncSession | Session):
+    async def new_buy(buy: BuyDTO, user: UserDTO, session: AsyncSession | Session):
         user_button = await NotificationService.make_user_button(user)
         cart_total_price = 0.0
         cart_content = []
-        for buy in buys:
-            buy_item_dto_list = await BuyItemRepository.get_all_by_buy_id(buy.id, session)
-            item_example = await ItemRepository.get_by_id(buy_item_dto_list[0].item_id, session)
+        buyItem_list = await BuyItemRepository.get_all_by_buy_id(buy.id, session)
+        for buyItem in buyItem_list:
+            item_example = await ItemRepository.get_by_id(buyItem.item_ids[0], session)
             category = await CategoryRepository.get_by_id(item_example.category_id, session)
             subcategory = await SubcategoryRepository.get_by_id(item_example.subcategory_id, session)
             cart_total_price += buy.total_price
             if user.telegram_username:
-                cart_content.append(get_text(Language.EN, BotEntity.ADMIN, "notification_purchase_with_tgid").format(
-                    username=user.telegram_username,
-                    total_price=buy.total_price,
-                    quantity=len(buy_item_dto_list),
-                    category_name=category.name,
-                    subcategory_name=subcategory.name,
-                    currency_sym=config.CURRENCY.get_localized_symbol()))
+                msg = get_text(Language.EN, BotEntity.ADMIN, "notification_purchase_with_tgid")
             else:
-                cart_content.append(get_text(Language.EN, BotEntity.ADMIN, "notification_purchase_with_username").format(
-                    telegram_id=user.telegram_id,
-                    total_price=buy.total_price,
-                    quantity=len(buy_item_dto_list),
-                    category_name=category.name,
-                    subcategory_name=subcategory.name,
-                    currency_sym=config.CURRENCY.get_localized_symbol()))
+                msg = get_text(Language.EN, BotEntity.ADMIN, "notification_purchase_with_username")
+            cart_content.append(msg.format(
+                username=user.telegram_username,
+                telegram_id=user.telegram_id,
+                total_price=buy.total_price,
+                quantity=len(buyItem.item_ids),
+                category_name=category.name,
+                subcategory_name=subcategory.name,
+                currency_sym=config.CURRENCY.get_localized_symbol()))
         message = "\n\n".join(cart_content) + "\n\n"
         message += get_text(Language.EN, BotEntity.USER, "cart_total_price").format(
             cart_total_price=cart_total_price, currency_sym=config.CURRENCY.get_localized_symbol())

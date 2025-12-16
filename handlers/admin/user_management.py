@@ -61,7 +61,7 @@ async def refund_buy(**kwargs):
     if callback_data.is_filter_enabled and state_data.get('filter') is not None:
         msg, kb_builder = await UserManagementService.get_refund_menu(callback_data, state, session, language)
     elif callback_data.is_filter_enabled:
-        media, kb_builder = await enable_search(callback_data, EntityType.USER, state,
+        media, kb_builder = await enable_search(callback_data, EntityType.USER, None, state,
                                                 UserManagementStates.filter_username, language)
         msg = media.caption
     else:

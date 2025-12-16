@@ -54,19 +54,8 @@ async def purchase_history(**kwargs):
     session: AsyncSession = kwargs.get("session")
     state: FSMContext = kwargs.get("state")
     language: Language = kwargs.get("language")
-    state_data = await state.get_data()
-    if callback_data.is_filter_enabled and state_data.get('filter') is not None:
-        msg_text, kb_builder = await UserService.get_purchase_history_buttons(callback.from_user.id, callback_data,
-                                                                              state, session, language)
-    elif callback_data.is_filter_enabled:
-        media, kb_builder = await enable_search(callback_data, EntityType.SUBCATEGORY, state,
-                                                UserStates.filter_purchase_history, language)
-        msg_text = media.caption
-    else:
-        await state.update_data(filter=None)
-        await state.set_state()
-        msg_text, kb_builder = await UserService.get_purchase_history_buttons(callback.from_user.id, callback_data,
-                                                                              state, session, language)
+    msg_text, kb_builder = await UserService.get_purchase_history_buttons(callback.from_user.id, callback_data,
+                                                                          state, session, language)
     await callback.message.edit_caption(caption=msg_text, reply_markup=kb_builder.as_markup())
 
 
@@ -76,6 +65,26 @@ async def get_purchase(**kwargs):
     session: AsyncSession = kwargs.get("session")
     language: Language = kwargs.get("language")
     msg, kb_builder = await BuyService.get_purchase(callback_data, session, language)
+    await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
+
+
+async def get_purchased_item(**kwargs):
+    callback: CallbackQuery = kwargs.get("callback")
+    callback_data: MyProfileCallback = kwargs.get("callback_data")
+    state: FSMContext = kwargs.get("state")
+    session: AsyncSession = kwargs.get("session")
+    language: Language = kwargs.get("language")
+    state_data = await state.get_data()
+    if callback_data.is_filter_enabled and state_data.get("filter") is not None:
+        msg, kb_builder = await BuyService.get_purchased_item(callback_data, state, session, language)
+    elif callback_data.is_filter_enabled:
+        media, kb_builder = await enable_search(callback_data, EntityType.SUBCATEGORY, callback_data.buy_id, state,
+                                                UserStates.filter_purchase_history, language)
+        msg = media.caption
+    else:
+        await state.update_data(filter=None)
+        await state.set_state()
+        msg, kb_builder = await BuyService.get_purchased_item(callback_data, state, session, language)
     await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
 
 
@@ -103,8 +112,7 @@ async def edit_language(**kwargs):
 @my_profile_router.message(IsUserExistFilter(), F.text, StateFilter(UserStates.filter_purchase_history))
 async def receive_filter_message(message: Message, state: FSMContext, session: AsyncSession, language: Language):
     await state.update_data(filter=message.html_text)
-    caption, kb_builder = await UserService.get_purchase_history_buttons(message.from_user.id,
-                                                                         None, state, session, language)
+    caption, kb_builder = await BuyService.get_purchased_item(None, state, session, language)
     bot_photo_id = get_bot_photo_id()
     media = InputMediaPhoto(media=bot_photo_id,
                             caption=caption)
@@ -123,7 +131,8 @@ async def navigate(callback: CallbackQuery,
         0: my_profile,
         1: top_up_balance,
         2: create_payment,
-        4: purchase_history,
+        3: purchase_history,
+        4: get_purchased_item,
         5: get_purchase,
         6: edit_language,
     }

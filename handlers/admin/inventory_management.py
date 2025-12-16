@@ -48,7 +48,7 @@ async def delete_entity(**kwargs):
     if callback_data.is_filter_enabled and state_data.get('filter') is not None:
         msg, kb_builder = await AdminService.get_entity_picker(callback_data, session, state, language)
     elif callback_data.is_filter_enabled:
-        media, kb_builder = await enable_search(callback_data, callback_data.entity_type,
+        media, kb_builder = await enable_search(callback_data, callback_data.entity_type, None,
                                                 state, InventoryManagementStates.filter_entity, language)
         await state.update_data(entity_type=callback_data.entity_type.value, callback_prefix=callback_data.__prefix__)
         msg = media.caption

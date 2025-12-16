@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy import Column, Integer, ForeignKey, JSON
 
 from models.base import Base
 
@@ -9,12 +9,12 @@ class BuyItem(Base):
 
     id = Column(Integer, primary_key=True, unique=True, nullable=False)
     buy_id = Column(Integer, ForeignKey("buys.id", ondelete="CASCADE"), nullable=False)
-    item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
-    quantity = Column(Integer, nullable=False)
+    # ARRAY CRUTCH FOR SQLALCHEMY+SQLITE 🩼
+    # item_ids = Column(ARRAY, nullable=False)
+    item_ids = Column(JSON, nullable=False)
 
 
 class BuyItemDTO(BaseModel):
     id: int | None = None
     buy_id: int | None = None
-    item_id: int | None = None
-    quantity: int | None = None
+    item_ids: list[int] | None = None

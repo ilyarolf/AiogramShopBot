@@ -103,3 +103,9 @@ class ItemRepository:
         stmt = select(Item).where(Item.is_sold == False)
         items = await session_execute(stmt, session)
         return [ItemDTO.model_validate(item, from_attributes=True) for item in items.scalars().all()]
+
+    @staticmethod
+    async def get_by_id_list(item_ids: list[int], session: AsyncSession) -> list[ItemDTO]:
+        stmt = select(Item).where(Item.id.in_(item_ids))
+        items = await session_execute(stmt, session)
+        return [ItemDTO.model_validate(item, from_attributes=True) for item in items.scalars().all()]
