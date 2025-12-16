@@ -64,6 +64,7 @@ class AllCategoriesCallback(BaseCallback, SortingCallback, prefix="all_categorie
 
 class MyProfileCallback(BaseCallback, SortingCallback, prefix="my_profile"):
     buy_id: int | None = None
+    buyItem_id: int | None = None
     cryptocurrency: Cryptocurrency | None = None
     language: Language | None = None
     confirmation: bool = False
@@ -72,6 +73,7 @@ class MyProfileCallback(BaseCallback, SortingCallback, prefix="my_profile"):
     @staticmethod
     def create(level: int,
                buy_id: int | None = None,
+               buyItem_id: int | None = None,
                sort_order: SortOrder = SortOrder.DISABLE,
                sort_property: SortProperty = SortProperty.BUY_DATETIME,
                is_filter_enabled: bool = False,
@@ -79,7 +81,7 @@ class MyProfileCallback(BaseCallback, SortingCallback, prefix="my_profile"):
                language: Language | None = None,
                confirmation: bool = False,
                page=0) -> 'MyProfileCallback':
-        return MyProfileCallback(level=level, buy_id=buy_id,
+        return MyProfileCallback(level=level, buy_id=buy_id, buyItem_id=buyItem_id,
                                  sort_order=sort_order, sort_property=sort_property,
                                  is_filter_enabled=is_filter_enabled,
                                  cryptocurrency=cryptocurrency,

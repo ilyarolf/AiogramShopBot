@@ -28,7 +28,9 @@ class SubcategoryService:
                           language: Language) -> tuple[InputMediaPhoto |
                                                           InputMediaAnimation |
                                                           InputMediaVideo, InlineKeyboardBuilder]:
-        callback_data = callback_data or AllCategoriesCallback.create(1)
+        state_data = await state.get_data()
+
+        callback_data = callback_data or AllCategoriesCallback.create(1, state_data.get("entity_id"))
         sort_pairs, filters = await get_filters_settings(state, callback_data)
         kb_builder = InlineKeyboardBuilder()
         items = await SubcategoryRepository.get_paginated_by_category_id(sort_pairs, filters,

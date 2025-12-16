@@ -1,3 +1,4 @@
+from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -6,9 +7,13 @@ import config
 from callbacks import MyProfileCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
+from enums.entity_type import EntityType
 from enums.language import Language
+from enums.sort_property import SortProperty
+from handlers.common.common import get_filters_settings, add_sorting_buttons, add_pagination_buttons, add_search_button
 from models.buy import BuyDTO
 from repositories.buy import BuyRepository
+from repositories.buyItem import BuyItemRepository
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
@@ -32,17 +37,14 @@ class BuyService:
         await session_commit(session)
         await NotificationService.refund(refund_data)
         if refund_data.telegram_username:
-            return get_text(language, BotEntity.ADMIN, "successfully_refunded_with_username").format(
-                total_price=refund_data.total_price,
-                telegram_username=refund_data.telegram_username,
-                quantity=refund_data.quantity,
-                subcategory=refund_data.subcategory_name,
-                currency_sym=config.CURRENCY.get_localized_symbol())
+            msg = get_text(language, BotEntity.ADMIN, "successfully_refunded_with_username")
         else:
-            return get_text(language, BotEntity.ADMIN, "successfully_refunded_with_tgid").format(
+            msg = get_text(language, BotEntity.ADMIN, "successfully_refunded_with_tgid")
+        return msg.format(
                 total_price=refund_data.total_price,
                 telegram_id=refund_data.telegram_id,
-                quantity=refund_data.quantity,
+                telegram_username=refund_data.telegram_username,
+                quantity=len(refund_data.item_ids),
                 subcategory=refund_data.subcategory_name,
                 currency_sym=config.CURRENCY.get_localized_symbol())
 
@@ -51,7 +53,8 @@ class BuyService:
                            session: AsyncSession,
                            language: Language) -> tuple[str, InlineKeyboardBuilder]:
         buy = await BuyRepository.get_by_id(callback_data.buy_id, session)
-        items = await ItemRepository.get_by_buy_id(callback_data.buy_id, session)
+        buyItem_dto = await BuyItemRepository.get_by_id(callback_data.buyItem_id, session)
+        items = await ItemRepository.get_by_id_list(buyItem_dto.item_ids, session)
         purchased_items_msg = MessageService.create_message_with_bought_items(items, language)
         category = await CategoryRepository.get_by_id(items[0].category_id, session)
         subcategory = await SubcategoryRepository.get_by_id(items[0].subcategory_id, session)
@@ -69,3 +72,41 @@ class BuyService:
         kb_builder = InlineKeyboardBuilder()
         kb_builder.row(callback_data.get_back_button(language))
         return msg, kb_builder
+
+    @staticmethod
+    async def get_purchased_item(callback_data: MyProfileCallback | None,
+                                 state: FSMContext,
+                                 session: AsyncSession,
+                                 language: Language):
+        state_data = await state.get_data()
+        callback_data = callback_data or MyProfileCallback.create(4, state_data.get("entity_id"))
+        buy_dto = await BuyRepository.get_by_id(callback_data.buy_id, session)
+        sort_pairs, filters = await get_filters_settings(state, callback_data)
+        buyItem_list = await BuyItemRepository.get_paginated_by_buy_id(sort_pairs,
+                                                                       filters,
+                                                                       buy_dto.id,
+                                                                       callback_data.page,
+                                                                       session)
+        kb_builder = InlineKeyboardBuilder()
+        for buyItem in buyItem_list:
+            item_dto = await ItemRepository.get_by_id(buyItem.item_ids[0], session)
+            subcategory_dto = await SubcategoryRepository.get_by_id(item_dto.subcategory_id, session)
+            kb_builder.button(
+                text=get_text(language, BotEntity.USER, "purchase_history_single_button").format(
+                    subcategory_name=subcategory_dto.name,
+                    qty=len(buyItem.item_ids)
+                ),
+                callback_data=callback_data.model_copy(update={"level": callback_data.level+1,
+                                                               "buyItem_id": buyItem.id})
+            )
+        kb_builder.adjust(1)
+        kb_builder = await add_search_button(kb_builder, EntityType.SUBCATEGORY, callback_data, filters, language)
+        kb_builder = await add_sorting_buttons(kb_builder, [SortProperty.NAME,
+                                                            SortProperty.QUANTITY],
+                                               callback_data, sort_pairs, language)
+        kb_builder = await add_pagination_buttons(kb_builder, callback_data,
+                                                  BuyItemRepository.get_max_page_by_buy_id(callback_data.buy_id,
+                                                                                           filters,
+                                                                                           session),
+                                                  callback_data.get_back_button(language), language)
+        return get_text(language, BotEntity.USER, "purchase_history_pick_item"), kb_builder

@@ -256,32 +256,27 @@ class CartService:
         is_enough_money = (user.top_up_amount - user.consume_records) >= cart_total_price
         kb_builder = InlineKeyboardBuilder()
         if unpacked_cb.confirmation and len(out_of_stock) == 0 and is_enough_money:
-            buys = []
             msg = ""
-            discount_per_position = total_discount_amount / len(cart_items)
+            buy_dto = BuyDTO(buyer_id=user.id,
+                             total_price=cart_total_price - total_discount_amount,
+                             coupon_id=coupon_id)
+            buy_dto = await BuyRepository.create(buy_dto, session)
             for cart_item in cart_items:
-                item = await ItemRepository.get_single(category_id=cart_item.category_id,
-                                                       subcategory_id=cart_item.subcategory_id,
-                                                       session=session)
                 purchased_items = await ItemRepository.get_purchased_items(cart_item.category_id,
                                                                            cart_item.subcategory_id, cart_item.quantity,
                                                                            session)
-                buy_dto = BuyDTO(buyer_id=user.id, quantity=cart_item.quantity,
-                                 total_price=(cart_item.quantity * item.price) - discount_per_position,
-                                 coupon_id=coupon_id)
-                buy_dto = await BuyRepository.create(buy_dto, session)
-                buy_item_dto_list = [BuyItemDTO(item_id=item.id, buy_id=buy_dto.id) for item in purchased_items]
+                item_ids = [item.id for item in purchased_items]
+                buy_item_dto_list = [BuyItemDTO(item_id=item.id, buy_id=buy_dto.id, item_ids=item_ids) for item in purchased_items]
                 await BuyItemRepository.create_many(buy_item_dto_list, session)
                 for item in purchased_items:
                     item.is_sold = True
                 await ItemRepository.update(purchased_items, session)
                 await CartItemRepository.remove_from_cart(cart_item.id, session)
-                buys.append(buy_dto)
                 msg += MessageService.create_message_with_bought_items(purchased_items, language)
             user.consume_records = user.consume_records + cart_total_price
             await UserRepository.update(user, session)
             await session_commit(session)
-            await NotificationService.new_buy(buys, user, session)
+            await NotificationService.new_buy(buy_dto, user, session)
             return msg, kb_builder
         elif unpacked_cb.confirmation is False:
             kb_builder.row(unpacked_cb.get_back_button(language, 0))

@@ -41,6 +41,7 @@ async def all_categories(**kwargs):
         elif callback_data.is_filter_enabled:
             media, kb_builder = await enable_search(callback_data,
                                                     EntityType.CATEGORY,
+                                                    None,
                                                     state,
                                                     UserStates.filter_items,
                                                     language)
@@ -61,7 +62,9 @@ async def show_subcategories_in_category(**kwargs):
     if callback_data.is_filter_enabled and state_data.get('filter') is not None:
         media, kb_builder = await SubcategoryService.get_buttons(callback_data, state, session, language)
     elif callback_data.is_filter_enabled:
-        media, kb_builder = await enable_search(callback_data, EntityType.SUBCATEGORY,
+        media, kb_builder = await enable_search(callback_data,
+                                                EntityType.SUBCATEGORY,
+                                                callback_data.category_id,
                                                 state,
                                                 UserStates.filter_items,
                                                 language)
