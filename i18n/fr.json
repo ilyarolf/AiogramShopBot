@@ -93,8 +93,8 @@
     "pick_usage_number": "🔢 Choisissez le nombre d’utilisations :",
     "request_coupon_value": "💵 Envoyez la valeur du coupon :\nPour un “Coupon en %”, envoyez le pourcentage.\nPour un “Coupon fixe”, envoyez la valeur en {currency_text}.\nType : {coupon_type}\nUtilisations : {number_of_uses}",
     "request_coupon_name": "✏️ Veuillez envoyer le nom du coupon :",
-    "create_coupon_confirmation": "✅ Confirmer la création du coupon ?\nType : {coupon_type}\nUtilisations : {number_of_uses}\nValeur : {coupon_value}{symbol}",
-    "coupon_created_successfully": "🎉 Coupon créé avec succès.\nType : {coupon_type}\nUtilisations : {number_of_uses}\nValide jusqu’au : {use_before}\nValeur : {coupon_value}{symbol}\nCode : <code>{code}</code>",
+    "create_coupon_confirmation": "✅ Êtes-vous sûr de vouloir créer un coupon ?\nNom du coupon : {coupon_name}\nType de coupon : {coupon_type}\nNombre d'utilisations : {number_of_uses}\nMontant de la remise : {coupon_value}{symbol}",
+    "coupon_created_successfully": "🎉 Coupon créé avec succès.\nNom du coupon : {coupon_name}\nType de coupon : {coupon_type}\nNombre d'utilisations : {number_of_uses}\nÀ utiliser avant le : {use_before}\nValeur : {coupon_value}{symbol}\nCode : <code>{code}</code>",
     "coupon_info": "✏️ Nom du coupon : {coupon_name}\n🎟️ Type de coupon : {coupon_type}\n🟡 Est actif : {is_active}\n🔄 Nombre d'utilisations : {number_of_uses}\n📅 À utiliser avant le : {use_before}\n💰 Valeur : {coupon_value}{symbol}\n🔢 Code : <code>{code}</code>\n👥 Nombre d'utilisations : {usage_count}",
     "coupon": "🎟️ Coupon {name}",
     "enable": "✅ Activer",
@@ -172,7 +172,9 @@
     "buy_confirmation": "<b>📂 Catégorie : <code>{category_name}</code>\n📦 Sous-catégorie : <code>{subcategory_name}</code>\n💸 Prix : <code>{currency_sym}{price:.2f}</code>\n✍️ Description : <i>{description}</i>\n🔢 Quantité : <code>{quantity}</code> pcs\nPrix total : <code>{currency_sym}{total_price:.2f}</code></b>",
     "cart": "🛒 Panier",
     "cart_item_button": "📦 {subcategory_name}| Total : {currency_sym}{total_price:.2f} | Qté : {qty}",
-    "cart_total_price": "Prix total du panier : <code>{currency_sym}{cart_total_price:.2f}</code>",
+    "cart_total_price": "Prix total du panier : <code>{currency_sym}{cart_total_price:.2f}</code>\n",
+    "cart_total_discount": "Remise totale du panier : <code>{currency_sym}{cart_total_discount:.2f}</code>\n",
+    "cart_total_with_discount": "Prix total du panier après remise : <code>{currency_sym}{cart_total_final:.2f}</code>",
     "cart_line_item": "{cart_item_subcategory_name} ({cart_item_quantity!s}) = {cart_item_total:.2f}{cart_item_currency!s} \n",
     "cart_confirm_checkout_process": "<b>{cart_content}\n\n💰 Prix total du panier : <code>{currency_sym}{cart_total_price:.2f}</code>\n\n🛒 Confirmer la commande ?</b>",
     "cart_confirm_checkout_process_with_coupon": "<b>{cart_content}\n\n💰 Prix avant réduction : <code>{currency_sym}{cart_total_price_before_discount:.2f}</code>\n💰 Prix après réduction : <code>{currency_sym}{cart_total_price:.2f}</code>\n💰 Réduction : <code>{currency_sym}{discount_amount:.2f}</code>\n\n🛒 Confirmer la commande ?</b>",
@@ -228,6 +230,8 @@
     "language": "🌍 Langue",
     "edit_language": "<b>🌍 Choisir la langue:</b>",
     "edit_language_confirmation": "<b>🌍 Êtes-vous sûr de vouloir changer la langue de <i>{current_language}</i> à <i>{update_language}</i>?</b>",
-    "language_edited_successfully": "<b>🌍 Langue modifiée avec succès!</b>\n🔄 Actualisez votre clavier de réponse avec la commande \"/start\"."
+    "language_edited_successfully": "<b>🌍 Langue modifiée avec succès!</b>\n🔄 Actualisez votre clavier de réponse avec la commande \"/start\".",
+    "purchase_completed": "🛍️ Votre achat a été complété avec succès !",
+    "attached": "Joint"
   }
 }
