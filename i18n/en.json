@@ -92,10 +92,12 @@
     "single_usage": "1️⃣ Single usage",
     "pick_usage_number": "🔢 Please pick numbers of usage:",
     "request_coupon_value": "💵 Please send coupon value:\nIf it is a coupon type-\"Percentage coupon\", enter the value of how much percent to make the discount, if the coupon type-\"Fixed coupon\", then enter the value of how much the discount will be in {currency_text}\nCoupon type: {coupon_type}\nNumber of uses: {number_of_uses}",
-    "create_coupon_confirmation": "✅ Are you sure you want to create a coupon?\nCoupon Type: {coupon_type}\nNumber of uses: {number_of_uses}\nDiscount amount: {coupon_value}{symbol}",
-    "coupon_created_successfully": "🎉 Coupon successfully created.\nCoupon type: {coupon_type}\nNumber of uses: {number_of_uses}\nUse before: {use_before}\nValue: {coupon_value}{symbol}\nCode: <code>{code}</code>",
-    "coupon_info": "🎟️ Coupon type: {coupon_type}\n🔄 Number of uses: {number_of_uses}\n📅 Use before: {use_before}\n💰 Value: {coupon_value}{symbol}\n🔢 Code: <code>{code}</code>\n👥 Usage count: {usage_count}",
-    "coupon": "🎟️ Coupon #{id}",
+    "request_coupon_name": "✏\uFE0F Please send coupon name:",
+    "create_coupon_confirmation": "✅ Are you sure you want to create a coupon?\nCoupon name: {coupon_name}\nCoupon Type: {coupon_type}\nNumber of uses: {number_of_uses}\nDiscount amount: {coupon_value}{symbol}",
+    "coupon_created_successfully": "🎉 Coupon successfully created.\nCoupon name: {coupon_name}\nCoupon type: {coupon_type}\nNumber of uses: {number_of_uses}\nUse before: {use_before}\nValue: {coupon_value}{symbol}\nCode: <code>{code}</code>",
+    "coupon_info": "✏\uFE0F Coupon name: {coupon_name}\n🎟️ Coupon type: {coupon_type}\n\uD83D\uDFE1 Is active: {is_active}\n🔄 Number of uses: {number_of_uses}\n📅 Use before: {use_before}\n💰 Value: {coupon_value}{symbol}\n🔢 Code: <code>{code}</code>\n👥 Usage count: {usage_count}",
+    "coupon": "🎟️ Coupon {name}",
+    "enable": "✅ Enable",
     "disable": "❌ Disable",
     "users_ylabel": "New Users",
     "users_chart_title": "Daily New Users",
@@ -170,7 +172,9 @@
     "buy_confirmation": "<b>\uD83D\uDDC2\uFE0F Category: <code>{category_name}</code>\n\uD83D\uDCE6 Subcategory: <code>{subcategory_name}</code>\n\uD83D\uDCB8 Price: <code>{currency_sym}{price:.2f}</code>\n✍\uFE0F Description: <i>{description}</i>\n\uD83D\uDD22 Quantity: <code>{quantity}</code> pcs.\nTotal price: <code>{currency_sym}{total_price:.2f}</code></b>",
     "cart": "\uD83D\uDED2 Cart",
     "cart_item_button": "\uD83D\uDCE6 {subcategory_name}| Total: {currency_sym}{total_price:.2f} | Qty: {qty}",
-    "cart_total_price": "Cart total price: <code>{currency_sym}{cart_total_price:.2f}</code>",
+    "cart_total_price": "Cart total price: <code>{currency_sym}{cart_total_price:.2f}</code>\n",
+    "cart_total_discount": "Cart total discount: <code>{currency_sym}{cart_total_discount:.2f}</code>\n",
+    "cart_total_with_discount": "Cart total price after discount: <code>{currency_sym}{cart_total_final:.2f}</code>",
     "cart_line_item": "{cart_item_subcategory_name} ({cart_item_quantity!s}) = {cart_item_total:.2f}{cart_item_currency!s} \n",
     "cart_confirm_checkout_process": "<b>{cart_content}\n\n\uD83D\uDCB8 Cart total price: <code>{currency_sym}{cart_total_price:.2f}</code>\n\n\uD83D\uDED2 Checkout cart?</b>",
     "cart_confirm_checkout_process_with_coupon": "<b>{cart_content}\n\n\uD83D\uDCB8 Cart total price before discount: <code>{currency_sym}{cart_total_price_before_discount:.2f}</code>\n\uD83D\uDCB8 Cart total price after discount: <code>{currency_sym}{cart_total_price:.2f}</code>\n\uD83D\uDCB8 Discount: <code>{currency_sym}{discount_amount:.2f}</code>\n\n\uD83D\uDED2 Checkout cart?</b>",
@@ -226,6 +230,8 @@
     "language": "🌍 Language",
     "edit_language": "<b>🌍 Pick language:</b>",
     "edit_language_confirmation": "<b>🌍 Are you sure you want to change the language from <i>{current_language}</i> to <i>{update_language}</i>?</b>",
-    "language_edited_successfully": "<b>🌍 Language edited successfully!</b>\n🔄 Refresh your reply keyboard with \"/start\" command."
+    "language_edited_successfully": "<b>🌍 Language edited successfully!</b>\n🔄 Refresh your reply keyboard with \"/start\" command.",
+    "purchase_completed": "\uD83D\uDECD\uFE0F Your purchase has been successfully completed!",
+    "attached": "Attached"
   }
 }

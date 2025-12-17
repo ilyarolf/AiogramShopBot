@@ -92,10 +92,12 @@
     "single_usage": "1️⃣ 单次使用",
     "pick_usage_number": "🔢 请选择使用次数：",
     "request_coupon_value": "💵 请输入优惠券的值：\n对于百分比券，输入百分比。\n对于固定金额券，输入以 {currency_text} 计价的金额。\n类型：{coupon_type}\n使用次数：{number_of_uses}",
-    "create_coupon_confirmation": "✅ 确认创建优惠券？\n类型：{coupon_type}\n使用次数：{number_of_uses}\n面值：{coupon_value}{symbol}",
-    "coupon_created_successfully": "🎉 优惠券创建成功。\n类型：{coupon_type}\n使用次数：{number_of_uses}\n有效期至：{use_before}\n面值：{coupon_value}{symbol}\n优惠码：<code>{code}</code>",
-    "coupon_info": "🎟️ 类型：{coupon_type}\n🔄 使用次数：{number_of_uses}\n📅 有效期至：{use_before}\n💰 面值：{coupon_value}{symbol}\n🔢 优惠码：<code>{code}</code>\n👥 已使用：{usage_count} 次",
-    "coupon": "🎟️ 优惠券 #{id}",
+    "request_coupon_name": "✏️ 请输入优惠券名称：",
+    "create_coupon_confirmation": "✅ 确定要创建优惠券吗？\n优惠券名称：{coupon_name}\n优惠券类型：{coupon_type}\n可使用次数：{number_of_uses}\n折扣金额：{coupon_value}{symbol}",
+    "coupon_created_successfully": "🎉 优惠券创建成功。\n优惠券名称：{coupon_name}\n优惠券类型：{coupon_type}\n可使用次数：{number_of_uses}\n有效期至：{use_before}\n面值：{coupon_value}{symbol}\n代码：<code>{code}</code>",
+    "coupon_info": "✏️ 优惠券名称：{coupon_name}\n🎟️ 优惠券类型：{coupon_type}\n🟡 是否有效：{is_active}\n🔄 可使用次数：{number_of_uses}\n📅 有效期至：{use_before}\n💰 面值：{coupon_value}{symbol}\n🔢 代码：<code>{code}</code>\n👥 已使用次数：{usage_count}",
+    "coupon": "🎟️ 优惠券 {name}",
+    "enable": "✅ 启用",
     "disable": "❌ 禁用",
     "users_ylabel": "新增用户",
     "users_chart_title": "每日新增用户",
@@ -170,7 +172,9 @@
     "buy_confirmation": "<b>📂 分类：<code>{category_name}</code>\n📦 子分类：<code>{subcategory_name}</code>\n💸 价格：<code>{currency_sym}{price:.2f}</code>\n✍️ 描述：<i>{description}</i>\n🔢 数量：<code>{quantity}</code> 件\n总价：<code>{currency_sym}{total_price:.2f}</code></b>",
     "cart": "🛒 购物车",
     "cart_item_button": "📦 {subcategory_name} | 总计：{currency_sym}{total_price:.2f} | 数量：{qty}",
-    "cart_total_price": "购物车总价：<code>{currency_sym}{cart_total_price:.2f}</code>",
+    "cart_total_price": "购物车总价：<code>{currency_sym}{cart_total_price:.2f}</code>\n",
+    "cart_total_discount": "购物车总折扣：<code>{currency_sym}{cart_total_discount:.2f}</code>\n",
+    "cart_total_with_discount": "折后购物车总价：<code>{currency_sym}{cart_total_final:.2f}</code>",
     "cart_line_item": "{cart_item_subcategory_name} ({cart_item_quantity!s}) = {cart_item_total:.2f}{cart_item_currency!s}\n",
     "cart_confirm_checkout_process": "<b>{cart_content}\n\n💰 购物车总价：<code>{currency_sym}{cart_total_price:.2f}</code>\n\n🛒 是否确认购买？</b>",
     "cart_confirm_checkout_process_with_coupon": "<b>{cart_content}\n\n💰 折扣前金额：<code>{currency_sym}{cart_total_price_before_discount:.2f}</code>\n💰 折扣后金额：<code>{currency_sym}{cart_total_price:.2f}</code>\n💰 优惠金额：<code>{currency_sym}{discount_amount:.2f}</code>\n\n🛒 是否确认购买？</b>",
@@ -226,6 +230,8 @@
     "language": "🌍 语言",
     "edit_language": "<b>🌍 选择语言：</b>",
     "edit_language_confirmation": "<b>🌍 您确定要将语言从 <i>{current_language}</i> 更改为 <i>{update_language}</i> 吗？</b>",
-    "language_edited_successfully": "<b>🌍 语言修改成功！</b>\n🔄 使用 \"/start\" 命令刷新您的回复键盘。"
+    "language_edited_successfully": "<b>🌍 语言修改成功！</b>\n🔄 使用 \"/start\" 命令刷新您的回复键盘。",
+    "purchase_completed": "🛍️ 您的购买已完成！",
+    "attached": "已附加"
   }
 }

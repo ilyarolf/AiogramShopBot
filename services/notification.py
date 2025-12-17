@@ -135,14 +135,13 @@ class NotificationService:
     @staticmethod
     async def new_buy(buy: BuyDTO, user: UserDTO, session: AsyncSession | Session):
         user_button = await NotificationService.make_user_button(user)
-        cart_total_price = 0.0
         cart_content = []
         buyItem_list = await BuyItemRepository.get_all_by_buy_id(buy.id, session)
+        currency_sym = config.CURRENCY.get_localized_symbol()
         for buyItem in buyItem_list:
             item_example = await ItemRepository.get_by_id(buyItem.item_ids[0], session)
             category = await CategoryRepository.get_by_id(item_example.category_id, session)
             subcategory = await SubcategoryRepository.get_by_id(item_example.subcategory_id, session)
-            cart_total_price += buy.total_price
             if user.telegram_username:
                 msg = get_text(Language.EN, BotEntity.ADMIN, "notification_purchase_with_tgid")
             else:
@@ -150,14 +149,18 @@ class NotificationService:
             cart_content.append(msg.format(
                 username=user.telegram_username,
                 telegram_id=user.telegram_id,
-                total_price=buy.total_price,
+                total_price=item_example.price*len(buyItem.item_ids),
                 quantity=len(buyItem.item_ids),
                 category_name=category.name,
                 subcategory_name=subcategory.name,
-                currency_sym=config.CURRENCY.get_localized_symbol()))
-        message = "\n\n".join(cart_content) + "\n\n"
+                currency_sym=currency_sym))
+        message = "\n".join(cart_content) + "\n\n"
         message += get_text(Language.EN, BotEntity.USER, "cart_total_price").format(
-            cart_total_price=cart_total_price, currency_sym=config.CURRENCY.get_localized_symbol())
+            cart_total_price=buy.total_price+buy.discount, currency_sym=currency_sym)
+        message += get_text(Language.EN, BotEntity.USER, "cart_total_discount").format(
+            cart_total_discount=buy.discount, currency_sym=currency_sym)
+        message += get_text(Language.EN, BotEntity.USER, "cart_total_with_discount").format(
+            cart_total_final=buy.total_price, currency_sym=currency_sym)
         await NotificationService.send_to_admins(message, user_button)
 
     @staticmethod

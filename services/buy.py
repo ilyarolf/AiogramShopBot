@@ -1,4 +1,5 @@
 from aiogram.fsm.context import FSMContext
+from aiogram.types import BufferedInputFile, InputMediaDocument, InputMediaPhoto
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -20,7 +21,7 @@ from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
 from services.message import MessageService
 from services.notification import NotificationService
-from utils.utils import get_text
+from utils.utils import get_text, get_bot_photo_id, remove_html_tags
 
 
 class BuyService:
@@ -41,17 +42,17 @@ class BuyService:
         else:
             msg = get_text(language, BotEntity.ADMIN, "successfully_refunded_with_tgid")
         return msg.format(
-                total_price=refund_data.total_price,
-                telegram_id=refund_data.telegram_id,
-                telegram_username=refund_data.telegram_username,
-                quantity=len(refund_data.item_ids),
-                subcategory=refund_data.subcategory_name,
-                currency_sym=config.CURRENCY.get_localized_symbol())
+            total_price=refund_data.total_price,
+            telegram_id=refund_data.telegram_id,
+            telegram_username=refund_data.telegram_username,
+            quantity=len(refund_data.item_ids),
+            subcategory=refund_data.subcategory_name,
+            currency_sym=config.CURRENCY.get_localized_symbol())
 
     @staticmethod
     async def get_purchase(callback_data: MyProfileCallback,
                            session: AsyncSession,
-                           language: Language) -> tuple[str, InlineKeyboardBuilder]:
+                           language: Language) -> tuple[str | InputMediaDocument, InlineKeyboardBuilder]:
         buy = await BuyRepository.get_by_id(callback_data.buy_id, session)
         buyItem_dto = await BuyItemRepository.get_by_id(callback_data.buyItem_id, session)
         items = await ItemRepository.get_by_id_list(buyItem_dto.item_ids, session)
@@ -59,11 +60,12 @@ class BuyService:
         category = await CategoryRepository.get_by_id(items[0].category_id, session)
         subcategory = await SubcategoryRepository.get_by_id(items[0].subcategory_id, session)
         us_datetime_12h = buy.buy_datetime.strftime("%m/%d/%Y, %I:%M %p")
-        msg = get_text(language, BotEntity.USER, "purchase_details").format(
+        msg_template = get_text(language, BotEntity.USER, "purchase_details")
+        msg = msg_template.format(
             category_name=category.name,
             subcategory_name=subcategory.name,
             currency_sym=config.CURRENCY.get_localized_symbol(),
-            total_fiat_price=items[0].price*len(items),
+            total_fiat_price=items[0].price * len(items),
             fiat_price=items[0].price,
             qty=len(items),
             purchase_datetime=us_datetime_12h,
@@ -71,13 +73,30 @@ class BuyService:
         )
         kb_builder = InlineKeyboardBuilder()
         kb_builder.row(callback_data.get_back_button(language))
-        return msg, kb_builder
+        if len(msg) > 1024:
+            msg = msg_template.format(
+                category_name=category.name,
+                subcategory_name=subcategory.name,
+                currency_sym=config.CURRENCY.get_localized_symbol(),
+                total_fiat_price=items[0].price * len(items),
+                fiat_price=items[0].price,
+                qty=len(items),
+                purchase_datetime=us_datetime_12h,
+                purchased_items=get_text(language, BotEntity.USER, "attached")
+            )
+            purchased_items_msg=remove_html_tags(purchased_items_msg)
+            byte_array = bytearray(purchased_items_msg, 'utf-8')
+            media = InputMediaDocument(media=BufferedInputFile(byte_array, f"Purchase#{buy.id}.txt"),
+                                       caption=msg)
+            return media, kb_builder
+        else:
+            return msg, kb_builder
 
     @staticmethod
     async def get_purchased_item(callback_data: MyProfileCallback | None,
                                  state: FSMContext,
                                  session: AsyncSession,
-                                 language: Language):
+                                 language: Language) -> tuple[InputMediaPhoto, InlineKeyboardBuilder]:
         state_data = await state.get_data()
         callback_data = callback_data or MyProfileCallback.create(4, state_data.get("entity_id"))
         buy_dto = await BuyRepository.get_by_id(callback_data.buy_id, session)
@@ -96,7 +115,7 @@ class BuyService:
                     subcategory_name=subcategory_dto.name,
                     qty=len(buyItem.item_ids)
                 ),
-                callback_data=callback_data.model_copy(update={"level": callback_data.level+1,
+                callback_data=callback_data.model_copy(update={"level": callback_data.level + 1,
                                                                "buyItem_id": buyItem.id})
             )
         kb_builder.adjust(1)
@@ -109,4 +128,7 @@ class BuyService:
                                                                                            filters,
                                                                                            session),
                                                   callback_data.get_back_button(language), language)
-        return get_text(language, BotEntity.USER, "purchase_history_pick_item"), kb_builder
+        caption = get_text(language, BotEntity.USER, "purchase_history_pick_item")
+        bot_photo_id = get_bot_photo_id()
+        media = InputMediaPhoto(media=bot_photo_id, caption=caption)
+        return media, kb_builder

@@ -92,10 +92,12 @@
     "single_usage": "1️⃣ Uso singolo",
     "pick_usage_number": "🔢 Seleziona il numero di utilizzi:",
     "request_coupon_value": "💵 Invia il valore del coupon:\nPer \"Coupon percentuale\" invia la percentuale.\nPer \"Coupon fisso\" invia l’importo in {currency_text}.\nTipo: {coupon_type}\nUtilizzi: {number_of_uses}",
-    "create_coupon_confirmation": "✅ Confermi la creazione del coupon?\nTipo: {coupon_type}\nUtilizzi: {number_of_uses}\nValore: {coupon_value}{symbol}",
-    "coupon_created_successfully": "🎉 Coupon creato con successo.\nTipo: {coupon_type}\nUtilizzi: {number_of_uses}\nValido fino al: {use_before}\nValore: {coupon_value}{symbol}\nCodice: <code>{code}</code>",
-    "coupon_info": "🎟️ Tipo: {coupon_type}\n🔄 Utilizzi: {number_of_uses}\n📅 Valido fino al: {use_before}\n💰 Valore: {coupon_value}{symbol}\n🔢 Codice: <code>{code}</code>\n👥 Utilizzato: {usage_count} volte",
-    "coupon": "🎟️ Coupon #{id}",
+    "request_coupon_name": "✏️ Per favore, invia il nome del coupon:",
+    "create_coupon_confirmation": "✅ Sei sicuro di voler creare un coupon?\nNome coupon: {coupon_name}\nTipo di coupon: {coupon_type}\nNumero di utilizzi: {number_of_uses}\nImporto sconto: {coupon_value}{symbol}",
+    "coupon_created_successfully": "🎉 Coupon creato con successo.\nNome coupon: {coupon_name}\nTipo di coupon: {coupon_type}\nNumero di utilizzi: {number_of_uses}\nUsa entro: {use_before}\nValore: {coupon_value}{symbol}\nCodice: <code>{code}</code>",
+    "coupon_info": "✏️ Nome coupon: {coupon_name}\n🎟️ Tipo di coupon: {coupon_type}\n🟡 Attivo: {is_active}\n🔄 Numero di utilizzi: {number_of_uses}\n📅 Usa entro: {use_before}\n💰 Valore: {coupon_value}{symbol}\n🔢 Codice: <code>{code}</code>\n👥 Conteggio utilizzi: {usage_count}",
+    "coupon": "🎟️ Coupon {name}",
+    "enable": "✅ Attiva",
     "disable": "❌ Disattiva",
     "users_ylabel": "Nuovi utenti",
     "users_chart_title": "Nuovi utenti giornalieri",
@@ -170,7 +172,9 @@
     "buy_confirmation": "<b>📂 Categoria: <code>{category_name}</code>\n📦 Sottocategoria: <code>{subcategory_name}</code>\n💸 Prezzo: <code>{currency_sym}{price:.2f}</code>\n✍️ Descrizione: <i>{description}</i>\n🔢 Quantità: <code>{quantity}</code> pcs\nPrezzo totale: <code>{currency_sym}{total_price:.2f}</code></b>",
     "cart": "🛒 Carrello",
     "cart_item_button": "📦 {subcategory_name}| Totale: {currency_sym}{total_price:.2f} | Qtà: {qty}",
-    "cart_total_price": "Totale carrello: <code>{currency_sym}{cart_total_price:.2f}</code>",
+    "cart_total_price": "Prezzo totale carrello: <code>{currency_sym}{cart_total_price:.2f}</code>\n",
+    "cart_total_discount": "Sconto totale carrello: <code>{currency_sym}{cart_total_discount:.2f}</code>\n",
+    "cart_total_with_discount": "Prezzo totale carrello dopo sconto: <code>{currency_sym}{cart_total_final:.2f}</code>",
     "cart_line_item": "{cart_item_subcategory_name} ({cart_item_quantity!s}) = {cart_item_total:.2f}{cart_item_currency!s} \n",
     "cart_confirm_checkout_process": "<b>{cart_content}\n\n💰 Totale carrello: <code>{currency_sym}{cart_total_price:.2f}</code>\n\n🛒 Confermare l’ordine?</b>",
     "cart_confirm_checkout_process_with_coupon": "<b>{cart_content}\n\n💰 Totale prima dello sconto: <code>{currency_sym}{cart_total_price_before_discount:.2f}</code>\n💰 Totale dopo lo sconto: <code>{currency_sym}{cart_total_price:.2f}</code>\n💰 Sconto: <code>{currency_sym}{discount_amount:.2f}</code>\n\n🛒 Confermare l’ordine?</b>",
@@ -226,6 +230,8 @@
     "language": "🌍 Lingua",
     "edit_language": "<b>🌍 Seleziona lingua:</b>",
     "edit_language_confirmation": "<b>🌍 Sei sicuro di voler cambiare la lingua da <i>{current_language}</i> a <i>{update_language}</i>?</b>",
-    "language_edited_successfully": "<b>🌍 Lingua modificata con successo!</b>\n🔄 Aggiorna la tastiera di risposta con il comando \"/start\"."
+    "language_edited_successfully": "<b>🌍 Lingua modificata con successo!</b>\n🔄 Aggiorna la tastiera di risposta con il comando \"/start\".",
+    "purchase_completed": "🛍️ Il tuo acquisto è stato completato con successo!",
+    "attached": "Allegato"
   }
 }

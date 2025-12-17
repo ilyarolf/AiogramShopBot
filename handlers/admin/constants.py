@@ -57,4 +57,5 @@ class MediaManagementStates(StatesGroup):
 
 
 class CouponsManagementStates(StatesGroup):
+    coupon_name = State()
     coupon_value = State()

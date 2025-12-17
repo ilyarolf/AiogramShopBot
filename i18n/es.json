@@ -92,10 +92,12 @@
     "single_usage": "1️⃣ Un solo uso",
     "pick_usage_number": "🔢 Selecciona el número de usos:",
     "request_coupon_value": "💵 Envía el valor del cupón:\nSi es un “Cupón porcentual”, envía el porcentaje de descuento.\nSi es un “Cupón fijo”, envía el valor del descuento en {currency_text}.\nTipo de cupón: {coupon_type}\nNúmero de usos: {number_of_uses}",
-    "create_coupon_confirmation": "✅ ¿Confirmas la creación del cupón?\nTipo de cupón: {coupon_type}\nNúmero de usos: {number_of_uses}\nDescuento: {coupon_value}{symbol}",
-    "coupon_created_successfully": "🎉 Cupón creado exitosamente.\nTipo: {coupon_type}\nNúmero de usos: {number_of_uses}\nVálido hasta: {use_before}\nValor: {coupon_value}{symbol}\nCódigo: <code>{code}</code>",
-    "coupon_info": "🎟️ Tipo de cupón: {coupon_type}\n🔄 Número de usos: {number_of_uses}\n📅 Válido hasta: {use_before}\n💰 Valor: {coupon_value}{symbol}\n🔢 Código: <code>{code}</code>\n👥 Usos realizados: {usage_count}",
-    "coupon": "🎟️ Cupón #{id}",
+    "request_coupon_name": "✏️ Por favor, envía el nombre del cupón:",
+    "create_coupon_confirmation": "✅ ¿Estás seguro de que quieres crear un cupón?\nNombre del cupón: {coupon_name}\nTipo de cupón: {coupon_type}\nNúmero de usos: {number_of_uses}\nImporte del descuento: {coupon_value}{symbol}",
+    "coupon_created_successfully": "🎉 Cupón creado con éxito.\nNombre del cupón: {coupon_name}\nTipo de cupón: {coupon_type}\nNúmero de usos: {number_of_uses}\nUsar antes de: {use_before}\nValor: {coupon_value}{symbol}\nCódigo: <code>{code}</code>",
+    "coupon_info": "✏️ Nombre del cupón: {coupon_name}\n🎟️ Tipo de cupón: {coupon_type}\n🟡 Está activo: {is_active}\n🔄 Número de usos: {number_of_uses}\n📅 Usar antes de: {use_before}\n💰 Valor: {coupon_value}{symbol}\n🔢 Código: <code>{code}</code>\n👥 Veces usado: {usage_count}",
+    "coupon": "🎟️ Cupón {name}",
+    "enable": "✅ Activar",
     "disable": "❌ Desactivar",
     "users_ylabel": "Nuevos usuarios",
     "users_chart_title": "Nuevos usuarios diarios",
@@ -170,7 +172,9 @@
     "buy_confirmation": "<b>📂 Categoría: <code>{category_name}</code>\n📦 Subcategoría: <code>{subcategory_name}</code>\n💸 Precio: <code>{currency_sym}{price:.2f}</code>\n✍️ Descripción: <i>{description}</i>\n🔢 Cantidad: <code>{quantity}</code> uds.\nPrecio total: <code>{currency_sym}{total_price:.2f}</code></b>",
     "cart": "🛒 Carrito",
     "cart_item_button": "📦 {subcategory_name}| Total: {currency_sym}{total_price:.2f} | Cant.: {qty}",
-    "cart_total_price": "Precio total del carrito: <code>{currency_sym}{cart_total_price:.2f}</code>",
+    "cart_total_price": "Precio total del carrito: <code>{currency_sym}{cart_total_price:.2f}</code>\n",
+    "cart_total_discount": "Descuento total del carrito: <code>{currency_sym}{cart_total_discount:.2f}</code>\n",
+    "cart_total_with_discount": "Precio total del carrito tras descuento: <code>{currency_sym}{cart_total_final:.2f}</code>",
     "cart_line_item": "{cart_item_subcategory_name} ({cart_item_quantity!s}) = {cart_item_total:.2f}{cart_item_currency!s} \n",
     "cart_confirm_checkout_process": "<b>{cart_content}\n\n💰 Precio total del carrito: <code>{currency_sym}{cart_total_price:.2f}</code>\n\n🛒 ¿Confirmar compra?</b>",
     "cart_confirm_checkout_process_with_coupon": "<b>{cart_content}\n\n💰 Precio antes del descuento: <code>{currency_sym}{cart_total_price_before_discount:.2f}</code>\n💰 Precio después del descuento: <code>{currency_sym}{cart_total_price:.2f}</code>\n💰 Descuento: <code>{currency_sym}{discount_amount:.2f}</code>\n\n🛒 ¿Confirmar compra?</b>",
@@ -226,6 +230,8 @@
     "language": "🌍 Idioma",
     "edit_language": "<b>🌍 Seleccionar idioma:</b>",
     "edit_language_confirmation": "<b>🌍 ¿Estás seguro de que quieres cambiar el idioma de <i>{current_language}</i> a <i>{update_language}</i>?</b>",
-    "language_edited_successfully": "<b>🌍 ¡Idioma cambiado con éxito!</b>\n🔄 Actualiza tu teclado de respuesta con el comando \"/start\"."
+    "language_edited_successfully": "<b>🌍 ¡Idioma cambiado con éxito!</b>\n🔄 Actualiza tu teclado de respuesta con el comando \"/start\".",
+    "purchase_completed": "🛍️ ¡Tu compra se ha completado con éxito!",
+    "attached": "Adjuntado"
   }
 }

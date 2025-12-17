@@ -65,7 +65,10 @@ async def get_purchase(**kwargs):
     session: AsyncSession = kwargs.get("session")
     language: Language = kwargs.get("language")
     msg, kb_builder = await BuyService.get_purchase(callback_data, session, language)
-    await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
+    if isinstance(msg, str):
+        await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
+    else:
+        await callback.message.edit_media(media=msg, reply_markup=kb_builder.as_markup())
 
 
 async def get_purchased_item(**kwargs):
@@ -76,16 +79,15 @@ async def get_purchased_item(**kwargs):
     language: Language = kwargs.get("language")
     state_data = await state.get_data()
     if callback_data.is_filter_enabled and state_data.get("filter") is not None:
-        msg, kb_builder = await BuyService.get_purchased_item(callback_data, state, session, language)
+        media, kb_builder = await BuyService.get_purchased_item(callback_data, state, session, language)
     elif callback_data.is_filter_enabled:
         media, kb_builder = await enable_search(callback_data, EntityType.SUBCATEGORY, callback_data.buy_id, state,
                                                 UserStates.filter_purchase_history, language)
-        msg = media.caption
     else:
         await state.update_data(filter=None)
         await state.set_state()
-        msg, kb_builder = await BuyService.get_purchased_item(callback_data, state, session, language)
-    await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
+        media, kb_builder = await BuyService.get_purchased_item(callback_data, state, session, language)
+    await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
 
 
 async def create_payment(**kwargs):

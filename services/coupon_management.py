@@ -2,12 +2,12 @@ import secrets
 import string
 
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram.types import Message, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import config
-from callbacks import CouponManagementCallback
+from callbacks import CouponManagementCallback, AdminMenuCallback
 from enums.bot_entity import BotEntity
 from enums.coupon_type import CouponType
 from enums.language import Language
@@ -35,6 +35,10 @@ class CouponManagementService:
             callback_data=CouponManagementCallback.create(
                 level=5
             )
+        )
+        kb_builder.button(
+            text=get_text(language, BotEntity.COMMON, "back_button"),
+            callback_data=AdminMenuCallback.create(0)
         )
         kb_builder.adjust(1)
         return (get_text(language, BotEntity.ADMIN, "coupons_management"),
@@ -107,12 +111,34 @@ class CouponManagementService:
         coupon_type = CouponType(state_data['coupon_type'])
         number_of_uses = CouponNumberOfUses(state_data['number_of_uses'])
         kb_builder = InlineKeyboardBuilder()
-        try:
-            coupon_value = float(message.text)
-            if coupon_type == CouponType.PERCENTAGE:
-                assert 0 < coupon_value < 100
-            await state.clear()
-            await state.update_data(**state_data, coupon_value=coupon_value)
+        current_state = await state.get_state()
+        cancel_button = InlineKeyboardButton(
+            text=get_text(language, BotEntity.COMMON, "cancel"),
+            callback_data=CouponManagementCallback.create(level=0).pack()
+        )
+        if current_state == CouponsManagementStates.coupon_value:
+            try:
+                coupon_value = float(message.text)
+                if coupon_type == CouponType.PERCENTAGE:
+                    assert coupon_value < 100
+                await state.set_state(CouponsManagementStates.coupon_name)
+                await state.update_data(**state_data, coupon_value=coupon_value)
+                msg = get_text(language, BotEntity.ADMIN, "request_coupon_name")
+                kb_builder.row(cancel_button)
+            except Exception as e:
+                kb_builder.row(cancel_button)
+                msg = get_text(language,
+                               BotEntity.ADMIN,
+                               "request_coupon_value").format(
+                    coupon_type=get_text(language, BotEntity.ADMIN,
+                                         f"{coupon_type.value.lower()}_coupon"),
+                    number_of_uses=get_text(language, BotEntity.ADMIN,
+                                            f"{number_of_uses.value.lower()}_usage"),
+                    currency_text=config.CURRENCY.get_localized_text()
+                )
+        else:
+            await state.update_data(coupon_name=message.html_text)
+            await state.set_state()
             kb_builder.button(
                 text=get_text(language, BotEntity.COMMON, "confirm"),
                 callback_data=CouponManagementCallback.create(
@@ -122,31 +148,18 @@ class CouponManagementService:
                     confirmation=True
                 )
             )
-            kb_builder.button(
-                text=get_text(language, BotEntity.COMMON, "cancel"),
-                callback_data=CouponManagementCallback.create(level=0)
-            )
+            kb_builder.row(cancel_button)
             msg = get_text(language, BotEntity.ADMIN,
                            "create_coupon_confirmation").format(
-                coupon_type=coupon_type.get_localized(language),
-                number_of_uses=number_of_uses.get_localized(language),
-                coupon_value=coupon_value,
+                coupon_name=message.html_text,
+                coupon_type=get_text(language, BotEntity.ADMIN,
+                                     f"{coupon_type.value.lower()}_coupon"),
+                number_of_uses=get_text(language, BotEntity.ADMIN,
+                                        f"{number_of_uses.value.lower()}_usage"),
+                coupon_value=state_data['coupon_value'],
                 symbol=config.CURRENCY.get_localized_symbol() if coupon_type == CouponType.FIXED else "%"
             )
-            return msg, kb_builder
-        except Exception as _:
-            kb_builder.button(
-                text=get_text(language, BotEntity.COMMON, "cancel"),
-                callback_data=CouponManagementCallback.create(0)
-            )
-            return get_text(
-                language,
-                BotEntity.ADMIN,
-                "request_coupon_value").format(
-                coupon_type=coupon_type.get_localized(language),
-                number_of_uses=number_of_uses.get_localized(language),
-                currency_text=config.CURRENCY.get_localized_text()
-            ), kb_builder
+        return msg, kb_builder
 
     @staticmethod
     async def create_coupon(callback_data: CouponManagementCallback,
@@ -157,8 +170,9 @@ class CouponManagementService:
         safe_chars = string.ascii_uppercase.replace('I', '').replace('O', '') + \
                      string.digits.replace('0', '').replace('1', '')
         code = ''.join(secrets.choice(safe_chars) for _ in range(12))
-        coupon_value = float(state_data['coupon_value'])
+        coupon_value, coupon_name = float(state_data['coupon_value']), state_data['coupon_name']
         coupon_dto = CouponDTO(
+            name=coupon_name,
             code=code,
             type=callback_data.coupon_type,
             value=coupon_value,
@@ -170,6 +184,7 @@ class CouponManagementService:
         kb_builder.row(callback_data.get_back_button(language, 0))
         return get_text(language, BotEntity.ADMIN,
                         "coupon_created_successfully").format(
+            coupon_name=coupon_name,
             coupon_type=callback_data.coupon_type.get_localized(language),
             number_of_uses=callback_data.number_of_uses.get_localized(language),
             coupon_value=coupon_value,
@@ -187,7 +202,7 @@ class CouponManagementService:
         for coupon in coupons:
             kb_builder.button(
                 text=get_text(language, BotEntity.ADMIN, "coupon").format(
-                    id=coupon.id
+                    name=coupon.name if coupon.name else f"#{coupon.id}"
                 ),
                 callback_data=CouponManagementCallback.create(
                     level=callback_data.level + 1,
@@ -208,13 +223,22 @@ class CouponManagementService:
                           language: Language) -> tuple[str, InlineKeyboardBuilder]:
         coupon_dto = await CouponRepository.get_by_id(callback_data.coupon_id, session)
         if callback_data.confirmation is True:
-            coupon_dto.is_active = False
+            coupon_dto.is_active = not coupon_dto.is_active
             await CouponRepository.update(coupon_dto, session)
             await session.commit()
         kb_builder = InlineKeyboardBuilder()
         if coupon_dto.is_active:
             kb_builder.button(
                 text=get_text(language, BotEntity.ADMIN, "disable"),
+                callback_data=CouponManagementCallback.create(
+                    level=callback_data.level,
+                    coupon_id=coupon_dto.id,
+                    confirmation=True
+                )
+            )
+        elif coupon_dto.is_active is False and coupon_dto.usage_limit != 1:
+            kb_builder.button(
+                text=get_text(language, BotEntity.ADMIN, "enable"),
                 callback_data=CouponManagementCallback.create(
                     level=callback_data.level,
                     coupon_id=coupon_dto.id,
@@ -229,6 +253,8 @@ class CouponManagementService:
             number_of_uses = get_text(language, BotEntity.ADMIN,
                                       "infinity_usage")
         return get_text(language, BotEntity.ADMIN, "coupon_info").format(
+            coupon_name=coupon_dto.name,
+            is_active=coupon_dto.is_active,
             coupon_type=coupon_dto.type.get_localized(language),
             number_of_uses=number_of_uses,
             coupon_value=coupon_dto.value,
