@@ -95,7 +95,7 @@
     "create_coupon_confirmation": "✅ ¿Confirmas la creación del cupón?\nTipo de cupón: {coupon_type}\nNúmero de usos: {number_of_uses}\nDescuento: {coupon_value}{symbol}",
     "coupon_created_successfully": "🎉 Cupón creado exitosamente.\nTipo: {coupon_type}\nNúmero de usos: {number_of_uses}\nVálido hasta: {use_before}\nValor: {coupon_value}{symbol}\nCódigo: <code>{code}</code>",
     "coupon_info": "🎟️ Tipo de cupón: {coupon_type}\n🔄 Número de usos: {number_of_uses}\n📅 Válido hasta: {use_before}\n💰 Valor: {coupon_value}{symbol}\n🔢 Código: <code>{code}</code>\n👥 Usos realizados: {usage_count}",
-    "coupon": "🎟️ Cupón #{id}",
+    "coupon": "🎟️ Cupón {name}",
     "disable": "❌ Desactivar",
     "users_ylabel": "Nuevos usuarios",
     "users_chart_title": "Nuevos usuarios diarios",

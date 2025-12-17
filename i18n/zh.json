@@ -95,7 +95,7 @@
     "create_coupon_confirmation": "✅ 确认创建优惠券？\n类型：{coupon_type}\n使用次数：{number_of_uses}\n面值：{coupon_value}{symbol}",
     "coupon_created_successfully": "🎉 优惠券创建成功。\n类型：{coupon_type}\n使用次数：{number_of_uses}\n有效期至：{use_before}\n面值：{coupon_value}{symbol}\n优惠码：<code>{code}</code>",
     "coupon_info": "🎟️ 类型：{coupon_type}\n🔄 使用次数：{number_of_uses}\n📅 有效期至：{use_before}\n💰 面值：{coupon_value}{symbol}\n🔢 优惠码：<code>{code}</code>\n👥 已使用：{usage_count} 次",
-    "coupon": "🎟️ 优惠券 #{id}",
+    "coupon": "🎟️ 优惠券 {name}",
     "disable": "❌ 禁用",
     "users_ylabel": "新增用户",
     "users_chart_title": "每日新增用户",
