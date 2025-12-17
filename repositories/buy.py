@@ -1,7 +1,6 @@
-import datetime
 import math
 
-from sqlalchemy import select, func, update, or_
+from sqlalchemy import select, func, update, or_, literal_column
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -57,7 +56,7 @@ class BuyRepository:
         sub_stmt = (select(Buy)
                     .join(User, User.id == Buy.buyer_id)
                     .where(*conditions))
-        stmt = select(func.count(Buy.id)).select_from(sub_stmt)
+        stmt = select(func.count()).select_from(sub_stmt)
         not_refunded_buys = await session_execute(stmt, session)
         not_refunded_buys = not_refunded_buys.scalar_one()
         if not_refunded_buys % config.PAGE_ENTRIES == 0:
@@ -81,16 +80,23 @@ class BuyRepository:
             filters = [username.replace("@", "") for username in filters]
             filter_conditions = [User.telegram_username.icontains(name) for name in filters]
             conditions.append(or_(*filter_conditions))
+        # SQLITE CRUTCH 🩼
+        je = func.json_each(BuyItem.item_ids).table_valued("value").alias("je")
         stmt = (select(Buy.total_price,
                        BuyItem.item_ids,
                        Buy.id.label("buy_id"),
                        User.telegram_id,
                        User.telegram_username,
                        User.id.label("user_id"),
-                       Subcategory.name.label("subcategory_name"))
+                       Subcategory.name.label("subcategory_name"),
+                       User.language)
                 .join(BuyItem, BuyItem.buy_id == Buy.id)
                 .join(User, User.id == Buy.buyer_id)
-                .join(Item, Item.id == BuyItem.item_id)
+                # START SQLITE CRUTCH 🩼
+                .join(je, literal_column("1") == literal_column("1"))
+                .join(Item, Item.id == je.c.value)
+                # END SQLITE CRUTCH 🩼
+                # .join(Item, Item.id.in_(BuyItem.item_ids))
                 .join(Subcategory, Subcategory.id == Item.subcategory_id)
                 .where(*conditions)
                 .distinct()
@@ -103,6 +109,7 @@ class BuyRepository:
 
     @staticmethod
     async def get_refund_data_single(buy_id: int, session: Session | AsyncSession) -> RefundDTO:
+        je = func.json_each(BuyItem.item_ids).table_valued("value").alias("je")
         stmt = (select(Buy.total_price,
                        BuyItem.item_ids,
                        Buy.id.label("buy_id"),
@@ -110,10 +117,15 @@ class BuyRepository:
                        User.telegram_username,
                        User.id.label("user_id"),
                        User.language,
-                       Subcategory.name.label("subcategory_name"))
+                       Subcategory.name.label("subcategory_name"),
+                       User.language)
                 .join(BuyItem, BuyItem.buy_id == Buy.id)
                 .join(User, User.id == Buy.buyer_id)
-                .join(Item, Item.id == BuyItem.item_id)
+                # START SQLITE CRUTCH 🩼
+                .join(je, literal_column("1") == literal_column("1"))
+                .join(Item, Item.id == je.c.value)
+                # END SQLITE CRUTCH 🩼
+                # .join(Item, Item.id.in_(BuyItem.item_ids))
                 .join(Subcategory, Subcategory.id == Item.subcategory_id)
                 .where(Buy.is_refunded == False, Buy.id == buy_id)
                 .limit(1))
@@ -156,3 +168,19 @@ class BuyRepository:
             return not_refunded_buys / config.PAGE_ENTRIES - 1
         else:
             return math.trunc(not_refunded_buys / config.PAGE_ENTRIES)
+
+    @staticmethod
+    async def get_qty_by_buyer_id(buyer_id: int, session: AsyncSession | Session) -> int:
+        stmt = (select(func.count(Buy.id))
+                .where(Buy.buyer_id == buyer_id,
+                       Buy.is_refunded == False))
+        qty = await session_execute(stmt, session)
+        return qty.scalar_one()
+
+    @staticmethod
+    async def get_spent_amount(buyer_id: int, session: AsyncSession) -> float:
+        stmt = func.coalesce((select(func.sum(Buy.total_price))
+                              .where(Buy.buyer_id == buyer_id,
+                                     Buy.is_refunded == False)), 0)
+        qty = await session_execute(stmt, session)
+        return qty.scalar_one()

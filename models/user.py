@@ -19,7 +19,8 @@ class User(Base):
     consume_records = Column(Float, default=0.0)
     registered_at = Column(DateTime, default=func.now())
     can_receive_messages = Column(Boolean, default=True)
-    language = Column(Enum(Language), default=Language.EN)
+    language = Column(Enum(Language), default=Language.EN, nullable=False)
+    is_banned = Column(Boolean, default=False)
 
     __table_args__ = (
         CheckConstraint('top_up_amount >= 0', name='check_top_up_amount_positive'),
@@ -36,6 +37,7 @@ class UserDTO(BaseModel):
     registered_at: datetime | None = None
     can_receive_messages: bool | None = None
     language: Language = Language.EN
+    is_banned: bool = False
 
     @staticmethod
     def get_chart_text(language: Language) -> tuple[str, str]:

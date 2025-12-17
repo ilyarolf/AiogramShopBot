@@ -103,7 +103,10 @@
     "sales_chart_title": "Daily Sales Volume",
     "deposit_ylabel": "Deposit Volume, {currency_sym}",
     "deposit_chart_title": "Daily Deposit Volume",
-    "date": "Date"
+    "date": "Date",
+    "find_user": "🔎 Find User",
+    "ban": "🚫 Ban",
+    "user_info": "\uD83D\uDC64 User Profile\n\nUsername: {username}\nIs banned: {is_banned}\n\n\uD83D\uDCCA Account Stats\n\n• Total Purchases: {total_purchases_qty}\n• Total Spent: {currency_sym}{total_spent_amount:.2f}\n• Balance: {currency_sym}{balance:.2f}\n\n\uD83D\uDEE0\uFE0F Actions"
   },
   "common": {
     "back_button": "⬅️ Back",
@@ -149,12 +152,13 @@
     "pick_all_categories": "🗂️ Pick all categories",
     "all": "All",
     "cancel_search": "❌ Cancel Search",
-    "user": "User",
+    "user": "👤 User",
     "minus_one": "➖1\uFE0F⃣",
     "plus_one": "➕1\uFE0F⃣",
     "max": "♾\uFE0F",
     "remove_all": "\uD83D\uDDD1",
-    "coupon": "🎟️ I have a coupon"
+    "coupon": "🎟️ I have a coupon",
+    "banned": "<b>Your account has been banned.</b>"
   },
   "user": {
     "all_categories": "🗂️ All categories",

@@ -103,7 +103,10 @@
     "sales_chart_title": "Volume des ventes quotidien",
     "deposit_ylabel": "Volume des dépôts, {currency_sym}",
     "deposit_chart_title": "Volume quotidien des dépôts",
-    "date": "Date"
+    "date": "Date",
+    "find_user": "🔎 Rechercher un utilisateur",
+    "ban": "🚫 Bannir",
+    "user_info": "👤 Profil utilisateur\n\nNom d'utilisateur: {username}\nBanni: {is_banned}\n\n📊 Statistiques du compte\n\n• Achats totaux: {total_purchases_qty}\n• Total dépensé: {currency_sym}{total_spent_amount:.2f}\n• Solde: {currency_sym}{balance:.2f}\n\n🛠️ Actions"
   },
   "common": {
     "back_button": "⬅️ Retour",
@@ -149,12 +152,13 @@
     "pick_all_categories": "🗂️ Sélectionner toutes les catégories",
     "all": "Tout",
     "cancel_search": "❌ Annuler la recherche",
-    "user": "Utilisateur",
+    "user": "👤 Utilisateur",
     "minus_one": "➖1⃣",
     "plus_one": "➕1⃣",
     "max": "♾️ Max",
     "remove_all": "🗑",
-    "coupon": "🎟️ J’ai un coupon"
+    "coupon": "🎟️ J’ai un coupon",
+    "banned": "<b>Votre compte a été banni.</b>"
   },
   "user": {
     "all_categories": "🗂️ Toutes les catégories",
