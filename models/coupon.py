@@ -11,6 +11,7 @@ class Coupon(Base):
     __tablename__ = "coupons"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, unique=True, nullable=True)
     code = Column(String(12), unique=True, nullable=False, index=True)
     type = Column(Enum(CouponType), nullable=False)
     value = Column(Numeric(10, 2), nullable=False)
@@ -23,6 +24,7 @@ class Coupon(Base):
 
 class CouponDTO(BaseModel):
     id: int | None = None
+    name: str | None = None
     code: str | None = None
     type: CouponType | None = None
     value: float | None = None

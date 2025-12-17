@@ -21,6 +21,7 @@ class Buy(Base):
     buy_datetime = Column(DateTime, default=func.now())
     is_refunded = Column(Boolean, default=False)
     coupon_id = Column(Integer, ForeignKey('coupons.id'), nullable=True)
+    discount = Column(Float, nullable=False, default=0.0)
 
     __table_args__ = (
         CheckConstraint('quantity > 0', name='check_quantity_positive'),
@@ -35,6 +36,7 @@ class BuyDTO(BaseModel):
     buy_datetime: datetime | None = None
     is_refunded: bool | None = None
     coupon_id: int | None = None
+    discount: float = 0.0
 
     @staticmethod
     def get_chart_text(language: Language) -> tuple[str, str]:

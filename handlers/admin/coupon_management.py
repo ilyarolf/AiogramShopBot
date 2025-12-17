@@ -48,7 +48,8 @@ async def request_coupon_value(**kwargs):
     await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
 
 
-@coupons_management.message(AdminIdFilter(), F.text, StateFilter(CouponsManagementStates.coupon_value))
+@coupons_management.message(AdminIdFilter(), F.text, StateFilter(CouponsManagementStates.coupon_value,
+                                                                 CouponsManagementStates.coupon_name))
 async def receive_coupon_value(message: Message, state: FSMContext, language: Language):
     msg, kb_builder = await CouponManagementService.receive_coupon_value(message, state, language)
     message = await message.answer(text=msg, reply_markup=kb_builder.as_markup())
