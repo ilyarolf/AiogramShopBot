@@ -164,7 +164,7 @@ class NotificationService:
     async def refund(refund_data: RefundDTO):
         user_notification = get_text(refund_data.language, BotEntity.USER, "refund_notification").format(
             total_price=refund_data.total_price,
-            quantity=refund_data.quantity,
+            quantity=len(refund_data.item_ids),
             subcategory=refund_data.subcategory_name,
             currency_sym=config.CURRENCY.get_localized_symbol())
         await NotificationService.send_to_user(user_notification, refund_data.telegram_id)

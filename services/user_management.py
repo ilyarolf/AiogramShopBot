@@ -115,23 +115,19 @@ class UserManagementService:
                 UserManagementOperation.REFUND,
                 buy_id=refund_item.buy_id)
             if refund_item.telegram_username:
-                kb_builder.button(text=get_text(language, BotEntity.ADMIN, "refund_by_username").format(
-                    telegram_username=refund_item.telegram_username,
-                    total_price=refund_item.total_price,
-                    subcategory=refund_item.subcategory_name,
-                    currency_sym=config.CURRENCY.get_localized_symbol()),
-                    callback_data=callback)
+                button_text = get_text(language, BotEntity.ADMIN, "refund_by_username")
             else:
-                kb_builder.button(text=get_text(language, BotEntity.ADMIN, "refund_by_tgid").format(
-                    telegram_id=refund_item.telegram_id,
-                    total_price=refund_item.total_price,
-                    subcategory=refund_item.subcategory_name,
-                    currency_sym=config.CURRENCY.get_localized_symbol()),
-                    callback_data=callback)
+                button_text = get_text(language, BotEntity.ADMIN, "refund_by_tgid")
+            kb_builder.button(text=button_text.format(
+                telegram_username=refund_item.telegram_username,
+                telegram_id=refund_item.telegram_id,
+                total_price=refund_item.total_price,
+                subcategory=refund_item.subcategory_name,
+                currency_sym=config.CURRENCY.get_localized_symbol()),
+                callback_data=callback)
         kb_builder.adjust(1)
         kb_builder = await add_search_button(kb_builder, EntityType.USER, callback_data, filters, language)
-        kb_builder = await add_sorting_buttons(kb_builder, [SortProperty.QUANTITY,
-                                                            SortProperty.TOTAL_PRICE,
+        kb_builder = await add_sorting_buttons(kb_builder, [SortProperty.TOTAL_PRICE,
                                                             SortProperty.BUY_DATETIME],
                                                callback_data,
                                                sort_pairs, language)
@@ -154,14 +150,14 @@ class UserManagementService:
         if refund_data.telegram_username:
             return get_text(language, BotEntity.ADMIN, "refund_confirmation_by_username").format(
                 telegram_username=refund_data.telegram_username,
-                quantity=refund_data.quantity,
+                quantity=len(refund_data.item_ids),
                 subcategory=refund_data.subcategory_name,
                 total_price=refund_data.total_price,
                 currency_sym=config.CURRENCY.get_localized_symbol()), kb_builder
         else:
             return get_text(language, BotEntity.ADMIN, "refund_confirmation_by_tgid").format(
                 telegram_id=refund_data.telegram_id,
-                quantity=refund_data.quantity,
+                quantity=len(refund_data.item_ids),
                 subcategory=refund_data.subcategory_name,
                 total_price=refund_data.total_price,
                 currency_sym=config.CURRENCY.get_localized_symbol()), kb_builder
@@ -246,6 +242,6 @@ class UserManagementService:
             kb_builder = InlineKeyboardBuilder()
             kb_builder.button(
                 text=get_text(language, BotEntity.COMMON, "cancel"),
-                callback_data=callback_data.model_copy(update={"level": callback_data.level-1, "operation": None})
+                callback_data=callback_data.model_copy(update={"level": callback_data.level - 1, "operation": None})
             )
             return msg, kb_builder
