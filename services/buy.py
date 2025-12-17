@@ -69,7 +69,7 @@ class BuyService:
             fiat_price=items[0].price,
             qty=len(items),
             purchase_datetime=us_datetime_12h,
-            purchased_items=purchased_items_msg*100
+            purchased_items=purchased_items_msg
         )
         kb_builder = InlineKeyboardBuilder()
         kb_builder.row(callback_data.get_back_button(language))
