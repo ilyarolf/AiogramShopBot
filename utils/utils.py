@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import urllib.request
 from pyngrok import ngrok
 from enums.bot_entity import BotEntity
@@ -34,3 +35,8 @@ def get_text(language: Language, entity: BotEntity, key: str) -> str:
     except Exception as e:
         logging.error(e)
         return get_text(Language.EN, entity, key)
+
+
+def remove_html_tags(text: str):
+    clean = re.compile('<.*?>')
+    return re.sub(clean, '', text)

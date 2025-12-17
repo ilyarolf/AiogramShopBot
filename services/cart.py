@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 import config
-from callbacks import AllCategoriesCallback, CartCallback
+from callbacks import AllCategoriesCallback, CartCallback, MyProfileCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.cart_action import CartAction
@@ -256,9 +256,10 @@ class CartService:
         is_enough_money = (user.top_up_amount - user.consume_records) >= cart_total_price
         kb_builder = InlineKeyboardBuilder()
         if unpacked_cb.confirmation and len(out_of_stock) == 0 and is_enough_money:
-            msg = ""
+            msg = get_text(language, BotEntity.USER, "purchase_completed")
             buy_dto = BuyDTO(buyer_id=user.id,
-                             total_price=cart_total_price - total_discount_amount,
+                             total_price=cart_total_price,
+                             discount=total_discount_amount,
                              coupon_id=coupon_id)
             buy_dto = await BuyRepository.create(buy_dto, session)
             for cart_item in cart_items:
@@ -266,13 +267,21 @@ class CartService:
                                                                            cart_item.subcategory_id, cart_item.quantity,
                                                                            session)
                 item_ids = [item.id for item in purchased_items]
-                buy_item_dto_list = [BuyItemDTO(item_id=item.id, buy_id=buy_dto.id, item_ids=item_ids) for item in purchased_items]
-                await BuyItemRepository.create_many(buy_item_dto_list, session)
+                buy_item_dto = BuyItemDTO(buy_id=buy_dto.id, item_ids=item_ids)
+                await BuyItemRepository.create_single(buy_item_dto, session)
                 for item in purchased_items:
                     item.is_sold = True
                 await ItemRepository.update(purchased_items, session)
                 await CartItemRepository.remove_from_cart(cart_item.id, session)
-                msg += MessageService.create_message_with_bought_items(purchased_items, language)
+            kb_builder.button(
+                text=get_text(language, BotEntity.USER, "purchase_history_item").format(
+                    buy_id=buy_dto.id,
+                    total_price=buy_dto.total_price,
+                    currency_sym=config.CURRENCY.get_localized_symbol()
+                ),
+                callback_data=MyProfileCallback.create(level=4,
+                                                       buy_id=buy_dto.id)
+            )
             user.consume_records = user.consume_records + cart_total_price
             await UserRepository.update(user, session)
             await session_commit(session)

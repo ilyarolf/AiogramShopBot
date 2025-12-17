@@ -26,6 +26,10 @@ class BuyItemRepository:
             session.add(BuyItem(**buy_item_dto.model_dump()))
 
     @staticmethod
+    async def create_single(buy_item_dto: BuyItemDTO, session: AsyncSession):
+        session.add(BuyItem(**buy_item_dto.model_dump()))
+
+    @staticmethod
     async def get_all_by_buy_id(buy_id: int, session: Session | AsyncSession) -> list[BuyItemDTO]:
         stmt = select(BuyItem).where(BuyItem.buy_id == buy_id)
         buy_items = await session_execute(stmt, session)

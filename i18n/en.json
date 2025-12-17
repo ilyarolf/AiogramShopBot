@@ -172,7 +172,9 @@
     "buy_confirmation": "<b>\uD83D\uDDC2\uFE0F Category: <code>{category_name}</code>\n\uD83D\uDCE6 Subcategory: <code>{subcategory_name}</code>\n\uD83D\uDCB8 Price: <code>{currency_sym}{price:.2f}</code>\n✍\uFE0F Description: <i>{description}</i>\n\uD83D\uDD22 Quantity: <code>{quantity}</code> pcs.\nTotal price: <code>{currency_sym}{total_price:.2f}</code></b>",
     "cart": "\uD83D\uDED2 Cart",
     "cart_item_button": "\uD83D\uDCE6 {subcategory_name}| Total: {currency_sym}{total_price:.2f} | Qty: {qty}",
-    "cart_total_price": "Cart total price: <code>{currency_sym}{cart_total_price:.2f}</code>",
+    "cart_total_price": "Cart total price: <code>{currency_sym}{cart_total_price:.2f}</code>\n",
+    "cart_total_discount": "Cart total discount: <code>{currency_sym}{cart_total_discount:.2f}</code>\n",
+    "cart_total_with_discount": "Cart total price after discount: <code>{currency_sym}{cart_total_final:.2f}</code>",
     "cart_line_item": "{cart_item_subcategory_name} ({cart_item_quantity!s}) = {cart_item_total:.2f}{cart_item_currency!s} \n",
     "cart_confirm_checkout_process": "<b>{cart_content}\n\n\uD83D\uDCB8 Cart total price: <code>{currency_sym}{cart_total_price:.2f}</code>\n\n\uD83D\uDED2 Checkout cart?</b>",
     "cart_confirm_checkout_process_with_coupon": "<b>{cart_content}\n\n\uD83D\uDCB8 Cart total price before discount: <code>{currency_sym}{cart_total_price_before_discount:.2f}</code>\n\uD83D\uDCB8 Cart total price after discount: <code>{currency_sym}{cart_total_price:.2f}</code>\n\uD83D\uDCB8 Discount: <code>{currency_sym}{discount_amount:.2f}</code>\n\n\uD83D\uDED2 Checkout cart?</b>",
@@ -228,6 +230,8 @@
     "language": "🌍 Language",
     "edit_language": "<b>🌍 Pick language:</b>",
     "edit_language_confirmation": "<b>🌍 Are you sure you want to change the language from <i>{current_language}</i> to <i>{update_language}</i>?</b>",
-    "language_edited_successfully": "<b>🌍 Language edited successfully!</b>\n🔄 Refresh your reply keyboard with \"/start\" command."
+    "language_edited_successfully": "<b>🌍 Language edited successfully!</b>\n🔄 Refresh your reply keyboard with \"/start\" command.",
+    "purchase_completed": "\uD83D\uDECD\uFE0F Your purchase has been successfully completed!",
+    "attached": "Attached"
   }
 }
