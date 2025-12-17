@@ -103,7 +103,10 @@
     "sales_chart_title": "每日销售额",
     "deposit_ylabel": "充值金额，{currency_sym}",
     "deposit_chart_title": "每日充值金额",
-    "date": "日期"
+    "date": "日期",
+    "find_user": "🔎 查找用户",
+    "ban": "🚫 封禁",
+    "user_info": "👤 用户资料\n\n用户名: {username}\n是否被封禁: {is_banned}\n\n📊 账户统计\n\n• 总购买次数: {total_purchases_qty}\n• 总消费金额: {currency_sym}{total_spent_amount:.2f}\n• 账户余额: {currency_sym}{balance:.2f}\n\n🛠️ 操作"
   },
   "common": {
     "back_button": "⬅️ 返回",
@@ -149,12 +152,13 @@
     "pick_all_categories": "🗂️ 选择所有分类",
     "all": "全部",
     "cancel_search": "❌ 取消搜索",
-    "user": "用户",
+    "user": "👤 用户",
     "minus_one": "➖1⃣",
     "plus_one": "➕1⃣",
     "max": "♾️ 最大",
     "remove_all": "🗑",
-    "coupon": "🎟️ 我有优惠券"
+    "coupon": "🎟️ 我有优惠券",
+    "banned": "<b>您的账户已被封禁。</b>"
   },
   "user": {
     "all_categories": "🗂️ 所有分类",
