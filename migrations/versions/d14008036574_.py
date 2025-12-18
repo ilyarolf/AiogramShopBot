@@ -22,6 +22,8 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    op.execute("PRAGMA foreign_keys=0;")
+
     item_type_enum = sa.Enum(ItemType)
     buy_status_enum = sa.Enum(BuyStatus)
 
@@ -48,7 +50,15 @@ def upgrade() -> None:
     op.execute(
         items.update().values(item_type=ItemType.DIGITAL.value)
     )
-
+    op.create_table('shipping_options',
+                    sa.Column('id', sa.Integer(), nullable=False),
+                    sa.Column('name', sa.String(), nullable=False, unique=True),
+                    sa.Column('price', sa.Float(), nullable=False),
+                    sa.Column('is_disabled', sa.Boolean(), nullable=False),
+                    sa.PrimaryKeyConstraint('id'),
+                    sa.UniqueConstraint('name'),
+                    sa.UniqueConstraint('id')
+    )
     with op.batch_alter_table("items") as batch_op:
         batch_op.alter_column(
             "item_type",
@@ -77,6 +87,20 @@ def upgrade() -> None:
                 nullable=True
             )
         )
+        batch_op.add_column(
+            sa.Column(
+                "shipping_option_id",
+                sa.Integer,
+                nullable=True
+            )
+        )
+        batch_op.create_foreign_key(
+            constraint_name="fk_buys_shipping_option_id",
+            referent_table="shipping_options",
+            local_cols=['shipping_option_id'],
+            remote_cols=['id'],
+            ondelete="CASCADE"
+        )
 
     buys = table(
         "buys",
@@ -102,6 +126,8 @@ def upgrade() -> None:
             nullable=False
         )
         batch.drop_column("is_refunded")
+
+    op.execute("PRAGMA foreign_keys=1;")
 
 
 def downgrade() -> None:
