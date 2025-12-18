@@ -58,7 +58,25 @@ def upgrade() -> None:
                     sa.PrimaryKeyConstraint('id'),
                     sa.UniqueConstraint('name'),
                     sa.UniqueConstraint('id')
+                    )
+
+    with op.batch_alter_table("cart_items") as batch_op:
+        batch_op.add_column(
+            sa.Column("item_type",
+                      item_type_enum,
+                      nullable=True)
+        )
+    cart_items = table(
+        "cart_items",
+        column("item_type", item_type_enum)
     )
+    op.execute(
+        cart_items.update().values(item_type=ItemType.DIGITAL.value)
+    )
+
+    with op.batch_alter_table("cart_items") as batch_op:
+        batch_op.alter_column("item_type", nullable=False)
+
     with op.batch_alter_table("items") as batch_op:
         batch_op.alter_column(
             "item_type",
