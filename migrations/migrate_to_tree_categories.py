@@ -192,7 +192,8 @@ def migrate_database(db_path: str = "shop.db"):
     except Exception as e:
         conn.rollback()
         print(f"\n❌ Migration failed: {e}")
-        print(f"Database restored from backup")
+        print(f"Transaction rolled back - database unchanged.")
+        print(f"If needed, manual restore available at: {backup_path}")
         return False
 
     finally:
