@@ -36,7 +36,7 @@ class BuyDTO(BaseModel):
 class RefundDTO(BaseModel):
     telegram_username: str | None = None
     telegram_id: int | None = None
-    subcategory_name: str | None = None
+    product_name: str | None = None  # Name of the product category
     total_price: float | None = None
     quantity: int | None = None
     buy_id: int | None = None

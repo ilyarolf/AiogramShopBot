@@ -11,12 +11,9 @@ from config import ADMIN_ID_LIST, TOKEN
 from enums.bot_entity import BotEntity
 from models.buy import RefundDTO
 from models.cartItem import CartItemDTO
-from models.item import ItemDTO
 from models.payment import ProcessingPaymentDTO, TablePaymentDTO
 from models.user import UserDTO
 from repositories.category import CategoryRepository
-from repositories.item import ItemRepository
-from repositories.subcategory import SubcategoryRepository
 from utils.localizator import Localizator
 
 
@@ -119,42 +116,53 @@ class NotificationService:
 
     @staticmethod
     async def new_buy(sold_items: list[CartItemDTO], user: UserDTO, session: AsyncSession | Session):
+        """Notify admins about new purchase using product category info."""
         user_button = await NotificationService.make_user_button(user.telegram_username)
         cart_grand_total = 0.0
         message = ""
+
         for item in sold_items:
-            price = await ItemRepository.get_price(ItemDTO(subcategory_id=item.subcategory_id,
-                                                           category_id=item.category_id), session)
-            category = await CategoryRepository.get_by_id(item.category_id, session)
-            subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
+            # Get product category for price and name
+            product = await CategoryRepository.get_by_id(item.category_id, session)
+            if product is None or not product.is_product:
+                continue
+
+            price = product.price
             cart_item_total = price * item.quantity
             cart_grand_total += cart_item_total
+
+            # Build breadcrumb for context
+            breadcrumb = await CategoryRepository.get_breadcrumb(item.category_id, session)
+            category_path = " > ".join([c.name for c in breadcrumb[:-1]]) if len(breadcrumb) > 1 else ""
+
             if user.telegram_username:
                 message += Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_tgid").format(
                     username=user.telegram_username,
                     total_price=cart_item_total,
                     quantity=item.quantity,
-                    category_name=category.name,
-                    subcategory_name=subcategory.name,
+                    category_name=category_path,
+                    product_name=product.name,
                     currency_sym=Localizator.get_currency_symbol()) + "\n"
             else:
                 message += Localizator.get_text(BotEntity.ADMIN, "notification_purchase_with_username").format(
                     telegram_id=user.telegram_id,
                     total_price=cart_item_total,
                     quantity=item.quantity,
-                    category_name=category.name,
-                    subcategory_name=subcategory.name,
+                    category_name=category_path,
+                    product_name=product.name,
                     currency_sym=Localizator.get_currency_symbol()) + "\n"
+
         message += Localizator.get_text(BotEntity.USER, "cart_grand_total_string").format(
             cart_grand_total=cart_grand_total, currency_sym=Localizator.get_currency_symbol())
         await NotificationService.send_to_admins(message, user_button)
 
     @staticmethod
     async def refund(refund_data: RefundDTO):
+        """Notify user about refund."""
         user_notification = Localizator.get_text(BotEntity.USER, "refund_notification").format(
             total_price=refund_data.total_price,
             quantity=refund_data.quantity,
-            subcategory=refund_data.subcategory_name,
+            product_name=refund_data.product_name,
             currency_sym=Localizator.get_currency_symbol())
         try:
             bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))

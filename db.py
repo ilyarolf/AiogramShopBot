@@ -25,7 +25,6 @@ from models.user import User
 from models.buy import Buy
 from models.buyItem import BuyItem
 from models.category import Category
-from models.subcategory import Subcategory
 from models.deposit import Deposit
 
 url = ""

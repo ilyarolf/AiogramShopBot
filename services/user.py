@@ -12,8 +12,8 @@ from models.user import User, UserDTO
 from repositories.buy import BuyRepository
 from repositories.buyItem import BuyItemRepository
 from repositories.cart import CartRepository
+from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
-from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
 from utils.localizator import Localizator
 
@@ -84,23 +84,31 @@ class UserService:
     @staticmethod
     async def get_purchase_history_buttons(callback: CallbackQuery, session: AsyncSession | Session) \
             -> tuple[str, InlineKeyboardBuilder]:
+        """Get purchase history buttons using product category info."""
         unpacked_cb = MyProfileCallback.unpack(callback.data)
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
         buys = await BuyRepository.get_by_buyer_id(user.id, unpacked_cb.page, session)
         kb_builder = InlineKeyboardBuilder()
+
         for buy in buys:
             buy_item = await BuyItemRepository.get_single_by_buy_id(buy.id, session)
             item = await ItemRepository.get_by_id(buy_item.item_id, session)
-            subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
-            kb_builder.button(text=Localizator.get_text(BotEntity.USER, "purchase_history_item").format(
-                subcategory_name=subcategory.name,
-                total_price=buy.total_price,
-                quantity=buy.quantity,
-                currency_sym=Localizator.get_currency_symbol()),
+            # Get product category instead of subcategory
+            product = await CategoryRepository.get_by_id(item.category_id, session)
+
+            kb_builder.button(
+                text=Localizator.get_text(BotEntity.USER, "purchase_history_item").format(
+                    product_name=product.name if product else "Unknown",
+                    total_price=buy.total_price,
+                    quantity=buy.quantity,
+                    currency_sym=Localizator.get_currency_symbol()
+                ),
                 callback_data=MyProfileCallback.create(
                     unpacked_cb.level + 1,
                     args_for_action=buy.id
-                ))
+                )
+            )
+
         kb_builder.adjust(1)
         kb_builder = await add_pagination_buttons(kb_builder, unpacked_cb,
                                                   BuyRepository.get_max_page_purchase_history(user.id, session),
