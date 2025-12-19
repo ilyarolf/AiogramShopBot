@@ -24,7 +24,6 @@ from repositories.buy import BuyRepository
 from repositories.category import CategoryRepository
 from repositories.deposit import DepositRepository
 from repositories.item import ItemRepository
-from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
 from utils.localizator import Localizator
 
@@ -118,7 +117,8 @@ class AdminService:
                                                           unpacked_cb.get_back_button(0))
                 return Localizator.get_text(BotEntity.ADMIN, "delete_category"), kb_builder
             case EntityType.SUBCATEGORY:
-                subcategories = await SubcategoryRepository.get_to_delete(unpacked_cb.page, session)
+                # In tree-based system, subcategories are product-level categories
+                subcategories = await CategoryRepository.get_to_delete(unpacked_cb.page, session)
                 [kb_builder.button(text=subcategory.name, callback_data=AdminInventoryManagementCallback.create(
                     level=3,
                     entity_type=unpacked_cb.entity_type,
@@ -126,7 +126,7 @@ class AdminService:
                 )) for subcategory in subcategories]
                 kb_builder.adjust(1)
                 kb_builder = await add_pagination_buttons(kb_builder, unpacked_cb,
-                                                          SubcategoryRepository.get_maximum_page_to_delete(session),
+                                                          CategoryRepository.get_maximum_page_to_delete(session),
                                                           unpacked_cb.get_back_button(0))
                 return Localizator.get_text(BotEntity.ADMIN, "delete_subcategory"), kb_builder
 
@@ -148,7 +148,8 @@ class AdminService:
                     entity_name=category.name
                 ), kb_builder
             case EntityType.SUBCATEGORY:
-                subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.entity_id, session)
+                # In tree-based system, subcategories are product-level categories
+                subcategory = await CategoryRepository.get_by_id(unpacked_cb.entity_id, session)
                 return Localizator.get_text(BotEntity.ADMIN, "delete_entity_confirmation").format(
                     entity=unpacked_cb.entity_type.name.capitalize(),
                     entity_name=subcategory.name
@@ -169,8 +170,9 @@ class AdminService:
                     entity_name=category.name,
                     entity_to_delete=unpacked_cb.entity_type.name.capitalize()), kb_builder
             case EntityType.SUBCATEGORY:
-                subcategory = await SubcategoryRepository.get_by_id(unpacked_cb.entity_id, session)
-                await ItemRepository.delete_unsold_by_subcategory_id(unpacked_cb.entity_id, session)
+                # In tree-based system, subcategories are product-level categories
+                subcategory = await CategoryRepository.get_by_id(unpacked_cb.entity_id, session)
+                await ItemRepository.delete_unsold_by_category_id(unpacked_cb.entity_id, session)
                 await session_commit(session)
                 return Localizator.get_text(BotEntity.ADMIN, "successfully_deleted").format(
                     entity_name=subcategory.name,
