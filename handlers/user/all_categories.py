@@ -1,5 +1,6 @@
 from aiogram import types, Router, F
 from aiogram.types import Message, CallbackQuery, InputMediaPhoto
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -11,6 +12,49 @@ from utils.custom_filters import IsUserExistFilter
 from utils.localizator import Localizator
 
 all_categories_router = Router()
+
+
+async def _update_message_with_photo_switch(
+    callback: CallbackQuery,
+    msg: str,
+    kb_builder: InlineKeyboardBuilder,
+    image_file_id: str | None
+) -> None:
+    """
+    Helper to update callback message, handling photo/text switching.
+
+    Handles four cases:
+    1. Has photo, needs photo -> edit_media
+    2. Has photo, needs text -> delete + answer
+    3. Has text, needs photo -> delete + answer_photo
+    4. Has text, needs text -> edit_text
+    """
+    current_message = callback.message
+    has_photo = current_message.photo is not None if current_message else False
+
+    if image_file_id:
+        if has_photo:
+            # Update existing photo message
+            await callback.message.edit_media(
+                media=InputMediaPhoto(media=image_file_id, caption=msg),
+                reply_markup=kb_builder.as_markup()
+            )
+        else:
+            # Switch from text to photo - delete and send new
+            await callback.message.delete()
+            await callback.message.answer_photo(
+                photo=image_file_id,
+                caption=msg,
+                reply_markup=kb_builder.as_markup()
+            )
+    else:
+        if has_photo:
+            # Switch from photo to text - delete and send new
+            await callback.message.delete()
+            await callback.message.answer(msg, reply_markup=kb_builder.as_markup())
+        else:
+            # Update existing text message
+            await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
 
 
 @all_categories_router.message(F.text == Localizator.get_text(BotEntity.USER, "all_categories"),
@@ -37,34 +81,7 @@ async def all_categories(**kwargs):
     elif isinstance(message, CallbackQuery):
         callback = message
         msg, kb_builder, image_file_id = await CategoryService.get_buttons(session, callback)
-
-        # Determine if we need to switch between photo and text message
-        current_message = callback.message
-        has_photo = current_message.photo is not None if current_message else False
-
-        if image_file_id:
-            if has_photo:
-                # Update existing photo message
-                await callback.message.edit_media(
-                    media=InputMediaPhoto(media=image_file_id, caption=msg),
-                    reply_markup=kb_builder.as_markup()
-                )
-            else:
-                # Switch from text to photo - delete and send new
-                await callback.message.delete()
-                await callback.message.answer_photo(
-                    photo=image_file_id,
-                    caption=msg,
-                    reply_markup=kb_builder.as_markup()
-                )
-        else:
-            if has_photo:
-                # Switch from photo to text - delete and send new
-                await callback.message.delete()
-                await callback.message.answer(msg, reply_markup=kb_builder.as_markup())
-            else:
-                # Update existing text message
-                await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
+        await _update_message_with_photo_switch(callback, msg, kb_builder, image_file_id)
 
 
 async def select_quantity(**kwargs):
@@ -73,28 +90,7 @@ async def select_quantity(**kwargs):
     session = kwargs.get("session")
 
     msg, kb_builder, image_file_id = await CategoryService.get_product_details(callback, session)
-    current_message = callback.message
-    has_photo = current_message.photo is not None if current_message else False
-
-    if image_file_id:
-        if has_photo:
-            await callback.message.edit_media(
-                media=InputMediaPhoto(media=image_file_id, caption=msg),
-                reply_markup=kb_builder.as_markup()
-            )
-        else:
-            await callback.message.delete()
-            await callback.message.answer_photo(
-                photo=image_file_id,
-                caption=msg,
-                reply_markup=kb_builder.as_markup()
-            )
-    else:
-        if has_photo:
-            await callback.message.delete()
-            await callback.message.answer(msg, reply_markup=kb_builder.as_markup())
-        else:
-            await callback.message.edit_text(msg, reply_markup=kb_builder.as_markup())
+    await _update_message_with_photo_switch(callback, msg, kb_builder, image_file_id)
 
 
 async def add_to_cart_confirmation(**kwargs):
@@ -103,28 +99,7 @@ async def add_to_cart_confirmation(**kwargs):
     session = kwargs.get("session")
 
     msg, kb_builder, image_file_id = await CategoryService.get_add_to_cart_buttons(callback, session)
-    current_message = callback.message
-    has_photo = current_message.photo is not None if current_message else False
-
-    if image_file_id:
-        if has_photo:
-            await callback.message.edit_media(
-                media=InputMediaPhoto(media=image_file_id, caption=msg),
-                reply_markup=kb_builder.as_markup()
-            )
-        else:
-            await callback.message.delete()
-            await callback.message.answer_photo(
-                photo=image_file_id,
-                caption=msg,
-                reply_markup=kb_builder.as_markup()
-            )
-    else:
-        if has_photo:
-            await callback.message.delete()
-            await callback.message.answer(msg, reply_markup=kb_builder.as_markup())
-        else:
-            await callback.message.edit_text(text=msg, reply_markup=kb_builder.as_markup())
+    await _update_message_with_photo_switch(callback, msg, kb_builder, image_file_id)
 
 
 async def add_to_cart(**kwargs):

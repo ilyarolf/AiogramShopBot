@@ -14,10 +14,9 @@ Usage:
     python -m migrations.migrate_to_tree_categories
 """
 
-import asyncio
+import shutil
 import sqlite3
 import os
-from pathlib import Path
 
 
 def migrate_database(db_path: str = "shop.db"):
@@ -31,7 +30,6 @@ def migrate_database(db_path: str = "shop.db"):
     # Create backup
     backup_path = f"{db_path}.backup"
     print(f"Creating backup at {backup_path}...")
-    import shutil
     shutil.copy2(db_path, backup_path)
 
     conn = sqlite3.connect(db_path)
@@ -68,20 +66,29 @@ def migrate_database(db_path: str = "shop.db"):
         print(f"Found {len(old_subcategories)} old subcategories")
 
         # Step 4: Get price and description from items (grouped by subcategory)
+        # Only get subcategories that have items with valid prices
         cursor.execute("""
             SELECT subcategory_id, price, description
             FROM items
-            WHERE subcategory_id IS NOT NULL
+            WHERE subcategory_id IS NOT NULL AND price IS NOT NULL AND price > 0
             GROUP BY subcategory_id
         """)
         subcategory_prices = {row[0]: (row[1], row[2]) for row in cursor.fetchall()}
+        print(f"Found {len(subcategory_prices)} subcategories with valid pricing data")
 
         # Step 5: Create mapping of old subcategory_id to new category_id
-        # We'll create product categories as children of navigation categories
+        # CRITICAL: Only migrate subcategories that have items with valid prices
         subcategory_to_new_category = {}
+        skipped_subcategories = []
 
         for subcat_id, subcat_name, old_cat_id in old_subcategories:
-            price, description = subcategory_prices.get(subcat_id, (0.0, None))
+            # Skip subcategories without valid price data
+            if subcat_id not in subcategory_prices:
+                skipped_subcategories.append((subcat_id, subcat_name))
+                print(f"  Skipping subcategory '{subcat_name}' (id={subcat_id}) - no items with valid price")
+                continue
+
+            price, description = subcategory_prices[subcat_id]
 
             # Insert new product category as child of old category
             cursor.execute("""
@@ -91,10 +98,15 @@ def migrate_database(db_path: str = "shop.db"):
 
             new_cat_id = cursor.lastrowid
             subcategory_to_new_category[subcat_id] = new_cat_id
-            print(f"  Created product category '{subcat_name}' (id={new_cat_id}) under parent {old_cat_id}")
+            print(f"  Created product category '{subcat_name}' (id={new_cat_id}) under parent {old_cat_id} with price {price}")
+
+        if skipped_subcategories:
+            print(f"\nWARNING: Skipped {len(skipped_subcategories)} subcategories without valid items:")
+            for subcat_id, subcat_name in skipped_subcategories:
+                print(f"  - {subcat_name} (id={subcat_id})")
 
         # Step 6: Update items to reference new product categories
-        print("Updating items to reference new product categories...")
+        print("\nUpdating items to reference new product categories...")
         for old_subcat_id, new_cat_id in subcategory_to_new_category.items():
             cursor.execute("""
                 UPDATE items
@@ -141,6 +153,7 @@ def migrate_database(db_path: str = "shop.db"):
             cursor.execute("""
                 INSERT INTO items_new (id, category_id, private_data, is_sold, is_new)
                 SELECT id, category_id, private_data, is_sold, is_new FROM items
+                WHERE category_id IN (SELECT id FROM categories WHERE is_product = 1)
             """)
             cursor.execute("DROP TABLE items")
             cursor.execute("ALTER TABLE items_new RENAME TO items")
@@ -159,6 +172,7 @@ def migrate_database(db_path: str = "shop.db"):
             cursor.execute("""
                 INSERT INTO cart_items_new (id, cart_id, category_id, quantity)
                 SELECT id, cart_id, category_id, quantity FROM cart_items
+                WHERE category_id IN (SELECT id FROM categories WHERE is_product = 1)
             """)
             cursor.execute("DROP TABLE cart_items")
             cursor.execute("ALTER TABLE cart_items_new RENAME TO cart_items")

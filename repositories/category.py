@@ -1,7 +1,8 @@
 import math
 from typing import List
 
-from sqlalchemy import select, func, and_, update
+from sqlalchemy import select, func, and_, update, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -81,25 +82,30 @@ class CategoryRepository:
 
     @staticmethod
     async def has_available_items(category_id: int, session: Session | AsyncSession) -> bool:
-        """Check if a category or any of its descendants has unsold items."""
-        cat = await CategoryRepository.get_by_id(category_id, session)
-        if cat is None:
-            return False
+        """
+        Check if a category or any of its descendants has unsold items.
+        Uses recursive CTE for efficient single-query traversal.
+        """
+        # Use recursive CTE to get all descendant category IDs in one query
+        cte_query = text("""
+            WITH RECURSIVE category_tree AS (
+                -- Base case: start with the given category
+                SELECT id, is_product FROM categories WHERE id = :category_id
+                UNION ALL
+                -- Recursive case: get all children
+                SELECT c.id, c.is_product
+                FROM categories c
+                INNER JOIN category_tree ct ON c.parent_id = ct.id
+            )
+            SELECT COUNT(*) FROM items
+            WHERE category_id IN (
+                SELECT id FROM category_tree WHERE is_product = 1
+            ) AND is_sold = 0
+        """)
 
-        if cat.is_product:
-            count = await CategoryRepository.get_available_qty(category_id, session)
-            return count > 0
-
-        # Check children recursively
-        stmt = select(Category).where(Category.parent_id == category_id)
-        result = await session_execute(stmt, session)
-        children = result.scalars().all()
-
-        for child in children:
-            if await CategoryRepository.has_available_items(child.id, session):
-                return True
-
-        return False
+        result = await session_execute(cte_query, session, {"category_id": category_id})
+        count = result.scalar() or 0
+        return count > 0
 
     @staticmethod
     async def get_available_qty(category_id: int, session: Session | AsyncSession) -> int:
@@ -246,7 +252,10 @@ class CategoryRepository:
         description: str | None,
         session: Session | AsyncSession
     ) -> Category:
-        """Get existing category or create new one."""
+        """
+        Get existing category or create new one.
+        Handles race conditions via IntegrityError retry.
+        """
         if parent_id is None:
             stmt = select(Category).where(
                 and_(Category.name == name, Category.parent_id.is_(None))
@@ -260,15 +269,25 @@ class CategoryRepository:
         category = result.scalar()
 
         if category is None:
-            category = Category(
-                name=name,
-                parent_id=parent_id,
-                is_product=is_product,
-                price=price if is_product else None,
-                description=description if is_product else None
-            )
-            session.add(category)
-            await session_flush(session)
+            try:
+                category = Category(
+                    name=name,
+                    parent_id=parent_id,
+                    is_product=is_product,
+                    price=price if is_product else None,
+                    description=description if is_product else None
+                )
+                session.add(category)
+                await session_flush(session)
+            except IntegrityError:
+                # Race condition: another request created the same category
+                # Rollback and fetch the existing one
+                await session.rollback()
+                result = await session_execute(stmt, session)
+                category = result.scalar()
+                if category is None:
+                    # Should not happen, but re-raise if it does
+                    raise
         elif is_product and not category.is_product:
             # Upgrade to product category if needed
             category.is_product = True

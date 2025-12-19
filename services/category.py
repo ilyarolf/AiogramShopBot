@@ -177,10 +177,10 @@ class CategoryService:
 
         kb_builder.adjust(5)
 
-        # Back button to parent category
+        # Back button to parent category - use the prepared back_cb
         if product.parent_id is not None:
             back_cb = AllCategoriesCallback.create(
-                level=unpacked_cb.level - 1,
+                level=0,  # Navigation level
                 category_id=product.parent_id,
                 page=0
             )
@@ -191,7 +191,9 @@ class CategoryService:
                 page=0
             )
 
-        kb_builder.row(unpacked_cb.get_back_button(lvl=unpacked_cb.level - 1))
+        back_btn = unpacked_cb.get_back_button(lvl=0)
+        back_btn.callback_data = back_cb.pack()
+        kb_builder.row(back_btn)
 
         return msg, kb_builder, product.image_file_id
 
