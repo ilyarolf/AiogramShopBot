@@ -1,5 +1,5 @@
 import math
-from typing import List
+from typing import List, Set
 
 from sqlalchemy import select, func, and_, update, text
 from sqlalchemy.exc import IntegrityError
@@ -18,53 +18,100 @@ class CategoryRepository:
     Supports unlimited hierarchy depth via parent_id self-reference.
     """
 
+    # ==================== INTERNAL HELPERS ====================
+
+    @staticmethod
+    async def _get_categories_with_stock_ids(session: Session | AsyncSession) -> Set[int]:
+        """
+        Get all category IDs that have available items in their subtree.
+        Uses recursive CTE to find product categories with stock and all their ancestors.
+
+        This enables DB-level filtering for correct pagination.
+        """
+        cte_query = text("""
+            WITH RECURSIVE
+            -- Step 1: Find all product categories with unsold items
+            products_with_stock AS (
+                SELECT DISTINCT c.id
+                FROM categories c
+                JOIN items i ON i.category_id = c.id
+                WHERE c.is_product = 1 AND i.is_sold = 0
+            ),
+            -- Step 2: Recursively find all ancestors of those products
+            ancestors AS (
+                -- Base case: start with product categories that have stock
+                SELECT id, parent_id
+                FROM categories
+                WHERE id IN (SELECT id FROM products_with_stock)
+
+                UNION
+
+                -- Recursive case: get parent of each category
+                SELECT c.id, c.parent_id
+                FROM categories c
+                INNER JOIN ancestors a ON c.id = a.parent_id
+                WHERE c.id IS NOT NULL
+            )
+            -- Return all category IDs (products with stock + all their ancestors)
+            SELECT DISTINCT id FROM ancestors
+        """)
+
+        result = await session_execute(cte_query, session)
+        return {row[0] for row in result.fetchall()}
+
     # ==================== READ OPERATIONS ====================
 
     @staticmethod
     async def get_roots(page: int, session: Session | AsyncSession) -> List[CategoryDTO]:
-        """Get root categories (parent_id IS NULL) that have available items in subtree."""
+        """
+        Get root categories that have available items in subtree.
+        Filters at DB level for correct pagination.
+        """
+        # Get all category IDs with stock in subtree
+        valid_ids = await CategoryRepository._get_categories_with_stock_ids(session)
+
+        if not valid_ids:
+            return []
+
+        # Query only valid root categories with proper pagination
         stmt = (
             select(Category)
-            .where(Category.parent_id.is_(None))
+            .where(and_(
+                Category.parent_id.is_(None),
+                Category.id.in_(valid_ids)
+            ))
+            .order_by(Category.id)
             .limit(config.PAGE_ENTRIES)
             .offset(page * config.PAGE_ENTRIES)
         )
         result = await session_execute(stmt, session)
-        categories = result.scalars().all()
-
-        # Filter to only categories with available items in their subtree
-        valid_categories = []
-        for cat in categories:
-            if await CategoryRepository.has_available_items(cat.id, session):
-                valid_categories.append(CategoryDTO.model_validate(cat, from_attributes=True))
-
-        return valid_categories
+        return [CategoryDTO.model_validate(c, from_attributes=True) for c in result.scalars().all()]
 
     @staticmethod
     async def get_children(parent_id: int, page: int, session: Session | AsyncSession) -> List[CategoryDTO]:
-        """Get child categories of a given parent that have available items."""
+        """
+        Get child categories of a given parent that have available items.
+        Filters at DB level for correct pagination.
+        """
+        # Get all category IDs with stock in subtree
+        valid_ids = await CategoryRepository._get_categories_with_stock_ids(session)
+
+        if not valid_ids:
+            return []
+
+        # Query only valid children with proper pagination
         stmt = (
             select(Category)
-            .where(Category.parent_id == parent_id)
+            .where(and_(
+                Category.parent_id == parent_id,
+                Category.id.in_(valid_ids)
+            ))
+            .order_by(Category.id)
             .limit(config.PAGE_ENTRIES)
             .offset(page * config.PAGE_ENTRIES)
         )
         result = await session_execute(stmt, session)
-        categories = result.scalars().all()
-
-        valid_categories = []
-        for cat in categories:
-            if cat.is_product:
-                # Product category - check if has unsold items directly
-                count = await CategoryRepository.get_available_qty(cat.id, session)
-                if count > 0:
-                    valid_categories.append(CategoryDTO.model_validate(cat, from_attributes=True))
-            else:
-                # Non-product category - check subtree
-                if await CategoryRepository.has_available_items(cat.id, session):
-                    valid_categories.append(CategoryDTO.model_validate(cat, from_attributes=True))
-
-        return valid_categories
+        return [CategoryDTO.model_validate(c, from_attributes=True) for c in result.scalars().all()]
 
     @staticmethod
     async def get_all_roots(session: Session | AsyncSession) -> List[CategoryDTO]:
@@ -86,13 +133,10 @@ class CategoryRepository:
         Check if a category or any of its descendants has unsold items.
         Uses recursive CTE for efficient single-query traversal.
         """
-        # Use recursive CTE to get all descendant category IDs in one query
         cte_query = text("""
             WITH RECURSIVE category_tree AS (
-                -- Base case: start with the given category
                 SELECT id, is_product FROM categories WHERE id = :category_id
                 UNION ALL
-                -- Recursive case: get all children
                 SELECT c.id, c.is_product
                 FROM categories c
                 INNER JOIN category_tree ct ON c.parent_id = ct.id
@@ -155,15 +199,23 @@ class CategoryRepository:
     @staticmethod
     async def get_maximum_page_roots(session: Session | AsyncSession) -> int:
         """Get max page for root categories with available items."""
-        # Count roots that have available items
-        stmt = select(Category).where(Category.parent_id.is_(None))
-        result = await session_execute(stmt, session)
-        categories = result.scalars().all()
+        # Get all category IDs with stock in subtree
+        valid_ids = await CategoryRepository._get_categories_with_stock_ids(session)
 
-        count = 0
-        for cat in categories:
-            if await CategoryRepository.has_available_items(cat.id, session):
-                count += 1
+        if not valid_ids:
+            return 0
+
+        # Count valid root categories
+        stmt = (
+            select(func.count())
+            .select_from(Category)
+            .where(and_(
+                Category.parent_id.is_(None),
+                Category.id.in_(valid_ids)
+            ))
+        )
+        result = await session_execute(stmt, session)
+        count = result.scalar() or 0
 
         if count == 0:
             return 0
@@ -174,19 +226,23 @@ class CategoryRepository:
     @staticmethod
     async def get_maximum_page_children(parent_id: int, session: Session | AsyncSession) -> int:
         """Get max page for children of a category."""
-        stmt = select(Category).where(Category.parent_id == parent_id)
-        result = await session_execute(stmt, session)
-        categories = result.scalars().all()
+        # Get all category IDs with stock in subtree
+        valid_ids = await CategoryRepository._get_categories_with_stock_ids(session)
 
-        count = 0
-        for cat in categories:
-            if cat.is_product:
-                qty = await CategoryRepository.get_available_qty(cat.id, session)
-                if qty > 0:
-                    count += 1
-            else:
-                if await CategoryRepository.has_available_items(cat.id, session):
-                    count += 1
+        if not valid_ids:
+            return 0
+
+        # Count valid children
+        stmt = (
+            select(func.count())
+            .select_from(Category)
+            .where(and_(
+                Category.parent_id == parent_id,
+                Category.id.in_(valid_ids)
+            ))
+        )
+        result = await session_execute(stmt, session)
+        count = result.scalar() or 0
 
         if count == 0:
             return 0
@@ -204,7 +260,6 @@ class CategoryRepository:
     @staticmethod
     async def get_to_delete(page: int, session: Session | AsyncSession) -> List[CategoryDTO]:
         """Get categories that can be deleted (have unsold items)."""
-        # Get product categories with unsold items
         subquery = (
             select(Item.category_id)
             .where(Item.is_sold == False)
@@ -280,16 +335,12 @@ class CategoryRepository:
                 session.add(category)
                 await session_flush(session)
             except IntegrityError:
-                # Race condition: another request created the same category
-                # Rollback and fetch the existing one
                 await session.rollback()
                 result = await session_execute(stmt, session)
                 category = result.scalar()
                 if category is None:
-                    # Should not happen, but re-raise if it does
                     raise
         elif is_product and not category.is_product:
-            # Upgrade to product category if needed
             category.is_product = True
             category.price = price
             category.description = description
@@ -307,10 +358,7 @@ class CategoryRepository:
     ) -> Category:
         """
         Get or create a full category path.
-
         Example: path=["Tea", "Green", "Tea Widow"]
-        Creates Tea -> Green -> Tea Widow hierarchy.
-        Only the last element becomes a product if is_last_product=True.
         """
         parent_id = None
         category = None
