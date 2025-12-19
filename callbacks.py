@@ -23,9 +23,14 @@ class BaseCallback(CallbackData, prefix="base"):
 
 
 class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
+    """
+    Callback for category navigation.
+    category_id: Current category being viewed (-1 for root)
+    quantity: Selected quantity for purchase (products only)
+    confirmation: Whether user has confirmed the purchase
+    page: Current pagination page
+    """
     category_id: int
-    subcategory_id: int
-    price: float
     quantity: int
     confirmation: bool
     page: int
@@ -33,13 +38,16 @@ class AllCategoriesCallback(BaseCallback, prefix="all_categories"):
     @staticmethod
     def create(level: int,
                category_id: int = -1,
-               subcategory_id: int = -1,
-               price: float = 0.0,
                quantity: int = 0,
                confirmation: bool = False,
                page: int = 0) -> 'AllCategoriesCallback':
-        return AllCategoriesCallback(level=level, category_id=category_id, subcategory_id=subcategory_id, price=price,
-                                     quantity=quantity, confirmation=confirmation, page=page)
+        return AllCategoriesCallback(
+            level=level,
+            category_id=category_id,
+            quantity=quantity,
+            confirmation=confirmation,
+            page=page
+        )
 
 
 class MyProfileCallback(BaseCallback, prefix="my_profile"):
@@ -95,9 +103,9 @@ class AddType(IntEnum):
 
 
 class EntityType(IntEnum):
-    CATEGORY = 1
-    SUBCATEGORY = 2
-    ITEM = 3
+    CATEGORY = 1      # Non-product category (navigation node)
+    PRODUCT = 2       # Product category (is_product=True, can have items)
+    ITEM = 3          # Individual item
 
 
 class AdminInventoryManagementCallback(BaseCallback, prefix="inventory_management"):

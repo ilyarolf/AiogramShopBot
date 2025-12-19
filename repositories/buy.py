@@ -10,8 +10,8 @@ from callbacks import StatisticsTimeDelta
 from db import session_execute, session_flush
 from models.buy import Buy, BuyDTO, RefundDTO
 from models.buyItem import BuyItem
+from models.category import Category
 from models.item import Item
-from models.subcategory import Subcategory
 from models.user import User
 
 
@@ -42,17 +42,18 @@ class BuyRepository:
 
     @staticmethod
     async def get_refund_data(page: int, session: Session | AsyncSession) -> list[RefundDTO]:
+        """Get refund data using Category (product_name instead of subcategory_name)."""
         stmt = (select(Buy.total_price,
                        Buy.quantity,
                        Buy.id.label("buy_id"),
                        User.telegram_id,
                        User.telegram_username,
                        User.id.label("user_id"),
-                       Subcategory.name.label("subcategory_name"))
+                       Category.name.label("product_name"))
                 .join(BuyItem, BuyItem.buy_id == Buy.id)
                 .join(User, User.id == Buy.buyer_id)
                 .join(Item, Item.id == BuyItem.item_id)
-                .join(Subcategory, Subcategory.id == Item.subcategory_id)
+                .join(Category, Category.id == Item.category_id)
                 .where(Buy.is_refunded == False)
                 .distinct()
                 .limit(config.PAGE_ENTRIES)
@@ -63,17 +64,18 @@ class BuyRepository:
 
     @staticmethod
     async def get_refund_data_single(buy_id: int, session: Session | AsyncSession) -> RefundDTO:
+        """Get single refund data using Category (product_name instead of subcategory_name)."""
         stmt = (select(Buy.total_price,
                        Buy.quantity,
                        Buy.id.label("buy_id"),
                        User.telegram_id,
                        User.telegram_username,
                        User.id.label("user_id"),
-                       Subcategory.name.label("subcategory_name"))
+                       Category.name.label("product_name"))
                 .join(BuyItem, BuyItem.buy_id == Buy.id)
                 .join(User, User.id == Buy.buyer_id)
                 .join(Item, Item.id == BuyItem.item_id)
-                .join(Subcategory, Subcategory.id == Item.subcategory_id)
+                .join(Category, Category.id == Item.category_id)
                 .where(Buy.is_refunded == False, Buy.id == buy_id)
                 .limit(1))
         refund_data = await session_execute(stmt, session)
