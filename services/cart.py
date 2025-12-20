@@ -188,6 +188,7 @@ class CartService:
             shipping_option_id = state_data.get("shipping_option_id")
             cart_total_price = 0.0
             if shipping_option_id:
+                callback_data.shipping_option_id = shipping_option_id
                 shipping_option = await ShippingOptionRepository.get_by_id(shipping_option_id, session)
                 cart_total_price += shipping_option.price
             else:

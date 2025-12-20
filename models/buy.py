@@ -25,6 +25,7 @@ class Buy(Base):
     discount = Column(Float, nullable=False, default=0.0)
     shipping_address = Column(String, nullable=True)
     track_number = Column(String, nullable=True)
+    shipping_option_id = Column(Integer, ForeignKey('shipping_options.id'), nullable=True)
 
     __table_args__ = (
         CheckConstraint('quantity > 0', name='check_quantity_positive'),
@@ -42,6 +43,7 @@ class BuyDTO(BaseModel):
     discount: float = 0.0
     shipping_address: str | None = None
     track_number: str | None = None
+    shipping_option_id: int | None
 
     @staticmethod
     def get_chart_text(language: Language) -> tuple[str, str]:
