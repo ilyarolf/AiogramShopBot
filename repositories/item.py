@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from db import session_execute
+from enums.item_type import ItemType
 from models.buyItem import BuyItem
 from models.item import Item, ItemDTO
 
@@ -10,11 +11,14 @@ from models.item import Item, ItemDTO
 class ItemRepository:
 
     @staticmethod
-    async def get_available_qty(category_id: int | None, subcategory_id: int, session: AsyncSession) -> int:
+    async def get_available_qty(item_type: ItemType | None, category_id: int | None, subcategory_id: int,
+                                session: AsyncSession) -> int:
         conditions = [
             Item.subcategory_id == subcategory_id,
-            Item.is_sold == False
+            Item.is_sold == False,
         ]
+        if item_type:
+            conditions.append(Item.item_type == item_type)
         if category_id:
             conditions.append(Item.category_id == category_id)
         sub_stmt = (select(Item)
@@ -24,15 +28,20 @@ class ItemRepository:
         return available_qty.scalar()
 
     @staticmethod
-    async def get_single(category_id: int | None, subcategory_id: int, session: AsyncSession) -> ItemDTO:
+    async def get_single(item_type: ItemType | None,
+                         category_id: int | None,
+                         subcategory_id: int,
+                         session: AsyncSession) -> ItemDTO:
         conditions = [
             Item.subcategory_id == subcategory_id,
             Item.is_sold == False
         ]
+        if item_type:
+            conditions.append(Item.item_type == item_type)
         if category_id:
             conditions.append(Item.category_id == category_id)
         columns_to_select = [column for column in Item.__table__.columns if column.name != 'id']
-        stmt = (select(*columns_to_select).where(and_(*conditions))).distinct()
+        stmt = (select(*columns_to_select).where(and_(*conditions))).distinct().limit(1)
 
         item = await session_execute(stmt, session)
         return ItemDTO.model_validate(item.one(), from_attributes=True)
@@ -109,3 +118,9 @@ class ItemRepository:
         stmt = select(Item).where(Item.id.in_(item_ids))
         items = await session_execute(stmt, session)
         return [ItemDTO.model_validate(item, from_attributes=True) for item in items.scalars().all()]
+
+    @staticmethod
+    async def get_available_item_types(session: AsyncSession) -> list[ItemType]:
+        stmt = select(Item.item_type).where(Item.is_sold == False).distinct()
+        item_types = await session_execute(stmt, session)
+        return [ItemType(item_type) for item_type in item_types.scalars().all()]

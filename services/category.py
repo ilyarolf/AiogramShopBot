@@ -25,17 +25,18 @@ class CategoryService:
             session: AsyncSession,
             language: Language
     ) -> tuple[InputMediaPhoto | InputMediaVideo | InputMediaAnimation, InlineKeyboardBuilder]:
-        callback_data = callback_data or AllCategoriesCallback.create(0)
+        state_data = await state.get_data()
+        callback_data = callback_data or AllCategoriesCallback.create(1, **state_data.get("entity_id_dict"))
         sort_pairs, filters = await get_filters_settings(state, callback_data)
         categories = await CategoryRepository.get(
-            sort_pairs, filters, callback_data.page, session
+            sort_pairs, filters, callback_data.item_type, callback_data.page, session
         )
         kb_builder = InlineKeyboardBuilder()
         for category in categories:
             kb_builder.button(
                 text=category.name,
                 callback_data=AllCategoriesCallback.create(
-                    level=1, category_id=category.id
+                    level=callback_data.level + 1, category_id=category.id
                 )
             )
 
@@ -44,11 +45,18 @@ class CategoryService:
             caption = get_text(language, BotEntity.USER, "no_categories")
         else:
             kb_builder.adjust(2)
-            caption = get_text(language, BotEntity.USER, "pick_category")
+            if callback_data.item_type:
+                item_type = callback_data.item_type.get_localized(language)
+            else:
+                item_type = get_text(language, BotEntity.COMMON, "all")
+            caption = get_text(language, BotEntity.USER, "pick_category").format(
+                item_type=item_type
+            )
             kb_builder.row(
                 InlineKeyboardButton(
                     text=get_text(language, BotEntity.COMMON, "pick_all_categories"),
-                    callback_data=AllCategoriesCallback.create(level=1).pack()
+                    callback_data=AllCategoriesCallback.create(level=callback_data.level + 1,
+                                                               item_type=callback_data.item_type).pack()
                 )
             )
         kb_builder = await add_search_button(kb_builder, EntityType.CATEGORY, callback_data, filters, language)
@@ -56,7 +64,8 @@ class CategoryService:
             kb_builder, [SortProperty.NAME], callback_data, sort_pairs, language
         )
         kb_builder = await add_pagination_buttons(
-            kb_builder, callback_data, CategoryRepository.get_maximum_page(filters, session), None, language
+            kb_builder, callback_data, CategoryRepository.get_maximum_page(filters, session),
+            callback_data.get_back_button(language, 0), language
         )
         button_media = await ButtonMediaRepository.get_by_button(
             KeyboardButton.ALL_CATEGORIES, session

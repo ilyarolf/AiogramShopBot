@@ -11,6 +11,7 @@ from handlers.common.common import enable_search
 from handlers.user.constants import UserStates
 from services.cart import CartService
 from services.category import CategoryService
+from services.item import ItemService
 from services.notification import NotificationService
 from services.subcategory import SubcategoryService
 from utils.custom_filters import IsUserExistFilter
@@ -20,36 +21,43 @@ all_categories_router = Router()
 
 @all_categories_router.message(F.text.in_(KB.get_localized_set(KB.ALL_CATEGORIES)), IsUserExistFilter())
 async def all_categories_text_message(message: Message, session: AsyncSession, state: FSMContext, language: Language):
-    await all_categories(callback=message, session=session, state=state, language=language)
+    await all_types(callback=message, session=session, state=state, language=language)
+
+
+async def all_types(**kwargs):
+    message: CallbackQuery | Message = kwargs.get("callback")
+    callback_data: AllCategoriesCallback = kwargs.get("callback_data")
+    session: AsyncSession = kwargs.get("session")
+    language: Language = kwargs.get("language")
+    media, kb_builder = await ItemService.get_all_types(callback_data, session, language)
+    if isinstance(message, Message):
+        await NotificationService.answer_media(message, media, kb_builder.as_markup())
+    else:
+        callback: CallbackQuery = message
+        await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
 
 
 async def all_categories(**kwargs):
-    message: CallbackQuery | Message = kwargs.get("callback")
+    callback: CallbackQuery = kwargs.get("callback")
     callback_data: AllCategoriesCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
     state: FSMContext = kwargs.get("state")
     language: Language = kwargs.get("language")
-    if isinstance(message, Message):
-        await state.clear()
+    state_data = await state.get_data()
+    if callback_data.is_filter_enabled and state_data.get('filter') is not None:
         media, kb_builder = await CategoryService.get_buttons(callback_data, state, session, language)
-        await NotificationService.answer_media(message, media, kb_builder.as_markup())
-    elif isinstance(message, CallbackQuery):
-        callback = message
-        state_data = await state.get_data()
-        if callback_data.is_filter_enabled and state_data.get('filter') is not None:
-            media, kb_builder = await CategoryService.get_buttons(callback_data, state, session, language)
-        elif callback_data.is_filter_enabled:
-            media, kb_builder = await enable_search(callback_data,
-                                                    EntityType.CATEGORY,
-                                                    None,
-                                                    state,
-                                                    UserStates.filter_items,
-                                                    language)
-        else:
-            await state.update_data(filter=None)
-            await state.set_state()
-            media, kb_builder = await CategoryService.get_buttons(callback_data, state, session, language)
-        await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
+    elif callback_data.is_filter_enabled:
+        media, kb_builder = await enable_search(callback_data,
+                                                EntityType.CATEGORY,
+                                                {"item_type": callback_data.item_type.value},
+                                                state,
+                                                UserStates.filter_items,
+                                                language)
+    else:
+        await state.update_data(filter=None)
+        await state.set_state()
+        media, kb_builder = await CategoryService.get_buttons(callback_data, state, session, language)
+    await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
 
 
 async def show_subcategories_in_category(**kwargs):
@@ -64,7 +72,8 @@ async def show_subcategories_in_category(**kwargs):
     elif callback_data.is_filter_enabled:
         media, kb_builder = await enable_search(callback_data,
                                                 EntityType.SUBCATEGORY,
-                                                callback_data.category_id,
+                                                {"category_id": callback_data.category_id,
+                                                 "item_type": callback_data.item_type.value},
                                                 state,
                                                 UserStates.filter_items,
                                                 language)
@@ -123,11 +132,12 @@ async def navigate_categories(callback: CallbackQuery,
     current_level = callback_data.level
 
     levels = {
-        0: all_categories,
-        1: show_subcategories_in_category,
-        2: select_quantity,
-        3: add_to_cart_confirmation,
-        4: add_to_cart
+        0: all_types,
+        1: all_categories,
+        2: show_subcategories_in_category,
+        3: select_quantity,
+        4: add_to_cart_confirmation,
+        5: add_to_cart
     }
 
     current_level_function = levels[current_level]

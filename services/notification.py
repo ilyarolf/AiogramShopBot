@@ -149,18 +149,20 @@ class NotificationService:
             cart_content.append(msg.format(
                 username=user.telegram_username,
                 telegram_id=user.telegram_id,
-                total_price=item_example.price*len(buyItem.item_ids),
+                total_price=item_example.price * len(buyItem.item_ids),
                 quantity=len(buyItem.item_ids),
                 category_name=category.name,
                 subcategory_name=subcategory.name,
                 currency_sym=currency_sym))
         message = "\n".join(cart_content) + "\n\n"
-        message += get_text(Language.EN, BotEntity.USER, "cart_total_price").format(
-            cart_total_price=buy.total_price+buy.discount, currency_sym=currency_sym)
-        message += get_text(Language.EN, BotEntity.USER, "cart_total_discount").format(
-            cart_total_discount=buy.discount, currency_sym=currency_sym)
-        message += get_text(Language.EN, BotEntity.USER, "cart_total_with_discount").format(
-            cart_total_final=buy.total_price, currency_sym=currency_sym)
+        price_content = []
+        price_content.append(get_text(Language.EN, BotEntity.USER, "cart_total_price").format(
+            cart_total_price=buy.total_price + buy.discount, currency_sym=currency_sym))
+        price_content.append(get_text(Language.EN, BotEntity.USER, "cart_total_discount").format(
+            cart_total_discount=buy.discount, currency_sym=currency_sym))
+        price_content.append(get_text(Language.EN, BotEntity.USER, "cart_total_with_discount").format(
+            cart_total_final=buy.total_price, currency_sym=currency_sym))
+        message += "\n".join(price_content)
         await NotificationService.send_to_admins(message, user_button)
 
     @staticmethod

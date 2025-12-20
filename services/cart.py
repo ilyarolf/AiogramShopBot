@@ -11,6 +11,7 @@ from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.cart_action import CartAction
 from enums.coupon_type import CouponType
+from enums.item_type import ItemType
 from enums.keyboard_button import KeyboardButton
 from enums.language import Language
 from handlers.common.common import add_pagination_buttons
@@ -26,10 +27,10 @@ from repositories.cartItem import CartItemRepository
 from repositories.category import CategoryRepository
 from repositories.coupon import CouponRepository
 from repositories.item import ItemRepository
+from repositories.shipping_option import ShippingOptionRepository
 from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
 from services.media import MediaService
-from services.message import MessageService
 from services.notification import NotificationService
 from utils.utils import get_text
 from utils.utils import get_bot_photo_id
@@ -45,6 +46,7 @@ class CartService:
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
         cart = await CartRepository.get_or_create(user.id, session)
         cart_item = CartItemDTO(
+            item_type=callback_data.item_type,
             category_id=callback_data.category_id,
             subcategory_id=callback_data.subcategory_id,
             quantity=callback_data.quantity,
@@ -52,7 +54,8 @@ class CartService:
         )
         current_cart_content = await CartItemRepository.get_current_cart_content(cart_item, cart, session)
         if current_cart_content:
-            available_qty = await ItemRepository.get_available_qty(cart_item.category_id,
+            available_qty = await ItemRepository.get_available_qty(callback_data.item_type,
+                                                                   cart_item.category_id,
                                                                    cart_item.subcategory_id,
                                                                    session)
             current_cart_content.quantity = current_cart_content.quantity + cart_item.quantity
@@ -78,8 +81,8 @@ class CartService:
                              callback_data: CartCallback | None,
                              session: AsyncSession,
                              language: Language) -> tuple[InputMediaPhoto |
-                                                             InputMediaVideo |
-                                                             InputMediaAnimation,
+                                                          InputMediaVideo |
+                                                          InputMediaAnimation,
     InlineKeyboardBuilder]:
         user = await UserRepository.get_by_tgid(telegram_id, session)
         if callback_data is None:
@@ -87,7 +90,10 @@ class CartService:
         cart_items = await CartItemRepository.get_by_user_id(user.id, callback_data.page, session)
         kb_builder = InlineKeyboardBuilder()
         for cart_item in cart_items:
-            item = await ItemRepository.get_single(cart_item.category_id, cart_item.subcategory_id, session)
+            item = await ItemRepository.get_single(cart_item.item_type,
+                                                   cart_item.category_id,
+                                                   cart_item.subcategory_id,
+                                                   session)
             subcategory = await SubcategoryRepository.get_by_id(cart_item.subcategory_id, session)
             kb_builder.button(
                 text=get_text(language, BotEntity.USER, "cart_item_button").format(
@@ -141,7 +147,10 @@ class CartService:
             cart_item_dto = await CartItemRepository.get_by_primary_key(callback_data.cart_item_id, session)
             category = await CategoryRepository.get_by_id(cart_item_dto.category_id, session)
             subcategory = await SubcategoryRepository.get_by_id(cart_item_dto.subcategory_id, session)
-            item_dto = await ItemRepository.get_single(cart_item_dto.category_id, cart_item_dto.subcategory_id, session)
+            item_dto = await ItemRepository.get_single(cart_item_dto.item_type,
+                                                       cart_item_dto.category_id,
+                                                       cart_item_dto.subcategory_id,
+                                                       session)
             kb_builder.button(text=get_text(language, BotEntity.COMMON, "confirm"),
                               callback_data=callback_data.model_copy(update={'confirmation': True}))
             kb_builder.button(text=get_text(language, BotEntity.COMMON, "cancel"),
@@ -156,29 +165,54 @@ class CartService:
 
     @staticmethod
     async def checkout_processing(callback: CallbackQuery,
+                                  callback_data: CartCallback,
                                   state: FSMContext,
                                   session: AsyncSession | Session,
                                   language: Language) -> tuple[str, InlineKeyboardBuilder]:
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
         cart_items = await CartItemRepository.get_all_by_user_id(user.id, session)
-        cart_content = []
-        cart_total_price = 0.0
+        cart_items_dict = {}
         for cart_item in cart_items:
-            item = await ItemRepository.get_single(category_id=cart_item.category_id,
-                                                   subcategory_id=cart_item.subcategory_id,
-                                                   session=session)
-            subcategory = await SubcategoryRepository.get_by_id(cart_item.subcategory_id, session)
-            line_item_total = item.price * cart_item.quantity
-            cart_content.append(
-                get_text(language, BotEntity.USER, "cart_item_button").format(
-                    subcategory_name=subcategory.name,
-                    qty=cart_item.quantity,
-                    total_price=line_item_total,
-                    currency_sym=config.CURRENCY.get_localized_symbol()
-                ))
-            cart_total_price += line_item_total
+            if cart_items_dict.get(cart_item.item_type) is None:
+                cart_items_dict[cart_item.item_type] = [cart_item]
+            else:
+                cart_items_list = cart_items_dict.get(cart_item.item_type)
+                cart_items_list.append(cart_item)
+                cart_items_dict[cart_item.item_type] = cart_items_list
+        cart_content = []
         state_data = await state.get_data()
+        if callback_data.shipping_option_id:
+            shipping_option = await ShippingOptionRepository.get_by_id(callback_data.shipping_option_id, session)
+            cart_total_price = shipping_option.price
+        else:
+            shipping_option_id = state_data.get("shipping_option_id")
+            cart_total_price = 0.0
+            if shipping_option_id:
+                shipping_option = await ShippingOptionRepository.get_by_id(shipping_option_id, session)
+                cart_total_price += shipping_option.price
+            else:
+                shipping_option = None
+        for item_type, cart_items in cart_items_dict.items():
+            cart_content.append(item_type.get_localized(language))
+            for cart_item in cart_items:
+                item = await ItemRepository.get_single(item_type=cart_item.item_type,
+                                                       category_id=cart_item.category_id,
+                                                       subcategory_id=cart_item.subcategory_id,
+                                                       session=session)
+                subcategory = await SubcategoryRepository.get_by_id(cart_item.subcategory_id, session)
+                line_item_total = item.price * cart_item.quantity
+                cart_content.append(
+                    get_text(language, BotEntity.USER, "cart_item_button").format(
+                        subcategory_name=subcategory.name,
+                        qty=cart_item.quantity,
+                        total_price=line_item_total,
+                        currency_sym=config.CURRENCY.get_localized_symbol()
+                    ))
+                cart_total_price += line_item_total
         coupon_id = state_data.get('coupon_id')
+        shipping_address = state_data.get("shipping_address")
+        has_physical = cart_items_dict.get(ItemType.PHYSICAL) is not None
+        sym = config.CURRENCY.get_localized_symbol()
         if coupon_id is not None:
             cart_total_price_before_discount = cart_total_price
             coupon_dto = await CouponRepository.get_by_id(coupon_id, session)
@@ -188,51 +222,76 @@ class CartService:
                 cart_total_price = cart_total_price - coupon_dto.value
                 cart_total_price = max(cart_total_price, 1)
             discount_amount = cart_total_price_before_discount - cart_total_price
-            message_text = get_text(
-                language,
-                BotEntity.USER,
-                "cart_confirm_checkout_process_with_coupon").format(
-                cart_content="\n".join(cart_content),
-                cart_total_price_before_discount=cart_total_price_before_discount,
-                cart_total_price=cart_total_price,
-                discount_amount=discount_amount,
-                currency_sym=config.CURRENCY.get_localized_symbol()
-            )
+            cart_content.append(f"\n{get_text(language, BotEntity.USER, "cart_total_price").format(
+                cart_total_price=cart_total_price_before_discount,
+                currency_sym=sym
+            )}")
+            cart_content.append(get_text(language, BotEntity.USER, "cart_total_discount").format(
+                cart_total_discount=discount_amount,
+                currency_sym=sym,
+            ))
+            cart_content.append(get_text(language, BotEntity.USER, "cart_total_with_discount").format(
+                cart_total_final=cart_total_price,
+                currency_sym=sym
+            ))
         else:
-            message_text = get_text(language, BotEntity.USER, "cart_confirm_checkout_process").format(
-                cart_content="\n".join(cart_content),
+            cart_content.append(f"\n{get_text(language, BotEntity.USER, "cart_total_price").format(
                 cart_total_price=cart_total_price,
-                currency_sym=config.CURRENCY.get_localized_symbol()
-            )
+                currency_sym=sym
+            )}")
+        if shipping_option:
+            cart_content.append(f"\n{get_text(language, BotEntity.USER, "shipping_details").format(
+                shipping_option_name=shipping_option.name,
+                shipping_address=shipping_address
+            )}")
+        cart_content.append(get_text(language, BotEntity.USER, "checkout_cart"))
+        confirm_text = get_text(language, BotEntity.COMMON, "confirm")
+        if has_physical is False or (
+                has_physical is True and shipping_address is not None and shipping_option is not None):
+            confirm_button = InlineKeyboardButton(text=confirm_text,
+                                                  callback_data=CartCallback.create(
+                                                      level=6,
+                                                      shipping_option_id=callback_data.shipping_option_id,
+                                                      confirmation=True).pack())
+        else:
+            confirm_button = InlineKeyboardButton(text=confirm_text,
+                                                  callback_data=CartCallback.create(level=4).pack())
         kb_builder = InlineKeyboardBuilder()
-        kb_builder.button(text=get_text(language, BotEntity.COMMON, "confirm"),
-                          callback_data=CartCallback.create(level=4,
-                                                            confirmation=True))
+        kb_builder.add(confirm_button)
         kb_builder.button(text=get_text(language, BotEntity.COMMON, "cancel"),
                           callback_data=CartCallback.create(level=0))
         if coupon_id is None:
             kb_builder.row(InlineKeyboardButton(
                 text=get_text(language, BotEntity.COMMON, "coupon"),
-                callback_data=CartCallback.create(level=3).pack()
+                callback_data=CartCallback.create(level=3,
+                                                  shipping_option_id=callback_data.shipping_option_id).pack()
             ))
+        message_text = f"<b>{"\n".join(cart_content)}</b>"
         return message_text, kb_builder
 
     @staticmethod
     async def buy_processing(callback: CallbackQuery,
+                             callback_data: CartCallback,
                              state: FSMContext,
                              session: AsyncSession | Session,
                              language: Language) -> tuple[str, InlineKeyboardBuilder]:
-        unpacked_cb = CartCallback.unpack(callback.data)
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
         cart_items = await CartItemRepository.get_all_by_user_id(user.id, session)
-        cart_total_price = 0.0
+        if callback_data.shipping_option_id:
+            shipping_option = await ShippingOptionRepository.get_by_id(callback_data.shipping_option_id, session)
+            cart_total_price = shipping_option.price
+        else:
+            shipping_option = None
+            cart_total_price = 0.0
         out_of_stock = []
         for cart_item in cart_items:
-            item = await ItemRepository.get_single(category_id=cart_item.category_id,
+            item = await ItemRepository.get_single(item_type=cart_item.item_type,
+                                                   category_id=cart_item.category_id,
                                                    subcategory_id=cart_item.subcategory_id,
                                                    session=session)
             cart_total_price += item.price * cart_item.quantity
-            is_in_stock = await ItemRepository.get_available_qty(category_id=cart_item.category_id,
+            is_in_stock = await ItemRepository.get_available_qty(item_type=cart_item.item_type,
+                                                                 category_id=cart_item.category_id,
                                                                  subcategory_id=cart_item.subcategory_id,
                                                                  session=session) >= cart_item.quantity
             if is_in_stock is False:
@@ -255,12 +314,14 @@ class CartService:
             total_discount_amount = cart_total_price_before_discount - cart_total_price
         is_enough_money = (user.top_up_amount - user.consume_records) >= cart_total_price
         kb_builder = InlineKeyboardBuilder()
-        if unpacked_cb.confirmation and len(out_of_stock) == 0 and is_enough_money:
+        if callback_data.confirmation and len(out_of_stock) == 0 and is_enough_money:
             msg = get_text(language, BotEntity.USER, "purchase_completed")
             buy_dto = BuyDTO(buyer_id=user.id,
                              total_price=cart_total_price,
                              discount=total_discount_amount,
-                             coupon_id=coupon_id)
+                             coupon_id=coupon_id,
+                             shipping_address=state_data.get('shipping_address'),
+                             shipping_option_id=shipping_option.id if shipping_option else None)
             buy_dto = await BuyRepository.create(buy_dto, session)
             for cart_item in cart_items:
                 purchased_items = await ItemRepository.get_purchased_items(cart_item.category_id,
@@ -287,14 +348,14 @@ class CartService:
             await session_commit(session)
             await NotificationService.new_buy(buy_dto, user, session)
             return msg, kb_builder
-        elif unpacked_cb.confirmation is False:
-            kb_builder.row(unpacked_cb.get_back_button(language, 0))
+        elif callback_data.confirmation is False:
+            kb_builder.row(callback_data.get_back_button(language, 0))
             return get_text(language, BotEntity.USER, "purchase_confirmation_declined"), kb_builder
         elif is_enough_money is False:
-            kb_builder.row(unpacked_cb.get_back_button(language, 0))
+            kb_builder.row(callback_data.get_back_button(language, 0))
             return get_text(language, BotEntity.USER, "insufficient_funds"), kb_builder
         elif len(out_of_stock) > 0:
-            kb_builder.row(unpacked_cb.get_back_button(language, 0))
+            kb_builder.row(callback_data.get_back_button(language, 0))
             msg = get_text(language, BotEntity.USER, "out_of_stock")
             for item in out_of_stock:
                 subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
@@ -306,7 +367,8 @@ class CartService:
                              session: AsyncSession,
                              language: Language):
         cart_item_dto = await CartItemRepository.get_by_primary_key(callback_data.cart_item_id, session)
-        available_qty = await ItemRepository.get_available_qty(cart_item_dto.category_id,
+        available_qty = await ItemRepository.get_available_qty(cart_item_dto.item_type,
+                                                               cart_item_dto.category_id,
                                                                cart_item_dto.subcategory_id,
                                                                session)
         if callback_data.cart_action == CartAction.REMOVE_ALL or cart_item_dto.quantity == 0:
@@ -323,7 +385,10 @@ class CartService:
             cart_item_dto.quantity = available_qty
             await CartItemRepository.update(cart_item_dto, session)
             await session_commit(session)
-        item_dto = await ItemRepository.get_single(cart_item_dto.category_id, cart_item_dto.subcategory_id, session)
+        item_dto = await ItemRepository.get_single(cart_item_dto.item_type,
+                                                   cart_item_dto.category_id,
+                                                   cart_item_dto.subcategory_id,
+                                                   session)
         category = await CategoryRepository.get_by_id(cart_item_dto.category_id, session)
         subcategory = await SubcategoryRepository.get_by_id(cart_item_dto.subcategory_id, session)
         cart_actions = [CartAction.REMOVE_ALL, CartAction.MINUS_ONE, CartAction.PLUS_ONE, CartAction.MAX]
@@ -338,6 +403,7 @@ class CartService:
             )
         kb_builder.row(callback_data.get_back_button(language, 0))
         return get_text(language, BotEntity.USER, "cart_item_preview").format(
+            item_type=item_dto.item_type.get_localized(language),
             category_name=category.name,
             subcategory_name=subcategory.name,
             price=item_dto.price,
@@ -349,36 +415,80 @@ class CartService:
         ), kb_builder
 
     @staticmethod
-    async def set_coupon(state: FSMContext, language: Language):
+    async def set_coupon(callback_data: CartCallback, state: FSMContext, language: Language):
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(
             text=get_text(language, BotEntity.COMMON, "pagination_next"),
-            callback_data=CartCallback.create(2)
+            callback_data=CartCallback.create(2, shipping_option_id=callback_data.shipping_option_id)
         )
         kb_builder.adjust(1)
         await state.set_state(UserStates.coupon)
+        await state.update_data(shipping_option_id=callback_data.shipping_option_id)
         return get_text(language, BotEntity.USER, "request_coupon"), kb_builder
 
     @staticmethod
-    async def apply_coupon(message: Message,
-                           state: FSMContext,
-                           session: AsyncSession,
-                           language: Language) -> tuple[
+    async def receive_purchase_details(message: Message,
+                                       state: FSMContext,
+                                       session: AsyncSession,
+                                       language: Language) -> tuple[
         InputMediaPhoto | InputMediaVideo | InputMediaVideo, InlineKeyboardBuilder]:
         state_data = await state.get_data()
+        current_state = await state.get_state()
         await state.set_state()
         await NotificationService.edit_reply_markup(message.bot, state_data['chat_id'], state_data['msg_id'])
-        coupon_dto = await CouponRepository.get_by_code(message.text, session)
+        button_media = await ButtonMediaRepository.get_by_button(KeyboardButton.CART, session)
+        media = MediaService.convert_to_media(button_media.media_id, caption="")
+        if current_state == UserStates.coupon:
+            kb_builder = InlineKeyboardBuilder()
+            coupon_dto = await CouponRepository.get_by_code(message.text, session)
+            kb_builder.button(
+                text=get_text(language, BotEntity.COMMON, "pagination_next"),
+                callback_data=CartCallback.create(level=2,
+                                                  shipping_option_id=state_data.get(""))
+            )
+            if coupon_dto is None:
+                caption = get_text(language, BotEntity.USER, "coupon_not_found")
+            else:
+                await state.update_data(coupon_id=coupon_dto.id)
+                caption = get_text(language, BotEntity.USER, "coupon_applied")
+        else:
+            await state.update_data(shipping_address=message.html_text)
+            caption, kb_builder = await CartService.get_shipping_options_paginated(0, session, language)
+        media.caption = caption
+        return media, kb_builder
+
+    @staticmethod
+    async def set_shipping_address(state: FSMContext, language: Language):
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(
-            text=get_text(language,     BotEntity.COMMON, "pagination_next"),
-            callback_data=CartCallback.create(2)
+            text=get_text(language, BotEntity.COMMON, "cancel"),
+            callback_data=CartCallback.create(0)
         )
-        if coupon_dto is None:
-            caption = get_text(language,    BotEntity.USER, "coupon_not_found")
-        else:
-            await state.update_data(coupon_id=coupon_dto.id)
-            caption = get_text(language,    BotEntity.USER, "coupon_applied")
-        button_media = await ButtonMediaRepository.get_by_button(KeyboardButton.CART, session)
-        media = MediaService.convert_to_media(button_media.media_id, caption=caption)
-        return media, kb_builder
+        kb_builder.adjust(1)
+        await state.set_state(UserStates.shipping_address)
+        return get_text(language, BotEntity.USER, "request_shipping_address"), kb_builder
+
+    @staticmethod
+    async def get_shipping_options_paginated(page: int,
+                                             session: AsyncSession,
+                                             language: Language) -> tuple[str, InlineKeyboardBuilder]:
+        kb_builder = InlineKeyboardBuilder()
+        shipping_options = await ShippingOptionRepository.get_paginated(page, False, session)
+        for shipping_option in shipping_options:
+            kb_builder.button(
+                text=get_text(language, BotEntity.USER, "ship_via_button").format(
+                    shipping_option_name=shipping_option.name,
+                    currency_sym=config.CURRENCY.get_localized_symbol(),
+                    shipping_option_price=shipping_option.price
+                ),
+                callback_data=CartCallback.create(level=2,
+                                                  shipping_option_id=shipping_option.id)
+            )
+        cart_callback = CartCallback.create(level=5)
+        kb_builder = await add_pagination_buttons(kb_builder,
+                                                  cart_callback,
+                                                  ShippingOptionRepository.get_max_page(False, session),
+                                                  cart_callback.get_back_button(language, 2),
+                                                  language)
+        msg = get_text(language, BotEntity.USER, "pick_shipping_option")
+        return msg, kb_builder

@@ -7,6 +7,7 @@ from enums.cart_action import CartAction
 from enums.coupon_type import CouponType
 from enums.cryptocurrency import Cryptocurrency
 from enums.entity_type import EntityType
+from enums.item_type import ItemType
 from enums.keyboard_button import KeyboardButton
 from enums.language import Language
 from enums.sort_order import SortOrder
@@ -39,6 +40,7 @@ class SortingCallback(CallbackData, prefix="sorting"):
 
 
 class AllCategoriesCallback(BaseCallback, SortingCallback, prefix="all_categories"):
+    item_type: ItemType | None
     category_id: int | None
     subcategory_id: int | None
     quantity: int | None
@@ -47,6 +49,7 @@ class AllCategoriesCallback(BaseCallback, SortingCallback, prefix="all_categorie
 
     @staticmethod
     def create(level: int,
+               item_type: ItemType | None = None,
                category_id: int | None = None,
                subcategory_id: int | None = None,
                quantity: int | None = None,
@@ -56,6 +59,7 @@ class AllCategoriesCallback(BaseCallback, SortingCallback, prefix="all_categorie
                confirmation: bool = False,
                page: int = 0) -> 'AllCategoriesCallback':
         return AllCategoriesCallback(level=level,
+                                     item_type=item_type,
                                      category_id=category_id, subcategory_id=subcategory_id,
                                      sort_order=sort_order, sort_property=sort_property,
                                      quantity=quantity, is_filter_enabled=is_filter_enabled,
@@ -95,6 +99,7 @@ class CartCallback(BaseCallback, prefix="cart"):
     cart_id: int
     cart_item_id: int
     cart_action: CartAction | None
+    shipping_option_id: int | None
     confirmation: bool
 
     @staticmethod
@@ -102,14 +107,16 @@ class CartCallback(BaseCallback, prefix="cart"):
                cart_id: int = -1,
                cart_item_id: int = -1,
                cart_action: CartAction | None = None,
+               shipping_option_id: int | None = None,
                confirmation=False,
                page: int = 0):
         return CartCallback(level=level,
                             cart_id=cart_id,
                             cart_item_id=cart_item_id,
                             cart_action=cart_action,
-                            page=page,
-                            confirmation=confirmation)
+                            shipping_option_id=shipping_option_id,
+                            confirmation=confirmation,
+                            page=page)
 
 
 class AdminMenuCallback(BaseCallback, prefix="admin_menu"):
