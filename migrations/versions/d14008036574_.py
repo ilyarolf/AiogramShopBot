@@ -100,7 +100,7 @@ def upgrade() -> None:
         )
         batch_op.add_column(
             sa.Column(
-                "tracking_number",
+                "track_number",
                 sa.String,
                 nullable=True
             )
