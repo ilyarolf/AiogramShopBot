@@ -1,9 +1,12 @@
 import json
 import logging
+import math
 import os
 import re
 import urllib.request
 from pyngrok import ngrok
+
+import config
 from enums.bot_entity import BotEntity
 from enums.language import Language
 
@@ -40,3 +43,10 @@ def get_text(language: Language, entity: BotEntity, key: str) -> str:
 def remove_html_tags(text: str):
     clean = re.compile('<.*?>')
     return re.sub(clean, '', text)
+
+
+def calculate_max_page(records_qty: int):
+    if records_qty % config.PAGE_ENTRIES == 0:
+        return records_qty / config.PAGE_ENTRIES - 1
+    else:
+        return math.trunc(records_qty / config.PAGE_ENTRIES)

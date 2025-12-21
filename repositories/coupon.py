@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import config
 from db import session_execute, session_flush
 from models.coupon import CouponDTO, Coupon
+from utils.utils import calculate_max_page
 
 
 class CouponRepository:
@@ -30,10 +31,7 @@ class CouponRepository:
         stmt = (select(func.count(Coupon.id)))
         coupons_qty = await session_execute(stmt, session)
         coupons_qty = coupons_qty.scalar_one()
-        if coupons_qty % config.PAGE_ENTRIES == 0:
-            return coupons_qty / config.PAGE_ENTRIES - 1
-        else:
-            return math.trunc(coupons_qty / config.PAGE_ENTRIES)
+        return calculate_max_page(coupons_qty)
 
     @staticmethod
     async def get_by_id(coupon_id: int, session: AsyncSession) -> CouponDTO:

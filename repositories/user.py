@@ -10,6 +10,7 @@ from callbacks import StatisticsTimeDelta
 from db import session_execute, session_flush
 
 from models.user import UserDTO, User
+from utils.utils import calculate_max_page
 
 
 class UserRepository:
@@ -82,7 +83,4 @@ class UserRepository:
             User.registered_at <= end)
         users = await session_execute(stmt, session)
         users = users.scalar_one()
-        if users % config.PAGE_ENTRIES == 0:
-            return users / config.PAGE_ENTRIES - 1
-        else:
-            return math.trunc(users / config.PAGE_ENTRIES)
+        return calculate_max_page(users)

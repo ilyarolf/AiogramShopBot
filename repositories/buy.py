@@ -14,6 +14,7 @@ from models.buyItem import BuyItem
 from models.item import Item
 from models.subcategory import Subcategory
 from models.user import User
+from utils.utils import calculate_max_page
 
 
 class BuyRepository:
@@ -59,10 +60,7 @@ class BuyRepository:
         stmt = select(func.count()).select_from(sub_stmt)
         not_refunded_buys = await session_execute(stmt, session)
         not_refunded_buys = not_refunded_buys.scalar_one()
-        if not_refunded_buys % config.PAGE_ENTRIES == 0:
-            return not_refunded_buys / config.PAGE_ENTRIES - 1
-        else:
-            return math.trunc(not_refunded_buys / config.PAGE_ENTRIES)
+        return calculate_max_page(not_refunded_buys)
 
     @staticmethod
     async def get_refund_data(sort_pairs: dict[str, int],
@@ -162,12 +160,9 @@ class BuyRepository:
             Buy.buyer_id == buyer_id
         ]
         stmt = select(func.count(Buy.id)).where(*conditions)
-        not_refunded_buys = await session_execute(stmt, session)
-        not_refunded_buys = not_refunded_buys.scalar_one()
-        if not_refunded_buys % config.PAGE_ENTRIES == 0:
-            return not_refunded_buys / config.PAGE_ENTRIES - 1
-        else:
-            return math.trunc(not_refunded_buys / config.PAGE_ENTRIES)
+        buys = await session_execute(stmt, session)
+        buys = buys.scalar_one()
+        return calculate_max_page(buys)
 
     @staticmethod
     async def get_qty_by_buyer_id(buyer_id: int, session: AsyncSession | Session) -> int:
