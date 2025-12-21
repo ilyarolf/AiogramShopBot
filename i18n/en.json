@@ -108,7 +108,20 @@
     "date": "Date",
     "find_user": "🔎 Find User",
     "ban": "🚫 Ban",
-    "user_info": "\uD83D\uDC64 User Profile\n\nUsername: {username}\nIs banned: {is_banned}\n\n\uD83D\uDCCA Account Stats\n\n• Total Purchases: {total_purchases_qty}\n• Total Spent: {currency_sym}{total_spent_amount:.2f}\n• Balance: {currency_sym}{balance:.2f}\n\n\uD83D\uDEE0\uFE0F Actions"
+    "user_info": "\uD83D\uDC64 User Profile\n\nUsername: {username}\nIs banned: {is_banned}\n\n\uD83D\uDCCA Account Stats\n\n• Total Purchases: {total_purchases_qty}\n• Total Spent: {currency_sym}{total_spent_amount:.2f}\n• Balance: {currency_sym}{balance:.2f}\n\n\uD83D\uDEE0\uFE0F Actions",
+    "create_new_shipping_option": "🚚 Create new shipping option",
+    "view_all_shipping_options": "📋 View all shipping options",
+    "shipping_management": "📦 Shipping management",
+    "shipping_option_created_successfully": "✅ Shipping option created successfully!\n📦 Shipping name: {name}\n💰 Shipping price: {currency_sym}{price}",
+    "request_shipping_name": "📝 Please send shipping name:",
+    "request_shipping_price": "💵 Please send shipping price in {currency_sym}:",
+    "create_shipping_option_confirmation": "❓ Are you sure you want to create a new shipping option?\n📦 Shipping name: {name}\n💰 Shipping price: {currency_sym}{price}",
+    "shipping_option_single": "📦 Shipping option ID: {id}\n🏷️ Shipping option name: {name}\n💰 Shipping option price: {currency_sym}{price:.2f}\n🚫 Disabled: {is_disabled}",
+    "shipping_option_edit_name": "✏️ Edit name",
+    "shipping_option_edit_price": "💰 Edit price",
+    "request_new_property_value": "🔄 Please send new shipping property value:\n📊 Property: {property}\n📋 Current property value: {current_property_value}",
+    "edit_shipping_property_confirmation": "❓ Are you sure you want to edit property value?\n📊 Property: {property}\n📋 Current property value: {current_property_value}\n🆕 New property value: {new_property_value}",
+    "shipping_option_edited_successfully": "✅ Shipping option edited successfully!"
   },
   "common": {
     "back_button": "⬅️ Back",

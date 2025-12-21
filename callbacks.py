@@ -10,6 +10,8 @@ from enums.entity_type import EntityType
 from enums.item_type import ItemType
 from enums.keyboard_button import KeyboardButton
 from enums.language import Language
+from enums.shipping_management_action import ShippingManagementAction
+from enums.shipping_type_property import ShippingOptionProperty
 from enums.sort_order import SortOrder
 from enums.sort_property import SortProperty
 from enums.statistics_entity import StatisticsEntity
@@ -248,3 +250,22 @@ class CouponManagementCallback(BaseCallback, prefix="coupons"):
                                         number_of_uses=number_of_uses,
                                         confirmation=confirmation,
                                         page=page)
+
+
+class ShippingManagementCallback(BaseCallback, prefix="shipping_management"):
+    shipping_management_action: ShippingManagementAction | None = None
+    shipping_type_property: ShippingOptionProperty | None = None
+    shipping_id: int | None = None
+    page: int
+    confirmation: bool
+
+    @staticmethod
+    def create(level: int, shipping_management_action: ShippingManagementAction | None = None,
+               shipping_type_property: ShippingOptionProperty | None = None,
+               shipping_id: int | None = None, confirmation: bool = False, page: int = 0):
+        return ShippingManagementCallback(level=level,
+                                          shipping_management_action=shipping_management_action,
+                                          shipping_type_property=shipping_type_property,
+                                          shipping_id=shipping_id,
+                                          confirmation=confirmation,
+                                          page=page)

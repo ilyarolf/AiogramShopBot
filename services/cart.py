@@ -485,7 +485,8 @@ class CartService:
                 callback_data=CartCallback.create(level=2,
                                                   shipping_option_id=shipping_option.id)
             )
-        cart_callback = CartCallback.create(level=5)
+        kb_builder.adjust(1)
+        cart_callback = CartCallback.create(level=5, page=page)
         kb_builder = await add_pagination_buttons(kb_builder,
                                                   cart_callback,
                                                   ShippingOptionRepository.get_max_page(False, session),

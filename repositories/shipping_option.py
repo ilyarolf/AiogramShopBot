@@ -1,6 +1,6 @@
 import math
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import config
@@ -13,6 +13,8 @@ class ShippingOptionRepository:
     async def create_single(shipping_option_dto: ShippingOptionDTO, session: AsyncSession):
         shipping_option = ShippingOption(**shipping_option_dto.model_dump())
         session.add(shipping_option)
+        await session.flush()
+        return ShippingOptionDTO.model_validate(shipping_option, from_attributes=True)
 
     @staticmethod
     async def get_paginated(page: int,
@@ -47,6 +49,14 @@ class ShippingOptionRepository:
 
     @staticmethod
     async def get_by_id(shipping_option_id: int, session: AsyncSession) -> ShippingOptionDTO:
-        stmt = select(ShippingOption).where(ShippingOption.id == shipping_option_id)
+        stmt = (select(ShippingOption)
+                .where(ShippingOption.id == shipping_option_id))
         shipping_option = await session_execute(stmt, session)
         return ShippingOptionDTO.model_validate(shipping_option.scalar_one(), from_attributes=True)
+
+    @staticmethod
+    async def update(shipping_option: ShippingOptionDTO, session: AsyncSession):
+        stmt = (update(ShippingOption)
+                .where(ShippingOption.id == shipping_option.id)
+                .values(**shipping_option.model_dump()))
+        await session.execute(stmt)

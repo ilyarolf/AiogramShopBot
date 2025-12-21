@@ -3,7 +3,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from callbacks import AdminMenuCallback, AnnouncementCallback, InventoryManagementCallback, \
-    UserManagementCallback, StatisticsCallback, WalletCallback, MediaManagementCallback, CouponManagementCallback
+    UserManagementCallback, StatisticsCallback, WalletCallback, MediaManagementCallback, CouponManagementCallback, \
+    ShippingManagementCallback
 from enums.bot_entity import BotEntity
 from enums.keyboard_button import KeyboardButton as KB
 from enums.language import Language
@@ -11,6 +12,7 @@ from handlers.admin.announcement import announcement_router
 from handlers.admin.coupon_management import coupons_management
 from handlers.admin.inventory_management import inventory_management
 from handlers.admin.media_management import media_management
+from handlers.admin.shipping_management import shipping_management
 from handlers.admin.statistics import statistics
 from handlers.admin.user_management import user_management
 from handlers.admin.wallet import wallet
@@ -24,7 +26,8 @@ admin_router.include_routers(announcement_router,
                              statistics,
                              wallet,
                              media_management,
-                             coupons_management)
+                             coupons_management,
+                             shipping_management)
 
 
 @admin_router.message(F.text.in_(KB.get_localized_set(KB.ADMIN_MENU)), AdminIdFilter())
@@ -52,6 +55,8 @@ async def admin(**kwargs):
                       callback_data=MediaManagementCallback.create(level=0))
     kb_builder.button(text=get_text(language, BotEntity.ADMIN, "coupons_management"),
                       callback_data=CouponManagementCallback.create(level=0))
+    kb_builder.button(text=get_text(language, BotEntity.ADMIN, "shipping_management"),
+                      callback_data=ShippingManagementCallback.create(level=0))
     kb_builder.adjust(2)
     msg_text = get_text(language, BotEntity.ADMIN, "menu")
     if isinstance(message, Message):

@@ -59,3 +59,9 @@ class MediaManagementStates(StatesGroup):
 class CouponsManagementStates(StatesGroup):
     coupon_name = State()
     coupon_value = State()
+
+
+class ShippingManagementStates(StatesGroup):
+    shipping_name = State()
+    shipping_price = State()
+    edit_property = State()
