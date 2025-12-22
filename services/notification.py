@@ -10,9 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 import config
+from callbacks import MyProfileCallback
 from config import ADMIN_ID_LIST, TOKEN
 from enums.bot_entity import BotEntity
 from enums.language import Language
+from enums.user_role import UserRole
 from models.buy import RefundDTO, BuyDTO
 from models.payment import ProcessingPaymentDTO, TablePaymentDTO
 from models.user import UserDTO
@@ -49,10 +51,10 @@ class NotificationService:
         await bot.session.close()
 
     @staticmethod
-    async def send_to_user(message: str, telegram_id: int):
+    async def send_to_user(message: str, telegram_id: int, reply_markup: types.InlineKeyboardMarkup | None = None):
         bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
         try:
-            await bot.send_message(telegram_id, message)
+            await bot.send_message(telegram_id, message, reply_markup=reply_markup)
         except Exception as e:
             logging.error(e)
         finally:
@@ -134,7 +136,19 @@ class NotificationService:
 
     @staticmethod
     async def new_buy(buy: BuyDTO, user: UserDTO, session: AsyncSession | Session):
-        user_button = await NotificationService.make_user_button(user)
+        admin_kb_builder = await NotificationService.make_user_button(user)
+        admin_kb_builder = InlineKeyboardBuilder.from_markup(admin_kb_builder)
+        admin_kb_builder.button(
+            text=get_text(Language.EN, BotEntity.USER, "purchase_history_item").format(
+                buy_id=buy.id,
+                total_price=buy.total_price,
+                currency_sym=config.CURRENCY.get_localized_symbol()
+            ),
+            callback_data=MyProfileCallback.create(level=4,
+                                                   buy_id=buy.id,
+                                                   user_role=UserRole.ADMIN)
+        )
+        admin_kb_builder.adjust(1)
         cart_content = []
         buyItem_list = await BuyItemRepository.get_all_by_buy_id(buy.id, session)
         currency_sym = config.CURRENCY.get_localized_symbol()
@@ -163,7 +177,7 @@ class NotificationService:
         price_content.append(get_text(Language.EN, BotEntity.USER, "cart_total_with_discount").format(
             cart_total_final=buy.total_price, currency_sym=currency_sym))
         message += "\n".join(price_content)
-        await NotificationService.send_to_admins(message, user_button)
+        await NotificationService.send_to_admins(message, admin_kb_builder.as_markup())
 
     @staticmethod
     async def refund(refund_data: RefundDTO):

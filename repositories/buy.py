@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 import config
 from callbacks import StatisticsTimeDelta
 from db import session_execute, session_flush
+from enums.buy_status import BuyStatus
+from enums.item_type import ItemType
 from enums.sort_order import SortOrder
 from enums.sort_property import SortProperty
 from models.buy import Buy, BuyDTO, RefundDTO
@@ -19,7 +21,10 @@ from utils.utils import calculate_max_page
 
 class BuyRepository:
     @staticmethod
-    async def get_by_buyer_id(sort_pairs: dict[str, int], user_id: int, page: int, session: AsyncSession) -> list[BuyDTO]:
+    async def get_by_buyer_id(sort_pairs: dict[str, int],
+                              user_id: int | None,
+                              page: int,
+                              session: AsyncSession) -> list[BuyDTO]:
         sort_methods = []
         for sort_property, sort_order in sort_pairs.items():
             sort_property, sort_order = SortProperty(int(sort_property)), SortOrder(sort_order)
@@ -27,9 +32,9 @@ class BuyRepository:
                 sort_column = sort_property.get_column(Buy)
                 sort_method = (getattr(sort_column, sort_order.name.lower()))
                 sort_methods.append(sort_method())
-        conditions = [
-            Buy.buyer_id == user_id
-        ]
+        conditions = []
+        if user_id:
+            conditions.append(Buy.buyer_id == user_id)
         stmt = (select(Buy)
                 .where(*conditions)
                 .limit(config.PAGE_ENTRIES)
@@ -48,7 +53,7 @@ class BuyRepository:
     @staticmethod
     async def get_max_refund_page(filters: list[str], session: AsyncSession):
         conditions = [
-            Buy.is_refunded == False
+            Buy.status == BuyStatus.REFUNDED
         ]
         if filters:
             filters = [username.replace("@", "") for username in filters]
@@ -73,7 +78,7 @@ class BuyRepository:
                 sort_column = sort_property.get_column(Buy)
                 sort_method = (getattr(sort_column, sort_order.name.lower()))
                 sort_methods.append(sort_method())
-        conditions = [Buy.is_refunded == False]
+        conditions = [Buy.status == BuyStatus.REFUNDED]
         if filters:
             filters = [username.replace("@", "") for username in filters]
             filter_conditions = [User.telegram_username.icontains(name) for name in filters]
@@ -155,10 +160,10 @@ class BuyRepository:
         return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]
 
     @staticmethod
-    async def get_max_page_purchase_history(buyer_id: int, session: AsyncSession) -> int:
-        conditions = [
-            Buy.buyer_id == buyer_id
-        ]
+    async def get_max_page_purchase_history(buyer_id: int | None, session: AsyncSession) -> int:
+        conditions = []
+        if buyer_id:
+            conditions.append(Buy.buyer_id == buyer_id)
         stmt = select(func.count(Buy.id)).where(*conditions)
         buys = await session_execute(stmt, session)
         buys = buys.scalar_one()

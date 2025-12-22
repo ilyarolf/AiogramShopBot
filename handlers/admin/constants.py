@@ -65,3 +65,7 @@ class ShippingManagementStates(StatesGroup):
     shipping_name = State()
     shipping_price = State()
     edit_property = State()
+
+
+class BuysManagementStates(StatesGroup):
+    update_track_number = State()

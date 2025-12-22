@@ -121,7 +121,13 @@
     "shipping_option_edit_price": "💰 Edit price",
     "request_new_property_value": "🔄 Please send new shipping property value:\n📊 Property: {property}\n📋 Current property value: {current_property_value}",
     "edit_shipping_property_confirmation": "❓ Are you sure you want to edit property value?\n📊 Property: {property}\n📋 Current property value: {current_property_value}\n🆕 New property value: {new_property_value}",
-    "shipping_option_edited_successfully": "✅ Shipping option edited successfully!"
+    "shipping_option_edited_successfully": "✅ Shipping option edited successfully!",
+    "pick_purchase": "🛍 ️Please pick purchase:",
+    "buys_management": "🛍 Buys management",
+    "update_track_number": "📡 Update track number",
+    "request_new_track_number": "📡 <b>Please send track number for buy with ID: <code>{buy_id}</code>:</b>",
+    "update_track_number_confirmation": "❓ <b>Are you sure you want to change the track number of the buy with ID <code>{buy_id}</code>?\nOld track number: <code>{old_track_number}</code>\nNew track number: <code>{new_track_number}</code></b>",
+    "track_number_updated": "📡 <b>Track number updated successfully!</b>"
   },
   "common": {
     "back_button": "⬅️ Back",
@@ -206,7 +212,6 @@
     "purchase_history_button": "🧾 Purchase History  ",
     "purchase_history_item": "📦 Purchase: #{buy_id}  | Total Price: {total_price:.2f}{currency_sym}",
     "purchase_history_single_button": "📦 {subcategory_name} | Qty: {qty} pcs",
-    "purchase_history_pick_item": "👇 Select the purchase item: ",
     "purchases": "🧾 <b>Your purchases:</b>",
     "refresh_balance_button": "🔄 Refresh balance",
     "refund_notification": "↩️ You have been refunded {currency_sym}{total_price:.2f} for the purchase of {quantity} pieces of {subcategory}",
@@ -235,7 +240,6 @@
     "edit_language": "<b>🌍 Pick language:</b>",
     "edit_language_confirmation": "<b>🌍 Are you sure you want to change the language from <i>{current_language}</i> to <i>{update_language}</i>?</b>",
     "language_edited_successfully": "<b>🌍 Language edited successfully!</b>\n🔄 Refresh your reply keyboard with \"/start\" command.",
-    "purchase_completed": "\uD83D\uDECD\uFE0F Your purchase has been successfully completed!",
     "attached": "Attached",
     "buy_confirmation": "<b>⚙️ Item type: <code>{item_type}</code>\n\uD83D\uDDC2\uFE0F Category: <code>{category_name}</code>\n\uD83D\uDCE6 Subcategory: <code>{subcategory_name}</code>\n\uD83D\uDCB8 Price: <code>{currency_sym}{price:.2f}</code>\n✍\uFE0F Description: <i>{description}</i>\n\uD83D\uDD22 Quantity: <code>{quantity}</code> pcs.\nTotal price: <code>{currency_sym}{total_price:.2f}</code></b>",
     "select_quantity": "<b>⚙️ Item type: <code>{item_type}</code>\n🗂️ Category: <code>{category_name}</code>\n📦 Subcategory: <code>{subcategory_name}</code>\n💸 Price: <code>{currency_sym}{price:.2f}</code>\n✍️Description: <i>{description}</i>\n🔢Quantity available: <code>{quantity}</code> pcs.\n🔢Pick Quantity:</b>",
@@ -252,6 +256,10 @@
     "cart_total_price": "💸 Cart total price: <code>{currency_sym}{cart_total_price:.2f}</code>",
     "cart_total_discount": "💸 Cart total discount: <code>{currency_sym}{cart_total_discount:.2f}</code>",
     "cart_total_with_discount": "💸 Cart total price after discount: <code>{currency_sym}{cart_total_final:.2f}</code>",
-    "checkout_cart": "\n🛒 Checkout cart?"
+    "checkout_cart": "\n🛒 Checkout cart?",
+    "purchase_history_msg_base": "\uD83D\uDD39 Buy ID: <code>{buy_id}</code>\n\uD83D\uDCC5 Buy datetime: <code>{buy_datetime}</code>\n\uD83D\uDCB5 Fiat price paid: <code>{currency_sym}{fiat_amount:.2f}</code>\n\uD83C\uDFF7\uFE0F Discount: <code>{currency_sym}{discount_amount:.2F}</code>",
+    "purchase_history_msg_physical": "\uD83D\uDCE1 Track number: <code>{track_number}</code>\n\uD83D\uDCCD Shipping address: <code>{shipping_address}</code>\n\uD83D\uDE9A Shipping type: <code>{shipping_option}</code>",
+    "track_number_updated_notification": "⚠\uFE0F Your buy with ID:<code>{buy_id}</code> has had its tracking number updated.",
+    "purchase_completed": "🛍️ Your purchase has been successfully completed!"
   }
 }

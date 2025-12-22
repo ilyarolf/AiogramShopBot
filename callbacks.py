@@ -3,6 +3,7 @@ from aiogram.filters.callback_data import CallbackData
 from enums.add_type import AddType
 from enums.announcement_type import AnnouncementType
 from enums.bot_entity import BotEntity
+from enums.buy_status import BuyStatus
 from enums.cart_action import CartAction
 from enums.coupon_type import CouponType
 from enums.cryptocurrency import Cryptocurrency
@@ -18,6 +19,7 @@ from enums.statistics_entity import StatisticsEntity
 from enums.statistics_timedelta import StatisticsTimeDelta
 from enums.user_management_operation import UserManagementOperation
 from enums.coupon_number_of_uses import CouponNumberOfUses
+from enums.user_role import UserRole
 from utils.utils import get_text
 
 
@@ -73,6 +75,7 @@ class MyProfileCallback(BaseCallback, SortingCallback, prefix="my_profile"):
     buyItem_id: int | None = None
     cryptocurrency: Cryptocurrency | None = None
     language: Language | None = None
+    user_role: UserRole = UserRole.USER
     confirmation: bool = False
     page: int
 
@@ -85,6 +88,7 @@ class MyProfileCallback(BaseCallback, SortingCallback, prefix="my_profile"):
                is_filter_enabled: bool = False,
                cryptocurrency: Cryptocurrency | None = None,
                language: Language | None = None,
+               user_role: UserRole = UserRole.USER,
                confirmation: bool = False,
                page=0) -> 'MyProfileCallback':
         return MyProfileCallback(level=level, buy_id=buy_id, buyItem_id=buyItem_id,
@@ -92,6 +96,7 @@ class MyProfileCallback(BaseCallback, SortingCallback, prefix="my_profile"):
                                  is_filter_enabled=is_filter_enabled,
                                  cryptocurrency=cryptocurrency,
                                  language=language,
+                                 user_role=user_role,
                                  confirmation=confirmation,
                                  page=page)
 
@@ -269,3 +274,23 @@ class ShippingManagementCallback(BaseCallback, prefix="shipping_management"):
                                           shipping_id=shipping_id,
                                           confirmation=confirmation,
                                           page=page)
+
+
+class BuysManagementCallback(BaseCallback, prefix="buys"):
+    buy_id: int | None = None
+    item_type: ItemType | None = None
+    buy_status: BuyStatus | None = None
+    page: int
+    confirmation: bool = False
+
+    @staticmethod
+    def create(level: int,
+               buy_id: int | None = None,
+               item_type: ItemType | None = None,
+               buy_status: BuyStatus | None = None,
+               confirmation: bool = False,
+               page: int = 0):
+        return BuysManagementCallback(level=level, buy_id=buy_id,
+                                      item_type=item_type,
+                                      buy_status=buy_status, confirmation=confirmation,
+                                      page=page)

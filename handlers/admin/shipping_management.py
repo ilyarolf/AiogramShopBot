@@ -81,7 +81,8 @@ async def receive_shipping_option_edit_value(message: Message,
 @shipping_management.callback_query(AdminIdFilter(), ShippingManagementCallback.filter())
 async def shipping_management_navigation(callback: CallbackQuery, state: FSMContext,
                                          callback_data: ShippingManagementCallback,
-                                         session: AsyncSession):
+                                         session: AsyncSession,
+                                         language: Language):
     current_level = callback_data.level
     levels = {
         0: shipping_management_menu,
@@ -97,6 +98,7 @@ async def shipping_management_navigation(callback: CallbackQuery, state: FSMCont
         "callback": callback,
         "state": state,
         "session": session,
+        "language": language
     }
 
     await current_level_function(**kwargs)
