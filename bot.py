@@ -6,14 +6,23 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.types import BufferedInputFile
 from redis.asyncio import Redis
+from sqladmin import Admin
+
 import config
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from fastapi import FastAPI, Request, status, HTTPException
-from db import create_db_and_tables
+from db import create_db_and_tables, engine
 import uvicorn
 from fastapi.responses import JSONResponse
 from enums.cryptocurrency import Cryptocurrency
+from models.buy import BuyAdmin
+from models.category import CategoryAdmin
+from models.coupon import CouponAdmin
+from models.item import ItemAdmin
+from models.shipping_option import ShippingOptionAdmin
+from models.subcategory import SubcategoryAdmin
+from models.user import UserAdmin
 from processing.processing import processing_router
 from repositories.button_media import ButtonMediaRepository
 from services.notification import NotificationService
@@ -23,6 +32,15 @@ redis = Redis(host=config.REDIS_HOST, password=config.REDIS_PASSWORD)
 bot = Bot(config.TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=RedisStorage(redis))
 app = FastAPI()
+admin = Admin(app, engine)
+admin.add_model_view(UserAdmin)
+admin.add_model_view(BuyAdmin)
+admin.add_model_view(ShippingOptionAdmin)
+admin.add_model_view(CouponAdmin)
+admin.add_model_view(CategoryAdmin)
+admin.add_model_view(SubcategoryAdmin)
+admin.add_model_view(ItemAdmin)
+
 app.include_router(processing_router)
 
 

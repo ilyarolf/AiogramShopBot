@@ -1,7 +1,9 @@
 from datetime import datetime, timezone, timedelta
 
 from pydantic import BaseModel
-from sqlalchemy import BigInteger, Column, DateTime, Enum, Boolean, String, Integer, Numeric
+from sqladmin import ModelView
+from sqlalchemy import Column, DateTime, Enum, Boolean, String, Integer, Numeric
+from sqlalchemy.orm import relationship
 
 from enums.coupon_type import CouponType
 from models.base import Base
@@ -10,7 +12,7 @@ from models.base import Base
 class Coupon(Base):
     __tablename__ = "coupons"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True)
     name = Column(String, unique=True, nullable=True)
     code = Column(String(12), unique=True, nullable=False, index=True)
     type = Column(Enum(CouponType), nullable=False)
@@ -20,6 +22,7 @@ class Coupon(Base):
     is_active = Column(Boolean, default=True)
     usage_limit = Column(Integer, default=1)
     usage_count = Column(Integer, default=0)
+    buys = relationship("Buy", back_populates="coupon")
 
 
 class CouponDTO(BaseModel):
@@ -33,3 +36,7 @@ class CouponDTO(BaseModel):
     is_active: bool = True
     usage_limit: int = 1
     usage_count: int = 0
+
+
+class CouponAdmin(ModelView, model=Coupon):
+    column_exclude_list = [Coupon.buys]

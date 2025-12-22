@@ -1,7 +1,9 @@
 from datetime import datetime
 
 from pydantic import BaseModel
+from sqladmin import ModelView
 from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func, CheckConstraint, Enum
+from sqlalchemy.orm import relationship
 
 from enums.bot_entity import BotEntity
 from enums.language import Language
@@ -21,11 +23,19 @@ class User(Base):
     can_receive_messages = Column(Boolean, default=True)
     language = Column(Enum(Language), default=Language.EN, nullable=False)
     is_banned = Column(Boolean, default=False)
+    buys = relationship(
+        "Buy",
+        back_populates="buyer",
+        cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         CheckConstraint('top_up_amount >= 0', name='check_top_up_amount_positive'),
         CheckConstraint('consume_records >= 0', name='check_consume_records_positive'),
     )
+
+    def __repr__(self):
+        return self.telegram_username or self.telegram_id
 
 
 class UserDTO(BaseModel):
@@ -43,3 +53,7 @@ class UserDTO(BaseModel):
     def get_chart_text(language: Language) -> tuple[str, str]:
         return (get_text(language, BotEntity.ADMIN, "users_ylabel"),
                 get_text(language, BotEntity.ADMIN, "users_chart_title"))
+
+
+class UserAdmin(ModelView, model=User):
+    column_exclude_list = [User.buys]

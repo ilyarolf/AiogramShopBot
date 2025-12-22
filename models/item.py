@@ -1,5 +1,7 @@
 from pydantic import BaseModel
+from sqladmin import ModelView
 from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, CheckConstraint, Enum
+from sqlalchemy.orm import relationship
 
 from enums.item_type import ItemType
 from models.base import Base
@@ -11,16 +13,20 @@ class Item(Base):
     id = Column(Integer, primary_key=True, unique=True)
     item_type = Column(Enum(ItemType), nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="CASCADE"), nullable=False)
+    category = relationship("Category", back_populates="items")
     subcategory_id = Column(Integer, ForeignKey("subcategories.id", ondelete="CASCADE"), nullable=False)
+    subcategory = relationship("Subcategory", back_populates="items")
     private_data = Column(String, nullable=True, unique=False)
     price = Column(Float, nullable=False)
     is_sold = Column(Boolean, nullable=False, default=False)
     is_new = Column(Boolean, nullable=False, default=True)
     description = Column(String, nullable=False)
-
     __table_args__ = (
         CheckConstraint('price > 0', name='check_price_positive'),
     )
+
+    def __repr__(self):
+        return str(self.id)
 
 
 class ItemDTO(BaseModel):
@@ -35,3 +41,7 @@ class ItemDTO(BaseModel):
     is_sold: bool | None = None
     is_new: bool | None = None
     description: str | None = None
+
+
+class ItemAdmin(ModelView, model=Item):
+    column_exclude_list = [Item.category_id, Item.subcategory_id]
