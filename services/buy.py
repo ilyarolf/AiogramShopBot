@@ -9,6 +9,7 @@ from callbacks import MyProfileCallback, BuysManagementCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.entity_type import EntityType
+from enums.item_type import ItemType
 from enums.language import Language
 from enums.sort_property import SortProperty
 from enums.user_role import UserRole
@@ -63,16 +64,22 @@ class BuyService:
         subcategory = await SubcategoryRepository.get_by_id(items[0].subcategory_id, session)
         us_datetime_12h = buy.buy_datetime.strftime("%m/%d/%Y, %I:%M %p")
         msg_template = get_text(language, BotEntity.USER, "purchase_details")
-        msg = msg_template.format(
+        content_list = []
+        content_list.append(msg_template.format(
             category_name=category.name,
             subcategory_name=subcategory.name,
             currency_sym=config.CURRENCY.get_localized_symbol(),
             total_fiat_price=items[0].price * len(items),
             fiat_price=items[0].price,
             qty=len(items),
-            purchase_datetime=us_datetime_12h,
-            purchased_items=purchased_items_msg
-        )
+            purchase_datetime=us_datetime_12h
+        ))
+        has_physical = any(item.item_type == ItemType.PHYSICAL for item in items)
+        if has_physical is False:
+            content_list.append(get_text(language, BotEntity.USER, "purchase_details_items_section").format(
+                purchased_items=purchased_items_msg
+            ))
+        msg = "\n".join(content_list)
         kb_builder = InlineKeyboardBuilder()
         kb_builder.row(callback_data.get_back_button(language))
         if len(msg) > 1024:
@@ -125,8 +132,7 @@ class BuyService:
             user = await UserRepository.get_user_entity(buy_dto.buyer_id, session)
             kb_builder.button(
                 text=get_text(language, BotEntity.COMMON, "user"),
-                # url=f"tg://user?id={user.telegram_id}"
-                url=f"google.com"
+                url=f"tg://user?id={user.telegram_id}"
             )
             if buy_dto.shipping_address and buy_dto.track_number is None:
                 kb_builder.button(

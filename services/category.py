@@ -35,8 +35,9 @@ class CategoryService:
         for category in categories:
             kb_builder.button(
                 text=category.name,
-                callback_data=AllCategoriesCallback.create(
-                    level=callback_data.level + 1, category_id=category.id
+                callback_data=AllCategoriesCallback.create(level=callback_data.level + 1,
+                                                           item_type=callback_data.item_type,
+                                                           category_id=category.id
                 )
             )
 

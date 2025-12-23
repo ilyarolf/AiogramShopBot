@@ -14,10 +14,8 @@
     "add_items_txt": "📄 TXT",
     "add_items_category": "🗂️ <b>Please send category name or \"<code>cancel</code>\":</b>\nExample: <code>Category#1</code>",
     "add_items_description": "✍️ <b>Please send description or \"<code>cancel</code>\":</b>\nExample: <code>Description#1</code>",
-    "add_items_json_msg": "📄 <b>Send .json file with new items or type \"cancel\" for cancel.</b>\nFile content example:\n<pre><code class=\"language-json\">[\n  {\n    \"category\": \"Category#1\",\n    \"subcategory\": \"Subcategory#1\",\n    \"price\": 50,\n    \"description\": \"Mocked description\",\n    \"private_data\": \"Mocked private data\"\n  },\n  {\n    \"category\": \"Category#2\",\n    \"subcategory\": \"Subcategory#2\",\n    \"price\": 100,\n    \"description\": \"Mocked description\",\n    \"private_data\": \"Mocked private data\"\n  }\n]</code></pre>",
     "add_items_price": "💵 <b>Please send price in {currency_text} or \"<code>cancel</code>\":</b>\nExample: <code>50.0</code>",
     "add_items_private_data": "ℹ️ <b>Please send the data that the user will receive after purchase.</b>\n\n<u>Note</u>:\nIf you enter one line, you will add one product, if you enter multiple lines, you will add multiple products.\n1 line=1 item\n10 rows=10 items.\n\nIf you want to abort adding items enter \"<code>cancel</code>\".",
-    "add_items_txt_msg": "📄 <b>Send .txt file with new items or type \"cancel\" for cancel.</b>\nFile content example:\n<pre><code class=\"language-txt\">CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#1\nCATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#2\nCATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#3\nCATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#4\nCATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#5\nCATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#6\nCATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#7\nCATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#8\n</code></pre>",
     "menu": "\uD83D\uDD11 Admin Menu",
     "announcements": "📢 Announcements",
     "back_to_menu": "⤵\uFE0F Back to admin menu",
@@ -127,7 +125,11 @@
     "update_track_number": "📡 Update track number",
     "request_new_track_number": "📡 <b>Please send track number for buy with ID: <code>{buy_id}</code>:</b>",
     "update_track_number_confirmation": "❓ <b>Are you sure you want to change the track number of the buy with ID <code>{buy_id}</code>?\nOld track number: <code>{old_track_number}</code>\nNew track number: <code>{new_track_number}</code></b>",
-    "track_number_updated": "📡 <b>Track number updated successfully!</b>"
+    "track_number_updated": "📡 <b>Track number updated successfully!</b>",
+    "add_items_item_type": "🗂️ <b>Please send item type:\nExample: <code>PHYSICAL</code> or <code>DIGITAL</code></b>",
+    "add_items_private_data_physical": "<b>ℹ️ Please send the quantity of items you want to sell:</b>",
+    "add_items_json_msg": "📄 <b>Send .json file with new items or type \"cancel\" for cancel.</b>\nFile content example:\n<pre><code class=\"language-json\">[\n  {\n    \"item_type\": \"Physical\",\n    \"category\": \"Category#1\",\n    \"subcategory\": \"Subcategory#1\",\n    \"price\": 50,\n    \"description\": \"Mocked description\",\n    \"private_data\": null\n  },\n  {\n    \"item_type\": \"Digital\",\n    \"category\": \"Category#2\",\n    \"subcategory\": \"Subcategory#2\",\n    \"price\": 100,\n    \"description\": \"Mocked description\",\n    \"private_data\": \"Mocked private data\"\n  }\n]\n</code></pre>",
+    "add_items_txt_msg": "📄 <b>Send .txt file with new items or type \"cancel\" for cancel.</b>\nFile content example:\n<pre><code class=\"language-txt\">PHYSICAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;null\nPHYSICAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;null\nPHYSICAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;null\nPHYSICAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;null\nDIGITAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#5\nDIGITAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#6\nDIGITAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#7\nDIGITAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#8</code></pre>"
   },
   "common": {
     "back_button": "⬅️ Back",
@@ -207,7 +209,6 @@
     "no_categories": "⚠️ No categories",
     "no_purchases": "⚠️ You haven't had any purchases yet",
     "out_of_stock": "\u26A0\uFE0F<b>The following items are sold out or have insufficient stock:</b>\n\n",
-    "purchase_details": "🛒 Purchase Details\n\nCategory: {category_name}\nSubcategory: {subcategory_name}\nPrice Paid: {currency_sym}{total_fiat_price:.2f}\nPrice per item: {currency_sym}{fiat_price:.2f}\nQty: {qty} pcs\nDate of Purchase: {purchase_datetime}\nItems:\n{purchased_items}",
     "purchased_item": "📦 Item#{count}\nData:<code>{private_data}</code>\n",
     "purchase_history_button": "🧾 Purchase History  ",
     "purchase_history_item": "📦 Purchase: #{buy_id}  | Total Price: {total_price:.2f}{currency_sym}",
@@ -258,8 +259,10 @@
     "cart_total_with_discount": "💸 Cart total price after discount: <code>{currency_sym}{cart_total_final:.2f}</code>",
     "checkout_cart": "\n🛒 Checkout cart?",
     "purchase_history_msg_base": "\uD83D\uDD39 Buy ID: <code>{buy_id}</code>\n\uD83D\uDCC5 Buy datetime: <code>{buy_datetime}</code>\n\uD83D\uDCB5 Fiat price paid: <code>{currency_sym}{fiat_amount:.2f}</code>\n\uD83C\uDFF7\uFE0F Discount: <code>{currency_sym}{discount_amount:.2F}</code>",
-    "purchase_history_msg_physical": "\uD83D\uDCE1 Track number: <code>{track_number}</code>\n\uD83D\uDCCD Shipping address: <code>{shipping_address}</code>\n\uD83D\uDE9A Shipping type: <code>{shipping_option}</code>",
-    "track_number_updated_notification": "⚠\uFE0F Your buy with ID:<code>{buy_id}</code> has had its tracking number updated.",
-    "purchase_completed": "🛍️ Your purchase has been successfully completed!"
+    "purchase_history_msg_physical": "\uD83D\uDCE1 Track number: <code>{track_number}</code>\n\uD83D\uDCCD Shipping address: <code>{shipping_address}</code>\n\uD83D\uDE9A Shipping option: <code>{shipping_option}</code>",
+    "track_number_updated_notification": "⚠\uFE0FThe tracking number for your purchase with ID: <code>{buy_id}</code> has been updated.",
+    "purchase_completed": "🛍️ Your purchase has been successfully completed!",
+    "purchase_details_items_section": "Items:\n{purchased_items}",
+    "purchase_details": "🛒 Purchase Details\n\nCategory: {category_name}\nSubcategory: {subcategory_name}\nPrice Paid: {currency_sym}{total_fiat_price:.2f}\nPrice per item: {currency_sym}{fiat_price:.2f}\nQty: {qty} pcs\nDate of Purchase: {purchase_datetime}"
   }
 }

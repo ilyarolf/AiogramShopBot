@@ -9,6 +9,7 @@ from db import session_commit
 from enums.add_type import AddType
 from enums.bot_entity import BotEntity
 from enums.entity_type import EntityType
+from enums.item_type import ItemType
 from enums.language import Language
 from handlers.admin.constants import AdminConstants, InventoryManagementStates
 from models.item import ItemDTO
@@ -67,8 +68,8 @@ class InventoryManagementService:
             case AddType.TXT:
                 return get_text(language, BotEntity.ADMIN, "add_items_txt_msg"), kb_markup
             case AddType.MENU:
-                await state.set_state(InventoryManagementStates.category)
-                return get_text(language, BotEntity.ADMIN, "add_items_category"), kb_markup
+                await state.set_state(InventoryManagementStates.item_type)
+                return get_text(language, BotEntity.ADMIN, "add_items_item_type"), kb_markup
 
     @staticmethod
     async def delete_confirmation(callback_data: InventoryManagementCallback,
@@ -128,7 +129,11 @@ class InventoryManagementService:
         kb_builder = InlineKeyboardBuilder()
         cancel_button = InlineKeyboardButton(text=get_text(language, BotEntity.COMMON, "cancel"),
                                              callback_data=InventoryManagementCallback.create(1).pack())
-        if current_state == InventoryManagementStates.category:
+        if current_state == InventoryManagementStates.item_type:
+            await state.update_data(item_type=message.html_text)
+            await state.set_state(InventoryManagementStates.category)
+            msg = get_text(language, BotEntity.ADMIN, "add_items_category")
+        elif current_state == InventoryManagementStates.category:
             await state.update_data(category_name=message.html_text)
             await state.set_state(InventoryManagementStates.subcategory)
             msg = get_text(language, BotEntity.ADMIN, "add_items_subcategory")
@@ -139,26 +144,48 @@ class InventoryManagementService:
         elif current_state == InventoryManagementStates.description:
             await state.update_data(description=message.html_text)
             await state.set_state(InventoryManagementStates.private_data)
-            msg = get_text(language, BotEntity.ADMIN, "add_items_private_data")
+            if ItemType(state_data['item_type'].upper()) == ItemType.PHYSICAL:
+                msg = get_text(language, BotEntity.ADMIN, "add_items_private_data_physical")
+            else:
+                msg = get_text(language, BotEntity.ADMIN, "add_items_private_data")
         elif current_state == InventoryManagementStates.private_data:
-            await state.update_data(private_data=message.html_text)
-            await state.set_state(InventoryManagementStates.price)
-            msg = get_text(language, BotEntity.ADMIN, "add_items_price").format(
-                currency_text=config.CURRENCY.get_localized_text())
+            success_msg = get_text(language, BotEntity.ADMIN, "add_items_price").format(
+                    currency_text=config.CURRENCY.get_localized_text())
+            if ItemType(state_data['item_type'].upper()) == ItemType.PHYSICAL:
+                if message.html_text.isdecimal():
+                    await state.update_data(items_qty=int(message.html_text))
+                    await state.set_state(InventoryManagementStates.price)
+                    msg = success_msg
+                else:
+                    msg = get_text(language, BotEntity.ADMIN, "add_items_private_data_physical")
+            else:
+                await state.update_data(private_data=message.html_text)
+                await state.set_state(InventoryManagementStates.price)
+                msg = success_msg
         else:
             try:
                 price = float(message.html_text)
                 assert (price > 0)
                 await state.update_data(price=message.html_text)
                 state_data = await state.get_data()
+                item_type = ItemType(state_data['item_type'].upper())
                 category = await CategoryRepository.get_or_create(state_data['category_name'], session)
                 subcategory = await SubcategoryRepository.get_or_create(state_data['subcategory_name'], session)
-                items_list = [ItemDTO(category_id=category.id,
-                                      subcategory_id=subcategory.id,
-                                      description=state_data['description'],
-                                      price=float(state_data['price']),
-                                      private_data=private_data) for private_data in
-                              state_data['private_data'].split('\n')]
+                if item_type == ItemType.PHYSICAL:
+                    items_list = [ItemDTO(item_type=item_type,
+                                          category_id=category.id,
+                                          subcategory_id=subcategory.id,
+                                          description=state_data['description'],
+                                          price=float(state_data['price']),
+                                          private_data=None) for _ in range(state_data['items_qty'])]
+                else:
+                    items_list = [ItemDTO(item_type=item_type,
+                                          category_id=category.id,
+                                          subcategory_id=subcategory.id,
+                                          description=state_data['description'],
+                                          price=float(state_data['price']),
+                                          private_data=private_data) for private_data in
+                                  state_data['private_data'].split('\n')]
                 await ItemRepository.add_many(items_list, session)
                 await session_commit(session)
                 await state.clear()

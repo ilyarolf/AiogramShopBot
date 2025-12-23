@@ -60,11 +60,16 @@ class ItemService:
             items = load(file)
             items_list = []
             for item in items:
+                item_type = ItemType(item['item_type'].upper())
                 category = await CategoryRepository.get_or_create(item['category'], session)
                 subcategory = await SubcategoryRepository.get_or_create(item['subcategory'], session)
+                item.pop('item_type')
                 item.pop('category')
                 item.pop('subcategory')
+                if item_type == ItemType.PHYSICAL:
+                    item.pop('private_data')
                 items_list.append(ItemDTO(
+                    item_type=item_type,
                     category_id=category.id,
                     subcategory_id=subcategory.id,
                     **item
@@ -77,10 +82,14 @@ class ItemService:
             lines = file.readlines()
             items_list = []
             for line in lines:
-                category_name, subcategory_name, description, price, private_data = line.split(';')
+                item_type, category_name, subcategory_name, description, price, private_data = line.split(';')
+                item_type = ItemType(item_type.upper())
+                if item_type == ItemType.PHYSICAL:
+                    private_data = None
                 category = await CategoryRepository.get_or_create(category_name, session)
                 subcategory = await SubcategoryRepository.get_or_create(subcategory_name, session)
                 items_list.append(ItemDTO(
+                    item_type=item_type,
                     category_id=category.id,
                     subcategory_id=subcategory.id,
                     price=float(price),
