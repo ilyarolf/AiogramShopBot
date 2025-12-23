@@ -6,22 +6,29 @@ from sqlalchemy.orm import Session
 
 import config
 from db import session_execute, session_flush
+from enums.item_type import ItemType
 from enums.sort_order import SortOrder
 from enums.sort_property import SortProperty
 from models.category import Category, CategoryDTO
 from models.item import Item
-from utils.utils import get_bot_photo_id
+from utils.utils import get_bot_photo_id, calculate_max_page
 
 
 class CategoryRepository:
     @staticmethod
     async def get(sort_pairs: dict[str, int],
                   filters: list[str] | None,
-                  page: int, session: AsyncSession) -> list[CategoryDTO]:
+                  item_type: ItemType | None,
+                  page: int,
+                  session: AsyncSession) -> list[CategoryDTO]:
         sort_methods = []
         conditions = [
             Item.is_sold == False
         ]
+        if item_type:
+            conditions.append(
+                Item.item_type == item_type
+            )
         if filters is not None:
             filter_conditions = [Category.name.icontains(name) for name in filters]
             conditions.append(or_(*filter_conditions))
@@ -58,10 +65,7 @@ class CategoryRepository:
         stmt = select(func.count()).select_from(sub_stmt)
         max_page = await session_execute(stmt, session)
         max_page = max_page.scalar_one()
-        if max_page % config.PAGE_ENTRIES == 0:
-            return max_page / config.PAGE_ENTRIES - 1
-        else:
-            return math.trunc(max_page / config.PAGE_ENTRIES)
+        return calculate_max_page(max_page)
 
     @staticmethod
     async def get_by_id(category_id: int, session: Session | AsyncSession) -> CategoryDTO:
@@ -72,7 +76,7 @@ class CategoryRepository:
     @staticmethod
     async def get_to_delete(sort_pairs: dict[str, int],
                             filters: list[str],
-                            page: int, session:AsyncSession) -> list[CategoryDTO]:
+                            page: int, session: AsyncSession) -> list[CategoryDTO]:
         sort_methods = []
         for sort_property, sort_order in sort_pairs.items():
             sort_property, sort_order = SortProperty(int(sort_property)), SortOrder(sort_order)

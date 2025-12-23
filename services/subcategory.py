@@ -26,18 +26,19 @@ class SubcategoryService:
                           state: FSMContext,
                           session: AsyncSession,
                           language: Language) -> tuple[InputMediaPhoto |
-                                                          InputMediaAnimation |
-                                                          InputMediaVideo, InlineKeyboardBuilder]:
+                                                       InputMediaAnimation |
+                                                       InputMediaVideo, InlineKeyboardBuilder]:
         state_data = await state.get_data()
-
-        callback_data = callback_data or AllCategoriesCallback.create(1, state_data.get("entity_id"))
+        callback_data = callback_data or AllCategoriesCallback.create(1, **state_data.get("entity_id_dict"))
         sort_pairs, filters = await get_filters_settings(state, callback_data)
         kb_builder = InlineKeyboardBuilder()
         items = await SubcategoryRepository.get_paginated_by_category_id(sort_pairs, filters,
+                                                                         callback_data.item_type,
                                                                          callback_data.category_id,
                                                                          callback_data.page, session)
         for item in items:
-            available_qty = await ItemRepository.get_available_qty(category_id=item.category_id,
+            available_qty = await ItemRepository.get_available_qty(item_type=item.item_type,
+                                                                   category_id=item.category_id,
                                                                    subcategory_id=item.subcategory_id,
                                                                    session=session)
             kb_builder.button(text=get_text(language, BotEntity.USER, "subcategory_button").format(
@@ -47,6 +48,7 @@ class SubcategoryService:
                 currency_sym=config.CURRENCY.get_localized_symbol()),
                 callback_data=AllCategoriesCallback.create(
                     level=callback_data.level + 1,
+                    item_type=item.item_type,
                     category_id=item.category_id,
                     subcategory_id=item.subcategory_id
                 )
@@ -56,18 +58,25 @@ class SubcategoryService:
         kb_builder = await add_sorting_buttons(kb_builder, [SortProperty.NAME, SortProperty.PRICE],
                                                callback_data, sort_pairs, language)
         kb_builder = await add_pagination_buttons(kb_builder, callback_data,
-                                                  SubcategoryRepository.get_maximum_page(callback_data.category_id, filters, session),
+                                                  SubcategoryRepository.get_maximum_page(callback_data.category_id,
+                                                                                         filters, session),
                                                   callback_data.get_back_button(language), language)
         caption = get_text(language, BotEntity.USER, "pick_subcategory")
+        if callback_data.item_type:
+            item_type = callback_data.item_type.get_localized(language)
+        else:
+            item_type = get_text(language, BotEntity.COMMON, "all")
         if callback_data.category_id:
             category_dto = await CategoryRepository.get_by_id(callback_data.category_id, session)
             caption = caption.format(
-                category_name=category_dto.name
+                category_name=category_dto.name,
+                item_type=item_type
             )
             media = MediaService.convert_to_media(category_dto.media_id, caption)
         else:
             caption = caption.format(
-                category_name=get_text(language, BotEntity.COMMON, "all")
+                category_name=get_text(language, BotEntity.COMMON, "all"),
+                item_type=item_type
             )
             media = InputMediaPhoto(media=get_bot_photo_id(), caption=caption)
         return media, kb_builder
@@ -76,15 +85,22 @@ class SubcategoryService:
     async def get_select_quantity_buttons(callback_data: AllCategoriesCallback,
                                           session: AsyncSession,
                                           language: Language) -> tuple[InputMediaPhoto |
-                                                                          InputMediaAnimation |
-                                                                          InputMediaVideo, InlineKeyboardBuilder]:
-        item_dto = await ItemRepository.get_single(callback_data.category_id, callback_data.subcategory_id, session)
+                                                                       InputMediaAnimation |
+                                                                       InputMediaVideo, InlineKeyboardBuilder]:
+        item_dto = await ItemRepository.get_single(callback_data.item_type, callback_data.category_id,
+                                                   callback_data.subcategory_id, session)
         subcategory_dto = await SubcategoryRepository.get_by_id(callback_data.subcategory_id, session)
         category_dto = await CategoryRepository.get_by_id(callback_data.category_id, session)
-        available_qty = await ItemRepository.get_available_qty(category_id=callback_data.category_id,
+        available_qty = await ItemRepository.get_available_qty(item_type=callback_data.item_type,
+                                                               category_id=callback_data.category_id,
                                                                subcategory_id=callback_data.subcategory_id,
                                                                session=session)
+        if callback_data.item_type:
+            item_type = callback_data.item_type.get_localized(language)
+        else:
+            item_type = get_text(language, BotEntity.COMMON, "all")
         caption = get_text(language, BotEntity.USER, "select_quantity").format(
+            item_type=item_type,
             category_name=category_dto.name,
             subcategory_name=subcategory_dto.name,
             price=item_dto.price,
@@ -95,9 +111,10 @@ class SubcategoryService:
         kb_builder = InlineKeyboardBuilder()
         for i in range(1, 11):
             kb_builder.button(text=str(i), callback_data=AllCategoriesCallback.create(
-                callback_data.level + 1,
-                item_dto.category_id,
-                item_dto.subcategory_id,
+                level=callback_data.level + 1,
+                item_type=item_dto.item_type,
+                category_id=item_dto.category_id,
+                subcategory_id=item_dto.subcategory_id,
                 quantity=i
             ))
         kb_builder.adjust(3)
@@ -110,10 +127,12 @@ class SubcategoryService:
                                       session: AsyncSession | Session,
                                       language: Language) -> tuple[
         str, InlineKeyboardBuilder]:
-        item = await ItemRepository.get_single(callback_data.category_id, callback_data.subcategory_id, session)
+        item = await ItemRepository.get_single(callback_data.item_type, callback_data.category_id,
+                                               callback_data.subcategory_id, session)
         category = await CategoryRepository.get_by_id(callback_data.category_id, session)
         subcategory = await SubcategoryRepository.get_by_id(callback_data.subcategory_id, session)
         message_text = get_text(language, BotEntity.USER, "buy_confirmation").format(
+            item_type=callback_data.item_type.get_localized(language),
             category_name=category.name,
             subcategory_name=subcategory.name,
             price=item.price,
@@ -124,16 +143,19 @@ class SubcategoryService:
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(text=get_text(language, BotEntity.COMMON, "confirm"),
                           callback_data=AllCategoriesCallback.create(
-                              callback_data.level + 1,
-                              callback_data.category_id,
-                              callback_data.subcategory_id,
+                              level=callback_data.level + 1,
+                              item_type=callback_data.item_type,
+                              category_id=callback_data.category_id,
+                              subcategory_id=callback_data.subcategory_id,
                               quantity=callback_data.quantity,
                               confirmation=True
                           ))
         kb_builder.button(text=get_text(language, BotEntity.COMMON, "cancel"),
                           callback_data=AllCategoriesCallback.create(
-                              1,
-                              callback_data.category_id
+                              level=2,
+                              item_type=callback_data.item_type,
+                              category_id=callback_data.category_id,
+                              subcategory_id=callback_data.subcategory_id
                           ))
         kb_builder.row(callback_data.get_back_button(language))
         return message_text, kb_builder

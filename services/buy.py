@@ -5,18 +5,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 import config
-from callbacks import MyProfileCallback
+from callbacks import MyProfileCallback, BuysManagementCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.entity_type import EntityType
+from enums.item_type import ItemType
 from enums.language import Language
 from enums.sort_property import SortProperty
+from enums.user_role import UserRole
 from handlers.common.common import get_filters_settings, add_sorting_buttons, add_pagination_buttons, add_search_button
 from models.buy import BuyDTO
 from repositories.buy import BuyRepository
 from repositories.buyItem import BuyItemRepository
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
+from repositories.shipping_option import ShippingOptionRepository
 from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
 from services.message import MessageService
@@ -61,16 +64,22 @@ class BuyService:
         subcategory = await SubcategoryRepository.get_by_id(items[0].subcategory_id, session)
         us_datetime_12h = buy.buy_datetime.strftime("%m/%d/%Y, %I:%M %p")
         msg_template = get_text(language, BotEntity.USER, "purchase_details")
-        msg = msg_template.format(
+        content_list = []
+        content_list.append(msg_template.format(
             category_name=category.name,
             subcategory_name=subcategory.name,
             currency_sym=config.CURRENCY.get_localized_symbol(),
             total_fiat_price=items[0].price * len(items),
             fiat_price=items[0].price,
             qty=len(items),
-            purchase_datetime=us_datetime_12h,
-            purchased_items=purchased_items_msg
-        )
+            purchase_datetime=us_datetime_12h
+        ))
+        has_physical = any(item.item_type == ItemType.PHYSICAL for item in items)
+        if has_physical is False:
+            content_list.append(get_text(language, BotEntity.USER, "purchase_details_items_section").format(
+                purchased_items=purchased_items_msg
+            ))
+        msg = "\n".join(content_list)
         kb_builder = InlineKeyboardBuilder()
         kb_builder.row(callback_data.get_back_button(language))
         if len(msg) > 1024:
@@ -84,7 +93,7 @@ class BuyService:
                 purchase_datetime=us_datetime_12h,
                 purchased_items=get_text(language, BotEntity.USER, "attached")
             )
-            purchased_items_msg=remove_html_tags(purchased_items_msg)
+            purchased_items_msg = remove_html_tags(purchased_items_msg)
             byte_array = bytearray(purchased_items_msg, 'utf-8')
             media = InputMediaDocument(media=BufferedInputFile(byte_array, f"Purchase#{buy.id}.txt"),
                                        caption=msg)
@@ -116,8 +125,23 @@ class BuyService:
                     qty=len(buyItem.item_ids)
                 ),
                 callback_data=callback_data.model_copy(update={"level": callback_data.level + 1,
-                                                               "buyItem_id": buyItem.id})
+                                                               "buyItem_id": buyItem.id,
+                                                               "user_role": callback_data.user_role})
             )
+        if callback_data.user_role == UserRole.ADMIN:
+            user = await UserRepository.get_user_entity(buy_dto.buyer_id, session)
+            kb_builder.button(
+                text=get_text(language, BotEntity.COMMON, "user"),
+                url=f"tg://user?id={user.telegram_id}"
+            )
+            if buy_dto.shipping_address and buy_dto.track_number is None:
+                kb_builder.button(
+                    text=get_text(language, BotEntity.ADMIN, "update_track_number"),
+                    callback_data=BuysManagementCallback.create(
+                        level=1,
+                        buy_id=buy_dto.id
+                    )
+                )
         kb_builder.adjust(1)
         kb_builder = await add_search_button(kb_builder, EntityType.SUBCATEGORY, callback_data, filters, language)
         kb_builder = await add_sorting_buttons(kb_builder, [SortProperty.NAME,
@@ -128,7 +152,24 @@ class BuyService:
                                                                                            filters,
                                                                                            session),
                                                   callback_data.get_back_button(language), language)
-        caption = get_text(language, BotEntity.USER, "purchase_history_pick_item")
+        content_list = []
+        sym = config.CURRENCY.get_localized_symbol()
+        content_list.append(get_text(language, BotEntity.USER, "purchase_history_msg_base").format(
+            buy_id=buy_dto.id,
+            buy_datetime=buy_dto.buy_datetime.strftime("%m/%d/%Y, %I:%M %p"),
+            currency_sym=sym,
+            fiat_amount=buy_dto.total_price,
+            discount_amount=buy_dto.discount
+        ))
+        if buy_dto.shipping_address:
+            shipping_option = await ShippingOptionRepository.get_by_id(buy_dto.shipping_option_id, session)
+            content_list.append(get_text(language, BotEntity.USER, "purchase_history_msg_physical").format(
+                track_number=buy_dto.track_number or "null",
+                shipping_address=buy_dto.shipping_address,
+                currency_sym=sym,
+                shipping_option=shipping_option.name
+            ))
+        caption = "\n\n".join(content_list)
         bot_photo_id = get_bot_photo_id()
         media = InputMediaPhoto(media=bot_photo_id, caption=caption)
         return media, kb_builder

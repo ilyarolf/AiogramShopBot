@@ -11,6 +11,7 @@ from enums.sort_property import SortProperty
 from models.buyItem import BuyItem, BuyItemDTO
 from models.item import Item
 from models.subcategory import Subcategory
+from utils.utils import calculate_max_page
 
 
 class BuyItemRepository:
@@ -96,10 +97,7 @@ class BuyItemRepository:
         stmt = select(func.count()).select_from(sub_stmt)
         maximum_page = await session_execute(stmt, session)
         maximum_page = maximum_page.scalar_one()
-        if maximum_page % config.PAGE_ENTRIES == 0:
-            return maximum_page / config.PAGE_ENTRIES - 1
-        else:
-            return math.trunc(maximum_page / config.PAGE_ENTRIES)
+        return calculate_max_page(maximum_page)
 
     @staticmethod
     async def get_by_id(buyItem_id: int, session: AsyncSession) -> BuyItemDTO:

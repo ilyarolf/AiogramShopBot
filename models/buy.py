@@ -1,11 +1,12 @@
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, Float, DateTime, Boolean, ForeignKey, func, CheckConstraint
+from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey, func, CheckConstraint, Enum, String
 from sqlalchemy.orm import relationship
 
 import config
 from enums.bot_entity import BotEntity
+from enums.buy_status import BuyStatus
 from enums.language import Language
 from models.base import Base
 from utils.utils import get_text
@@ -19,9 +20,12 @@ class Buy(Base):
     buyer = relationship('User', backref='buys')
     total_price = Column(Float, nullable=False)
     buy_datetime = Column(DateTime, default=func.now())
-    is_refunded = Column(Boolean, default=False)
+    status = Column(Enum(BuyStatus), nullable=False)
     coupon_id = Column(Integer, ForeignKey('coupons.id'), nullable=True)
     discount = Column(Float, nullable=False, default=0.0)
+    shipping_address = Column(String, nullable=True)
+    track_number = Column(String, nullable=True)
+    shipping_option_id = Column(Integer, ForeignKey('shipping_options.id'), nullable=True)
 
     __table_args__ = (
         CheckConstraint('quantity > 0', name='check_quantity_positive'),
@@ -34,9 +38,12 @@ class BuyDTO(BaseModel):
     buyer_id: int | None = None
     total_price: float | None = None
     buy_datetime: datetime | None = None
-    is_refunded: bool | None = None
+    status: BuyStatus = BuyStatus.PAID
     coupon_id: int | None = None
     discount: float = 0.0
+    shipping_address: str | None = None
+    track_number: str | None = None
+    shipping_option_id: int | None
 
     @staticmethod
     def get_chart_text(language: Language) -> tuple[str, str]:

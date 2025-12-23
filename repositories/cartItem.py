@@ -8,6 +8,7 @@ import config
 from db import session_flush, session_execute
 from models.cart import Cart, CartDTO
 from models.cartItem import CartItemDTO, CartItem
+from utils.utils import calculate_max_page
 
 
 class CartItemRepository:
@@ -37,10 +38,7 @@ class CartItemRepository:
         stmt = select(func.count()).select_from(sub_stmt)
         max_page = await session_execute(stmt, session)
         max_page = max_page.scalar_one()
-        if max_page % config.PAGE_ENTRIES == 0:
-            return max_page / config.PAGE_ENTRIES - 1
-        else:
-            return math.trunc(max_page / config.PAGE_ENTRIES)
+        return calculate_max_page(max_page)
 
     @staticmethod
     async def get_all_by_user_id(user_id: int, session: AsyncSession | Session) -> list[CartItemDTO]:

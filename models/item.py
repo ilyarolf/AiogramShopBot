@@ -1,20 +1,18 @@
-from datetime import datetime
-
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, CheckConstraint
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, CheckConstraint, Enum
 
+from enums.item_type import ItemType
 from models.base import Base
 
 
-# Item is a unique good which can only be sold once
 class Item(Base):
     __tablename__ = 'items'
 
     id = Column(Integer, primary_key=True, unique=True)
+    item_type = Column(Enum(ItemType), nullable=False)
     category_id = Column(Integer, ForeignKey("categories.id", ondelete="CASCADE"), nullable=False)
     subcategory_id = Column(Integer, ForeignKey("subcategories.id", ondelete="CASCADE"), nullable=False)
-    private_data = Column(String, nullable=False, unique=False)
+    private_data = Column(String, nullable=True, unique=False)
     price = Column(Float, nullable=False)
     is_sold = Column(Boolean, nullable=False, default=False)
     is_new = Column(Boolean, nullable=False, default=True)
@@ -27,6 +25,7 @@ class Item(Base):
 
 class ItemDTO(BaseModel):
     id: int | None = None
+    item_type: ItemType | None = None
     category_id: int | None = None
     category_name: str | None = None
     subcategory_id: int | None = None

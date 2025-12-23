@@ -5,22 +5,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 import config
-from callbacks import MyProfileCallback
+from callbacks import MyProfileCallback, AdminMenuCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
-from enums.entity_type import EntityType
 from enums.keyboard_button import KeyboardButton
 from enums.language import Language
 from enums.sort_property import SortProperty
-from handlers.common.common import add_pagination_buttons, add_sorting_buttons, get_filters_settings, add_search_button
+from enums.user_role import UserRole
+from handlers.common.common import add_pagination_buttons, add_sorting_buttons, get_filters_settings
 from models.user import User, UserDTO
 from repositories.button_media import ButtonMediaRepository
 from repositories.buy import BuyRepository
-from repositories.buyItem import BuyItemRepository
 from repositories.cart import CartRepository
-from repositories.item import ItemRepository
-from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
 from services.media import MediaService
 from utils.utils import get_text
@@ -89,15 +86,21 @@ class UserService:
         return msg_text, kb_builder
 
     @staticmethod
-    async def get_purchase_history_buttons(telegram_id: int,
+    async def get_purchase_history_buttons(telegram_id: int | None,
                                            callback_data: MyProfileCallback | None,
                                            state: FSMContext,
                                            session: AsyncSession,
                                            language: Language) -> tuple[str, InlineKeyboardBuilder]:
         callback_data = callback_data or MyProfileCallback.create(level=3)
-        user = await UserRepository.get_by_tgid(telegram_id, session)
+        user_id = None
+        if callback_data.user_role == UserRole.ADMIN:
+            back_button = AdminMenuCallback.create(0).get_back_button(language, 0)
+        else:
+            user = await UserRepository.get_by_tgid(telegram_id, session)
+            user_id = user.id
+            back_button = callback_data.get_back_button(language, 0)
         sort_pairs, _ = await get_filters_settings(state, callback_data)
-        buys = await BuyRepository.get_by_buyer_id(sort_pairs, user.id, callback_data.page, session)
+        buys = await BuyRepository.get_by_buyer_id(sort_pairs, user_id, callback_data.page, session)
         kb_builder = InlineKeyboardBuilder()
         for buy in buys:
             kb_builder.button(text=get_text(language, BotEntity.USER, "purchase_history_item").format(
@@ -106,19 +109,23 @@ class UserService:
                 currency_sym=config.CURRENCY.get_localized_symbol()),
                 callback_data=MyProfileCallback.create(
                     level=callback_data.level + 1,
-                    buy_id=buy.id
+                    buy_id=buy.id,
+                    user_role=callback_data.user_role
                 ))
         kb_builder.adjust(1)
         kb_builder = await add_sorting_buttons(kb_builder, [SortProperty.TOTAL_PRICE,
                                                             SortProperty.BUY_DATETIME],
                                                callback_data, sort_pairs, language)
         kb_builder = await add_pagination_buttons(kb_builder, callback_data,
-                                                  BuyRepository.get_max_page_purchase_history(user.id, session),
-                                                  callback_data.get_back_button(language, 0), language)
-        if len(kb_builder.as_markup().inline_keyboard) > 1:
-            return get_text(language, BotEntity.USER, "purchases"), kb_builder
+                                                  BuyRepository.get_max_page_purchase_history(user_id, session),
+                                                  back_button, language)
+        if len(kb_builder.as_markup().inline_keyboard) > 1 and callback_data.user_role == UserRole.USER:
+            caption = get_text(language, BotEntity.USER, "purchases")
+        elif len(kb_builder.as_markup().inline_keyboard) > 1 and callback_data.user_role == UserRole.ADMIN:
+            caption = get_text(language, BotEntity.ADMIN, "pick_purchase")
         else:
-            return get_text(language, BotEntity.USER, "no_purchases"), kb_builder
+            caption = get_text(language, BotEntity.USER, "no_purchases")
+        return caption, kb_builder
 
     @staticmethod
     async def edit_language(telegram_id: int,

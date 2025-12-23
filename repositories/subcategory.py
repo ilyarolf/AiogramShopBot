@@ -6,18 +6,20 @@ from sqlalchemy.orm import Session
 
 import config
 from db import session_execute, session_flush
+from enums.item_type import ItemType
 from enums.sort_order import SortOrder
 from enums.sort_property import SortProperty
 from models.category import Category
 from models.item import Item, ItemDTO
 from models.subcategory import Subcategory, SubcategoryDTO
-from utils.utils import get_bot_photo_id
+from utils.utils import get_bot_photo_id, calculate_max_page
 
 
 class SubcategoryRepository:
     @staticmethod
     async def get_paginated_by_category_id(sort_pairs: dict[str, int],
                                            filters: list[str],
+                                           item_type: ItemType | None,
                                            category_id: int | None, page: int,
                                            session: AsyncSession) -> list[ItemDTO]:
         sort_methods = []
@@ -31,12 +33,15 @@ class SubcategoryRepository:
         conditions = [
             Item.is_sold == False
         ]
+        if item_type:
+            conditions.append(Item.item_type == item_type)
         if category_id:
             conditions.append(Item.category_id == category_id)
         if filters:
             filter_conditions = [Subcategory.name.icontains(name) for name in filters]
             conditions.append(or_(*filter_conditions))
-        stmt = (select(Item.category_id,
+        stmt = (select(Item.item_type,
+                       Item.category_id,
                        Item.subcategory_id,
                        Item.description,
                        Item.price,
@@ -70,10 +75,7 @@ class SubcategoryRepository:
         stmt = select(func.count()).select_from(subquery)
         maximum_page = await session_execute(stmt, session)
         maximum_page = maximum_page.scalar_one()
-        if maximum_page % config.PAGE_ENTRIES == 0:
-            return maximum_page / config.PAGE_ENTRIES - 1
-        else:
-            return math.trunc(maximum_page / config.PAGE_ENTRIES)
+        return calculate_max_page(maximum_page)
 
     @staticmethod
     async def get_by_id(subcategory_id: int, session: Session | AsyncSession) -> SubcategoryDTO:
@@ -113,16 +115,13 @@ class SubcategoryRepository:
         unique_categories_subquery = (
             select(Subcategory.id)
             .join(Item, Item.subcategory_id == Subcategory.id)
-            .filter(Item.is_sold == 0)
+            .filter(Item.is_sold == False)
             .distinct()
         ).alias('unique_categories')
         stmt = select(func.count()).select_from(unique_categories_subquery)
         max_page = await session_execute(stmt, session)
         max_page = max_page.scalar_one()
-        if max_page % config.PAGE_ENTRIES == 0:
-            return max_page / config.PAGE_ENTRIES - 1
-        else:
-            return math.trunc(max_page / config.PAGE_ENTRIES)
+        return calculate_max_page(max_page)
 
     @staticmethod
     async def get_or_create(subcategory_name: str, session: AsyncSession) -> SubcategoryDTO:
