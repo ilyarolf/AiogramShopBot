@@ -190,7 +190,7 @@
     "banned": "<b>Your account has been banned.</b>",
     "digital": "💾 Digital",
     "physical": "🏷️ Physical",
-    "review": "<b>Verified Purchase</b>\n⚙\uFE0F Item type: <code>{item_type}</code>\n\uD83D\uDDC2\uFE0F Category: <code>{category_name}</code>\n\uD83D\uDCE6 Subcategory: <code>{subcategory_name}</code>\n\uD83D\uDCB8 Price paid: <code>{currency_sym}{price:.2f}</code>\nRating: {rating_stars}\nCustomer Review: {review_text}",
+    "review_single": "<b>Verified Purchase</b>\n⚙\uFE0F Item type: <code>{item_type}</code>\n\uD83D\uDDC2\uFE0F Category: <code>{category_name}</code>\n\uD83D\uDCE6 Subcategory: <code>{subcategory_name}</code>\n\uD83D\uDCB8 Price paid: <code>{currency_sym}{price:.2f}</code>\nRating: {rating_stars}\nCustomer Review: {review_text}",
     "paid": "Paid",
     "shipped": "Shipped",
     "delivered": "Delivered",
