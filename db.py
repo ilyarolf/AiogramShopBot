@@ -30,6 +30,7 @@ from models.deposit import Deposit
 from models.button_media import ButtonMedia
 from models.payment import Payment
 from models.coupon import Coupon
+from models.shipping_option import ShippingOption
 
 
 if config.DB_ENCRYPTION:

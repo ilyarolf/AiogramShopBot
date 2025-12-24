@@ -10,13 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 import config
-from callbacks import MyProfileCallback
+from callbacks import MyProfileCallback, ReviewManagementCallback
 from config import ADMIN_ID_LIST, TOKEN
 from enums.bot_entity import BotEntity
 from enums.language import Language
 from enums.user_role import UserRole
 from models.buy import RefundDTO, BuyDTO
 from models.payment import ProcessingPaymentDTO, TablePaymentDTO
+from models.review import ReviewDTO
 from models.user import UserDTO
 from models.withdrawal import WithdrawalDTO
 from repositories.buyItem import BuyItemRepository
@@ -229,4 +230,25 @@ class NotificationService:
          for tx_id in withdraw_dto.txIdList]
         msg_text = get_text(Language.EN, BotEntity.ADMIN, "transaction_broadcasted")
         kb_builder.adjust(1)
+        await NotificationService.send_to_admins(msg_text, kb_builder.as_markup())
+
+    @staticmethod
+    async def new_review_published(review_dto: ReviewDTO, session: AsyncSession):
+        kb_builder = InlineKeyboardBuilder()
+        buyItem_dto = await BuyItemRepository.get_by_id(review_dto.buyItem_id, session)
+        item_dto = await ItemRepository.get_by_id(buyItem_dto.item_ids[0], session)
+        subcategory_dto = await SubcategoryRepository.get_by_id(item_dto.subcategory_id, session)
+        kb_builder.button(
+            text=get_text(Language.EN, BotEntity.USER, "review").format(
+                subcategory_name=subcategory_dto.name
+            ),
+            callback_data=ReviewManagementCallback.create(
+                level=6,
+                review_id=review_dto.id,
+                buy_id=buyItem_dto.buy_id,
+                buyItem_id=review_dto.buyItem_id,
+                user_role=UserRole.ADMIN
+            )
+        )
+        msg_text = get_text(Language.EN, BotEntity.ADMIN, "review_notification")
         await NotificationService.send_to_admins(msg_text, kb_builder.as_markup())

@@ -8,7 +8,7 @@ from models.base import Base
 class ButtonMedia(Base):
     __tablename__ = "buttons_media"
 
-    id = Column(Integer, primary_key=True, unique=True)
+    id = Column(Integer, primary_key=True)
     media_id = Column(String, nullable=False)
     button = Column(Enum(KeyboardButton), unique=True)
 

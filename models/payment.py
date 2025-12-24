@@ -10,7 +10,7 @@ from models.base import Base
 
 class Payment(Base):
     __tablename__ = 'payments'
-    id = Column(Integer, primary_key=True, unique=True)
+    id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     processing_payment_id = Column(Integer, nullable=False)
     message_id = Column(Integer, nullable=False)

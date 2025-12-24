@@ -15,7 +15,7 @@ from utils.utils import get_text
 class Buy(Base):
     __tablename__ = 'buys'
 
-    id = Column(Integer, primary_key=True, unique=True)
+    id = Column(Integer, primary_key=True)
     buyer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     buyer = relationship('User', backref='buys')
     total_price = Column(Float, nullable=False)

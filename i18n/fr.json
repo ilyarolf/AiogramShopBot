@@ -129,7 +129,13 @@
     "add_items_item_type": "🗂️ <b>Veuillez envoyer le type d'article:\nExemple: <code>PHYSICAL</code> ou <code>DIGITAL</code></b>",
     "add_items_private_data_physical": "<b>ℹ️ Veuillez envoyer la quantité d'articles que vous souhaitez vendre:</b>",
     "add_items_json_msg": "📄 <b>Envoyez un fichier .json avec de nouveaux articles ou tapez \"cancel\" pour annuler.</b>\nExemple de contenu de fichier:\n<pre><code class=\"language-json\">[\n  {\n    \"item_type\": \"Physical\",\n    \"category\": \"Catégorie#1\",\n    \"subcategory\": \"Sous-catégorie#1\",\n    \"price\": 50,\n    \"description\": \"Description d'exemple\",\n    \"private_data\": null\n  },\n  {\n    \"item_type\": \"Digital\",\n    \"category\": \"Catégorie#2\",\n    \"subcategory\": \"Sous-catégorie#2\",\n    \"price\": 100,\n    \"description\": \"Description d'exemple\",\n    \"private_data\": \"Données privées d'exemple\"\n  }\n]\n</code></pre>",
-    "add_items_txt_msg": "📄 <b>Envoyez un fichier .txt avec de nouveaux articles ou tapez \"cancel\" pour annuler.</b>\nExemple de contenu de fichier:\n<pre><code class=\"language-txt\">PHYSICAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;null\nPHYSICAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;null\nPHYSICAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;null\nPHYSICAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;null\nDIGITAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;DONNEES_PRIVEES#5\nDIGITAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;DONNEES_PRIVEES#6\nDIGITAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;DONNEES_PRIVEES#7\nDIGITAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;DONNEES_PRIVEES#8</code></pre>"
+    "add_items_txt_msg": "📄 <b>Envoyez un fichier .txt avec de nouveaux articles ou tapez \"cancel\" pour annuler.</b>\nExemple de contenu de fichier:\n<pre><code class=\"language-txt\">PHYSICAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;null\nPHYSICAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;null\nPHYSICAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;null\nPHYSICAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;null\nDIGITAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;DONNEES_PRIVEES#5\nDIGITAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;DONNEES_PRIVEES#6\nDIGITAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;DONNEES_PRIVEES#7\nDIGITAL;CATEGORIE#1;SOUS_CATEGORIE#1;DESCRIPTION#1;50.0;DONNEES_PRIVEES#8</code></pre>",
+    "review_notification": "⭐ Un nouvel avis a été publié.",
+    "remove_review_text": "📝 Supprimer le texte de l'avis",
+    "remove_review_image": "🖼 Supprimer l'image de l'avis",
+    "remove_review_text_confirmation": "❓ <b>Êtes-vous sûr de vouloir supprimer le texte de l'avis?</b>",
+    "remove_review_image_confirmation": "❓ <b>Êtes-vous sûr de vouloir supprimer l'image de l'avis?</b>",
+    "reviews_management": "⭐ Gestion des avis"
   },
   "common": {
     "back_button": "⬅️ Retour",
@@ -183,7 +189,13 @@
     "coupon": "🎟️ J’ai un coupon",
     "banned": "<b>Votre compte a été banni.</b>",
     "digital": "💾 Numérique",
-    "physical": "🏷️ Physique"
+    "physical": "🏷️ Physique",
+    "review_single": "<b>Achat vérifié</b>\n⚙️ Type d'article: <code>{item_type}</code>\n🗃️ Catégorie: <code>{category_name}</code>\n📦 Sous-catégorie: <code>{subcategory_name}</code>\n💰 Prix payé: <code>{currency_sym}{price:.2f}</code>\nNote: {rating_stars}\nAvis client: {review_text}",
+    "paid": "Payé",
+    "shipped": "Expédié",
+    "delivered": "Livré",
+    "completed": "Terminé",
+    "refunded": "Remboursé"
   },
   "user": {
     "all_categories": "🗂️ Toutes les catégories",
@@ -241,7 +253,7 @@
     "edit_language": "<b>🌍 Choisir la langue:</b>",
     "edit_language_confirmation": "<b>🌍 Êtes-vous sûr de vouloir changer la langue de <i>{current_language}</i> à <i>{update_language}</i>?</b>",
     "language_edited_successfully": "<b>🌍 Langue modifiée avec succès!</b>\n🔄 Actualisez votre clavier de réponse avec la commande \"/start\".",
-      "attached": "Joint",
+    "attached": "Joint",
     "buy_confirmation": "<b>⚙️ Type d'article: <code>{item_type}</code>\n🗃️ Catégorie: <code>{category_name}</code>\n📦 Sous-catégorie: <code>{subcategory_name}</code>\n💰 Prix: <code>{currency_sym}{price:.2f}</code>\n✍️ Description: <i>{description}</i>\n🔢 Quantité: <code>{quantity}</code> pcs.\nPrix total: <code>{currency_sym}{total_price:.2f}</code></b>",
     "select_quantity": "<b>⚙️ Type d'article: <code>{item_type}</code>\n🗂️ Catégorie: <code>{category_name}</code>\n📦 Sous-catégorie: <code>{subcategory_name}</code>\n💸 Prix: <code>{currency_sym}{price:.2f}</code>\n✍️ Description: <i>{description}</i>\n🔢 Quantité disponible: <code>{quantity}</code> pcs.\n🔢 Choisir la quantité:</b>",
     "pick_category": "<b>⚙️ Type d'article: <code>{item_type}</code>\n🗂️ Choisir la catégorie:</b>",
@@ -258,11 +270,20 @@
     "cart_total_discount": "💸 Remise totale du panier: <code>{currency_sym}{cart_total_discount:.2f}</code>",
     "cart_total_with_discount": "💸 Prix total du panier après remise: <code>{currency_sym}{cart_total_final:.2f}</code>",
     "checkout_cart": "\n🛒 Procéder au paiement du panier?",
-    "purchase_history_msg_base": "🔷 ID Achat: <code>{buy_id}</code>\n📅 Date/heure d'achat: <code>{buy_datetime}</code>\n💵 Prix en fiat payé: <code>{currency_sym}{fiat_amount:.2f}</code>\n🎟️ Remise: <code>{currency_sym}{discount_amount:.2F}</code>",
     "purchase_history_msg_physical": "📮 Numéro de suivi: <code>{track_number}</code>\n📬 Adresse d'expédition: <code>{shipping_address}</code>\n🚚 Option d'expédition: <code>{shipping_option}</code>",
     "track_number_updated_notification": "⚠️ Le numéro de suivi pour votre achat avec ID: <code>{buy_id}</code> a été mis à jour.",
     "purchase_completed": "🛍️ Votre achat a été complété avec succès!",
     "purchase_details_items_section": "Articles:\n{purchased_items}",
-    "purchase_details": "🛒 Détails de l'achat\n\nCatégorie: {category_name}\nSous-catégorie: {subcategory_name}\nPrix payé: {currency_sym}{total_fiat_price:.2f}\nPrix par article: {currency_sym}{fiat_price:.2f}\nQuantité: {qty} pcs\nDate d'achat: {purchase_datetime}"
+    "purchase_details": "🛒 Détails de l'achat\n\nCatégorie: {category_name}\nSous-catégorie: {subcategory_name}\nPrix payé: {currency_sym}{total_fiat_price:.2f}\nPrix par article: {currency_sym}{fiat_price:.2f}\nQuantité: {qty} pcs\nDate d'achat: {purchase_datetime}",
+    "review": "⭐ Avis {subcategory_name}",
+    "select_rating": "⭐ Sélectionner la note:",
+    "review_text_request": "📝 Écrire un avis (jusqu'à 512 caractères, optionnel):",
+    "review_image_request": "📷 Ajouter une photo (optionnel):",
+    "review_text_is_not_provided": "❌ Texte de l'avis non fourni",
+    "review_text_is_not_safe": "🔓 Votre texte d'avis ne semble pas sécurisé, veuillez renvoyer le texte (optionnel):",
+    "review_successfully_published": "⭐ L'avis a été publié avec succès",
+    "review_button": "⭐ Acheté: {subcategory_name} | Payé: {currency_sym}{price:.2f}",
+    "reviews": "⭐ Avis",
+    "purchase_history_msg_base": "🔷 ID Achat: <code>{buy_id}</code>\n📅 Date/heure d'achat: <code>{buy_datetime}</code>\n💵 Prix en fiat payé: <code>{currency_sym}{fiat_amount:.2f}</code>\n🎟️ Remise: <code>{currency_sym}{discount_amount:.2F}</code>\n🟡 Statut: {status}"
   }
 }

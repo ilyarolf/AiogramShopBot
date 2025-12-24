@@ -7,7 +7,7 @@ from models.base import Base
 class ShippingOption(Base):
     __tablename__ = "shipping_options"
 
-    id = Column(Integer, primary_key=True, unique=True)
+    id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False, unique=True)
     price = Column(Float, nullable=False)
     is_disabled = Column(Boolean, default=False)

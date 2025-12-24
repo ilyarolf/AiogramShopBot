@@ -25,6 +25,7 @@ from utils.utils import get_text
 
 class BaseCallback(CallbackData, prefix="base"):
     level: int
+    page: int = 0
 
     def get_back_button(self, language: Language, lvl: int | None = None):
         cb_copy = self.__copy__()
@@ -49,7 +50,6 @@ class AllCategoriesCallback(BaseCallback, SortingCallback, prefix="all_categorie
     subcategory_id: int | None
     quantity: int | None
     confirmation: bool
-    page: int
 
     @staticmethod
     def create(level: int,
@@ -77,7 +77,6 @@ class MyProfileCallback(BaseCallback, SortingCallback, prefix="my_profile"):
     language: Language | None = None
     user_role: UserRole = UserRole.USER
     confirmation: bool = False
-    page: int
 
     @staticmethod
     def create(level: int,
@@ -102,7 +101,6 @@ class MyProfileCallback(BaseCallback, SortingCallback, prefix="my_profile"):
 
 
 class CartCallback(BaseCallback, prefix="cart"):
-    page: int
     cart_id: int
     cart_item_id: int
     cart_action: CartAction | None
@@ -129,23 +127,22 @@ class CartCallback(BaseCallback, prefix="cart"):
 class AdminMenuCallback(BaseCallback, prefix="admin_menu"):
 
     @staticmethod
-    def create(level: int):
-        return AdminMenuCallback(level=level)
+    def create(level: int, page: int = 0):
+        return AdminMenuCallback(level=level, page=page)
 
 
 class AnnouncementCallback(BaseCallback, prefix="announcement"):
     announcement_type: AnnouncementType | None
 
     @staticmethod
-    def create(level: int, announcement_type: AnnouncementType | None = None):
-        return AnnouncementCallback(level=level, announcement_type=announcement_type)
+    def create(level: int, announcement_type: AnnouncementType | None = None, page: int = 0):
+        return AnnouncementCallback(level=level, announcement_type=announcement_type, page=page)
 
 
 class InventoryManagementCallback(BaseCallback, SortingCallback, prefix="inventory_management"):
     add_type: AddType | None
     entity_type: EntityType | None
     entity_id: int | None
-    page: int
     confirmation: bool
 
     @staticmethod
@@ -173,7 +170,6 @@ class UserManagementCallback(BaseCallback, SortingCallback, prefix="user_managem
     operation: UserManagementOperation | None
     user_id: int | None
     buy_id: int | None
-    page: int
     confirmation: bool
 
     @staticmethod
@@ -200,7 +196,6 @@ class UserManagementCallback(BaseCallback, SortingCallback, prefix="user_managem
 class StatisticsCallback(BaseCallback, prefix="statistics"):
     statistics_entity: StatisticsEntity | None
     timedelta: StatisticsTimeDelta | None
-    page: int
 
     @staticmethod
     def create(level: int, statistics_entity: StatisticsEntity | None = None,
@@ -220,7 +215,6 @@ class MediaManagementCallback(BaseCallback, SortingCallback, prefix="media"):
     entity_type: EntityType | None
     entity_id: int | None = None
     keyboard_button: KeyboardButton | None = None
-    page: int
 
     @staticmethod
     def create(level: int, entity_type: EntityType | None = None,
@@ -243,7 +237,6 @@ class CouponManagementCallback(BaseCallback, prefix="coupons"):
     coupon_id: int | None = None
     coupon_type: CouponType | None = None
     number_of_uses: CouponNumberOfUses | None = None
-    page: int
     confirmation: bool
 
     @staticmethod
@@ -261,7 +254,6 @@ class ShippingManagementCallback(BaseCallback, prefix="shipping_management"):
     shipping_management_action: ShippingManagementAction | None = None
     shipping_type_property: ShippingOptionProperty | None = None
     shipping_id: int | None = None
-    page: int
     confirmation: bool
 
     @staticmethod
@@ -280,7 +272,6 @@ class BuysManagementCallback(BaseCallback, prefix="buys"):
     buy_id: int | None = None
     item_type: ItemType | None = None
     buy_status: BuyStatus | None = None
-    page: int
     confirmation: bool = False
 
     @staticmethod
@@ -294,3 +285,30 @@ class BuysManagementCallback(BaseCallback, prefix="buys"):
                                       item_type=item_type,
                                       buy_status=buy_status, confirmation=confirmation,
                                       page=page)
+
+
+class ReviewManagementCallback(BaseCallback, prefix="reviews"):
+    review_id: int | None = None
+    buy_id: int | None = None
+    buyItem_id: int | None = None
+    rating: int | None = None
+    user_role: UserRole = UserRole.USER
+    confirmation: bool = False
+
+    @staticmethod
+    def create(level: int,
+               review_id: int | None = None,
+               buy_id: int | None = None,
+               buyItem_id: int | None = None,
+               rating: int | None = None,
+               user_role: UserRole = UserRole.USER,
+               page: int = 0,
+               confirmation: bool = False):
+        return ReviewManagementCallback(level=level,
+                                        review_id=review_id,
+                                        buy_id=buy_id,
+                                        buyItem_id=buyItem_id,
+                                        rating=rating,
+                                        user_role=user_role,
+                                        page=page,
+                                        confirmation=confirmation)

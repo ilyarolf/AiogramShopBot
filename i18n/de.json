@@ -129,7 +129,13 @@
     "add_items_item_type": "🗂️ <b>Bitte senden Sie den Artikeltyp:\nBeispiel: <code>PHYSICAL</code> oder <code>DIGITAL</code></b>",
     "add_items_private_data_physical": "<b>ℹ️ Bitte senden Sie die Anzahl der Artikel, die Sie verkaufen möchten:</b>",
     "add_items_json_msg": "📄 <b>Senden Sie eine .json-Datei mit neuen Artikeln oder geben Sie \"cancel\" zum Abbrechen ein.</b>\nDatei-Inhaltsbeispiel:\n<pre><code class=\"language-json\">[\n  {\n    \"item_type\": \"Physical\",\n    \"category\": \"Kategorie#1\",\n    \"subcategory\": \"Unterkategorie#1\",\n    \"price\": 50,\n    \"description\": \"Beispielbeschreibung\",\n    \"private_data\": null\n  },\n  {\n    \"item_type\": \"Digital\",\n    \"category\": \"Kategorie#2\",\n    \"subcategory\": \"Unterkategorie#2\",\n    \"price\": 100,\n    \"description\": \"Beispielbeschreibung\",\n    \"private_data\": \"Beispiel private Daten\"\n  }\n]\n</code></pre>",
-    "add_items_txt_msg": "📄 <b>Senden Sie eine .txt-Datei mit neuen Artikeln oder geben Sie \"cancel\" zum Abbrechen ein.</b>\nDatei-Inhaltsbeispiel:\n<pre><code class=\"language-txt\">PHYSICAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;null\nPHYSICAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;null\nPHYSICAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;null\nPHYSICAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;null\nDIGITAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;PRIVATE_DATEN#5\nDIGITAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;PRIVATE_DATEN#6\nDIGITAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;PRIVATE_DATEN#7\nDIGITAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;PRIVATE_DATEN#8</code></pre>"
+    "add_items_txt_msg": "📄 <b>Senden Sie eine .txt-Datei mit neuen Artikeln oder geben Sie \"cancel\" zum Abbrechen ein.</b>\nDatei-Inhaltsbeispiel:\n<pre><code class=\"language-txt\">PHYSICAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;null\nPHYSICAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;null\nPHYSICAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;null\nPHYSICAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;null\nDIGITAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;PRIVATE_DATEN#5\nDIGITAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;PRIVATE_DATEN#6\nDIGITAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;PRIVATE_DATEN#7\nDIGITAL;KATEGORIE#1;UNTERKATEGORIE#1;BESCHREIBUNG#1;50.0;PRIVATE_DATEN#8</code></pre>",
+    "review_notification": "⭐ Eine neue Bewertung wurde veröffentlicht.",
+    "remove_review_text": "📝 Bewertungstext entfernen",
+    "remove_review_image": "🖼 Bewertungsbild entfernen",
+    "remove_review_text_confirmation": "❓ <b>Sind Sie sicher, dass Sie den Bewertungstext entfernen möchten?</b>",
+    "remove_review_image_confirmation": "❓ <b>Sind Sie sicher, dass Sie das Bewertungsbild entfernen möchten?</b>",
+    "reviews_management": "⭐ Bewertungsverwaltung"
   },
   "common": {
     "back_button": "⬅️ Zurück",
@@ -183,7 +189,13 @@
     "coupon": "🎟️ Ich habe einen Gutschein",
     "banned": "<b>Ihr Konto wurde gesperrt.</b>",
     "digital": "💾 Digital",
-    "physical": "🏷️ Physisch"
+    "physical": "🏷️ Physisch",
+    "review_single": "<b>Verifizierter Kauf</b>\n⚙️ Artikeltyp: <code>{item_type}</code>\n🗃️ Kategorie: <code>{category_name}</code>\n📦 Unterkategorie: <code>{subcategory_name}</code>\n💰 Bezahlter Preis: <code>{currency_sym}{price:.2f}</code>\nBewertung: {rating_stars}\nKundenbewertung: {review_text}",
+    "paid": "Bezahlt",
+    "shipped": "Versendet",
+    "delivered": "Geliefert",
+    "completed": "Abgeschlossen",
+    "refunded": "Erstattet"
   },
   "user": {
     "all_categories": "🗂️ Alle Kategorien",
@@ -258,11 +270,20 @@
     "cart_total_discount": "💸 Warenkorb Gesamtrabatt: <code>{currency_sym}{cart_total_discount:.2f}</code>",
     "cart_total_with_discount": "💸 Warenkorb Gesamtpreis nach Rabatt: <code>{currency_sym}{cart_total_final:.2f}</code>",
     "checkout_cart": "\n🛒 Warenkorb zur Kasse?",
-    "purchase_history_msg_base": "🔷 Kauf ID: <code>{buy_id}</code>\n📅 Kaufdatum/-zeit: <code>{buy_datetime}</code>\n💵 Bezahlter Fiat-Preis: <code>{currency_sym}{fiat_amount:.2f}</code>\n🎟️ Rabatt: <code>{currency_sym}{discount_amount:.2F}</code>",
     "purchase_history_msg_physical": "📮 Sendungsnummer: <code>{track_number}</code>\n📬 Lieferadresse: <code>{shipping_address}</code>\n🚚 Versandoption: <code>{shipping_option}</code>",
     "track_number_updated_notification": "⚠️ Die Sendungsnummer für Ihren Kauf mit ID: <code>{buy_id}</code> wurde aktualisiert.",
     "purchase_completed": "🛍️ Ihr Kauf wurde erfolgreich abgeschlossen!",
     "purchase_details_items_section": "Artikel:\n{purchased_items}",
-    "purchase_details": "🛒 Kaufdetails\n\nKategorie: {category_name}\nUnterkategorie: {subcategory_name}\nBezahlter Preis: {currency_sym}{total_fiat_price:.2f}\nPreis pro Artikel: {currency_sym}{fiat_price:.2f}\nMenge: {qty} Stk\nKaufdatum: {purchase_datetime}"
+    "purchase_details": "🛒 Kaufdetails\n\nKategorie: {category_name}\nUnterkategorie: {subcategory_name}\nBezahlter Preis: {currency_sym}{total_fiat_price:.2f}\nPreis pro Artikel: {currency_sym}{fiat_price:.2f}\nMenge: {qty} Stk\nKaufdatum: {purchase_datetime}",
+    "review": "⭐ Bewertung {subcategory_name}",
+    "select_rating": "⭐ Bewertung wählen:",
+    "review_text_request": "📝 Bewertungstext schreiben (bis zu 512 Zeichen, optional):",
+    "review_image_request": "📷 Foto hinzufügen (optional):",
+    "review_text_is_not_provided": "❌ Bewertungstext nicht angegeben",
+    "review_text_is_not_safe": "🔓 Ihr Bewertungstext scheint nicht sicher zu sein, bitte senden Sie den Text erneut (optional):",
+    "review_successfully_published": "⭐ Die Bewertung wurde erfolgreich veröffentlicht",
+    "review_button": "⭐ Gekauft: {subcategory_name} | Bezahlt: {currency_sym}{price:.2f}",
+    "reviews": "⭐ Bewertungen",
+    "purchase_history_msg_base": "🔷 Kauf ID: <code>{buy_id}</code>\n📅 Kaufdatum/-zeit: <code>{buy_datetime}</code>\n💵 Bezahlter Fiat-Preis: <code>{currency_sym}{fiat_amount:.2f}</code>\n🎟️ Rabatt: <code>{currency_sym}{discount_amount:.2F}</code>\n🟡 Status: {status}"
   }
 }

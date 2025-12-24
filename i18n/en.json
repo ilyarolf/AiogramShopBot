@@ -43,8 +43,8 @@
     "new_users_msg": "👥 <b>{users_count} new users in the last {timedelta}:</b>",
     "notification_new_deposit_id": "💰 New deposit by user with ID {telegram_id} for {currency_sym}{deposit_amount_fiat:.2f} with \uD83D\uDCB0 {value} {crypto_name}",
     "notification_new_deposit_username": "💰 New deposit by user with username @{username} for {currency_sym}{deposit_amount_fiat:.2f} with \uD83D\uDCB0 {value} {crypto_name}",
-    "notification_purchase_with_tgid": "🛒 A new purchase by user @{username} for the amount of <code>{currency_sym}{total_price:.2f}</code> for the purchase of a {quantity} pcs {category_name} {subcategory_name}.",
-    "notification_purchase_with_username": "🛒 A new purchase by user with ID:{telegram_id} for the amount of <code>{currency_sym}{total_price:.2f}</code> for the purchase of a {quantity} pcs {category_name} {subcategory_name}.",
+    "notification_purchase_with_username": "🛒 A new purchase by user @{username} for the amount of <code>{currency_sym}{total_price:.2f}</code> for the purchase of a {quantity} pcs {category_name} {subcategory_name}.",
+    "notification_purchase_with_tgid": "🛒 A new purchase by user with ID:{telegram_id} for the amount of <code>{currency_sym}{total_price:.2f}</code> for the purchase of a {quantity} pcs {category_name} {subcategory_name}.",
     "notification_seed": "🔑 Seed: <code>{seed}</code>",
     "pick_statistics_entity": "📊 Pick statistics entity",
     "refund_by_tgid": "🆔 ID:{telegram_id}|{currency_sym}{total_price:.2f}|{subcategory}",
@@ -129,7 +129,13 @@
     "add_items_item_type": "🗂️ <b>Please send item type:\nExample: <code>PHYSICAL</code> or <code>DIGITAL</code></b>",
     "add_items_private_data_physical": "<b>ℹ️ Please send the quantity of items you want to sell:</b>",
     "add_items_json_msg": "📄 <b>Send .json file with new items or type \"cancel\" for cancel.</b>\nFile content example:\n<pre><code class=\"language-json\">[\n  {\n    \"item_type\": \"Physical\",\n    \"category\": \"Category#1\",\n    \"subcategory\": \"Subcategory#1\",\n    \"price\": 50,\n    \"description\": \"Mocked description\",\n    \"private_data\": null\n  },\n  {\n    \"item_type\": \"Digital\",\n    \"category\": \"Category#2\",\n    \"subcategory\": \"Subcategory#2\",\n    \"price\": 100,\n    \"description\": \"Mocked description\",\n    \"private_data\": \"Mocked private data\"\n  }\n]\n</code></pre>",
-    "add_items_txt_msg": "📄 <b>Send .txt file with new items or type \"cancel\" for cancel.</b>\nFile content example:\n<pre><code class=\"language-txt\">PHYSICAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;null\nPHYSICAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;null\nPHYSICAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;null\nPHYSICAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;null\nDIGITAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#5\nDIGITAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#6\nDIGITAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#7\nDIGITAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#8</code></pre>"
+    "add_items_txt_msg": "📄 <b>Send .txt file with new items or type \"cancel\" for cancel.</b>\nFile content example:\n<pre><code class=\"language-txt\">PHYSICAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;null\nPHYSICAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;null\nPHYSICAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;null\nPHYSICAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;null\nDIGITAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#5\nDIGITAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#6\nDIGITAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#7\nDIGITAL;CATEGORY#1;SUBCATEGORY#1;DESCRIPTION#1;50.0;PRIVATE_DATA#8</code></pre>",
+    "review_notification": "⭐ A new review has been published.",
+    "remove_review_text": "📝 Remove review text",
+    "remove_review_image": "🖼 Remove review image",
+    "remove_review_text_confirmation": "❓ <b>Are you sure you want to remove the review text?</b>",
+    "remove_review_image_confirmation": "❓ <b>Are you sure you want to remove the review image?</b>",
+    "reviews_management": "⭐ Reviews Management"
   },
   "common": {
     "back_button": "⬅️ Back",
@@ -183,7 +189,13 @@
     "coupon": "🎟️ I have a coupon",
     "banned": "<b>Your account has been banned.</b>",
     "digital": "💾 Digital",
-    "physical": "🏷️ Physical"
+    "physical": "🏷️ Physical",
+    "review_single": "<b>Verified Purchase</b>\n⚙\uFE0F Item type: <code>{item_type}</code>\n\uD83D\uDDC2\uFE0F Category: <code>{category_name}</code>\n\uD83D\uDCE6 Subcategory: <code>{subcategory_name}</code>\n\uD83D\uDCB8 Price paid: <code>{currency_sym}{price:.2f}</code>\nRating: {rating_stars}\nCustomer Review: {review_text}",
+    "paid": "Paid",
+    "shipped": "Shipped",
+    "delivered": "Delivered",
+    "completed": "Completed",
+    "refunded": "Refunded"
   },
   "user": {
     "all_categories": "🗂️ All categories",
@@ -258,11 +270,20 @@
     "cart_total_discount": "💸 Cart total discount: <code>{currency_sym}{cart_total_discount:.2f}</code>",
     "cart_total_with_discount": "💸 Cart total price after discount: <code>{currency_sym}{cart_total_final:.2f}</code>",
     "checkout_cart": "\n🛒 Checkout cart?",
-    "purchase_history_msg_base": "\uD83D\uDD39 Buy ID: <code>{buy_id}</code>\n\uD83D\uDCC5 Buy datetime: <code>{buy_datetime}</code>\n\uD83D\uDCB5 Fiat price paid: <code>{currency_sym}{fiat_amount:.2f}</code>\n\uD83C\uDFF7\uFE0F Discount: <code>{currency_sym}{discount_amount:.2F}</code>",
     "purchase_history_msg_physical": "\uD83D\uDCE1 Track number: <code>{track_number}</code>\n\uD83D\uDCCD Shipping address: <code>{shipping_address}</code>\n\uD83D\uDE9A Shipping option: <code>{shipping_option}</code>",
     "track_number_updated_notification": "⚠\uFE0FThe tracking number for your purchase with ID: <code>{buy_id}</code> has been updated.",
     "purchase_completed": "🛍️ Your purchase has been successfully completed!",
     "purchase_details_items_section": "Items:\n{purchased_items}",
-    "purchase_details": "🛒 Purchase Details\n\nCategory: {category_name}\nSubcategory: {subcategory_name}\nPrice Paid: {currency_sym}{total_fiat_price:.2f}\nPrice per item: {currency_sym}{fiat_price:.2f}\nQty: {qty} pcs\nDate of Purchase: {purchase_datetime}"
+    "purchase_details": "🛒 Purchase Details\n\nCategory: {category_name}\nSubcategory: {subcategory_name}\nPrice Paid: {currency_sym}{total_fiat_price:.2f}\nPrice per item: {currency_sym}{fiat_price:.2f}\nQty: {qty} pcs\nDate of Purchase: {purchase_datetime}",
+    "review": "⭐ Review {subcategory_name}",
+    "select_rating": "⭐ Select Rating:",
+    "review_text_request": "📝 Write Review up to 512 characters (optional):",
+    "review_image_request": "📷 Add Photo (optional):",
+    "review_text_is_not_provided": "❌ Review text is not provided",
+    "review_text_is_not_safe": "🔓 Your review text does not look secure, please send the text again (optional):",
+    "review_successfully_published": "⭐ The review was published successfully",
+    "review_button": "⭐ Purchased: {subcategory_name} | Paid: {currency_sym}{price:.2f}",
+    "reviews": "⭐ Reviews",
+    "purchase_history_msg_base": "\uD83D\uDD39 Buy ID: <code>{buy_id}</code>\n\uD83D\uDCC5 Buy datetime: <code>{buy_datetime}</code>\n\uD83D\uDCB5 Fiat price paid: <code>{currency_sym}{fiat_amount:.2f}</code>\n\uD83C\uDFF7\uFE0F Discount: <code>{currency_sym}{discount_amount:.2F}</code>\n🟡 Status: {status}"
   }
 }
