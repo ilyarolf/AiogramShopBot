@@ -54,8 +54,18 @@ class UserRepository:
 
     @staticmethod
     async def get_user_entity(user_entity: int | str, session: Session | AsyncSession) -> UserDTO | None:
-        stmt = select(User).where(or_(User.telegram_id == user_entity, User.telegram_username == user_entity,
-                                      User.id == user_entity))
+        try:
+            entity_like_int = int(user_entity)
+        except ValueError:
+            entity_like_int = None
+
+        stmt = select(User).where(
+            or_(
+                User.telegram_id == entity_like_int if entity_like_int is not None else False,
+                User.telegram_username == user_entity,
+                User.id == entity_like_int if entity_like_int is not None else False
+            )
+        )
         user = await session_execute(stmt, session)
         user = user.scalar()
         if user is None:

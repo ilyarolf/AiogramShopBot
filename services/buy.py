@@ -5,9 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 import config
-from callbacks import MyProfileCallback, BuysManagementCallback
+from callbacks import MyProfileCallback, BuysManagementCallback, ReviewManagementCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
+from enums.buy_status import BuyStatus
 from enums.entity_type import EntityType
 from enums.item_type import ItemType
 from enums.language import Language
@@ -19,6 +20,7 @@ from repositories.buy import BuyRepository
 from repositories.buyItem import BuyItemRepository
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
+from repositories.review import ReviewRepository
 from repositories.shipping_option import ShippingOptionRepository
 from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
@@ -81,6 +83,17 @@ class BuyService:
             ))
         msg = "\n".join(content_list)
         kb_builder = InlineKeyboardBuilder()
+        review_dto = await ReviewRepository.get_by_buy_item_id(callback_data.buyItem_id, session)
+        if callback_data.user_role == UserRole.USER and (
+                buy.status == BuyStatus.COMPLETED or has_physical is False) and review_dto is None:
+            kb_builder.button(
+                text=get_text(language, BotEntity.USER, "review").format(
+                    subcategory_name=subcategory.name
+                ),
+                callback_data=ReviewManagementCallback.create(level=1,
+                                                              buy_id=callback_data.buy_id,
+                                                              buyItem_id=callback_data.buyItem_id)
+            )
         kb_builder.row(callback_data.get_back_button(language))
         if len(msg) > 1024:
             msg = msg_template.format(
@@ -159,7 +172,8 @@ class BuyService:
             buy_datetime=buy_dto.buy_datetime.strftime("%m/%d/%Y, %I:%M %p"),
             currency_sym=sym,
             fiat_amount=buy_dto.total_price,
-            discount_amount=buy_dto.discount
+            discount_amount=buy_dto.discount,
+            status=buy_dto.status.get_localized(language)
         ))
         if buy_dto.shipping_address:
             shipping_option = await ShippingOptionRepository.get_by_id(buy_dto.shipping_option_id, session)

@@ -9,6 +9,7 @@ import config
 from callbacks import AllCategoriesCallback, CartCallback, MyProfileCallback
 from db import session_commit
 from enums.bot_entity import BotEntity
+from enums.buy_status import BuyStatus
 from enums.cart_action import CartAction
 from enums.coupon_type import CouponType
 from enums.item_type import ItemType
@@ -322,7 +323,8 @@ class CartService:
                              discount=total_discount_amount,
                              coupon_id=coupon_id,
                              shipping_address=state_data.get('shipping_address'),
-                             shipping_option_id=shipping_option.id if shipping_option else None)
+                             shipping_option_id=shipping_option.id if shipping_option else None,
+                             status=BuyStatus.PAID if shipping_option else BuyStatus.COMPLETED)
             buy_dto = await BuyRepository.create(buy_dto, session)
             for cart_item in cart_items:
                 purchased_items = await ItemRepository.get_purchased_items(cart_item.category_id,
