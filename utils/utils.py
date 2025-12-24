@@ -4,6 +4,8 @@ import math
 import os
 import re
 import urllib.request
+from pathlib import Path
+
 from pyngrok import ngrok
 
 import config
@@ -50,3 +52,79 @@ def calculate_max_page(records_qty: int):
         return records_qty / config.PAGE_ENTRIES - 1
     else:
         return math.trunc(records_qty / config.PAGE_ENTRIES)
+
+
+def extract_placeholders(text: str) -> set[str]:
+    PLACEHOLDER_RE = re.compile(r"\{([^{}]+)\}")
+    placeholders = set()
+    for match in PLACEHOLDER_RE.findall(text):
+        name = match.split(":", 1)[0]
+        placeholders.add(name)
+    return placeholders
+
+
+def load_json(path: Path) -> dict:
+    with path.open(encoding="utf-8") as f:
+        return json.load(f)
+
+
+def validate_i18n(reference_file: str = "en.json") -> None:
+    folder_path = Path("./i18n")
+    reference_path = folder_path / reference_file
+
+    if not reference_path.exists():
+        raise FileNotFoundError(f"Reference file not found: {reference_path}")
+
+    reference = load_json(reference_path)
+    errors = []
+
+    for file_path in folder_path.glob("*.json"):
+        if file_path.name == reference_file:
+            continue
+
+        data = load_json(file_path)
+
+        for section, ref_keys in reference.items():
+            if section not in data:
+                errors.append(
+                    f"[{file_path.name}] Missing section: '{section}'"
+                )
+                continue
+
+            for key, ref_value in ref_keys.items():
+                if key not in data[section]:
+                    errors.append(
+                        f"[{file_path.name}] Missing key: '{section}.{key}'"
+                    )
+                    continue
+
+                if not isinstance(ref_value, str) or not isinstance(
+                        data[section][key], str
+                ):
+                    continue
+
+                ref_placeholders = extract_placeholders(ref_value)
+                cur_placeholders = extract_placeholders(data[section][key])
+
+                missing = ref_placeholders - cur_placeholders
+                extra = cur_placeholders - ref_placeholders
+
+                if missing:
+                    errors.append(
+                        f"[{file_path.name}] "
+                        f"'{section}.{key}' missing placeholders: {sorted(missing)}"
+                    )
+
+                if extra:
+                    errors.append(
+                        f"[{file_path.name}] "
+                        f"'{section}.{key}' extra placeholders: {sorted(extra)}"
+                    )
+
+    if errors:
+        print("❌ Validation errors found:\n")
+        for error in errors:
+            print(error)
+        raise SystemExit(1)
+
+    print("✅ All localization files are valid")
