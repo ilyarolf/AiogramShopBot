@@ -144,7 +144,7 @@ class ReviewService:
             review_text = state_data.get("review_text") or get_text(language,
                                                                     BotEntity.USER, "review_text_is_not_provided")
 
-            caption = get_text(language, BotEntity.COMMON, "review").format(
+            caption = get_text(language, BotEntity.COMMON, "review_single").format(
                 item_type=item_dto.item_type.get_localized(language),
                 category_name=category.name,
                 subcategory_name=subcategory.name,
@@ -212,7 +212,7 @@ class ReviewService:
         )
         review_text = state_data.get("review_text") or get_text(language, BotEntity.USER,
                                                                 "review_text_is_not_provided")
-        caption = (get_text(language, BotEntity.COMMON, "review")
+        caption = (get_text(language, BotEntity.COMMON, "review_single")
                    .format(item_type=item_dto.item_type.get_localized(language),
                            category_name=category.name,
                            subcategory_name=subcategory.name,
@@ -306,7 +306,7 @@ class ReviewService:
         subcategory_dto = await SubcategoryRepository.get_by_id(item_dto.subcategory_id, session)
         kb_builder = InlineKeyboardBuilder()
         review_text = review.text or get_text(language, BotEntity.USER, "review_text_is_not_provided")
-        msg_text = (get_text(language, BotEntity.COMMON, "review")
+        msg_text = (get_text(language, BotEntity.COMMON, "review_single")
                     .format(item_type=item_dto.item_type.get_localized(language),
                             category_name=category_dto.name,
                             subcategory_name=subcategory_dto.name,
