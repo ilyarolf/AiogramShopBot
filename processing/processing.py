@@ -12,8 +12,8 @@ from models.deposit import DepositDTO
 from models.payment import ProcessingPaymentDTO
 from repositories.deposit import DepositRepository
 from repositories.payment import PaymentRepository
-from repositories.user import UserRepository
 from services.notification import NotificationService
+from services.referral import ReferralService
 
 processing_router = APIRouter(prefix=f"{config.WEBHOOK_PATH}cryptoprocessing")
 
@@ -40,18 +40,18 @@ async def fetch_crypto_event(payment_dto: ProcessingPaymentDTO, request: Request
             user = await PaymentRepository.get_user_by_payment_id(payment_dto.id, session)
             table_payment_dto = await PaymentRepository.get_by_processing_payment_id(payment_dto.id, session)
             if payment_dto.isPaid is True and table_payment_dto.is_paid is False:
-                user.top_up_amount += payment_dto.fiatAmount
-                await UserRepository.update(user, session)
                 table_payment_dto.is_paid = True
                 await PaymentRepository.update(table_payment_dto, session)
                 await DepositRepository.create(DepositDTO(
                     user_id=user.id,
                     network=payment_dto.cryptoCurrency,
                     amount=int(payment_dto.cryptoAmount * pow(10, payment_dto.cryptoCurrency.get_decimals())),
+                    fiat_amount=payment_dto.fiatAmount,
                     deposit_datetime=datetime.datetime.now()
                 ), session)
+                referral_bonus_dto = await ReferralService.apply_referral_logic(payment_dto, user, session)
                 await session_commit(session)
-                await NotificationService.new_deposit(payment_dto, user, table_payment_dto)
+                await NotificationService.new_deposit(payment_dto, user, table_payment_dto, referral_bonus_dto)
                 if config.CRYPTO_FORWARDING_MODE:
                     withdraw_dto = await CryptoApiWrapper.withdrawal(
                         payment_dto.cryptoCurrency,

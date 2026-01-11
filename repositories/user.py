@@ -94,3 +94,9 @@ class UserRepository:
         users = await session_execute(stmt, session)
         users = users.scalar_one()
         return calculate_max_page(users)
+
+    @staticmethod
+    async def get_by_referrer_code(referrer_code: str, session: AsyncSession) -> UserDTO | None:
+        stmt = select(User).where(User.referral_code == referrer_code)
+        user_dto = await session_execute(stmt, session)
+        return user_dto.scalar_one_or_none()

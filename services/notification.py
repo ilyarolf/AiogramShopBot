@@ -17,6 +17,7 @@ from enums.language import Language
 from enums.user_role import UserRole
 from models.buy import RefundDTO, BuyDTO
 from models.payment import ProcessingPaymentDTO, TablePaymentDTO
+from models.referral import ReferralBonusDTO
 from models.review import ReviewDTO
 from models.user import UserDTO
 from models.withdrawal import WithdrawalDTO
@@ -99,41 +100,59 @@ class NotificationService:
         await NotificationService.send_to_user(msg, user_dto.telegram_id)
 
     @staticmethod
-    async def new_deposit(payment_dto: ProcessingPaymentDTO, user_dto: UserDTO, table_payment_dto: TablePaymentDTO):
-        user_button = await NotificationService.make_user_button(user_dto)
+    async def new_deposit(payment_dto: ProcessingPaymentDTO,
+                          user_dto: UserDTO,
+                          table_payment_dto: TablePaymentDTO,
+                          referral_bonus_dto: ReferralBonusDTO):
+        admin_kb_markup = await NotificationService.make_user_button(user_dto)
+        currency_text = config.CURRENCY.get_localized_text()
+        currency_sym = config.CURRENCY.get_localized_symbol()
         user_notification_msg = get_text(user_dto.language, BotEntity.USER, "notification_new_deposit").format(
             fiat_amount=payment_dto.fiatAmount,
-            currency_text=config.CURRENCY.get_localized_text(),
-            payment_id=payment_dto.id
+            currency_text=currency_text,
+            payment_id=payment_dto.id,
+            referral_bonus=referral_bonus_dto.applied_referral_bonus,
         )
         await NotificationService.send_to_user(user_notification_msg, user_dto.telegram_id)
+        if referral_bonus_dto.referrer_user_dto:
+            referrer_notification_msg = get_text(Language.EN, BotEntity.USER, "referrer_notification").format(
+                currency_sym=currency_sym,
+                referrer_bonus=referral_bonus_dto.applied_referrer_bonus
+            )
+            admin_kb_markup = InlineKeyboardBuilder().from_markup(admin_kb_markup)
+            admin_kb_markup.button(
+                text=get_text(Language.EN, BotEntity.COMMON, "referrer"),
+                url=f"tg://user?id={referral_bonus_dto.referrer_user_dto.telegram_id}"
+            )
+            admin_kb_markup.adjust(1)
+            admin_kb_markup = admin_kb_markup.as_markup()
+            await NotificationService.send_to_user(referrer_notification_msg,
+                                                   referral_bonus_dto.referrer_user_dto.telegram_id)
         edited_payment_message = get_text(user_dto.language, BotEntity.USER, "top_up_balance_msg").format(
             crypto_name=payment_dto.cryptoCurrency.name,
             addr="***",
             crypto_amount=payment_dto.cryptoAmount,
             fiat_amount=payment_dto.fiatAmount,
-            currency_text=config.CURRENCY.get_localized_text(),
+            currency_text=currency_text,
             status=get_text(user_dto.language, BotEntity.USER, "status_paid")
         )
         await NotificationService.edit_caption(edited_payment_message, table_payment_dto.message_id,
                                                user_dto.telegram_id)
         if user_dto.telegram_username:
-            message = get_text(Language.EN, BotEntity.ADMIN, "notification_new_deposit_username").format(
-                username=user_dto.telegram_username,
-                deposit_amount_fiat=payment_dto.fiatAmount,
-                currency_sym=config.CURRENCY.get_localized_symbol(),
-                value=payment_dto.cryptoAmount,
-                crypto_name=payment_dto.cryptoCurrency.name
-            )
+            message = get_text(Language.EN, BotEntity.ADMIN, "notification_new_deposit_username")
         else:
-            message = get_text(Language.EN, BotEntity.ADMIN, "notification_new_deposit_id").format(
-                telegram_id=user_dto.telegram_id,
-                deposit_amount_fiat=payment_dto.fiatAmount,
-                currency_sym=config.CURRENCY.get_localized_symbol(),
-                value=payment_dto.cryptoAmount,
-                crypto_name=payment_dto.cryptoCurrency.name
-            )
-        await NotificationService.send_to_admins(message, user_button)
+            message = get_text(Language.EN, BotEntity.ADMIN, "notification_new_deposit_id")
+        message = message.format(
+            username=user_dto.telegram_username,
+            telegram_id=user_dto.telegram_id,
+            deposit_amount_fiat=payment_dto.fiatAmount,
+            currency_sym=currency_sym,
+            value=payment_dto.cryptoAmount,
+            crypto_name=payment_dto.cryptoCurrency.name,
+            referral_bonus=referral_bonus_dto.applied_referral_bonus,
+            referrer_bonus=referral_bonus_dto.applied_referrer_bonus
+        )
+        await NotificationService.send_to_admins(message, admin_kb_markup)
 
     @staticmethod
     async def new_buy(buy: BuyDTO, user: UserDTO, session: AsyncSession | Session):
