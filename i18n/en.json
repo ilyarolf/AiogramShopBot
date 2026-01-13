@@ -41,8 +41,6 @@
     "inventory_management": "📦 Inventory Management",
     "make_refund": "↩️ Make Refund",
     "new_users_msg": "👥 <b>{users_count} new users in the last {timedelta}:</b>",
-    "notification_new_deposit_id": "💰 New deposit by user with ID {telegram_id} for {currency_sym}{deposit_amount_fiat:.2f} with \uD83D\uDCB0 {value} {crypto_name}",
-    "notification_new_deposit_username": "💰 New deposit by user with username @{username} for {currency_sym}{deposit_amount_fiat:.2f} with \uD83D\uDCB0 {value} {crypto_name}",
     "notification_purchase_with_username": "🛒 A new purchase by user @{username} for the amount of <code>{currency_sym}{total_price:.2f}</code> for the purchase of a {quantity} pcs {category_name} {subcategory_name}.",
     "notification_purchase_with_tgid": "🛒 A new purchase by user with ID:{telegram_id} for the amount of <code>{currency_sym}{total_price:.2f}</code> for the purchase of a {quantity} pcs {category_name} {subcategory_name}.",
     "notification_seed": "🔑 Seed: <code>{seed}</code>",
@@ -135,7 +133,9 @@
     "remove_review_image": "🖼 Remove review image",
     "remove_review_text_confirmation": "❓ <b>Are you sure you want to remove the review text?</b>",
     "remove_review_image_confirmation": "❓ <b>Are you sure you want to remove the review image?</b>",
-    "reviews_management": "⭐ Reviews Management"
+    "reviews_management": "⭐ Reviews Management",
+    "notification_new_deposit_id": "💰 New deposit by user with ID {telegram_id} for {currency_sym}{deposit_amount_fiat:.2f} with \uD83D\uDCB0 {value} {crypto_name}\n💰 Referral bonus: {currency_sym}{referral_bonus:.2f}\n💰 Referrer bonus: {currency_sym}{referrer_bonus:.2f}",
+    "notification_new_deposit_username": "💰 New deposit by user with username @{username} for {currency_sym}{deposit_amount_fiat:.2f} with \uD83D\uDCB0 {value} {crypto_name}\n💰 Referral bonus: {currency_sym}{referral_bonus:.2f}\n💰 Referrer bonus: {currency_sym}{referrer_bonus:.2f}"
   },
   "common": {
     "back_button": "⬅️ Back",
@@ -195,7 +195,8 @@
     "shipped": "Shipped",
     "delivered": "Delivered",
     "completed": "Completed",
-    "refunded": "Refunded"
+    "refunded": "Refunded",
+    "referrer": "👤 Referrer"
   },
   "user": {
     "all_categories": "🗂️ All categories",
@@ -241,7 +242,6 @@
     "delete_cart_item_confirmation_text": "🗑 Item successfully removed from cart",
     "item_added_to_cart": "🛒 Item successfully added to cart",
     "loading": "⏳ Loading...",
-    "notification_new_deposit": "Your balance was successfully funded by {fiat_amount:.2f} {currency_text}.\nPayment ID {payment_id}.",
     "notification_payment_expired": "Your payment with ID {payment_id} has expired.",
     "status_pending": "\uD83D\uDFE1 Pending.",
     "status_paid": "\uD83D\uDFE2 Paid.",
@@ -284,6 +284,11 @@
     "review_successfully_published": "⭐ The review was published successfully",
     "review_button": "⭐ Purchased: {subcategory_name} | Paid: {currency_sym}{price:.2f}",
     "reviews": "⭐ Reviews",
-    "purchase_history_msg_base": "\uD83D\uDD39 Buy ID: <code>{buy_id}</code>\n\uD83D\uDCC5 Buy datetime: <code>{buy_datetime}</code>\n\uD83D\uDCB5 Fiat price paid: <code>{currency_sym}{fiat_amount:.2f}</code>\n\uD83C\uDFF7\uFE0F Discount: <code>{currency_sym}{discount_amount:.2F}</code>\n🟡 Status: {status}"
+    "purchase_history_msg_base": "\uD83D\uDD39 Buy ID: <code>{buy_id}</code>\n\uD83D\uDCC5 Buy datetime: <code>{buy_datetime}</code>\n\uD83D\uDCB5 Fiat price paid: <code>{currency_sym}{fiat_amount:.2f}</code>\n\uD83C\uDFF7\uFE0F Discount: <code>{currency_sym}{discount_amount:.2F}</code>\n🟡 Status: {status}",
+    "referrer_notification": "💰 You have been credited with a {currency_sym}{referrer_bonus:.2f} bonus for participating in the referral system.",
+    "notification_new_deposit": "💰 Your balance was successfully funded by {fiat_amount:.2f} {currency_text}.\n💰 Your bonus for participating in the referral system is: {referral_bonus:.2f} {currency_text}\nPayment ID {payment_id}.",
+    "referral_statistics_message": "<b>✨ Referral Program</b>\n\nInvite friends and earn bonus balance inside the bot.\nBonuses can be used to purchase digital and physical products.\n\n<b>\uD83D\uDD13 Referral Access</b>\nYour total deposits: <b>{currency_sym}{user_total_deposits:.2f}</b>  \nRequired to unlock referrals: <b>{currency_sym}{min_referrer_total_deposit:.2f}</b>\n\nStatus:\n<b>{referral_access_status}</b>\n\n<b>\uD83C\uDF81 What your friend gets</b>\n• <b>{referral_bonus_percent}%</b> bonus on each deposit  \n• Applies to the first <b>{referral_bonus_deposit_limit}</b> deposits  \n• Maximum bonus cap: <b>{referral_bonus_cap_percent}%</b> of their deposits  \n\n<b>\uD83D\uDCB0 What you get as a referrer</b>\n• <b>{referrer_bonus_percent}%</b> from each referral deposit  \n• Applies to the first <b>{referrer_bonus_deposit_limit}</b> deposits per referral  \n• Maximum bonus cap: <b>{referrer_bonus_cap_percent}%</b> per referral  \n\n<b>Global bonus cap:</b>  \nTotal bonuses (you + referral) will never exceed <b>{total_bonus_cap_percent}%</b> of referral deposits\n\n<b>\uD83D\uDCCA Your Referral Stats</b>\n\n\uD83D\uDC65 Referrals invited: <b>{referrals_count}</b>  \n\uD83C\uDF81 Bonuses earned as referral: <b>{currency_sym}{referral_bonus_earned:.2f}</b>  \n\uD83D\uDCB0 Bonuses earned as referrer: <b>{currency_sym}{referrer_bonus_earned:.2f}</b>",
+    "referral_code_section": "\n\n<b>\uD83D\uDD17 Your Referral Link</b>\nt.me/{bot_username}?start={referral_code}\nShare your link and grow together \uD83D\uDE80",
+    "referral_button": "✨ Referral System"
   }
 }

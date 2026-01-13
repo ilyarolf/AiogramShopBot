@@ -1,3 +1,5 @@
+import datetime
+
 from aiogram.fsm.context import FSMContext
 from aiogram.types import InputMediaPhoto, InputMediaVideo, InputMediaAnimation
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -26,10 +28,16 @@ from utils.utils import get_text
 class UserService:
 
     @staticmethod
-    async def create_if_not_exist(user_dto: UserDTO, session: AsyncSession | Session) -> None:
+    async def create_if_not_exist(user_dto: UserDTO,
+                                  referrer_code: str,
+                                  session: AsyncSession | Session) -> None:
         user = await UserRepository.get_by_tgid(user_dto.telegram_id, session)
         match user:
             case None:
+                referrer_user_dto = await UserRepository.get_by_referrer_code(referrer_code, session)
+                if referrer_user_dto:
+                    user_dto.referred_by_user_id = referrer_user_dto.id
+                    user_dto.referred_at = datetime.datetime.now(tz=datetime.timezone.utc)
                 user_id = await UserRepository.create(user_dto, session)
                 await CartRepository.get_or_create(user_id, session)
                 await session_commit(session)
@@ -56,6 +64,8 @@ class UserService:
                           callback_data=MyProfileCallback.create(level=1))
         kb_builder.button(text=get_text(language, BotEntity.USER, "purchase_history_button"),
                           callback_data=MyProfileCallback.create(level=3))
+        kb_builder.button(text=get_text(Language.EN, BotEntity.USER, "referral_button"),
+                          callback_data=MyProfileCallback.create(level=7))
         kb_builder.button(text=get_text(Language.EN, BotEntity.USER, "language"),
                           callback_data=MyProfileCallback.create(level=6))
         kb_builder.adjust(2)

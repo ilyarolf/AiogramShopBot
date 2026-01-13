@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel
-from sqlalchemy import Integer, Column, ForeignKey, BigInteger, DateTime, func, CheckConstraint, Enum
+from sqlalchemy import Integer, Column, ForeignKey, BigInteger, DateTime, func, CheckConstraint, Enum, Float
 
 import config
 from enums.bot_entity import BotEntity
@@ -18,9 +18,11 @@ class Deposit(Base):
     network = Column(Enum(Cryptocurrency), nullable=False)
     amount = Column(BigInteger, nullable=False)
     deposit_datetime = Column(DateTime, default=func.now())
+    fiat_amount = Column(Float, nullable=False)
 
     __table_args__ = (
         CheckConstraint('amount > 0', name='check_amount_positive'),
+        CheckConstraint('fiat_amount >= 0', name='check_fiat_amount'),
     )
 
 
@@ -30,6 +32,7 @@ class DepositDTO(BaseModel):
     network: Cryptocurrency | None = None
     amount: int | None = None
     deposit_datetime: datetime | None = None
+    fiat_amount: float | None = None
 
     @staticmethod
     def get_chart_text(language: Language) -> tuple[str, str]:

@@ -1,6 +1,6 @@
 import traceback
 from aiogram import types, F, Router
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandStart, CommandObject
 from aiogram.types import ErrorEvent, Message, BufferedInputFile, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,8 +33,9 @@ logging.basicConfig(level=logging.INFO)
 main_router = Router()
 
 
-@main_router.message(Command(commands=["start", "help"]))
-async def start(message: Message, session: AsyncSession, language: Language):
+@main_router.message(Command("help"))
+@main_router.message(CommandStart(deep_link=True))
+async def start(message: Message, command: CommandObject, session: AsyncSession, language: Language):
     all_categories_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "all_categories"))
     my_profile_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "my_profile"))
     faq_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "faq"))
@@ -47,7 +48,7 @@ async def start(message: Message, session: AsyncSession, language: Language):
         telegram_username=message.from_user.username,
         telegram_id=telegram_id,
         language=language
-    ), session)
+    ), command.args, session)
     keyboard = [[all_categories_button, my_profile_button], [faq_button, help_button],
                 [reviews_button],
                 [cart_button]]
