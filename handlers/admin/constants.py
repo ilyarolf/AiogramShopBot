@@ -28,6 +28,7 @@ class AnnouncementsConstants:
 
 
 class InventoryManagementStates(StatesGroup):
+    item_type = State()
     document = State()
     category = State()
     subcategory = State()

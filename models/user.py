@@ -1,8 +1,7 @@
 from datetime import datetime
-
 from pydantic import BaseModel
 from sqladmin import ModelView
-from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func, CheckConstraint, Enum
+from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func, CheckConstraint, Enum, ForeignKey
 from sqlalchemy.orm import relationship
 
 from enums.bot_entity import BotEntity
@@ -23,6 +22,21 @@ class User(Base):
     can_receive_messages = Column(Boolean, default=True)
     language = Column(Enum(Language), default=Language.EN, nullable=False)
     is_banned = Column(Boolean, default=False)
+    referral_code = Column(String(8), nullable=True, unique=True, index=True)
+    referred_by_user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
+    referred_at = Column(DateTime, nullable=True)
+    received_referral_bonuses = relationship(
+        "ReferralBonus",
+        foreign_keys="ReferralBonus.referral_user_id",
+        back_populates="referral_user_dto",
+        cascade="all, delete-orphan"
+    )
+    earned_referral_bonuses = relationship(
+        "ReferralBonus",
+        foreign_keys="ReferralBonus.referrer_user_id",
+        back_populates="referrer_user_dto",
+        cascade="all, delete-orphan"
+    )
     buys = relationship(
         "Buy",
         back_populates="buyer",
@@ -32,6 +46,7 @@ class User(Base):
     __table_args__ = (
         CheckConstraint('top_up_amount >= 0', name='check_top_up_amount_positive'),
         CheckConstraint('consume_records >= 0', name='check_consume_records_positive'),
+        CheckConstraint('referred_by_user_id != id', name='check_no_self_referral'),
     )
 
     def __repr__(self):
@@ -48,6 +63,9 @@ class UserDTO(BaseModel):
     can_receive_messages: bool | None = None
     language: Language = Language.EN
     is_banned: bool = False
+    referral_code: str | None = None
+    referred_by_user_id: int | None = None
+    referred_at: datetime | None = None
 
     @staticmethod
     def get_chart_text(language: Language) -> tuple[str, str]:

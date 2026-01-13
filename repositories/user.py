@@ -54,8 +54,18 @@ class UserRepository:
 
     @staticmethod
     async def get_user_entity(user_entity: int | str, session: Session | AsyncSession) -> UserDTO | None:
-        stmt = select(User).where(or_(User.telegram_id == user_entity, User.telegram_username == user_entity,
-                                      User.id == user_entity))
+        try:
+            entity_like_int = int(user_entity)
+        except ValueError:
+            entity_like_int = None
+
+        stmt = select(User).where(
+            or_(
+                User.telegram_id == entity_like_int if entity_like_int is not None else False,
+                User.telegram_username == user_entity,
+                User.id == entity_like_int if entity_like_int is not None else False
+            )
+        )
         user = await session_execute(stmt, session)
         user = user.scalar()
         if user is None:
@@ -84,3 +94,16 @@ class UserRepository:
         users = await session_execute(stmt, session)
         users = users.scalar_one()
         return calculate_max_page(users)
+
+    @staticmethod
+    async def get_by_referrer_code(referrer_code: str, session: AsyncSession) -> UserDTO | None:
+        stmt = select(User).where(User.referral_code == referrer_code)
+        user_dto = await session_execute(stmt, session)
+        return user_dto.scalar_one_or_none()
+
+    @staticmethod
+    async def get_referrals_qty_by_referrer_id(referrer_id: int, session: AsyncSession) -> int:
+        stmt = (select(func.coalesce(func.count(User.id), 0))
+                .where(User.referred_by_user_id == referrer_id))
+        referrals_qty = await session_execute(stmt, session)
+        return referrals_qty.scalar_one()

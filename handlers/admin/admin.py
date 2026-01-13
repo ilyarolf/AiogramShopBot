@@ -4,7 +4,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from callbacks import AdminMenuCallback, AnnouncementCallback, InventoryManagementCallback, \
     UserManagementCallback, StatisticsCallback, WalletCallback, MediaManagementCallback, CouponManagementCallback, \
-    ShippingManagementCallback, MyProfileCallback
+    ShippingManagementCallback, MyProfileCallback, ReviewManagementCallback
 from enums.bot_entity import BotEntity
 from enums.keyboard_button import KeyboardButton as KB
 from enums.language import Language
@@ -63,6 +63,9 @@ async def admin(**kwargs):
     kb_builder.button(text=get_text(language, BotEntity.ADMIN, "buys_management"),
                       callback_data=MyProfileCallback.create(level=3,
                                                              user_role=UserRole.ADMIN))
+    kb_builder.button(text=get_text(language, BotEntity.ADMIN, "reviews_management"),
+                      callback_data=ReviewManagementCallback.create(level=5,
+                                                                    user_role=UserRole.ADMIN))
     kb_builder.adjust(2)
     msg_text = get_text(language, BotEntity.ADMIN, "menu")
     if isinstance(message, Message):

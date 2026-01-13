@@ -30,6 +30,9 @@ from models.deposit import Deposit
 from models.button_media import ButtonMedia
 from models.payment import Payment
 from models.coupon import Coupon
+from models.shipping_option import ShippingOption
+from models.review import Review
+from models.referral import ReferralBonus
 
 
 if config.DB_ENCRYPTION:

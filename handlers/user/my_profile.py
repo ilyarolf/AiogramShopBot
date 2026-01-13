@@ -13,6 +13,7 @@ from handlers.user.constants import UserStates
 from services.buy import BuyService
 from services.notification import NotificationService
 from services.payment import PaymentService
+from services.referral import ReferralService
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter
 from utils.utils import get_text
@@ -126,6 +127,15 @@ async def edit_language(**kwargs):
     await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
 
 
+async def referral_system(**kwargs):
+    callback: CallbackQuery = kwargs.get("callback")
+    session: AsyncSession = kwargs.get("session")
+    callback_data: MyProfileCallback = kwargs.get("callback_data")
+    language: Language = kwargs.get("language")
+    msg, kb_builder = await ReferralService.view_statistics(callback, callback_data, session, language)
+    await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
+
+
 @my_profile_router.message(IsUserExistFilter(), F.text, StateFilter(UserStates.filter_purchase_history))
 async def receive_filter_message(message: Message, state: FSMContext, session: AsyncSession, language: Language):
     await state.update_data(filter=message.html_text)
@@ -149,6 +159,7 @@ async def navigate(callback: CallbackQuery,
         4: get_purchased_item,
         5: get_purchase,
         6: edit_language,
+        7: referral_system
     }
 
     current_level_function = levels[current_level]

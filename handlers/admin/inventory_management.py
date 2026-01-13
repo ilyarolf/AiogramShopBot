@@ -87,7 +87,8 @@ async def add_items_document(message: Message, state: FSMContext, session: Async
     await state.clear()
 
 
-@inventory_management.message(AdminIdFilter(), F.text, StateFilter(InventoryManagementStates.category,
+@inventory_management.message(AdminIdFilter(), F.text, StateFilter(InventoryManagementStates.item_type,
+                                                                   InventoryManagementStates.category,
                                                                    InventoryManagementStates.subcategory,
                                                                    InventoryManagementStates.price,
                                                                    InventoryManagementStates.description,

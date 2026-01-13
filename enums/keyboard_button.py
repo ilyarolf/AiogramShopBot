@@ -12,6 +12,7 @@ class KeyboardButton(Enum):
     MY_PROFILE = "MY_PROFILE"
     FAQ = "FAQ"
     HELP = "HELP"
+    REVIEWS = "REVIEWS"
     CART = "CART"
     ADMIN_MENU = "MENU"
 

@@ -1,6 +1,6 @@
 import traceback
 from aiogram import types, F, Router
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandStart, CommandObject
 from aiogram.types import ErrorEvent, Message, BufferedInputFile, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +11,7 @@ from bot import dp, main, redis
 from enums.bot_entity import BotEntity
 from enums.keyboard_button import KeyboardButton
 from enums.language import Language
+from handlers.common.review_management import review_management_router
 from middleware.database import DBSessionMiddleware
 from middleware.language import I18nMiddleware
 from middleware.throttling_middleware import ThrottlingMiddleware
@@ -23,6 +24,7 @@ from handlers.user.my_profile import my_profile_router
 from repositories.button_media import ButtonMediaRepository
 from services.media import MediaService
 from services.notification import NotificationService
+from services.review import ReviewService
 from services.user import UserService
 from utils.custom_filters import IsUserExistFilter, IsUserBannedFilter
 from utils.utils import get_bot_photo_id, get_text
@@ -31,21 +33,24 @@ logging.basicConfig(level=logging.INFO)
 main_router = Router()
 
 
-@main_router.message(Command(commands=["start", "help"]))
-async def start(message: Message, session: AsyncSession, language: Language):
+@main_router.message(Command("help"))
+@main_router.message(CommandStart(deep_link=True))
+async def start(message: Message, command: CommandObject, session: AsyncSession, language: Language):
     all_categories_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "all_categories"))
     my_profile_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "my_profile"))
     faq_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "faq"))
     help_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "help"))
     admin_menu_button = types.KeyboardButton(text=get_text(language, BotEntity.ADMIN, "menu"))
+    reviews_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "reviews"))
     cart_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "cart"))
     telegram_id = message.from_user.id
     await UserService.create_if_not_exist(UserDTO(
         telegram_username=message.from_user.username,
         telegram_id=telegram_id,
         language=language
-    ), session)
+    ), command.args, session)
     keyboard = [[all_categories_button, my_profile_button], [faq_button, help_button],
+                [reviews_button],
                 [cart_button]]
     if telegram_id in config.ADMIN_ID_LIST:
         keyboard.append([admin_menu_button])
@@ -74,6 +79,12 @@ async def support(message: Message, session: AsyncSession, language: Language):
     await NotificationService.answer_media(message, media)
 
 
+@main_router.message(F.text.in_(KeyboardButton.get_localized_set(KeyboardButton.REVIEWS)), IsUserExistFilter())
+async def support(message: Message, session: AsyncSession, language: Language):
+    media, kb_builder = await ReviewService.get_reviews_paginated(None, session, language)
+    await NotificationService.answer_media(message, media, reply_markup=kb_builder.as_markup())
+
+
 @main_router.error(F.update.message.as_("message"))
 async def error_handler(event: ErrorEvent, message: Message):
     await message.answer("Oops, something went wrong!")
@@ -93,7 +104,8 @@ users_routers = Router()
 users_routers.include_routers(
     all_categories_router,
     my_profile_router,
-    cart_router
+    cart_router,
+    review_management_router
 )
 users_routers.message.middleware(throttling_middleware)
 users_routers.callback_query.middleware(throttling_middleware)

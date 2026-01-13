@@ -72,3 +72,17 @@ class DepositRepository:
                 .where(Deposit.network == cryptocurrency.value)
                 .values(is_withdrawn=True))
         await session_execute(stmt, session)
+
+    @staticmethod
+    async def get_sum(user_id: int, session: AsyncSession) -> float:
+        stmt = (select(func.coalesce(func.sum(Deposit.fiat_amount), 0))
+                .where(Deposit.user_id == user_id))
+        deposits_sum = await session_execute(stmt, session)
+        return deposits_sum.scalar_one()
+
+    @staticmethod
+    async def get_deposits_qty_by_user_id(user_id: int, session: AsyncSession) -> int:
+        stmt = (select(func.coalesce(func.count(Deposit.id), 0))
+                .where(Deposit.user_id == user_id))
+        deposits_sum = await session_execute(stmt, session)
+        return deposits_sum.scalar_one()

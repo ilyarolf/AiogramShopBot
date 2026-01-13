@@ -27,6 +27,7 @@ from processing.processing import processing_router
 from repositories.button_media import ButtonMediaRepository
 from services.notification import NotificationService
 from services.wallet import WalletService
+from utils.utils import validate_i18n
 
 redis = Redis(host=config.REDIS_HOST, password=config.REDIS_PASSWORD)
 bot = Bot(config.TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
@@ -74,6 +75,7 @@ async def on_startup():
     bot_photo_id = photos.photos[0][-1].file_id
     with open("static/no_image.jpeg", "w") as f:
         f.write(bot_photo_id)
+    validate_i18n()
     await ButtonMediaRepository.init_buttons_media()
     if config.CRYPTO_FORWARDING_MODE:
         for cryptocurrency in Cryptocurrency:
