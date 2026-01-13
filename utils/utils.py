@@ -4,13 +4,18 @@ import math
 import os
 import re
 import urllib.request
+import datetime
 from pathlib import Path
 
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 from pyngrok import ngrok
 
 import config
 from enums.bot_entity import BotEntity
 from enums.language import Language
+
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
 def get_sslipio_external_url():
@@ -128,3 +133,25 @@ def validate_i18n(reference_file: str = "en.json") -> None:
         raise SystemExit(1)
 
     print("✅ All localization files are valid")
+
+
+def create_access_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=config.JWT_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, config.JWT_SECRET_KEY, algorithm=config.JWT_ALGORITHM)
+
+
+def decode_token(token: str) -> dict | None:
+    try:
+        return jwt.decode(token, config.JWT_SECRET_KEY, algorithms=[config.JWT_ALGORITHM])
+    except JWTError:
+        return None
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def hash_password(plain_password: str) -> str:
+    return pwd_context.hash(plain_password)

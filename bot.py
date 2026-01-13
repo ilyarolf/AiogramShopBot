@@ -12,6 +12,8 @@ import config
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from fastapi import FastAPI, Request, status, HTTPException
+
+from admin import authentication_backend
 from db import create_db_and_tables, engine
 import uvicorn
 from fastapi.responses import JSONResponse
@@ -33,7 +35,7 @@ redis = Redis(host=config.REDIS_HOST, password=config.REDIS_PASSWORD)
 bot = Bot(config.TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=RedisStorage(redis))
 app = FastAPI()
-admin = Admin(app, engine)
+admin = Admin(app=app, engine=engine, authentication_backend=authentication_backend)
 admin.add_model_view(UserAdmin)
 admin.add_model_view(BuyAdmin)
 admin.add_model_view(ShippingOptionAdmin)
