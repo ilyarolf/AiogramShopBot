@@ -42,6 +42,21 @@ class User(Base):
         back_populates="buyer",
         cascade="all, delete-orphan"
     )
+    deposits = relationship(
+        "Deposit",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    payments = relationship(
+        "Payment",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    cart = relationship(
+        "Cart",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         CheckConstraint('top_up_amount >= 0', name='check_top_up_amount_positive'),
@@ -50,7 +65,7 @@ class User(Base):
     )
 
     def __repr__(self):
-        return self.telegram_username or self.telegram_id
+        return f"@{self.telegram_username}" if self.telegram_username else f"{self.telegram_id}"
 
 
 class UserDTO(BaseModel):
@@ -74,4 +89,25 @@ class UserDTO(BaseModel):
 
 
 class UserAdmin(ModelView, model=User):
-    column_exclude_list = [User.buys]
+    column_exclude_list = [User.buys,
+                           User.deposits,
+                           User.earned_referral_bonuses,
+                           User.received_referral_bonuses,
+                           User.referred_by_user_id,
+                           User.payments,
+                           User.cart]
+    can_create = False
+    column_searchable_list = [User.telegram_username]
+    column_sortable_list = [User.id,
+                            User.telegram_username,
+                            User.telegram_id,
+                            User.top_up_amount,
+                            User.consume_records,
+                            User.registered_at,
+                            User.can_receive_messages,
+                            User.language,
+                            User.is_banned,
+                            User.registered_at,
+                            User.referred_at]
+    name_plural = "Users"
+    name = "User"

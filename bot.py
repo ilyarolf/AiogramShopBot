@@ -19,9 +19,14 @@ import uvicorn
 from fastapi.responses import JSONResponse
 from enums.cryptocurrency import Cryptocurrency
 from models.buy import BuyAdmin
+from models.buyItem import BuyItemAdmin
+from models.cart import CartAdmin
+from models.cartItem import CartItemAdmin
 from models.category import CategoryAdmin
 from models.coupon import CouponAdmin
+from models.deposit import DepositAdmin
 from models.item import ItemAdmin
+from models.payment import PaymentAdmin
 from models.shipping_option import ShippingOptionAdmin
 from models.subcategory import SubcategoryAdmin
 from models.user import UserAdmin
@@ -43,6 +48,11 @@ admin.add_model_view(CouponAdmin)
 admin.add_model_view(CategoryAdmin)
 admin.add_model_view(SubcategoryAdmin)
 admin.add_model_view(ItemAdmin)
+admin.add_model_view(DepositAdmin)
+admin.add_model_view(BuyItemAdmin)
+admin.add_model_view(PaymentAdmin)
+admin.add_model_view(CartAdmin)
+admin.add_model_view(CartItemAdmin)
 
 app.include_router(processing_router)
 

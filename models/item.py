@@ -21,6 +21,7 @@ class Item(Base):
     is_sold = Column(Boolean, nullable=False, default=False)
     is_new = Column(Boolean, nullable=False, default=True)
     description = Column(String, nullable=False)
+
     __table_args__ = (
         CheckConstraint('price > 0', name='check_price_positive'),
     )
@@ -45,3 +46,11 @@ class ItemDTO(BaseModel):
 
 class ItemAdmin(ModelView, model=Item):
     column_exclude_list = [Item.category_id, Item.subcategory_id]
+    column_formatters = {Item.private_data: lambda m, a: f"{m.private_data[:20]}..." if m.private_data else "",
+                         Item.description: lambda m, a: f"{m.description[:20]}..."}
+    column_searchable_list = [Item.private_data]
+    column_sortable_list = [Item.id,
+                            Item.item_type,
+                            Item.is_sold,
+                            Item.is_new,
+                            Item.price]

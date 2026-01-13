@@ -13,6 +13,7 @@ class Category(Base):
     name = Column(String, nullable=False, unique=True, index=True)
     media_id = Column(String, nullable=False)
     items = relationship("Item", back_populates="category")
+    cart_items = relationship("CartItem", back_populates="category")
 
     def __repr__(self):
         return self.name
@@ -26,3 +27,5 @@ class CategoryDTO(BaseModel):
 
 class CategoryAdmin(ModelView, model=Category):
     column_exclude_list = [Category.items, Category.media_id]
+    name = "Category"
+    name_plural = "Categories"

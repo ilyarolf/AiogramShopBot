@@ -13,6 +13,7 @@ class Subcategory(Base):
     name = Column(String, nullable=False, index=True)
     media_id = Column(String, nullable=False)
     items = relationship("Item", back_populates="subcategory")
+    cart_items = relationship("CartItem", back_populates="subcategory")
 
     def __repr__(self):
         return self.name
@@ -26,3 +27,5 @@ class SubcategoryDTO(BaseModel):
 
 class SubcategoryAdmin(ModelView, model=Subcategory):
     column_exclude_list = [Subcategory.items, Subcategory.media_id]
+    name = "Subcategory"
+    name_plural = "Subcategories"

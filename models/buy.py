@@ -29,6 +29,11 @@ class Buy(Base):
     track_number = Column(String, nullable=True)
     shipping_option_id = Column(Integer, ForeignKey('shipping_options.id'), nullable=True)
     shipping_option = relationship("ShippingOption", back_populates="buys")
+    buy_items = relationship(
+        "BuyItem",
+        back_populates="buy",
+        cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         CheckConstraint('total_price > 0', name='check_total_price_positive'),
@@ -72,4 +77,5 @@ class RefundDTO(BaseModel):
 
 
 class BuyAdmin(ModelView, model=Buy):
-    column_list = "__all__"
+    column_exclude_list = [Buy.shipping_option_id, Buy.coupon_id]
+    can_create = False
