@@ -41,8 +41,6 @@
     "inventory_management": "📦 Gestión de inventario",
     "make_refund": "↩️ Hacer reembolso",
     "new_users_msg": "👥 <b>{users_count} nuevos usuarios en los últimos {timedelta}:</b>",
-    "notification_new_deposit_id": "💰 Nuevo depósito del usuario con ID {telegram_id} por {currency_sym}{deposit_amount_fiat:.2f} con 💰 {value} {crypto_name}",
-    "notification_new_deposit_username": "💰 Nuevo depósito del usuario @{username} por {currency_sym}{deposit_amount_fiat:.2f} con 💰 {value} {crypto_name}",
     "notification_purchase_with_username": "🛒 Nueva compra del usuario @{username} por <code>{currency_sym}{total_price:.2f}</code> para {quantity} unidades de {category_name} {subcategory_name}.",
     "notification_purchase_with_tgid": "🛒 Nueva compra del usuario con ID:{telegram_id} por <code>{currency_sym}{total_price:.2f}</code> para {quantity} unidades de {category_name} {subcategory_name}.",
     "notification_seed": "🔑 Seed: <code>{seed}</code>",
@@ -135,7 +133,9 @@
     "remove_review_image": "🖼 Eliminar imagen de reseña",
     "remove_review_text_confirmation": "❓ <b>¿Estás seguro de que quieres eliminar el texto de la reseña?</b>",
     "remove_review_image_confirmation": "❓ <b>¿Estás seguro de que quieres eliminar la imagen de la reseña?</b>",
-    "reviews_management": "⭐ Gestión de reseñas"
+    "reviews_management": "⭐ Gestión de reseñas",
+    "notification_new_deposit_id": "💰 Nuevo depósito del usuario con ID {telegram_id} por {currency_sym}{deposit_amount_fiat:.2f} con 💰 {value} {crypto_name}\n💰 Bono por referido: {currency_sym}{referral_bonus:.2f}\n💰 Bono del referidor: {currency_sym}{referrer_bonus:.2f}",
+    "notification_new_deposit_username": "💰 Nuevo depósito del usuario con nombre de usuario @{username} por {currency_sym}{deposit_amount_fiat:.2f} con 💰 {value} {crypto_name}\n💰 Bono por referido: {currency_sym}{referral_bonus:.2f}\n💰 Bono del referidor: {currency_sym}{referrer_bonus:.2f}"
   },
   "common": {
     "back_button": "⬅️ Atrás",
@@ -195,7 +195,8 @@
     "shipped": "Enviado",
     "delivered": "Entregado",
     "completed": "Completado",
-    "refunded": "Reembolsado"
+    "refunded": "Reembolsado",
+    "referrer": "👤 Referidor"
   },
   "user": {
     "all_categories": "🗂️ Todas las categorías",
@@ -241,7 +242,6 @@
     "delete_cart_item_confirmation_text": "🗑 Artículo eliminado del carrito",
     "item_added_to_cart": "🛒 Artículo añadido al carrito",
     "loading": "⏳ Cargando...",
-    "notification_new_deposit": "Tu saldo ha sido recargado exitosamente por {fiat_amount:.2f} {currency_text}.\nID del pago: {payment_id}.",
     "notification_payment_expired": "Tu pago con ID {payment_id} ha expirado.",
     "status_pending": "🟡 Pendiente.",
     "status_paid": "🟢 Pagado.",
@@ -284,6 +284,11 @@
     "review_successfully_published": "⭐ La reseña se publicó con éxito",
     "review_button": "⭐ Comprado: {subcategory_name} | Pagado: {currency_sym}{price:.2f}",
     "reviews": "⭐ Reseñas",
-    "purchase_history_msg_base": "🔷 ID Compra: <code>{buy_id}</code>\n📅 Fecha/hora de compra: <code>{buy_datetime}</code>\n💵 Precio fiat pagado: <code>{currency_sym}{fiat_amount:.2f}</code>\n🎟️ Descuento: <code>{currency_sym}{discount_amount:.2F}</code>\n🟡 Estado: {status}"
+    "purchase_history_msg_base": "🔷 ID Compra: <code>{buy_id}</code>\n📅 Fecha/hora de compra: <code>{buy_datetime}</code>\n💵 Precio fiat pagado: <code>{currency_sym}{fiat_amount:.2f}</code>\n🎟️ Descuento: <code>{currency_sym}{discount_amount:.2F}</code>\n🟡 Estado: {status}",
+    "referrer_notification": "💰 Se te ha acreditado un bono de {currency_sym}{referrer_bonus:.2f} por participar en el sistema de referidos.",
+    "notification_new_deposit": "💰 Tu saldo se ha recargado exitosamente con {fiat_amount:.2f} {currency_text}.\n💰 Tu bono por participar en el sistema de referidos es: {referral_bonus:.2f} {currency_text}\nID de pago {payment_id}.",
+    "referral_statistics_message": "<b>✨ Programa de Referidos</b>\n\nInvita a amigos y gana saldo de bono dentro del bot.\nLos bonos pueden usarse para comprar productos digitales y físicos.\n\n<b>🔓 Acceso a Referidos</b>\nTus depósitos totales: <b>{currency_sym}{user_total_deposits:.2f}</b>  \nRequerido para desbloquear referidos: <b>{currency_sym}{min_referrer_total_deposit:.2f}</b>\n\nEstado:\n<b>{referral_access_status}</b>\n\n<b>🎁 Lo que tu amigo recibe</b>\n• <b>{referral_bonus_percent}%</b> de bono en cada depósito  \n• Se aplica a los primeros <b>{referral_bonus_deposit_limit}</b> depósitos  \n• Límite máximo de bono: <b>{referral_bonus_cap_percent}%</b> de sus depósitos  \n\n<b>💰 Lo que tú recibes como referidor</b>\n• <b>{referrer_bonus_percent}%</b> de cada depósito de referido  \n• Se aplica a los primeros <b>{referrer_bonus_deposit_limit}</b> depósitos por referido  \n• Límite máximo de bono: <b>{referrer_bonus_cap_percent}%</b> por referido  \n\n<b>Límite global de bono:</b>  \nLos bonos totales (tú + referido) nunca excederán <b>{total_bonus_cap_percent}%</b> de los depósitos del referido\n\n<b>📊 Tus Estadísticas de Referidos</b>\n\n👥 Referidos invitados: <b>{referrals_count}</b>  \n🎁 Bonos ganados como referido: <b>{currency_sym}{referral_bonus_earned:.2f}</b>  \n💰 Bonos ganados como referidor: <b>{currency_sym}{referrer_bonus_earned:.2f}</b>",
+    "referral_code_section": "\n\n<b>🔗 Tu Enlace de Referido</b>\nt.me/{bot_username}?start={referral_code}\nComparte tu enlace y crece junto con otros 🚀",
+    "referral_button": "✨ Sistema de Referidos"
   }
 }

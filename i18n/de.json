@@ -41,8 +41,6 @@
     "inventory_management": "📦 Lagerverwaltung",
     "make_refund": "↩️ Rückerstattung durchführen",
     "new_users_msg": "👥 <b>{users_count} neue Nutzer in den letzten {timedelta}:</b>",
-    "notification_new_deposit_id": "💰 Neue Einzahlung vom Nutzer mit ID {telegram_id} über {currency_sym}{deposit_amount_fiat:.2f} mit 💰 {value} {crypto_name}",
-    "notification_new_deposit_username": "💰 Neue Einzahlung vom Nutzer @{username} über {currency_sym}{deposit_amount_fiat:.2f} mit 💰 {value} {crypto_name}",
     "notification_purchase_with_tgid": "🛒 Neuer Kauf des Nutzers mit ID {telegram_id} über <code>{currency_sym}{total_price:.2f}</code> für {quantity} Stück {category_name} {subcategory_name}.",
     "notification_purchase_with_username": "🛒 Neuer Kauf des Nutzers @{username} über <code>{currency_sym}{total_price:.2f}</code> für {quantity} Stück {category_name} {subcategory_name}.",
     "notification_seed": "🔑 Seed: <code>{seed}</code>",
@@ -135,7 +133,9 @@
     "remove_review_image": "🖼 Bewertungsbild entfernen",
     "remove_review_text_confirmation": "❓ <b>Sind Sie sicher, dass Sie den Bewertungstext entfernen möchten?</b>",
     "remove_review_image_confirmation": "❓ <b>Sind Sie sicher, dass Sie das Bewertungsbild entfernen möchten?</b>",
-    "reviews_management": "⭐ Bewertungsverwaltung"
+    "reviews_management": "⭐ Bewertungsverwaltung",
+    "notification_new_deposit_id": "💰 Neue Einzahlung von Benutzer mit ID {telegram_id} für {currency_sym}{deposit_amount_fiat:.2f} mit 💰 {value} {crypto_name}\n💰 Empfehlungsbonus: {currency_sym}{referral_bonus:.2f}\n💰 Empfehlerbonus: {currency_sym}{referrer_bonus:.2f}",
+    "notification_new_deposit_username": "💰 Neue Einzahlung von Benutzer mit Benutzername @{username} für {currency_sym}{deposit_amount_fiat:.2f} mit 💰 {value} {crypto_name}\n💰 Empfehlungsbonus: {currency_sym}{referral_bonus:.2f}\n💰 Empfehlerbonus: {currency_sym}{referrer_bonus:.2f}"
   },
   "common": {
     "back_button": "⬅️ Zurück",
@@ -195,7 +195,8 @@
     "shipped": "Versendet",
     "delivered": "Geliefert",
     "completed": "Abgeschlossen",
-    "refunded": "Erstattet"
+    "refunded": "Erstattet",
+    "referrer": "👤 Empfehler"
   },
   "user": {
     "all_categories": "🗂️ Alle Kategorien",
@@ -241,7 +242,6 @@
     "delete_cart_item_confirmation_text": "🗑 Artikel wurde aus dem Warenkorb entfernt",
     "item_added_to_cart": "🛒 Artikel wurde zum Warenkorb hinzugefügt",
     "loading": "⏳ Lädt...",
-    "notification_new_deposit": "Dein Guthaben wurde erfolgreich um {fiat_amount:.2f} {currency_text} aufgeladen.\nZahlungs-ID: {payment_id}.",
     "notification_payment_expired": "Deine Zahlung mit ID {payment_id} ist abgelaufen.",
     "status_pending": "🟡 Ausstehend.",
     "status_paid": "🟢 Bezahlt.",
@@ -284,6 +284,11 @@
     "review_successfully_published": "⭐ Die Bewertung wurde erfolgreich veröffentlicht",
     "review_button": "⭐ Gekauft: {subcategory_name} | Bezahlt: {currency_sym}{price:.2f}",
     "reviews": "⭐ Bewertungen",
-    "purchase_history_msg_base": "🔷 Kauf ID: <code>{buy_id}</code>\n📅 Kaufdatum/-zeit: <code>{buy_datetime}</code>\n💵 Bezahlter Fiat-Preis: <code>{currency_sym}{fiat_amount:.2f}</code>\n🎟️ Rabatt: <code>{currency_sym}{discount_amount:.2F}</code>\n🟡 Status: {status}"
+    "purchase_history_msg_base": "🔷 Kauf ID: <code>{buy_id}</code>\n📅 Kaufdatum/-zeit: <code>{buy_datetime}</code>\n💵 Bezahlter Fiat-Preis: <code>{currency_sym}{fiat_amount:.2f}</code>\n🎟️ Rabatt: <code>{currency_sym}{discount_amount:.2F}</code>\n🟡 Status: {status}",
+    "referrer_notification": "💰 Ihnen wurde ein Bonus von {currency_sym}{referrer_bonus:.2f} für die Teilnahme am Empfehlungssystem gutgeschrieben.",
+    "notification_new_deposit": "💰 Ihr Guthaben wurde erfolgreich um {fiat_amount:.2f} {currency_text} aufgeladen.\n💰 Ihr Bonus für die Teilnahme am Empfehlungssystem beträgt: {referral_bonus:.2f} {currency_text}\nZahlungs-ID {payment_id}.",
+    "referral_statistics_message": "<b>✨ Empfehlungsprogramm</b>\n\nLaden Sie Freunde ein und verdienen Sie Bonussaldo im Bot.\nBoni können für den Kauf digitaler und physischer Produkte verwendet werden.\n\n<b>🔓 Empfehlungszugang</b>\nIhre Gesamteinzahlungen: <b>{currency_sym}{user_total_deposits:.2f}</b>  \nErforderlich zum Freischalten von Empfehlungen: <b>{currency_sym}{min_referrer_total_deposit:.2f}</b>\n\nStatus:\n<b>{referral_access_status}</b>\n\n<b>🎁 Was Ihr Freund erhält</b>\n• <b>{referral_bonus_percent}%</b> Bonus auf jede Einzahlung  \n• Gilt für die ersten <b>{referral_bonus_deposit_limit}</b> Einzahlungen  \n• Maximale Bonusobergrenze: <b>{referral_bonus_cap_percent}%</b> ihrer Einzahlungen  \n\n<b>💰 Was Sie als Empfehler erhalten</b>\n• <b>{referrer_bonus_percent}%</b> von jeder Empfehlungseinzahlung  \n• Gilt für die ersten <b>{referrer_bonus_deposit_limit}</b> Einzahlungen pro Empfehlung  \n• Maximale Bonusobergrenze: <b>{referrer_bonus_cap_percent}%</b> pro Empfehlung  \n\n<b>Globale Bonusobergrenze:</b>  \nGesamtboni (Sie + Empfehlung) werden niemals <b>{total_bonus_cap_percent}%</b> der Empfehlungseinzahlungen überschreiten\n\n<b>📊 Ihre Empfehlungsstatistiken</b>\n\n👥 Empfehlungen eingeladen: <b>{referrals_count}</b>  \n🎁 Als Empfehlung verdiente Boni: <b>{currency_sym}{referral_bonus_earned:.2f}</b>  \n💰 Als Empfehler verdiente Boni: <b>{currency_sym}{referrer_bonus_earned:.2f}</b>",
+    "referral_code_section": "\n\n<b>🔗 Ihr Empfehlungslink</b>\nt.me/{bot_username}?start={referral_code}\nTeilen Sie Ihren Link und wachsen Sie gemeinsam 🚀",
+    "referral_button": "✨ Empfehlungssystem"
   }
 }

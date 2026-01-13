@@ -41,8 +41,6 @@
     "inventory_management": "📦 库存管理",
     "make_refund": "↩️ 发起退款",
     "new_users_msg": "👥 <b>过去 {timedelta} 新增 {users_count} 名用户：</b>",
-    "notification_new_deposit_id": "💰 用户 ID {telegram_id} 充值 {currency_sym}{deposit_amount_fiat:.2f}，方式：💰 {value} {crypto_name}",
-    "notification_new_deposit_username": "💰 用户 @{username} 充值 {currency_sym}{deposit_amount_fiat:.2f}，方式：💰 {value} {crypto_name}",
     "notification_purchase_with_tgid": "🛒 用户 ID {telegram_id} 购买了 {quantity} 个 {category_name} {subcategory_name}，总计 <code>{currency_sym}{total_price:.2f}</code>。",
     "notification_purchase_with_username": "🛒 用户 @{username} 购买了 {quantity} 个 {category_name} {subcategory_name}，总计 <code>{currency_sym}{total_price:.2f}</code>。",
     "notification_seed": "🔑 Seed：<code>{seed}</code>",
@@ -135,7 +133,9 @@
     "remove_review_image": "🖼 删除评价图片",
     "remove_review_text_confirmation": "❓ <b>确定要删除评价文字吗？</b>",
     "remove_review_image_confirmation": "❓ <b>确定要删除评价图片吗？</b>",
-    "reviews_management": "⭐ 评价管理"
+    "reviews_management": "⭐ 评价管理",
+    "notification_new_deposit_id": "💰 用户ID {telegram_id} 新存款 {currency_sym}{deposit_amount_fiat:.2f}，使用 💰 {value} {crypto_name}\n💰 被邀请人奖金: {currency_sym}{referral_bonus:.2f}\n💰 邀请人奖金: {currency_sym}{referrer_bonus:.2f}",
+    "notification_new_deposit_username": "💰 用户名 @{username} 新存款 {currency_sym}{deposit_amount_fiat:.2f}，使用 💰 {value} {crypto_name}\n💰 被邀请人奖金: {currency_sym}{referral_bonus:.2f}\n💰 邀请人奖金: {currency_sym}{referrer_bonus:.2f}"
   },
   "common": {
     "back_button": "⬅️ 返回",
@@ -195,7 +195,8 @@
     "shipped": "已发货",
     "delivered": "已送达",
     "completed": "已完成",
-    "refunded": "已退款"
+    "refunded": "已退款",
+    "referrer": "👤 邀请人"
   },
   "user": {
     "all_categories": "🗂️ 所有分类",
@@ -241,7 +242,6 @@
     "delete_cart_item_confirmation_text": "🗑 商品已从购物车移除",
     "item_added_to_cart": "🛒 商品已加入购物车",
     "loading": "⏳ 加载中...",
-    "notification_new_deposit": "您的余额已充值 {fiat_amount:.2f} {currency_text}。\n支付 ID：{payment_id}。",
     "notification_payment_expired": "您的支付（ID {payment_id}）已过期。",
     "status_pending": "🟡 待处理。",
     "status_paid": "🟢 已支付。",
@@ -284,6 +284,11 @@
     "review_successfully_published": "⭐ 评价已成功发布",
     "review_button": "⭐ 已购买: {subcategory_name} | 支付: {currency_sym}{price:.2f}",
     "reviews": "⭐ 评价",
-    "purchase_history_msg_base": "🔷 购买ID: <code>{buy_id}</code>\n📅 购买时间: <code>{buy_datetime}</code>\n💵 支付的法币金额: <code>{currency_sym}{fiat_amount:.2f}</code>\n🎟️ 折扣: <code>{currency_sym}{discount_amount:.2F}</code>\n🟡 状态: {status}"
+    "purchase_history_msg_base": "🔷 购买ID: <code>{buy_id}</code>\n📅 购买时间: <code>{buy_datetime}</code>\n💵 支付的法币金额: <code>{currency_sym}{fiat_amount:.2f}</code>\n🎟️ 折扣: <code>{currency_sym}{discount_amount:.2F}</code>\n🟡 状态: {status}",
+    "referrer_notification": "💰 您已获得 {currency_sym}{referrer_bonus:.2f} 的邀请系统参与奖金。",
+    "notification_new_deposit": "💰 您的余额已成功充值 {fiat_amount:.2f} {currency_text}。\n💰 您参与邀请系统的奖金为: {referral_bonus:.2f} {currency_text}\n支付ID {payment_id}。",
+    "referral_statistics_message": "<b>✨ 邀请计划</b>\n\n邀请朋友并在机器人内赚取奖金余额。\n奖金可用于购买数字和实体商品。\n\n<b>🔓 邀请权限</b>\n您的总存款: <b>{currency_sym}{user_total_deposits:.2f}</b>  \n解锁邀请所需: <b>{currency_sym}{min_referrer_total_deposit:.2f}</b>\n\n状态:\n<b>{referral_access_status}</b>\n\n<b>🎁 您的朋友获得什么</b>\n• 每次存款 <b>{referral_bonus_percent}%</b> 的奖金  \n• 适用于前 <b>{referral_bonus_deposit_limit}</b> 次存款  \n• 最高奖金上限: 存款的 <b>{referral_bonus_cap_percent}%</b>  \n\n<b>💰 您作为邀请人获得什么</b>\n• 每次被邀请人存款的 <b>{referrer_bonus_percent}%</b>  \n• 适用于每个被邀请人的前 <b>{referrer_bonus_deposit_limit}</b> 次存款  \n• 每个被邀请人最高奖金上限: <b>{referrer_bonus_cap_percent}%</b>  \n\n<b>全局奖金上限:</b>  \n总奖金（您 + 被邀请人）永远不会超过被邀请人存款的 <b>{total_bonus_cap_percent}%</b>\n\n<b>📊 您的邀请统计</b>\n\n👥 已邀请人数: <b>{referrals_count}</b>  \n🎁 作为被邀请人获得的奖金: <b>{currency_sym}{referral_bonus_earned:.2f}</b>  \n💰 作为邀请人获得的奖金: <b>{currency_sym}{referrer_bonus_earned:.2f}</b>",
+    "referral_code_section": "\n\n<b>🔗 您的邀请链接</b>\nt.me/{bot_username}?start={referral_code}\n分享您的链接，共同成长 🚀",
+    "referral_button": "✨ 邀请系统"
   }
 }

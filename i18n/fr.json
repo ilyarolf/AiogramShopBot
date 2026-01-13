@@ -41,8 +41,6 @@
     "inventory_management": "📦 Gestion du stock",
     "make_refund": "↩️ Effectuer un remboursement",
     "new_users_msg": "👥 <b>{users_count} nouveaux utilisateurs au cours des {timedelta} derniers jours :</b>",
-    "notification_new_deposit_id": "💰 Nouveau dépôt de l’utilisateur ID {telegram_id} de {currency_sym}{deposit_amount_fiat:.2f} via 💰 {value} {crypto_name}",
-    "notification_new_deposit_username": "💰 Nouveau dépôt de @{username} de {currency_sym}{deposit_amount_fiat:.2f} via 💰 {value} {crypto_name}",
     "notification_purchase_with_tgid": "🛒 Nouvel achat par l’utilisateur ID {telegram_id} pour <code>{currency_sym}{total_price:.2f}</code> concernant {quantity} article(s) {category_name} {subcategory_name}.",
     "notification_purchase_with_username": "🛒 Nouvel achat par @{username} pour <code>{currency_sym}{total_price:.2f}</code> concernant {quantity} article(s) {category_name} {subcategory_name}.",
     "notification_seed": "🔑 Seed : <code>{seed}</code>",
@@ -135,7 +133,9 @@
     "remove_review_image": "🖼 Supprimer l'image de l'avis",
     "remove_review_text_confirmation": "❓ <b>Êtes-vous sûr de vouloir supprimer le texte de l'avis?</b>",
     "remove_review_image_confirmation": "❓ <b>Êtes-vous sûr de vouloir supprimer l'image de l'avis?</b>",
-    "reviews_management": "⭐ Gestion des avis"
+    "reviews_management": "⭐ Gestion des avis",
+    "notification_new_deposit_id": "💰 Nouveau dépôt de l'utilisateur avec ID {telegram_id} pour {currency_sym}{deposit_amount_fiat:.2f} avec 💰 {value} {crypto_name}\n💰 Bonus parrainé: {currency_sym}{referral_bonus:.2f}\n💰 Bonus parrain: {currency_sym}{referrer_bonus:.2f}",
+    "notification_new_deposit_username": "💰 Nouveau dépôt de l'utilisateur avec nom d'utilisateur @{username} pour {currency_sym}{deposit_amount_fiat:.2f} avec 💰 {value} {crypto_name}\n💰 Bonus parrainé: {currency_sym}{referral_bonus:.2f}\n💰 Bonus parrain: {currency_sym}{referrer_bonus:.2f}"
   },
   "common": {
     "back_button": "⬅️ Retour",
@@ -195,7 +195,8 @@
     "shipped": "Expédié",
     "delivered": "Livré",
     "completed": "Terminé",
-    "refunded": "Remboursé"
+    "refunded": "Remboursé",
+    "referrer": "👤 Parrain"
   },
   "user": {
     "all_categories": "🗂️ Toutes les catégories",
@@ -241,7 +242,6 @@
     "delete_cart_item_confirmation_text": "🗑 Article supprimé du panier",
     "item_added_to_cart": "🛒 Article ajouté au panier",
     "loading": "⏳ Chargement...",
-    "notification_new_deposit": "Votre solde a été rechargé de {fiat_amount:.2f} {currency_text}.\nID du paiement : {payment_id}.",
     "notification_payment_expired": "Votre paiement (ID {payment_id}) a expiré.",
     "status_pending": "🟡 En attente.",
     "status_paid": "🟢 Payé.",
@@ -284,6 +284,11 @@
     "review_successfully_published": "⭐ L'avis a été publié avec succès",
     "review_button": "⭐ Acheté: {subcategory_name} | Payé: {currency_sym}{price:.2f}",
     "reviews": "⭐ Avis",
-    "purchase_history_msg_base": "🔷 ID Achat: <code>{buy_id}</code>\n📅 Date/heure d'achat: <code>{buy_datetime}</code>\n💵 Prix en fiat payé: <code>{currency_sym}{fiat_amount:.2f}</code>\n🎟️ Remise: <code>{currency_sym}{discount_amount:.2F}</code>\n🟡 Statut: {status}"
+    "purchase_history_msg_base": "🔷 ID Achat: <code>{buy_id}</code>\n📅 Date/heure d'achat: <code>{buy_datetime}</code>\n💵 Prix en fiat payé: <code>{currency_sym}{fiat_amount:.2f}</code>\n🎟️ Remise: <code>{currency_sym}{discount_amount:.2F}</code>\n🟡 Statut: {status}",
+    "referrer_notification": "💰 Un bonus de {currency_sym}{referrer_bonus:.2f} vous a été crédité pour votre participation au système de parrainage.",
+    "notification_new_deposit": "💰 Votre solde a été rechargé avec succès de {fiat_amount:.2f} {currency_text}.\n💰 Votre bonus pour participer au système de parrainage est: {referral_bonus:.2f} {currency_text}\nID de paiement {payment_id}.",
+    "referral_statistics_message": "<b>✨ Programme de Parrainage</b>\n\nInvitez des amis et gagnez du solde bonus dans le bot.\nLes bonus peuvent être utilisés pour acheter des produits numériques et physiques.\n\n<b>🔓 Accès au Parrainage</b>\nVos dépôts totaux: <b>{currency_sym}{user_total_deposits:.2f}</b>  \nRequis pour débloquer le parrainage: <b>{currency_sym}{min_referrer_total_deposit:.2f}</b>\n\nStatut:\n<b>{referral_access_status}</b>\n\n<b>🎁 Ce que votre ami reçoit</b>\n• <b>{referral_bonus_percent}%</b> de bonus sur chaque dépôt  \n• S'applique aux <b>{referral_bonus_deposit_limit}</b> premiers dépôts  \n• Plafond bonus maximum: <b>{referral_bonus_cap_percent}%</b> de ses dépôts  \n\n<b>💰 Ce que vous recevez en tant que parrain</b>\n• <b>{referrer_bonus_percent}%</b> de chaque dépôt parrainé  \n• S'applique aux <b>{referrer_bonus_deposit_limit}</b> premiers dépôts par filleul  \n• Plafond bonus maximum: <b>{referrer_bonus_cap_percent}%</b> par filleul  \n\n<b>Plafond bonus global:</b>  \nLes bonus totaux (vous + filleul) ne dépasseront jamais <b>{total_bonus_cap_percent}%</b> des dépôts du filleul\n\n<b>📊 Vos Statistiques de Parrainage</b>\n\n👥 Filleuls invités: <b>{referrals_count}</b>  \n🎁 Bonus gagnés en tant que filleul: <b>{currency_sym}{referral_bonus_earned:.2f}</b>  \n💰 Bonus gagnés en tant que parrain: <b>{currency_sym}{referrer_bonus_earned:.2f}</b>",
+    "referral_code_section": "\n\n<b>🔗 Votre Lien de Parrainage</b>\nt.me/{bot_username}?start={referral_code}\nPartagez votre lien et grandissez ensemble 🚀",
+    "referral_button": "✨ Système de Parrainage"
   }
 }
