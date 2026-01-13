@@ -100,3 +100,10 @@ class UserRepository:
         stmt = select(User).where(User.referral_code == referrer_code)
         user_dto = await session_execute(stmt, session)
         return user_dto.scalar_one_or_none()
+
+    @staticmethod
+    async def get_referrals_qty_by_referrer_id(referrer_id: int, session: AsyncSession) -> int:
+        stmt = (select(func.coalesce(func.count(User.id), 0))
+                .where(User.referred_by_user_id == referrer_id))
+        referrals_qty = await session_execute(stmt, session)
+        return referrals_qty.scalar_one()
