@@ -32,7 +32,7 @@ class CartDTO(BaseModel):
 
 
 class CartAdmin(ModelView, model=Cart):
-    column_exclude_list = [Cart.user]
+    column_exclude_list = [Cart.user_id, Cart.cart_items]
     can_delete = False
     can_edit = False
     can_export = False

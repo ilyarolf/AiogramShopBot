@@ -18,6 +18,11 @@ class BuyItem(Base):
     # ARRAY CRUTCH FOR SQLALCHEMY+SQLITE 🩼
     # item_ids = Column(ARRAY, nullable=False)
     item_ids = Column(JSON, nullable=False)
+    review = relationship(
+        "Review",
+        back_populates="buy_item",
+        cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"BuyItem ID:{self.id}"
@@ -31,3 +36,4 @@ class BuyItemDTO(BaseModel):
 
 class BuyItemAdmin(ModelView, model=BuyItem):
     can_create = False
+    column_exclude_list = [BuyItem.buy_id]

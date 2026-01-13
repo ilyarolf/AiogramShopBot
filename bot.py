@@ -27,6 +27,8 @@ from models.coupon import CouponAdmin
 from models.deposit import DepositAdmin
 from models.item import ItemAdmin
 from models.payment import PaymentAdmin
+from models.referral import ReferralBonusAdmin
+from models.review import ReviewAdmin
 from models.shipping_option import ShippingOptionAdmin
 from models.subcategory import SubcategoryAdmin
 from models.user import UserAdmin
@@ -53,6 +55,8 @@ admin.add_model_view(BuyItemAdmin)
 admin.add_model_view(PaymentAdmin)
 admin.add_model_view(CartAdmin)
 admin.add_model_view(CartItemAdmin)
+admin.add_model_view(ReferralBonusAdmin)
+admin.add_model_view(ReviewAdmin)
 
 app.include_router(processing_router)
 

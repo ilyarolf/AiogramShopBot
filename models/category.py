@@ -26,6 +26,8 @@ class CategoryDTO(BaseModel):
 
 
 class CategoryAdmin(ModelView, model=Category):
-    column_exclude_list = [Category.items, Category.media_id]
+    column_exclude_list = [Category.items,
+                           Category.media_id,
+                           Category.cart_items]
     name = "Category"
     name_plural = "Categories"

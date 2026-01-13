@@ -26,6 +26,8 @@ class SubcategoryDTO(BaseModel):
 
 
 class SubcategoryAdmin(ModelView, model=Subcategory):
-    column_exclude_list = [Subcategory.items, Subcategory.media_id]
+    column_exclude_list = [Subcategory.items,
+                           Subcategory.media_id,
+                           Subcategory.cart_items]
     name = "Subcategory"
     name_plural = "Subcategories"

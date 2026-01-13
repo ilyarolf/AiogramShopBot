@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from sqladmin import ModelView
 from sqlalchemy import Integer, Column, ForeignKey, Float, CheckConstraint
 from sqlalchemy.orm import relationship
 
@@ -43,3 +44,10 @@ class ReferralBonusDTO(BaseModel):
     payment_amount: float = 0.0
     applied_referral_bonus: float = 0.0
     applied_referrer_bonus: float = 0.0
+
+
+class ReferralBonusAdmin(ModelView, model=ReferralBonus):
+    column_exclude_list = [ReferralBonus.referrer_user_id,
+                           ReferralBonus.referral_user_id]
+    name = "Referral Bonus"
+    name_plural = "Referral Bonuses"
