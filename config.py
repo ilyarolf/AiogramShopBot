@@ -20,9 +20,12 @@ TOKEN = os.environ.get("TOKEN")
 ADMIN_ID_LIST = os.environ.get("ADMIN_ID_LIST").split(',')
 ADMIN_ID_LIST = [int(admin_id) for admin_id in ADMIN_ID_LIST]
 SUPPORT_LINK = os.environ.get("SUPPORT_LINK")
-DB_ENCRYPTION = os.environ.get("DB_ENCRYPTION", False) == 'true'
-DB_NAME = os.environ.get("DB_NAME", "database.db")
-DB_PASS = os.environ.get("DB_PASS")
+# POSTGRESQL
+DB_USER = os.environ.get("POSTGRES_USER", "postgres")
+DB_PASS = os.environ.get("POSTGRES_PASSWORD")
+DB_PORT = int(os.environ.get("DB_PORT", "5432"))
+DB_HOST = os.environ.get("DB_HOST", "postgres")
+DB_NAME = os.environ.get("POSTGRES_DB", "aiogram-shop-bot")
 PAGE_ENTRIES = int(os.environ.get("PAGE_ENTRIES", "8"))
 MULTIBOT = os.environ.get("MULTIBOT", False) == 'true'
 CURRENCY = Currency(os.environ.get("CURRENCY", "USD"))
