@@ -38,5 +38,14 @@ class CartItemDTO(BaseModel):
 
 
 class CartItemAdmin(ModelView, model=CartItem):
+    column_sortable_list = [CartItem.id,
+                            CartItem.item_type,
+                            CartItem.quantity,
+                            CartItem.item_type]
     column_exclude_list = [CartItem.category_id,
-                           CartItem.subcategory_id]
+                           CartItem.subcategory_id,
+                           CartItem.cart_id]
+    can_create = False
+    can_delete = False
+    can_edit = False
+    can_export = False

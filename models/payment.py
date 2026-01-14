@@ -51,6 +51,13 @@ class TablePaymentDTO(BaseModel):
 
 
 class PaymentAdmin(ModelView, model=Payment):
+    column_sortable_list = [Payment.id,
+                            Payment.processing_payment_id,
+                            Payment.message_id,
+                            Payment.is_paid,
+                            Payment.expire_datetime]
     column_exclude_list = [Payment.user_id]
-    can_edit = False
     can_delete = False
+    can_edit = True
+    can_create = False
+    can_export = False

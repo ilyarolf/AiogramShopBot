@@ -77,5 +77,17 @@ class RefundDTO(BaseModel):
 
 
 class BuyAdmin(ModelView, model=Buy):
-    column_exclude_list = [Buy.shipping_option_id, Buy.coupon_id]
+    column_exclude_list = [Buy.shipping_option_id,
+                           Buy.coupon_id,
+                           Buy.buyer_id]
+    column_sortable_list = [Buy.id,
+                            Buy.total_price,
+                            Buy.buy_datetime,
+                            Buy.status,
+                            Buy.discount,
+                            Buy.shipping_address,
+                            Buy.track_number]
     can_create = False
+    can_delete = False
+    can_edit = False
+    can_export = False

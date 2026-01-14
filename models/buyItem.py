@@ -21,7 +21,9 @@ class BuyItem(Base):
     review = relationship(
         "Review",
         back_populates="buy_item",
-        cascade="all, delete-orphan"
+        uselist=False,
+        cascade="all, delete-orphan",
+        passive_deletes=True
     )
 
     def __repr__(self):
@@ -35,5 +37,8 @@ class BuyItemDTO(BaseModel):
 
 
 class BuyItemAdmin(ModelView, model=BuyItem):
-    can_create = False
     column_exclude_list = [BuyItem.buy_id]
+    can_create = False
+    can_delete = False
+    can_edit = False
+    can_export = False

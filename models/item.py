@@ -27,7 +27,7 @@ class Item(Base):
     )
 
     def __repr__(self):
-        return str(self.id)
+        return f"Item ID:{self.id}"
 
 
 class ItemDTO(BaseModel):
@@ -53,4 +53,9 @@ class ItemAdmin(ModelView, model=Item):
                             Item.item_type,
                             Item.is_sold,
                             Item.is_new,
-                            Item.price]
+                            Item.price,
+                            Item.description]
+    can_delete = False
+    can_create = True
+    can_edit = True
+    can_export = True

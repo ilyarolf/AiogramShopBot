@@ -48,4 +48,15 @@ class DepositDTO(BaseModel):
 
 
 class DepositAdmin(ModelView, model=Deposit):
-    column_exclude_list = [Deposit.user_id, Deposit.amount]
+    name = "Deposit"
+    name_plural = "Deposits"
+    column_sortable_list = [Deposit.id,
+                            Deposit.network,
+                            Deposit.deposit_datetime,
+                            Deposit.fiat_amount]
+    column_exclude_list = [Deposit.user_id,
+                           Deposit.amount]
+    can_delete = False
+    can_edit = True
+    can_create = False
+    can_export = False

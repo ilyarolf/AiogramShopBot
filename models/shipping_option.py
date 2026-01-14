@@ -15,6 +15,9 @@ class ShippingOption(Base):
     is_disabled = Column(Boolean, default=False)
     buys = relationship("Buy", back_populates="shipping_option")
 
+    def __repr__(self):
+        return self.name
+
 
 class ShippingOptionDTO(BaseModel):
     id: int | None = None
@@ -25,3 +28,11 @@ class ShippingOptionDTO(BaseModel):
 
 class ShippingOptionAdmin(ModelView, model=ShippingOption):
     column_exclude_list = [ShippingOption.buys]
+    column_searchable_list = [ShippingOption.name]
+    column_sortable_list = [ShippingOption.name,
+                            ShippingOption.price,
+                            ShippingOption.is_disabled]
+    can_delete = True
+    can_edit = True
+    can_create = True
+    can_export = False

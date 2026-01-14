@@ -17,10 +17,8 @@ class Cart(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    user = relationship("User", back_populates="cart")
-    cart_items = relationship("CartItem",
-                              back_populates="cart",
-                              cascade="all, delete-orphan", )
+    user = relationship("User", back_populates="cart", uselist=False)
+    cart_items = relationship("CartItem", back_populates="cart", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"Cart ID:{self.id}"
@@ -32,7 +30,11 @@ class CartDTO(BaseModel):
 
 
 class CartAdmin(ModelView, model=Cart):
+    name = "Cart"
+    name_plural = "Carts"
+    column_sortable_list = [Cart.id]
     column_exclude_list = [Cart.user_id, Cart.cart_items]
     can_delete = False
     can_edit = False
+    can_create = False
     can_export = False

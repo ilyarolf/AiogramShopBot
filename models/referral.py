@@ -34,6 +34,9 @@ class ReferralBonus(Base):
         ),
     )
 
+    def __repr__(self):
+        return f"ReferralBonus ID:{self.id}"
+
 
 class ReferralBonusDTO(BaseModel):
     id: int | None = None
@@ -49,5 +52,13 @@ class ReferralBonusDTO(BaseModel):
 class ReferralBonusAdmin(ModelView, model=ReferralBonus):
     column_exclude_list = [ReferralBonus.referrer_user_id,
                            ReferralBonus.referral_user_id]
+    column_sortable_list = [ReferralBonus.id,
+                            ReferralBonus.payment_amount,
+                            ReferralBonus.applied_referrer_bonus,
+                            ReferralBonus.applied_referral_bonus]
     name = "Referral Bonus"
     name_plural = "Referral Bonuses"
+    can_delete = False
+    can_edit = False
+    can_create = False
+    can_export = False

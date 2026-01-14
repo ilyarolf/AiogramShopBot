@@ -26,8 +26,14 @@ class CategoryDTO(BaseModel):
 
 
 class CategoryAdmin(ModelView, model=Category):
+    name = "Category"
+    name_plural = "Categories"
+    column_searchable_list = [Category.name]
+    column_sortable_list = [Category.id, Category.name]
     column_exclude_list = [Category.items,
                            Category.media_id,
                            Category.cart_items]
-    name = "Category"
-    name_plural = "Categories"
+    can_delete = False
+    can_edit = True
+    can_create = True
+    can_export = False

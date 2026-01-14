@@ -45,3 +45,11 @@ class ReviewAdmin(ModelView, model=Review):
                            Review.image_id]
     name = "Review"
     name_plural = "Reviews"
+    can_delete = True
+    can_edit = True
+    can_create = False
+    can_export = False
+    column_sortable_list = [Review.id,
+                            Review.rating,
+                            Review.create_datetime,
+                            Review.text]

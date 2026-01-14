@@ -55,6 +55,7 @@ class User(Base):
     cart = relationship(
         "Cart",
         back_populates="user",
+        uselist=False,
         cascade="all, delete-orphan"
     )
 
@@ -96,7 +97,10 @@ class UserAdmin(ModelView, model=User):
                            User.referred_by_user_id,
                            User.payments,
                            User.cart]
+    can_delete = False
+    can_edit = True
     can_create = False
+    can_export = True
     column_searchable_list = [User.telegram_username]
     column_sortable_list = [User.id,
                             User.telegram_username,

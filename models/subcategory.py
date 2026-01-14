@@ -26,8 +26,15 @@ class SubcategoryDTO(BaseModel):
 
 
 class SubcategoryAdmin(ModelView, model=Subcategory):
+    name = "Subcategory"
+    name_plural = "Subcategories"
+    column_searchable_list = [Subcategory.name]
+    column_sortable_list = [Subcategory.id,
+                            Subcategory.name]
     column_exclude_list = [Subcategory.items,
                            Subcategory.media_id,
                            Subcategory.cart_items]
-    name = "Subcategory"
-    name_plural = "Subcategories"
+    can_delete = False
+    can_edit = True
+    can_create = True
+    can_export = False

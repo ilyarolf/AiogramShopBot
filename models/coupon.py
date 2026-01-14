@@ -24,6 +24,9 @@ class Coupon(Base):
     usage_count = Column(Integer, default=0)
     buys = relationship("Buy", back_populates="coupon")
 
+    def __repr__(self):
+        return f"Coupon: {self.name}"
+
 
 class CouponDTO(BaseModel):
     id: int | None = None
@@ -39,4 +42,21 @@ class CouponDTO(BaseModel):
 
 
 class CouponAdmin(ModelView, model=Coupon):
+    name = "Coupon"
+    name_plural = "Coupons"
     column_exclude_list = [Coupon.buys]
+    column_searchable_list = [Coupon.name]
+    column_sortable_list = [Coupon.id,
+                            Coupon.name,
+                            Coupon.code,
+                            Coupon.type,
+                            Coupon.value,
+                            Coupon.create_datetime,
+                            Coupon.expire_datetime,
+                            Coupon.is_active,
+                            Coupon.usage_limit,
+                            Coupon.usage_count]
+    can_edit = True
+    can_create = True
+    can_delete = False
+    can_export = False
