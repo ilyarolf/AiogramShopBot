@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel
+from sqladmin import ModelView
 from sqlalchemy import Column, Integer, Float, DateTime, ForeignKey, func, CheckConstraint, Enum, String
 from sqlalchemy.orm import relationship
 
@@ -17,20 +18,33 @@ class Buy(Base):
 
     id = Column(Integer, primary_key=True)
     buyer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
-    buyer = relationship('User', backref='buys')
+    buyer = relationship("User", back_populates="buys")
     total_price = Column(Float, nullable=False)
     buy_datetime = Column(DateTime, default=func.now())
     status = Column(Enum(BuyStatus), nullable=False)
     coupon_id = Column(Integer, ForeignKey('coupons.id'), nullable=True)
+    coupon = relationship("Coupon", back_populates="buys")
     discount = Column(Float, nullable=False, default=0.0)
     shipping_address = Column(String, nullable=True)
     track_number = Column(String, nullable=True)
     shipping_option_id = Column(Integer, ForeignKey('shipping_options.id'), nullable=True)
+    shipping_option = relationship("ShippingOption", back_populates="buys")
+    buy_items = relationship(
+        "BuyItem",
+        back_populates="buy",
+        cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
-        CheckConstraint('quantity > 0', name='check_quantity_positive'),
         CheckConstraint('total_price > 0', name='check_total_price_positive'),
     )
+
+    def __repr__(self):
+        return get_text(Language.EN, BotEntity.USER, "purchase_history_item").format(
+            buy_id=self.id,
+            total_price=self.total_price,
+            currency_sym=config.CURRENCY.get_localized_symbol()
+        )
 
 
 class BuyDTO(BaseModel):
@@ -60,3 +74,20 @@ class RefundDTO(BaseModel):
     item_ids: list[int] | None = None
     buy_id: int | None = None
     language: Language
+
+
+class BuyAdmin(ModelView, model=Buy):
+    column_exclude_list = [Buy.shipping_option_id,
+                           Buy.coupon_id,
+                           Buy.buyer_id]
+    column_sortable_list = [Buy.id,
+                            Buy.total_price,
+                            Buy.buy_datetime,
+                            Buy.status,
+                            Buy.discount,
+                            Buy.shipping_address,
+                            Buy.track_number]
+    can_create = False
+    can_delete = False
+    can_edit = False
+    can_export = False

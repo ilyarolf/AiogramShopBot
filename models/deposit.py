@@ -1,7 +1,9 @@
 from datetime import datetime
 
 from pydantic import BaseModel
+from sqladmin import ModelView
 from sqlalchemy import Integer, Column, ForeignKey, BigInteger, DateTime, func, CheckConstraint, Enum, Float
+from sqlalchemy.orm import relationship
 
 import config
 from enums.bot_entity import BotEntity
@@ -15,6 +17,7 @@ class Deposit(Base):
     __tablename__ = 'deposits'
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user = relationship("User", back_populates="deposits")
     network = Column(Enum(Cryptocurrency), nullable=False)
     amount = Column(BigInteger, nullable=False)
     deposit_datetime = Column(DateTime, default=func.now())
@@ -24,6 +27,9 @@ class Deposit(Base):
         CheckConstraint('amount > 0', name='check_amount_positive'),
         CheckConstraint('fiat_amount >= 0', name='check_fiat_amount'),
     )
+
+    def __repr__(self):
+        return f"Deposit ID:{self.id}"
 
 
 class DepositDTO(BaseModel):
@@ -39,3 +45,18 @@ class DepositDTO(BaseModel):
         return (get_text(language, BotEntity.ADMIN, "deposit_ylabel")
                 .format(currency_sym=config.CURRENCY.get_localized_symbol()),
                 get_text(language, BotEntity.ADMIN, "deposit_chart_title"))
+
+
+class DepositAdmin(ModelView, model=Deposit):
+    name = "Deposit"
+    name_plural = "Deposits"
+    column_sortable_list = [Deposit.id,
+                            Deposit.network,
+                            Deposit.deposit_datetime,
+                            Deposit.fiat_amount]
+    column_exclude_list = [Deposit.user_id,
+                           Deposit.amount]
+    can_delete = False
+    can_edit = True
+    can_create = False
+    can_export = False
