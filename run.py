@@ -33,8 +33,8 @@ logging.basicConfig(level=logging.INFO)
 main_router = Router()
 
 
+@main_router.message(CommandStart())
 @main_router.message(Command("help"))
-@main_router.message(CommandStart(deep_link=True))
 async def start(message: Message, command: CommandObject, session: AsyncSession, language: Language):
     all_categories_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "all_categories"))
     my_profile_button = types.KeyboardButton(text=get_text(language, BotEntity.USER, "my_profile"))

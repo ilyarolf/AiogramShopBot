@@ -29,12 +29,14 @@ class UserService:
 
     @staticmethod
     async def create_if_not_exist(user_dto: UserDTO,
-                                  referrer_code: str,
+                                  referrer_code: str | None,
                                   session: AsyncSession | Session) -> None:
         user = await UserRepository.get_by_tgid(user_dto.telegram_id, session)
         match user:
             case None:
-                referrer_user_dto = await UserRepository.get_by_referrer_code(referrer_code, session)
+                referrer_user_dto = None
+                if referrer_code:
+                    referrer_user_dto = await UserRepository.get_by_referrer_code(referrer_code, session)
                 if referrer_user_dto:
                     user_dto.referred_by_user_id = referrer_user_dto.id
                     user_dto.referred_at = datetime.datetime.now(tz=datetime.timezone.utc)

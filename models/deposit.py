@@ -20,7 +20,7 @@ class Deposit(Base):
     user = relationship("User", back_populates="deposits")
     network = Column(Enum(Cryptocurrency), nullable=False)
     amount = Column(BigInteger, nullable=False)
-    deposit_datetime = Column(DateTime, default=func.now())
+    deposit_datetime = Column(DateTime(timezone=True), default=func.now())
     fiat_amount = Column(Float, nullable=False)
 
     __table_args__ = (
