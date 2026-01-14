@@ -23,7 +23,7 @@ class Review(Base):
     create_datetime = Column(DateTime(timezone=True), nullable=False)
 
     __table_args__ = (
-        CheckConstraint('rating >= 1 and review_rating <= 5', name='check_review_rating_value'),
+        CheckConstraint('rating >= 1 and rating <= 5', name='check_review_rating_value'),
         CheckConstraint('length(text) <= 512', name='check_review_text_length'),
     )
 
