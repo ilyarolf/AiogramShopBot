@@ -1,7 +1,8 @@
 from datetime import datetime
 from pydantic import BaseModel
 from sqladmin import ModelView
-from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func, CheckConstraint, Enum, ForeignKey
+from sqlalchemy import Column, Integer, DateTime, String, Boolean, Float, func, CheckConstraint, Enum, ForeignKey, \
+    BigInteger
 from sqlalchemy.orm import relationship
 
 from enums.bot_entity import BotEntity
@@ -15,16 +16,16 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     telegram_username = Column(String, unique=True, index=True)
-    telegram_id = Column(Integer, nullable=False, unique=True, index=True)
+    telegram_id = Column(BigInteger, nullable=False, unique=True, index=True)
     top_up_amount = Column(Float, default=0.0)
     consume_records = Column(Float, default=0.0)
-    registered_at = Column(DateTime, default=func.now())
+    registered_at = Column(DateTime(timezone=True), default=func.now())
     can_receive_messages = Column(Boolean, default=True)
     language = Column(Enum(Language), default=Language.EN, nullable=False)
     is_banned = Column(Boolean, default=False)
     referral_code = Column(String(8), nullable=True, unique=True, index=True)
     referred_by_user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
-    referred_at = Column(DateTime, nullable=True)
+    referred_at = Column(DateTime(timezone=True), nullable=True)
     received_referral_bonuses = relationship(
         "ReferralBonus",
         foreign_keys="ReferralBonus.referral_user_id",

@@ -20,7 +20,7 @@ class Buy(Base):
     buyer_id = Column(Integer, ForeignKey('users.id'), nullable=True)
     buyer = relationship("User", back_populates="buys")
     total_price = Column(Float, nullable=False)
-    buy_datetime = Column(DateTime, default=func.now())
+    buy_datetime = Column(DateTime(timezone=True), default=func.now())
     status = Column(Enum(BuyStatus), nullable=False)
     coupon_id = Column(Integer, ForeignKey('coupons.id'), nullable=True)
     coupon = relationship("Coupon", back_populates="buys")

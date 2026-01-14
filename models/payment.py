@@ -18,7 +18,7 @@ class Payment(Base):
     processing_payment_id = Column(Integer, nullable=False)
     message_id = Column(Integer, nullable=False)
     is_paid = Column(Boolean, nullable=False, default=False)
-    expire_datetime = Column(DateTime)
+    expire_datetime = Column(DateTime(timezone=True))
 
     def __repr__(self):
         return f"Payment ID:{self.id}"
