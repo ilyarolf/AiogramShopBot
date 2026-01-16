@@ -449,7 +449,7 @@ With 🎪 Coupons management, you can create a new coupon or modify an existing 
 
 To create a coupon, select the coupon type—either 📊 Percentage or 💰 Fixed. Then, choose the usage limit: ♾️ Infinite or 1️⃣ Single-use. Next, enter the coupon value (discount percentage or fixed amount). Provide a coupon name, and finally confirm or cancel the creation.
 
-![img](https://i.imgur.com/GAZ1dOc.gif)
+![img](https://i.imgur.com/1tfiFBw.gif)
 
 #### 3.10.2 📋 View all coupons
 
@@ -463,7 +463,7 @@ You can disable or enable coupons. Open 🔑 Admin Menu->🎪 Coupons management
 
 To create a new shipping method, open 🔑 Admin Menu->📦 Shipping management->🚚 Create new shipping option, then enter the name of the shipping method and the cost in fiat currency.
 
-![img](https://i.imgur.com/1tfiFBw.gif)
+![img](https://imgur.com/IqrdGL5)
 
 #### 3.11.2 📋 View all shipping options
 
