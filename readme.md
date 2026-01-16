@@ -670,6 +670,8 @@ This panel is always available at {YOUR_IP_ADDRESS}.sslip.io/admin<br>
 Login: admin<br>
 Password: ${SQLADMIN_RAW_PASSWORD}
 
+![img.png](https://i.imgur.com/s1EpxNR.png)
+
 ## 7.0 Multibot (Experimental functionality)
 
 ### 7.1 Starting the multibot
