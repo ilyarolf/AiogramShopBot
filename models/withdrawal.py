@@ -14,3 +14,4 @@ class WithdrawalDTO(BaseModel):
     serviceFeeAmount: float | None = None
     onlyCalculate: bool
     totalWithdrawalAmount: float | None = None
+    paymentId: int | None = None

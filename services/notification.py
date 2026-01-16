@@ -245,7 +245,7 @@ class NotificationService:
     async def withdrawal(withdraw_dto: WithdrawalDTO):
         kb_builder = InlineKeyboardBuilder()
         [kb_builder.button(text=get_text(Language.EN, BotEntity.ADMIN, "transaction"),
-                           url=f"{withdraw_dto.cryptoCurrency.get_explorer_base_url}/tx/{tx_id}")
+                           url=f"{withdraw_dto.cryptoCurrency.get_explorer_base_url()}/tx/{tx_id}")
          for tx_id in withdraw_dto.txIdList]
         msg_text = get_text(Language.EN, BotEntity.ADMIN, "transaction_broadcasted")
         kb_builder.adjust(1)
