@@ -45,9 +45,9 @@ async def all_categories(**kwargs):
     language: Language = kwargs.get("language")
     state_data = await state.get_data()
     if callback_data.is_filter_enabled and state_data.get('filter') is not None:
-        media, kb_builder = await CategoryService.get_buttons(callback_data, state, session, language)
+        msg, kb_builder = await CategoryService.get_buttons(callback_data, state, session, language)
     elif callback_data.is_filter_enabled:
-        media, kb_builder = await enable_search(callback_data,
+        msg, kb_builder = await enable_search(callback_data,
                                                 EntityType.CATEGORY,
                                                 {"item_type": callback_data.item_type.value},
                                                 state,
@@ -56,8 +56,8 @@ async def all_categories(**kwargs):
     else:
         await state.update_data(filter=None)
         await state.set_state()
-        media, kb_builder = await CategoryService.get_buttons(callback_data, state, session, language)
-    await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
+        msg, kb_builder = await CategoryService.get_buttons(callback_data, state, session, language)
+    await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
 
 
 async def show_subcategories_in_category(**kwargs):

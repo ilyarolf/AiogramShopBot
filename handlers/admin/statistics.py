@@ -42,14 +42,6 @@ async def entity_statistics(**kwargs):
     await callback.message.answer_photo(photo=media.media, caption=media.caption, reply_markup=kb_builder.as_markup())
 
 
-async def get_db_file(**kwargs):
-    callback: CallbackQuery = kwargs.get("callback")
-    await callback.answer()
-    with open(f"./data/{config.DB_NAME}", "rb") as f:
-        await callback.message.bot.send_document(callback.from_user.id,
-                                                 types.BufferedInputFile(file=f.read(), filename="database.db"))
-
-
 @statistics.callback_query(AdminIdFilter(), StatisticsCallback.filter())
 async def statistics_navigation(callback: CallbackQuery, state: FSMContext, callback_data: StatisticsCallback,
                                 session: AsyncSession, language: Language):
@@ -59,7 +51,6 @@ async def statistics_navigation(callback: CallbackQuery, state: FSMContext, call
         0: statistics_menu,
         1: timedelta_picker,
         2: entity_statistics,
-        3: get_db_file
     }
     current_level_function = levels[current_level]
 

@@ -35,7 +35,7 @@ class BuyService:
     async def refund(buy_dto: BuyDTO, session: AsyncSession | Session, language: Language) -> str:
         refund_data = await BuyRepository.get_refund_data_single(buy_dto.id, session)
         buy = await BuyRepository.get_by_id(buy_dto.id, session)
-        buy.is_refunded = True
+        buy.status = BuyStatus.REFUNDED
         await BuyRepository.update(buy, session)
         user = await UserRepository.get_by_tgid(refund_data.telegram_id, session)
         user.consume_records = user.consume_records - refund_data.total_price

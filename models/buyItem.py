@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from sqladmin import ModelView
-from sqlalchemy import Column, Integer, ForeignKey, JSON
+from sqlalchemy import Column, Integer, ForeignKey, JSON, ARRAY
 from sqlalchemy.orm import relationship
 
 from models.base import Base
@@ -15,9 +15,7 @@ class BuyItem(Base):
         "Buy",
         back_populates="buy_items"
     )
-    # ARRAY CRUTCH FOR SQLALCHEMY+SQLITE 🩼
-    # item_ids = Column(ARRAY, nullable=False)
-    item_ids = Column(JSON, nullable=False)
+    item_ids = Column(ARRAY(Integer), nullable=False)
     review = relationship(
         "Review",
         back_populates="buy_item",

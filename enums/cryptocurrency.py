@@ -6,7 +6,7 @@ from enums.language import Language
 from utils.utils import get_text
 
 
-class Cryptocurrency(Enum):
+class Cryptocurrency(str, Enum):
     BNB = "BNB"
     BTC = "BTC"
     LTC = "LTC"
