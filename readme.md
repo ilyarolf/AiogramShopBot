@@ -463,7 +463,7 @@ You can disable or enable coupons. Open 🔑 Admin Menu->🎪 Coupons management
 
 To create a new shipping method, open 🔑 Admin Menu->📦 Shipping management->🚚 Create new shipping option, then enter the name of the shipping method and the cost in fiat currency.
 
-![img](https://i.imgur.com/IqrdGL5.gif)
+![img](https://i.imgur.com/aIh7fbw.gif)
 
 #### 3.11.2 📋 View all shipping options
 
