@@ -12,12 +12,15 @@ from db import session_commit
 from enums.announcement_type import AnnouncementType
 from enums.bot_entity import BotEntity
 from enums.item_type import ItemType
+from enums.keyboard_button import KeyboardButton
 from enums.language import Language
 from models.item import ItemDTO
+from repositories.button_media import ButtonMediaRepository
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
 from repositories.subcategory import SubcategoryRepository
-from utils.utils import get_text, get_bot_photo_id
+from services.media import MediaService
+from utils.utils import get_text
 
 
 class ItemService:
@@ -137,5 +140,7 @@ class ItemService:
         )
         kb_builder.adjust(1)
         caption = get_text(language, BotEntity.USER, "pick_item_type")
-        bot_photo_id = get_bot_photo_id()
-        return InputMediaPhoto(media=bot_photo_id, caption=caption), kb_builder
+        button_media = await ButtonMediaRepository.get_by_button(
+            KeyboardButton.ALL_CATEGORIES, session
+        )
+        return MediaService.convert_to_media(button_media.media_id, caption=caption), kb_builder
