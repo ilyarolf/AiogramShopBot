@@ -1,6 +1,6 @@
 import math
 
-from sqlalchemy import select, or_, func, literal_column
+from sqlalchemy import select, or_, func, literal_column, any_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -56,16 +56,9 @@ class BuyItemRepository:
         if filters is not None:
             filter_conditions = [Subcategory.name.icontains(name) for name in filters]
             conditions.append(or_(*filter_conditions))
-        # SQLITE CRUTCH 🩼
-        je = func.json_each(BuyItem.item_ids).table_valued("value").alias("je")
         stmt = (
             select(BuyItem)
-            # START SQLITE CRUTCH 🩼
-            .distinct(BuyItem.id)
-            .join(je, literal_column("1") == literal_column("1"))
-            .join(Item, Item.id == je.c.value)
-            # END SQLITE CRUTCH 🩼
-            # PQSL = .join(Item, Item.id.in_(BuyItem.item_ids)
+            .join(Item, Item.id == any_(BuyItem.item_ids))
             .join(Subcategory, Item.subcategory_id == Subcategory.id)
             .where(*conditions)
             .order_by(*sort_methods)
@@ -83,15 +76,8 @@ class BuyItemRepository:
         if filters is not None:
             filter_conditions = [Subcategory.name.icontains(name) for name in filters]
             conditions.append(or_(*filter_conditions))
-        # SQLITE CRUTCH 🩼
-        je = func.json_each(BuyItem.item_ids).table_valued("value").alias("je")
         sub_stmt = (select(BuyItem)
-                    # START SQLITE CRUTCH 🩼
-                    .distinct(BuyItem.id)
-                    .join(je, literal_column("1") == literal_column("1"))
-                    .join(Item, Item.id == je.c.value)
-                    # END SQLITE CRUTCH 🩼
-                    # PSQL = .join(Item, Item.id.in_(BuyItem.item_ids)
+                    .join(Item, Item.id == any_(BuyItem.item_ids))
                     .join(Subcategory, Item.subcategory_id == Subcategory.id)
                     .where(*conditions))
         stmt = select(func.count()).select_from(sub_stmt)

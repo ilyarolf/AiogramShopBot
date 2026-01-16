@@ -62,7 +62,7 @@ class UserRepository:
         stmt = select(User).where(
             or_(
                 User.telegram_id == entity_like_int if entity_like_int is not None else False,
-                User.telegram_username == user_entity,
+                User.telegram_username == user_entity if entity_like_int is None else False,
                 User.id == entity_like_int if entity_like_int is not None else False
             )
         )

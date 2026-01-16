@@ -1,6 +1,6 @@
 import math
 
-from sqlalchemy import select, func, update, or_, literal_column
+from sqlalchemy import select, func, update, or_, literal_column, any_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -83,8 +83,6 @@ class BuyRepository:
             filters = [username.replace("@", "") for username in filters]
             filter_conditions = [User.telegram_username.icontains(name) for name in filters]
             conditions.append(or_(*filter_conditions))
-        # SQLITE CRUTCH 🩼
-        je = func.json_each(BuyItem.item_ids).table_valued("value").alias("je")
         stmt = (select(Buy.total_price,
                        BuyItem.item_ids,
                        Buy.id.label("buy_id"),
@@ -95,11 +93,7 @@ class BuyRepository:
                        User.language)
                 .join(BuyItem, BuyItem.buy_id == Buy.id)
                 .join(User, User.id == Buy.buyer_id)
-                # START SQLITE CRUTCH 🩼
-                .join(je, literal_column("1") == literal_column("1"))
-                .join(Item, Item.id == je.c.value)
-                # END SQLITE CRUTCH 🩼
-                # .join(Item, Item.id.in_(BuyItem.item_ids))
+                .join(Item, Item.id == any_(BuyItem.item_ids))
                 .join(Subcategory, Subcategory.id == Item.subcategory_id)
                 .where(*conditions)
                 .distinct()
@@ -112,7 +106,6 @@ class BuyRepository:
 
     @staticmethod
     async def get_refund_data_single(buy_id: int, session: Session | AsyncSession) -> RefundDTO:
-        je = func.json_each(BuyItem.item_ids).table_valued("value").alias("je")
         stmt = (select(Buy.total_price,
                        BuyItem.item_ids,
                        Buy.id.label("buy_id"),
@@ -124,11 +117,7 @@ class BuyRepository:
                        User.language)
                 .join(BuyItem, BuyItem.buy_id == Buy.id)
                 .join(User, User.id == Buy.buyer_id)
-                # START SQLITE CRUTCH 🩼
-                .join(je, literal_column("1") == literal_column("1"))
-                .join(Item, Item.id == je.c.value)
-                # END SQLITE CRUTCH 🩼
-                # .join(Item, Item.id.in_(BuyItem.item_ids))
+                .join(Item, Item.id.in_(BuyItem.item_ids))
                 .join(Subcategory, Subcategory.id == Item.subcategory_id)
                 .where(Buy.status == BuyStatus.REFUNDED, Buy.id == buy_id)
                 .limit(1))
