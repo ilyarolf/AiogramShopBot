@@ -130,7 +130,7 @@ class BuyRepository:
                 # END SQLITE CRUTCH 🩼
                 # .join(Item, Item.id.in_(BuyItem.item_ids))
                 .join(Subcategory, Subcategory.id == Item.subcategory_id)
-                .where(Buy.is_refunded == False, Buy.id == buy_id)
+                .where(Buy.status == BuyStatus.REFUNDED, Buy.id == buy_id)
                 .limit(1))
         refund_data = await session_execute(stmt, session)
         return RefundDTO.model_validate(refund_data.mappings().one(), from_attributes=True)
@@ -155,7 +155,7 @@ class BuyRepository:
         start, end = timedelta.get_time_range()
         stmt = select(Buy).where(Buy.buy_datetime >= start,
                                  Buy.buy_datetime <= end,
-                                 Buy.is_refunded == False)
+                                 Buy.status == BuyStatus.REFUNDED)
         buys = await session_execute(stmt, session)
         return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]
 
@@ -173,7 +173,7 @@ class BuyRepository:
     async def get_qty_by_buyer_id(buyer_id: int, session: AsyncSession | Session) -> int:
         stmt = (select(func.count(Buy.id))
                 .where(Buy.buyer_id == buyer_id,
-                       Buy.is_refunded == False))
+                       Buy.status == BuyStatus.REFUNDED))
         qty = await session_execute(stmt, session)
         return qty.scalar_one()
 
@@ -181,6 +181,6 @@ class BuyRepository:
     async def get_spent_amount(buyer_id: int, session: AsyncSession) -> float:
         stmt = func.coalesce((select(func.sum(Buy.total_price))
                               .where(Buy.buyer_id == buyer_id,
-                                     Buy.is_refunded == False)), 0)
+                                     Buy.status == BuyStatus.REFUNDED)), 0)
         qty = await session_execute(stmt, session)
         return qty.scalar_one()
