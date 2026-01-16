@@ -1,6 +1,7 @@
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, ForeignKey
-from sqlalchemy.orm import relationship, backref
+from sqladmin import ModelView
+from sqlalchemy import Column, Integer, ForeignKey, JSON, ARRAY
+from sqlalchemy.orm import relationship
 
 from models.base import Base
 
@@ -8,14 +9,34 @@ from models.base import Base
 class BuyItem(Base):
     __tablename__ = "buyItem"
 
-    id = Column(Integer, primary_key=True, unique=True, nullable=False)
+    id = Column(Integer, primary_key=True)
     buy_id = Column(Integer, ForeignKey("buys.id", ondelete="CASCADE"), nullable=False)
-    buy = relationship("Buy", backref=backref("buys", cascade="all"), passive_deletes="all")
-    item_id = Column(Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False)
-    item = relationship("Item", backref=backref("items", cascade="all"), passive_deletes="all")
+    buy = relationship(
+        "Buy",
+        back_populates="buy_items"
+    )
+    item_ids = Column(ARRAY(Integer), nullable=False)
+    review = relationship(
+        "Review",
+        back_populates="buy_item",
+        uselist=False,
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
+
+    def __repr__(self):
+        return f"BuyItem ID:{self.id}"
 
 
 class BuyItemDTO(BaseModel):
     id: int | None = None
     buy_id: int | None = None
-    item_id: int | None = None
+    item_ids: list[int] | None = None
+
+
+class BuyItemAdmin(ModelView, model=BuyItem):
+    column_exclude_list = [BuyItem.buy_id]
+    can_create = False
+    can_delete = False
+    can_edit = False
+    can_export = False

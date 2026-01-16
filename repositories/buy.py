@@ -1,62 +1,105 @@
-import datetime
 import math
 
-from sqlalchemy import select, func, update
+from sqlalchemy import select, func, update, or_, literal_column, any_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 import config
 from callbacks import StatisticsTimeDelta
 from db import session_execute, session_flush
+from enums.buy_status import BuyStatus
+from enums.item_type import ItemType
+from enums.sort_order import SortOrder
+from enums.sort_property import SortProperty
 from models.buy import Buy, BuyDTO, RefundDTO
 from models.buyItem import BuyItem
 from models.item import Item
 from models.subcategory import Subcategory
 from models.user import User
+from utils.utils import calculate_max_page
 
 
 class BuyRepository:
     @staticmethod
-    async def get_by_buyer_id(user_id: int, page: int, session: Session | AsyncSession) -> list[BuyDTO]:
-        stmt = select(Buy).where(Buy.buyer_id == user_id).limit(config.PAGE_ENTRIES).offset(
-            page * config.PAGE_ENTRIES)
+    async def get_by_buyer_id(sort_pairs: dict[str, int],
+                              user_id: int | None,
+                              page: int,
+                              session: AsyncSession) -> list[BuyDTO]:
+        sort_methods = []
+        for sort_property, sort_order in sort_pairs.items():
+            sort_property, sort_order = SortProperty(int(sort_property)), SortOrder(sort_order)
+            if sort_order != SortOrder.DISABLE:
+                sort_column = sort_property.get_column(Buy)
+                sort_method = (getattr(sort_column, sort_order.name.lower()))
+                sort_methods.append(sort_method())
+        conditions = []
+        if user_id:
+            conditions.append(Buy.buyer_id == user_id)
+        stmt = (select(Buy)
+                .where(*conditions)
+                .limit(config.PAGE_ENTRIES)
+                .offset(page * config.PAGE_ENTRIES)
+                .order_by(*sort_methods))
         buys = await session_execute(stmt, session)
         return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]
 
     @staticmethod
-    async def create(buy_dto: BuyDTO, session: Session | AsyncSession) -> int:
+    async def create(buy_dto: BuyDTO, session: Session | AsyncSession) -> BuyDTO:
         buy = Buy(**buy_dto.model_dump())
         session.add(buy)
         await session_flush(session)
-        return buy.id
+        return BuyDTO.model_validate(buy, from_attributes=True)
 
     @staticmethod
-    async def get_max_refund_page(session: Session | AsyncSession):
-        stmt = select(func.count(Buy.id)).where(Buy.is_refunded == 0)
+    async def get_max_refund_page(filters: list[str], session: AsyncSession):
+        conditions = [
+            Buy.status == BuyStatus.REFUNDED
+        ]
+        if filters:
+            filters = [username.replace("@", "") for username in filters]
+            filter_conditions = [User.telegram_username.icontains(name) for name in filters]
+            conditions.append(or_(*filter_conditions))
+        sub_stmt = (select(Buy)
+                    .join(User, User.id == Buy.buyer_id)
+                    .where(*conditions))
+        stmt = select(func.count()).select_from(sub_stmt)
         not_refunded_buys = await session_execute(stmt, session)
         not_refunded_buys = not_refunded_buys.scalar_one()
-        if not_refunded_buys % config.PAGE_ENTRIES == 0:
-            return not_refunded_buys / config.PAGE_ENTRIES - 1
-        else:
-            return math.trunc(not_refunded_buys / config.PAGE_ENTRIES)
+        return calculate_max_page(not_refunded_buys)
 
     @staticmethod
-    async def get_refund_data(page: int, session: Session | AsyncSession) -> list[RefundDTO]:
+    async def get_refund_data(sort_pairs: dict[str, int],
+                              filters: list[str],
+                              page: int, session: AsyncSession) -> list[RefundDTO]:
+        sort_methods = []
+        for sort_property, sort_order in sort_pairs.items():
+            sort_property, sort_order = SortProperty(int(sort_property)), SortOrder(sort_order)
+            if sort_order != SortOrder.DISABLE:
+                sort_column = sort_property.get_column(Buy)
+                sort_method = (getattr(sort_column, sort_order.name.lower()))
+                sort_methods.append(sort_method())
+        conditions = [Buy.status == BuyStatus.REFUNDED]
+        if filters:
+            filters = [username.replace("@", "") for username in filters]
+            filter_conditions = [User.telegram_username.icontains(name) for name in filters]
+            conditions.append(or_(*filter_conditions))
         stmt = (select(Buy.total_price,
-                       Buy.quantity,
+                       BuyItem.item_ids,
                        Buy.id.label("buy_id"),
                        User.telegram_id,
                        User.telegram_username,
                        User.id.label("user_id"),
-                       Subcategory.name.label("subcategory_name"))
+                       Subcategory.name.label("subcategory_name"),
+                       User.language)
                 .join(BuyItem, BuyItem.buy_id == Buy.id)
                 .join(User, User.id == Buy.buyer_id)
-                .join(Item, Item.id == BuyItem.item_id)
+                .join(Item, Item.id == any_(BuyItem.item_ids))
                 .join(Subcategory, Subcategory.id == Item.subcategory_id)
-                .where(Buy.is_refunded == False)
+                .where(*conditions)
                 .distinct()
                 .limit(config.PAGE_ENTRIES)
-                .offset(config.PAGE_ENTRIES * page))
+                .offset(config.PAGE_ENTRIES * page)
+                .order_by(*sort_methods))
         refund_data = await session_execute(stmt, session)
         return [RefundDTO.model_validate(refund_item, from_attributes=True) for refund_item in
                 refund_data.mappings().all()]
@@ -64,17 +107,19 @@ class BuyRepository:
     @staticmethod
     async def get_refund_data_single(buy_id: int, session: Session | AsyncSession) -> RefundDTO:
         stmt = (select(Buy.total_price,
-                       Buy.quantity,
+                       BuyItem.item_ids,
                        Buy.id.label("buy_id"),
                        User.telegram_id,
                        User.telegram_username,
                        User.id.label("user_id"),
-                       Subcategory.name.label("subcategory_name"))
+                       User.language,
+                       Subcategory.name.label("subcategory_name"),
+                       User.language)
                 .join(BuyItem, BuyItem.buy_id == Buy.id)
                 .join(User, User.id == Buy.buyer_id)
-                .join(Item, Item.id == BuyItem.item_id)
+                .join(Item, Item.id.in_(BuyItem.item_ids))
                 .join(Subcategory, Subcategory.id == Item.subcategory_id)
-                .where(Buy.is_refunded == False, Buy.id == buy_id)
+                .where(Buy.status == BuyStatus.REFUNDED, Buy.id == buy_id)
                 .limit(1))
         refund_data = await session_execute(stmt, session)
         return RefundDTO.model_validate(refund_data.mappings().one(), from_attributes=True)
@@ -96,19 +141,35 @@ class BuyRepository:
 
     @staticmethod
     async def get_by_timedelta(timedelta: StatisticsTimeDelta, session: Session | AsyncSession) -> list[BuyDTO]:
-        current_time = datetime.datetime.now()
-        timedelta = datetime.timedelta(days=timedelta.value)
-        time_interval = current_time - timedelta
-        stmt = select(Buy).where(Buy.buy_datetime >= time_interval, Buy.is_refunded == False)
+        start, end = timedelta.get_time_range()
+        stmt = select(Buy).where(Buy.buy_datetime >= start,
+                                 Buy.buy_datetime <= end,
+                                 Buy.status == BuyStatus.REFUNDED)
         buys = await session_execute(stmt, session)
         return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]
 
     @staticmethod
-    async def get_max_page_purchase_history(buyer_id: int, session: Session | AsyncSession) -> int:
-        stmt = select(func.count(Buy.id)).where(Buy.buyer_id == buyer_id)
-        not_refunded_buys = await session_execute(stmt, session)
-        not_refunded_buys = not_refunded_buys.scalar_one()
-        if not_refunded_buys % config.PAGE_ENTRIES == 0:
-            return not_refunded_buys / config.PAGE_ENTRIES - 1
-        else:
-            return math.trunc(not_refunded_buys / config.PAGE_ENTRIES)
+    async def get_max_page_purchase_history(buyer_id: int | None, session: AsyncSession) -> int:
+        conditions = []
+        if buyer_id:
+            conditions.append(Buy.buyer_id == buyer_id)
+        stmt = select(func.count(Buy.id)).where(*conditions)
+        buys = await session_execute(stmt, session)
+        buys = buys.scalar_one()
+        return calculate_max_page(buys)
+
+    @staticmethod
+    async def get_qty_by_buyer_id(buyer_id: int, session: AsyncSession | Session) -> int:
+        stmt = (select(func.count(Buy.id))
+                .where(Buy.buyer_id == buyer_id,
+                       Buy.status == BuyStatus.REFUNDED))
+        qty = await session_execute(stmt, session)
+        return qty.scalar_one()
+
+    @staticmethod
+    async def get_spent_amount(buyer_id: int, session: AsyncSession) -> float:
+        stmt = func.coalesce((select(func.sum(Buy.total_price))
+                              .where(Buy.buyer_id == buyer_id,
+                                     Buy.status == BuyStatus.REFUNDED)), 0)
+        qty = await session_execute(stmt, session)
+        return qty.scalar_one()

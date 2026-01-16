@@ -1,24 +1,63 @@
 import logging
+import sys
 import traceback
-
+from pathlib import Path
 from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.types import BufferedInputFile
 from redis.asyncio import Redis
+from sqladmin import Admin
+
 import config
 from aiogram import Bot, Dispatcher
 from aiogram.enums import ParseMode
 from fastapi import FastAPI, Request, status, HTTPException
-from db import create_db_and_tables
+
+from admin import authentication_backend
+from db import create_db_and_tables, engine
 import uvicorn
 from fastapi.responses import JSONResponse
+from enums.cryptocurrency import Cryptocurrency
+from models.buy import BuyAdmin
+from models.buyItem import BuyItemAdmin
+from models.cart import CartAdmin
+from models.cartItem import CartItemAdmin
+from models.category import CategoryAdmin
+from models.coupon import CouponAdmin
+from models.deposit import DepositAdmin
+from models.item import ItemAdmin
+from models.payment import PaymentAdmin
+from models.referral import ReferralBonusAdmin
+from models.review import ReviewAdmin
+from models.shipping_option import ShippingOptionAdmin
+from models.subcategory import SubcategoryAdmin
+from models.user import UserAdmin
 from processing.processing import processing_router
+from repositories.button_media import ButtonMediaRepository
 from services.notification import NotificationService
+from services.wallet import WalletService
+from utils.utils import validate_i18n
 
 redis = Redis(host=config.REDIS_HOST, password=config.REDIS_PASSWORD)
 bot = Bot(config.TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher(storage=RedisStorage(redis))
 app = FastAPI()
+admin = Admin(app=app, engine=engine, authentication_backend=authentication_backend)
+admin.add_model_view(UserAdmin)
+admin.add_model_view(BuyAdmin)
+admin.add_model_view(ShippingOptionAdmin)
+admin.add_model_view(CouponAdmin)
+admin.add_model_view(CategoryAdmin)
+admin.add_model_view(SubcategoryAdmin)
+admin.add_model_view(ItemAdmin)
+admin.add_model_view(DepositAdmin)
+admin.add_model_view(BuyItemAdmin)
+admin.add_model_view(PaymentAdmin)
+admin.add_model_view(CartAdmin)
+admin.add_model_view(CartItemAdmin)
+admin.add_model_view(ReferralBonusAdmin)
+admin.add_model_view(ReviewAdmin)
+
 app.include_router(processing_router)
 
 
@@ -44,6 +83,27 @@ async def on_startup():
         url=config.WEBHOOK_URL,
         secret_token=config.WEBHOOK_SECRET_TOKEN
     )
+    static = Path("static")
+    if static.exists() is False:
+        static.mkdir()
+    me = await bot.get_me()
+    photos = await bot.get_user_profile_photos(me.id)
+    bot_photo_id = photos.photos[0][-1].file_id
+    with open("static/no_image.jpeg", "w") as f:
+        f.write(bot_photo_id)
+    validate_i18n()
+    await ButtonMediaRepository.init_buttons_media()
+    if config.CRYPTO_FORWARDING_MODE:
+        for cryptocurrency in Cryptocurrency:
+            is_addr_valid = WalletService.validate_withdrawal_address(
+                cryptocurrency.get_forwarding_address(),
+                cryptocurrency
+            )
+            if is_addr_valid is False:
+                logging.debug(
+                    f"Your withdrawal address for {cryptocurrency.name} cryptocurrency is not valid!"
+                )
+                sys.exit()
     for admin in config.ADMIN_ID_LIST:
         try:
             await bot.send_message(admin, 'Bot is working')

@@ -1,41 +1,72 @@
-from aiogram import types
+from aiogram.types import InlineKeyboardButton
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from callbacks import AdminMenuCallback, AdminAnnouncementCallback, AnnouncementType
+from callbacks import AdminMenuCallback, AnnouncementCallback, AnnouncementType
 from enums.bot_entity import BotEntity
-from utils.localizator import Localizator
+from enums.language import Language
+from utils.utils import get_text
 
 
 class AdminConstants:
-    back_to_main_button = types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.ADMIN,
-                                                                               "back_to_menu"),
-                                                     callback_data=AdminMenuCallback.create(level=0).pack())
-
-
-class AdminAnnouncementsConstants:
     @staticmethod
-    def get_confirmation_builder(announcement_type: AnnouncementType) -> InlineKeyboardBuilder:
+    def back_to_main_button(language: Language):
+        return InlineKeyboardButton(text=get_text(language, BotEntity.ADMIN, "back_to_menu"),
+                                    callback_data=AdminMenuCallback.create(level=0).pack())
+
+
+class AnnouncementsConstants:
+    @staticmethod
+    def get_confirmation_builder(announcement_type: AnnouncementType, language: Language) -> InlineKeyboardBuilder:
         kb_builder = InlineKeyboardBuilder()
-        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "confirm"),
-                          callback_data=AdminAnnouncementCallback.create(3, announcement_type))
-        kb_builder.button(text=Localizator.get_text(BotEntity.COMMON, "cancel"),
-                          callback_data=AdminAnnouncementCallback.create(0))
+        kb_builder.button(text=get_text(language, BotEntity.COMMON, "confirm"),
+                          callback_data=AnnouncementCallback.create(level=3,
+                                                                    announcement_type=announcement_type))
+        kb_builder.button(text=get_text(language, BotEntity.COMMON, "cancel"),
+                          callback_data=AnnouncementCallback.create(level=0))
         return kb_builder
 
 
-class AdminInventoryManagementStates(StatesGroup):
+class InventoryManagementStates(StatesGroup):
+    item_type = State()
     document = State()
+    category = State()
+    subcategory = State()
+    description = State()
+    price = State()
+    private_data = State()
+    filter_entity = State()
 
 
-class AdminAnnouncementStates(StatesGroup):
+class AnnouncementStates(StatesGroup):
     announcement_msg = State()
 
 
 class UserManagementStates(StatesGroup):
     balance_amount = State()
     user_entity = State()
+    filter_username = State()
 
 
 class WalletStates(StatesGroup):
     crypto_address = State()
+
+
+class MediaManagementStates(StatesGroup):
+    media = State()
+    filter_entity = State()
+
+
+class CouponsManagementStates(StatesGroup):
+    coupon_name = State()
+    coupon_value = State()
+
+
+class ShippingManagementStates(StatesGroup):
+    shipping_name = State()
+    shipping_price = State()
+    edit_property = State()
+
+
+class BuysManagementStates(StatesGroup):
+    update_track_number = State()

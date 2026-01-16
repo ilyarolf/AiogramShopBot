@@ -10,6 +10,7 @@ from callbacks import StatisticsTimeDelta
 from db import session_execute, session_flush
 
 from models.user import UserDTO, User
+from utils.utils import calculate_max_page
 
 
 class UserRepository:
@@ -53,8 +54,18 @@ class UserRepository:
 
     @staticmethod
     async def get_user_entity(user_entity: int | str, session: Session | AsyncSession) -> UserDTO | None:
-        stmt = select(User).where(or_(User.telegram_id == user_entity, User.telegram_username == user_entity,
-                                      User.id == user_entity))
+        try:
+            entity_like_int = int(user_entity)
+        except ValueError:
+            entity_like_int = None
+
+        stmt = select(User).where(
+            or_(
+                User.telegram_id == entity_like_int if entity_like_int is not None else False,
+                User.telegram_username == user_entity if entity_like_int is None else False,
+                User.id == entity_like_int if entity_like_int is not None else False
+            )
+        )
         user = await session_execute(stmt, session)
         user = user.scalar()
         if user is None:
@@ -63,30 +74,36 @@ class UserRepository:
             return UserDTO.model_validate(user, from_attributes=True)
 
     @staticmethod
-    async def get_by_timedelta(timedelta: StatisticsTimeDelta, page: int, session: Session | AsyncSession) -> tuple[list[UserDTO], int]:
-        current_time = datetime.datetime.now()
-        timedelta = datetime.timedelta(days=timedelta.value)
-        time_interval = current_time - timedelta
+    async def get_by_timedelta(timedelta: StatisticsTimeDelta,
+                               page: int, session: Session | AsyncSession) -> list[UserDTO]:
+        start, end = timedelta.get_time_range()
         users_stmt = (select(User)
-                      .where(User.registered_at >= time_interval, User.telegram_username != None)
+                      .where(User.registered_at >= start,
+                             User.registered_at <= end)
                       .limit(config.PAGE_ENTRIES)
                       .offset(config.PAGE_ENTRIES * page))
-        users_count_stmt = select(func.count(User.id)).where(User.registered_at >= time_interval)
         users = await session_execute(users_stmt, session)
-        users = [UserDTO.model_validate(user, from_attributes=True) for user in users.scalars().all()]
-        users_count = await session_execute(users_count_stmt, session)
-        return users, users_count.scalar_one()
+        return [UserDTO.model_validate(user, from_attributes=True) for user in users.scalars().all()]
 
     @staticmethod
     async def get_max_page_by_timedelta(timedelta: StatisticsTimeDelta, session: Session | AsyncSession) -> int:
-        current_time = datetime.datetime.now()
-        timedelta = datetime.timedelta(days=timedelta.value)
-        time_interval = current_time - timedelta
-        stmt = select(func.count(User.id)).where(User.registered_at >= time_interval,
-                                                 User.telegram_username != None)
+        start, end = timedelta.get_time_range()
+        stmt = select(func.count(User.id)).where(
+            User.registered_at >= start,
+            User.registered_at <= end)
         users = await session_execute(stmt, session)
         users = users.scalar_one()
-        if users % config.PAGE_ENTRIES == 0:
-            return users / config.PAGE_ENTRIES - 1
-        else:
-            return math.trunc(users / config.PAGE_ENTRIES)
+        return calculate_max_page(users)
+
+    @staticmethod
+    async def get_by_referrer_code(referrer_code: str, session: AsyncSession) -> UserDTO | None:
+        stmt = select(User).where(User.referral_code == referrer_code)
+        user_dto = await session_execute(stmt, session)
+        return user_dto.scalar_one_or_none()
+
+    @staticmethod
+    async def get_referrals_qty_by_referrer_id(referrer_id: int, session: AsyncSession) -> int:
+        stmt = (select(func.coalesce(func.count(User.id), 0))
+                .where(User.referred_by_user_id == referrer_id))
+        referrals_qty = await session_execute(stmt, session)
+        return referrals_qty.scalar_one()

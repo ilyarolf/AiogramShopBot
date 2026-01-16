@@ -1,19 +1,16 @@
 services:
   caddy:
-    image: lucaslorentz/caddy-docker-proxy:2.9.1-alpine
+    image: caddy
     ports:
-      - 80:80
-      - 443:443
-    environment:
-      - CADDY_INGRESS_NETWORKS=caddy
+      - "80:80"
+      - "443:443"
     networks:
       - caddy
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./caddy/caddy_data:/data
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy_data:/data
+      - ./caddy_config:/config
     restart: always
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
   bot:
     build:
@@ -29,13 +26,9 @@ services:
     networks:
       - caddy
     ports:
-      - "4040:4040"
-      - "5000:5000" # ${WEBAPP_PORT}:${WEBAPP_PORT}
-    expose:
-      - 4040
-      - 5000 # ${WEBAPP_PORT}
+      - "127.0.0.1:5000:5000" # ${WEBAPP_PORT}:${WEBAPP_PORT}
     volumes:
-      - ./AiogramShopBot:/bot/data # endswith your database name
+      - ./i18n:/bot/i18n
     command: [ "python", "-u", "run.py" ]
     restart: always
 
@@ -47,7 +40,7 @@ services:
       - -c
       - redis-server --requirepass "$${REDIS_PASSWORD:?REDIS_PASSWORD variable is not set}"
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     env_file:
       - .env
     volumes:
@@ -56,10 +49,25 @@ services:
     networks:
       - caddy
 
+  postgres:
+    container_name: "postgres"
+    image: "postgres:18"
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql
+    networks:
+      - caddy
+    restart: always
+
+
 volumes:
   AiogramShopBot:
   caddy_data:
   redis_data:
+  postgres_data:
 
 networks:
   caddy:

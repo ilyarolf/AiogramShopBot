@@ -1,11 +1,10 @@
-from aiogram import types
-
-from callbacks import AllCategoriesCallback
-from enums.bot_entity import BotEntity
-from utils.localizator import Localizator
+from aiogram.fsm.state import StatesGroup, State
 
 
-class UserConstants:
-    ALL_CATEGORIES_BUTTON = types.InlineKeyboardButton(text=Localizator.get_text(BotEntity.USER,
-                                                                                 "all_categories"),
-                                                       callback_data=AllCategoriesCallback.create(0).pack())
+class UserStates(StatesGroup):
+    review_image = State()
+    review_text = State()
+    shipping_address = State()
+    filter_items = State()
+    filter_purchase_history = State()
+    coupon = State()

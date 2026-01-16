@@ -20,10 +20,9 @@ class DepositRepository:
 
     @staticmethod
     async def get_by_timedelta(timedelta: StatisticsTimeDelta, session: Session | AsyncSession) -> list[DepositDTO]:
-        current_time = datetime.datetime.now()
-        timedelta = datetime.timedelta(days=timedelta.value)
-        time_interval = current_time - timedelta
-        stmt = select(Deposit).where(Deposit.deposit_datetime >= time_interval)
+        start, end = timedelta.get_time_range()
+        stmt = select(Deposit).where(Deposit.deposit_datetime >= start,
+                                     Deposit.deposit_datetime <= end)
         deposits = await session_execute(stmt, session)
         return [DepositDTO.model_validate(deposit, from_attributes=True) for deposit in deposits.scalars().all()]
 
@@ -43,7 +42,8 @@ class DepositRepository:
         return deposits
 
     @staticmethod
-    async def get_not_withdrawn_deposits(cryptocurrency: Cryptocurrency, session: Session | AsyncSession) -> list[DepositDTO]:
+    async def get_not_withdrawn_deposits(cryptocurrency: Cryptocurrency,
+                                         session: Session | AsyncSession) -> list[DepositDTO]:
         stmt = (select(Deposit)
                 .where(Deposit.is_withdrawn == False,
                        Deposit.network == cryptocurrency.value,
@@ -72,3 +72,17 @@ class DepositRepository:
                 .where(Deposit.network == cryptocurrency.value)
                 .values(is_withdrawn=True))
         await session_execute(stmt, session)
+
+    @staticmethod
+    async def get_sum(user_id: int, session: AsyncSession) -> float:
+        stmt = (select(func.coalesce(func.sum(Deposit.fiat_amount), 0))
+                .where(Deposit.user_id == user_id))
+        deposits_sum = await session_execute(stmt, session)
+        return deposits_sum.scalar_one()
+
+    @staticmethod
+    async def get_deposits_qty_by_user_id(user_id: int, session: AsyncSession) -> int:
+        stmt = (select(func.coalesce(func.count(Deposit.id), 0))
+                .where(Deposit.user_id == user_id))
+        deposits_sum = await session_execute(stmt, session)
+        return deposits_sum.scalar_one()
