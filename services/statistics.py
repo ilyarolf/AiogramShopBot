@@ -36,8 +36,6 @@ class StatisticsService:
                           callback_data=StatisticsCallback.create(1, StatisticsEntity.BUYS))
         kb_builder.button(text=get_text(language, BotEntity.ADMIN, "deposits_statistics"),
                           callback_data=StatisticsCallback.create(1, StatisticsEntity.DEPOSITS))
-        kb_builder.button(text=get_text(language, BotEntity.ADMIN, "get_database_file"),
-                          callback_data=StatisticsCallback.create(3))
         kb_builder.adjust(1)
         kb_builder.row(AdminConstants.back_to_main_button(language))
         return get_text(language, BotEntity.ADMIN, "pick_statistics_entity"), kb_builder
