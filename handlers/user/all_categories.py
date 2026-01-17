@@ -45,19 +45,20 @@ async def all_categories(**kwargs):
     language: Language = kwargs.get("language")
     state_data = await state.get_data()
     if callback_data.is_filter_enabled and state_data.get('filter') is not None:
-        msg, kb_builder = await CategoryService.get_buttons(callback_data, state, session, language)
+        media, kb_builder = await CategoryService.get_buttons(callback_data, state, session, language)
     elif callback_data.is_filter_enabled:
-        msg, kb_builder = await enable_search(callback_data,
+        item_type_value = callback_data.item_type.value if callback_data.item_type else None
+        media, kb_builder = await enable_search(callback_data,
                                                 EntityType.CATEGORY,
-                                                {"item_type": callback_data.item_type.value},
+                                                {"item_type": item_type_value},
                                                 state,
                                                 UserStates.filter_items,
                                                 language)
     else:
         await state.update_data(filter=None)
         await state.set_state()
-        msg, kb_builder = await CategoryService.get_buttons(callback_data, state, session, language)
-    await callback.message.edit_caption(caption=msg, reply_markup=kb_builder.as_markup())
+        media, kb_builder = await CategoryService.get_buttons(callback_data, state, session, language)
+    await callback.message.edit_media(media=media, reply_markup=kb_builder.as_markup())
 
 
 async def show_subcategories_in_category(**kwargs):
@@ -70,10 +71,11 @@ async def show_subcategories_in_category(**kwargs):
     if callback_data.is_filter_enabled and state_data.get('filter') is not None:
         media, kb_builder = await SubcategoryService.get_buttons(callback_data, state, session, language)
     elif callback_data.is_filter_enabled:
+        item_type_value = callback_data.item_type.value if callback_data.item_type else None
         media, kb_builder = await enable_search(callback_data,
                                                 EntityType.SUBCATEGORY,
                                                 {"category_id": callback_data.category_id,
-                                                 "item_type": callback_data.item_type.value},
+                                                 "item_type": item_type_value},
                                                 state,
                                                 UserStates.filter_items,
                                                 language)
