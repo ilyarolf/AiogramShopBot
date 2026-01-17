@@ -24,7 +24,9 @@ class CategoryService:
             state: FSMContext,
             session: AsyncSession,
             language: Language
-    ) -> tuple[str, InlineKeyboardBuilder]:
+    ) -> tuple[InputMediaPhoto |
+               InputMediaAnimation |
+               InputMediaVideo, InlineKeyboardBuilder]:
         state_data = await state.get_data()
         callback_data = callback_data or AllCategoriesCallback.create(1, **state_data.get("entity_id_dict"))
         sort_pairs, filters = await get_filters_settings(state, callback_data)
@@ -43,14 +45,14 @@ class CategoryService:
 
         has_categories = len(categories) > 0
         if not has_categories:
-            msg = get_text(language, BotEntity.USER, "no_categories")
+            caption = get_text(language, BotEntity.USER, "no_categories")
         else:
             kb_builder.adjust(2)
             if callback_data.item_type:
                 item_type = callback_data.item_type.get_localized(language)
             else:
                 item_type = get_text(language, BotEntity.COMMON, "all")
-            msg = get_text(language, BotEntity.USER, "pick_category").format(
+            caption = get_text(language, BotEntity.USER, "pick_category").format(
                 item_type=item_type
             )
             kb_builder.row(
@@ -68,4 +70,8 @@ class CategoryService:
             kb_builder, callback_data, CategoryRepository.get_maximum_page(filters, session),
             callback_data.get_back_button(language, 0), language
         )
-        return msg, kb_builder
+        button_media = await ButtonMediaRepository.get_by_button(
+            KeyboardButton.ALL_CATEGORIES, session
+        )
+        media = MediaService.convert_to_media(button_media.media_id, caption=caption)
+        return media, kb_builder

@@ -29,7 +29,7 @@ class SubcategoryService:
                                                        InputMediaAnimation |
                                                        InputMediaVideo, InlineKeyboardBuilder]:
         state_data = await state.get_data()
-        callback_data = callback_data or AllCategoriesCallback.create(1, **state_data.get("entity_id_dict"))
+        callback_data = callback_data or AllCategoriesCallback.create(2, **state_data.get("entity_id_dict"))
         sort_pairs, filters = await get_filters_settings(state, callback_data)
         kb_builder = InlineKeyboardBuilder()
         items = await SubcategoryRepository.get_paginated_by_category_id(sort_pairs, filters,
