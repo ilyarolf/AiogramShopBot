@@ -62,7 +62,7 @@ class CartService:
             current_cart_content.quantity = current_cart_content.quantity + cart_item.quantity
             if current_cart_content.quantity > available_qty:
                 current_cart_content.quantity = available_qty
-            await CartItemRepository.update(cart_item, session)
+            await CartItemRepository.update(current_cart_content, session)
         else:
             await CartItemRepository.create(cart_item, session)
         await session_commit(session)
