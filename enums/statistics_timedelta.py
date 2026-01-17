@@ -1,5 +1,5 @@
 import calendar
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 
 
@@ -9,7 +9,7 @@ class StatisticsTimeDelta(IntEnum):
     MONTH = 30
 
     def get_time_range(self) -> tuple[datetime, datetime]:
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
 
         match self:
             case StatisticsTimeDelta.DAY:
