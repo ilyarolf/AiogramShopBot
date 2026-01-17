@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
+from aiogram.fsm.context import FSMContext
 from aiogram.types import InputMediaPhoto, BufferedInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -134,17 +135,27 @@ class StatisticsService:
     @staticmethod
     async def get_statistics(callback_data: StatisticsCallback,
                              session: AsyncSession,
+                             state: FSMContext,
                              language: Language) -> tuple[InputMediaPhoto, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
         timedelta_localized = get_text(language, BotEntity.ADMIN, f"{callback_data.timedelta}_day")
         match callback_data.statistics_entity:
             case StatisticsEntity.USERS:
-                users = await UserRepository.get_by_timedelta(callback_data.timedelta, callback_data.page,
-                                                              session)
+                users = await UserRepository.get_by_timedelta(callback_data.timedelta, session)
+                users_paginated = await UserRepository.get_by_timedelta_paginated(callback_data.timedelta,
+                                                                                  callback_data.page,
+                                                                                  session)
+                users_qty = await UserRepository.get_qty_by_timedelta(callback_data.timedelta, session)
                 [kb_builder.button(text=user.telegram_username, url=f'tg://user?id={user.telegram_id}') for user in
-                 users
+                 users_paginated
                  if user.telegram_username]
-                chart = StatisticsService.build_statistics_chart(users, callback_data.timedelta, language)
+                state_data = await state.get_data()
+                chart = state_data.get(f"chart_{callback_data.timedelta.name.lower()}")
+                if chart is None:
+                    chart = StatisticsService.build_statistics_chart(users, callback_data.timedelta, language)
+                    await state.update_data(chart=chart.hex())
+                else:
+                    chart = bytes.fromhex(chart)
                 kb_builder.adjust(1)
                 kb_builder = await add_pagination_buttons(
                     kb_builder,
@@ -154,7 +165,7 @@ class StatisticsService:
                     language)
                 kb_builder.row(AdminConstants.back_to_main_button(language), callback_data.get_back_button(language))
                 caption = get_text(language, BotEntity.ADMIN, "new_users_msg").format(
-                    users_count=len(users),
+                    users_count=users_qty,
                     timedelta=timedelta_localized
                 )
                 media = InputMediaPhoto(

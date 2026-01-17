@@ -74,7 +74,16 @@ class UserRepository:
             return UserDTO.model_validate(user, from_attributes=True)
 
     @staticmethod
-    async def get_by_timedelta(timedelta: StatisticsTimeDelta,
+    async def get_by_timedelta(timedelta: StatisticsTimeDelta, session: Session | AsyncSession) -> list[UserDTO]:
+        start, end = timedelta.get_time_range()
+        users_stmt = (select(User)
+                      .where(User.registered_at >= start,
+                             User.registered_at <= end))
+        users = await session_execute(users_stmt, session)
+        return [UserDTO.model_validate(user, from_attributes=True) for user in users.scalars().all()]
+
+    @staticmethod
+    async def get_by_timedelta_paginated(timedelta: StatisticsTimeDelta,
                                page: int, session: Session | AsyncSession) -> list[UserDTO]:
         start, end = timedelta.get_time_range()
         users_stmt = (select(User)
@@ -107,3 +116,12 @@ class UserRepository:
                 .where(User.referred_by_user_id == referrer_id))
         referrals_qty = await session_execute(stmt, session)
         return referrals_qty.scalar_one()
+
+    @staticmethod
+    async def get_qty_by_timedelta(timedelta: StatisticsTimeDelta, session: AsyncSession) -> int:
+        start, end = timedelta.get_time_range()
+        users_stmt = (select(func.count(User.id))
+                      .where(User.registered_at >= start,
+                             User.registered_at <= end))
+        users_qty = await session_execute(users_stmt, session)
+        return users_qty.scalar_one()

@@ -37,7 +37,8 @@ async def entity_statistics(**kwargs):
     callback_data: StatisticsCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
     language: Language = kwargs.get("language")
-    media, kb_builder = await StatisticsService.get_statistics(callback_data, session, language)
+    state: FSMContext = kwargs.get("state")
+    media, kb_builder = await StatisticsService.get_statistics(callback_data, session, state, language)
     await callback.message.delete()
     await callback.message.answer_photo(photo=media.media, caption=media.caption, reply_markup=kb_builder.as_markup())
 
