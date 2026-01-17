@@ -144,7 +144,7 @@ class BuyRepository:
         start, end = timedelta.get_time_range()
         stmt = select(Buy).where(Buy.buy_datetime >= start,
                                  Buy.buy_datetime <= end,
-                                 Buy.status == BuyStatus.REFUNDED)
+                                 Buy.status != BuyStatus.REFUNDED)
         buys = await session_execute(stmt, session)
         return [BuyDTO.model_validate(buy, from_attributes=True) for buy in buys.scalars().all()]
 
