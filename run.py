@@ -76,7 +76,7 @@ async def support(message: Message, session: AsyncSession, language: Language):
     button_media = await ButtonMediaRepository.get_by_button(KeyboardButton.HELP, session)
     media = MediaService.convert_to_media(button_media.media_id,
                                           caption=get_text(language, BotEntity.USER, "help_string"))
-    await NotificationService.answer_media(message, media)
+    await NotificationService.answer_media(message, media, kb_builder.as_markup())
 
 
 @main_router.message(F.text.in_(KeyboardButton.get_localized_set(KeyboardButton.REVIEWS)), IsUserExistFilter())
