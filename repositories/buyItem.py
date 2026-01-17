@@ -58,6 +58,7 @@ class BuyItemRepository:
             conditions.append(or_(*filter_conditions))
         stmt = (
             select(BuyItem)
+            .distinct(BuyItem.id)
             .join(Item, Item.id == any_(BuyItem.item_ids))
             .join(Subcategory, Item.subcategory_id == Subcategory.id)
             .where(*conditions)
@@ -77,6 +78,7 @@ class BuyItemRepository:
             filter_conditions = [Subcategory.name.icontains(name) for name in filters]
             conditions.append(or_(*filter_conditions))
         sub_stmt = (select(BuyItem)
+                    .distinct(BuyItem.id)
                     .join(Item, Item.id == any_(BuyItem.item_ids))
                     .join(Subcategory, Item.subcategory_id == Subcategory.id)
                     .where(*conditions))
