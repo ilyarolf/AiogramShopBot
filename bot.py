@@ -137,4 +137,11 @@ async def exception_handler(request: Request, exc: Exception):
 
 
 def main() -> None:
-    uvicorn.run(app, host=config.WEBAPP_HOST, port=config.WEBAPP_PORT)
+    uvicorn.run(
+        app,
+        host=config.WEBAPP_HOST,
+        port=config.WEBAPP_PORT,
+        proxy_headers=True,
+        forwarded_allow_ips="*",
+    )
+
