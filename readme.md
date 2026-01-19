@@ -568,7 +568,7 @@ With 🛍 Buys management, you can view all your users' purchases. This feature 
 
 With ⭐ Reviews Management, you can view all reviews of your customers' purchases. You can also delete the text and image of a review to avoid unwanted advertising.
 
-![img](https://i.imgur.com/Hc52oe8.gif)
+![img](https://i.imgur.com/umBysXX.gif)
 
 ---
 
@@ -583,7 +583,7 @@ To enable cryptocurrency forwarding, you need to set the CRYPTO_FORWARDING_MODE 
 
 ## 5.0 Referral System
 
-The referral system is designed to стимулировать organic growth of the bot while keeping the bonus economy fully controlled and predictable. All referral rewards are credited as internal bonus balance and cannot be withdrawn. Bonuses can only be used to purchase digital or physical products inside the bot.
+The referral system is designed to stimulate organic growth of the bot while keeping the bonus economy fully controlled and predictable. All referral rewards are credited as internal bonus balance and cannot be withdrawn. Bonuses can only be used to purchase digital or physical products inside the bot.
 
 ---
 
