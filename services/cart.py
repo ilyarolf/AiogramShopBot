@@ -89,8 +89,19 @@ class CartService:
         if callback_data is None:
             callback_data = CartCallback.create(0)
         cart_items = await CartItemRepository.get_by_user_id(user.id, callback_data.page, session)
+        filtered_cart_items = []
         kb_builder = InlineKeyboardBuilder()
         for cart_item in cart_items:
+            is_available = await ItemRepository.get_available_qty(cart_item.item_type,
+                                                                  cart_item.category_id,
+                                                                  cart_item.subcategory_id,
+                                                                  session) > 0
+            if is_available:
+                filtered_cart_items.append(cart_item)
+            else:
+                await CartItemRepository.remove_from_cart(cart_item.id, session)
+        await session_commit(session)
+        for cart_item in filtered_cart_items:
             item = await ItemRepository.get_single(cart_item.item_type,
                                                    cart_item.category_id,
                                                    cart_item.subcategory_id,
