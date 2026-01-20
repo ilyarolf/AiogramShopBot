@@ -1,10 +1,6 @@
-import datetime
-import math
-
 from sqlalchemy import select, update, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-
 import config
 from callbacks import StatisticsTimeDelta
 from db import session_execute, session_flush
@@ -14,6 +10,9 @@ from utils.utils import calculate_max_page
 
 
 class UserRepository:
+    INT32_MAX = 2_147_483_647
+    INT32_MIN = -2_147_483_648
+
     @staticmethod
     async def get_by_tgid(telegram_id: int, session: AsyncSession | Session) -> UserDTO | None:
         stmt = select(User).where(User.telegram_id == telegram_id)
@@ -53,25 +52,35 @@ class UserRepository:
         return users_count.scalar_one()
 
     @staticmethod
-    async def get_user_entity(user_entity: int | str, session: Session | AsyncSession) -> UserDTO | None:
-        try:
-            entity_like_int = int(user_entity)
-        except ValueError:
-            entity_like_int = None
+    async def get_user_entity(
+            user_entity: int | str,
+            session: Session | AsyncSession
+    ) -> UserDTO | None:
 
-        stmt = select(User).where(
-            or_(
-                User.telegram_id == entity_like_int if entity_like_int is not None else False,
-                User.telegram_username == user_entity if entity_like_int is None else False,
-                User.id == entity_like_int if entity_like_int is not None else False
-            )
-        )
-        user = await session_execute(stmt, session)
-        user = user.scalar()
+        entity_int: int | None = None
+        try:
+            entity_int = int(user_entity)
+        except (ValueError, TypeError):
+            pass
+
+        conditions = []
+        if entity_int is not None:
+            conditions.append(User.telegram_id == entity_int)
+            if UserRepository.INT32_MIN <= entity_int <= UserRepository.INT32_MAX:
+                conditions.append(User.id == entity_int)
+        if isinstance(user_entity, str):
+            conditions.append(User.telegram_username == user_entity)
+
+        if not conditions:
+            return None
+        stmt = select(User).where(or_(*conditions))
+        result = await session_execute(stmt, session)
+        user = result.scalar_one_or_none()
+
         if user is None:
-            return user
-        else:
-            return UserDTO.model_validate(user, from_attributes=True)
+            return None
+
+        return UserDTO.model_validate(user, from_attributes=True)
 
     @staticmethod
     async def get_by_timedelta(timedelta: StatisticsTimeDelta, session: Session | AsyncSession) -> list[UserDTO]:
