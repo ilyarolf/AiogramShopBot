@@ -4,7 +4,7 @@ import traceback
 from pathlib import Path
 from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.redis import RedisStorage
-from aiogram.types import BufferedInputFile
+from aiogram.types import BufferedInputFile, URLInputFile
 from redis.asyncio import Redis
 from sqladmin import Admin
 
@@ -88,7 +88,17 @@ async def on_startup():
         static.mkdir()
     me = await bot.get_me()
     photos = await bot.get_user_profile_photos(me.id)
-    bot_photo_id = photos.photos[0][-1].file_id
+    if photos.total_count == 0:
+        photo_id_list = []
+        for admin_id in config.ADMIN_ID_LIST:
+            msg = await bot.send_photo(chat_id=admin_id,
+                                       photo=URLInputFile(url="https://i.imgur.com/CxWRPwY.png",
+                                                          filename="no_image.png"))
+            bot_photo_id = msg.photo[-1].file_id
+            photo_id_list.append(bot_photo_id)
+        bot_photo_id = photo_id_list[0]
+    else:
+        bot_photo_id = photos.photos[0][-1].file_id
     with open("static/no_image.jpeg", "w") as f:
         f.write(bot_photo_id)
     validate_i18n()
