@@ -196,7 +196,13 @@
     "delivered": "Delivered",
     "completed": "Completed",
     "refunded": "Refunded",
-    "referrer": "👤 Referrer"
+    "referrer": "👤 Referrer",
+    "usdt_sol_top_up": "USDT (Solana)",
+    "usdc_sol_top_up": "USDC (Solana)",
+    "usdt_erc20_top_up": "USDT ERC-20",
+    "usdc_erc20_top_up": "USDC ERC-20",
+    "usdt_bep20_top_up": "USDT BEP-20",
+    "usdc_bep20_top_up": "USDC BEP-20"
   },
   "user": {
     "all_categories": "🗂️ All categories",
