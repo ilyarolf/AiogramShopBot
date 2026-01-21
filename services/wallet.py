@@ -126,10 +126,10 @@ class WalletService:
             Cryptocurrency.SOL: re.compile(r'^[1-9A-HJ-NP-Za-km-z]{32,44}$'),
             Cryptocurrency.USDT_SOL: re.compile(r'^[1-9A-HJ-NP-Za-km-z]{32,44}$'),
             Cryptocurrency.USDC_SOL: re.compile(r'^[1-9A-HJ-NP-Za-km-z]{32,44}$'),
-            Cryptocurrency.USDT_ERC20: re.compile(r'^[1-9A-HJ-NP-Za-km-z]{32,44}$'),
-            Cryptocurrency.USDC_ERC20: re.compile(r'^[1-9A-HJ-NP-Za-km-z]{32,44}$'),
-            Cryptocurrency.USDT_BEP20: re.compile(r'^[1-9A-HJ-NP-Za-km-z]{32,44}$'),
-            Cryptocurrency.USDC_BEP20: re.compile(r'^[1-9A-HJ-NP-Za-km-z]{32,44}$'),
+            Cryptocurrency.USDT_ERC20: re.compile(r'^0x[a-fA-F0-9]{40}$'),
+            Cryptocurrency.USDC_ERC20: re.compile(r'^0x[a-fA-F0-9]{40}$'),
+            Cryptocurrency.USDT_BEP20: re.compile(r'^0x[a-fA-F0-9]{40}$'),
+            Cryptocurrency.USDC_BEP20: re.compile(r'^0x[a-fA-F0-9]{40}$'),
         }
         regex = address_regex[cryptocurrency]
         return bool(regex.match(address))
