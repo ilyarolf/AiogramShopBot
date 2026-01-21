@@ -196,7 +196,13 @@
     "delivered": "Geliefert",
     "completed": "Abgeschlossen",
     "refunded": "Erstattet",
-    "referrer": "👤 Empfehler"
+    "referrer": "👤 Empfehler",
+    "usdt_sol_top_up": "USDT (Solana)",
+    "usdc_sol_top_up": "USDC (Solana)",
+    "usdt_erc20_top_up": "USDT ERC-20",
+    "usdc_erc20_top_up": "USDC ERC-20",
+    "usdt_bep20_top_up": "USDT BEP-20",
+    "usdc_bep20_top_up": "USDC BEP-20"
   },
   "user": {
     "all_categories": "🗂️ Alle Kategorien",
@@ -233,7 +239,6 @@
     "subcategories": "📦 <b>Unterkategorien:</b>",
     "top_up_balance_button": "➕ Guthaben aufladen",
     "top_up_balance_msg": "💵 <b>Sende den gewünschten Betrag in {crypto_name} an die angegebene Adresse, um das Guthaben aufzuladen.</b>\n\nStatus der Zahlung: {status}\n\n<b>Wichtig</b>\n<i>Für jede Einzahlung wird eine einzigartige BTC/LTC/SOL/ETH-Adresse generiert.\nDie Gutschrift erfolgt innerhalb von 5 Minuten nach der Überweisung.\nNach erfolgreicher Aufladung erhältst du eine Benachrichtigung.</i>\n\n<b>Deine {crypto_name}-Adresse:\n</b><code>{addr}</code>",
-    "top_up_balance_request_fiat": "💵 <b>Sende den gewünschten Aufladebetrag in <u>{currency_text}</u> oder \"<code>cancel</code>\".\n⚠️ Mindestbetrag: 5 {currency_text}</b>",
     "usdc_erc20_top_up": "USDC ERC-20",
     "usdt_erc20_top_up": "USDT ERC-20",
     "usdt_trc20_top_up": "USDT TRC-20",
@@ -289,6 +294,9 @@
     "notification_new_deposit": "💰 Ihr Guthaben wurde erfolgreich um {fiat_amount:.2f} {currency_text} aufgeladen.\n💰 Ihr Bonus für die Teilnahme am Empfehlungssystem beträgt: {referral_bonus:.2f} {currency_text}\nZahlungs-ID {payment_id}.",
     "referral_statistics_message": "<b>✨ Empfehlungsprogramm</b>\n\nLaden Sie Freunde ein und verdienen Sie Bonussaldo im Bot.\nBoni können für den Kauf digitaler und physischer Produkte verwendet werden.\n\n<b>🔓 Empfehlungszugang</b>\nIhre Gesamteinzahlungen: <b>{currency_sym}{user_total_deposits:.2f}</b>  \nErforderlich zum Freischalten von Empfehlungen: <b>{currency_sym}{min_referrer_total_deposit:.2f}</b>\n\nStatus:\n<b>{referral_access_status}</b>\n\n<b>🎁 Was Ihr Freund erhält</b>\n• <b>{referral_bonus_percent}%</b> Bonus auf jede Einzahlung  \n• Gilt für die ersten <b>{referral_bonus_deposit_limit}</b> Einzahlungen  \n• Maximale Bonusobergrenze: <b>{referral_bonus_cap_percent}%</b> ihrer Einzahlungen  \n\n<b>💰 Was Sie als Empfehler erhalten</b>\n• <b>{referrer_bonus_percent}%</b> von jeder Empfehlungseinzahlung  \n• Gilt für die ersten <b>{referrer_bonus_deposit_limit}</b> Einzahlungen pro Empfehlung  \n• Maximale Bonusobergrenze: <b>{referrer_bonus_cap_percent}%</b> pro Empfehlung  \n\n<b>Globale Bonusobergrenze:</b>  \nGesamtboni (Sie + Empfehlung) werden niemals <b>{total_bonus_cap_percent}%</b> der Empfehlungseinzahlungen überschreiten\n\n<b>📊 Ihre Empfehlungsstatistiken</b>\n\n👥 Empfehlungen eingeladen: <b>{referrals_count}</b>  \n🎁 Als Empfehlung verdiente Boni: <b>{currency_sym}{referral_bonus_earned:.2f}</b>  \n💰 Als Empfehler verdiente Boni: <b>{currency_sym}{referrer_bonus_earned:.2f}</b>",
     "referral_code_section": "\n\n<b>🔗 Ihr Empfehlungslink</b>\nt.me/{bot_username}?start={referral_code}\nTeilen Sie Ihren Link und wachsen Sie gemeinsam 🚀",
-    "referral_button": "✨ Empfehlungssystem"
+    "referral_button": "✨ Empfehlungssystem",
+    "top_up_balance_deposit_msg": "💵 <b>Überweisen Sie den gewünschten Betrag in {crypto_name} an die Adresse, um das Bot-Guthaben aufzuladen.</b>\n\nZahlungsstatus: {status}\nZahlung gültig bis {payment_lifetime}.\n\n<b>Wichtig</b>\n<i>Für jede Einzahlung wird eine eindeutige {crypto_name}-Adresse vergeben\nDie Aufladung erfolgt innerhalb von 5 Minuten nach der Überweisung.\n\nNach erfolgreicher Guthabenaktualisierung erhalten Sie eine Benachrichtigung vom Bot.</i>\n\n<b>Ihre {crypto_name}-Adresse\n</b><code>{addr}</code>",
+    "top_up_balance_payment_msg": "💵 <b>Überweisen Sie <code>{crypto_amount}</code> {crypto_name} an die Adresse, um das Bot-Guthaben für {fiat_amount} {currency_text} aufzuladen</b>\n\nZahlungsstatus: {status}\nZahlung gültig bis {payment_lifetime}.\n\n<b>Wichtig</b>\n<i>Für jede Einzahlung wird eine eindeutige {crypto_name}-Adresse vergeben\nDie Aufladung erfolgt innerhalb von 5 Minuten nach der Überweisung.\n\nNach erfolgreicher Guthabenaktualisierung erhalten Sie eine Benachrichtigung vom Bot.</i>\n\n<b>Ihre {crypto_name}-Adresse\n</b><code>{addr}</code>",
+    "top_up_balance_request_fiat": "💵 <b>Bitte senden Sie den Betrag, den Sie in <u>{currency_text}</u> aufladen möchten\n⚠️ Achtung! Mindesteinzahlungsbetrag 5 {currency_text}</b>"
   }
 }

@@ -196,7 +196,13 @@
     "delivered": "Livré",
     "completed": "Terminé",
     "refunded": "Remboursé",
-    "referrer": "👤 Parrain"
+    "referrer": "👤 Parrain",
+    "usdt_sol_top_up": "USDT (Solana)",
+    "usdc_sol_top_up": "USDC (Solana)",
+    "usdt_erc20_top_up": "USDT ERC-20",
+    "usdc_erc20_top_up": "USDC ERC-20",
+    "usdt_bep20_top_up": "USDT BEP-20",
+    "usdc_bep20_top_up": "USDC BEP-20"
   },
   "user": {
     "all_categories": "🗂️ Toutes les catégories",
@@ -233,7 +239,6 @@
     "subcategories": "📦 <b>Sous-catégories :</b>",
     "top_up_balance_button": "➕ Recharger le solde",
     "top_up_balance_msg": "💵 <b>Envoyez le montant souhaité en {crypto_name} à l’adresse indiquée pour recharger votre solde.</b>\n\nStatut du paiement : {status}\n\n<b>Important</b>\n<i>Une adresse unique BTC/LTC/SOL/ETH est générée pour chaque dépôt.\nLa recharge est effectuée dans un délai de 5 minutes.\nVous recevrez une notification une fois complétée.</i>\n\n<b>Votre adresse {crypto_name} :\n</b><code>{addr}</code>",
-    "top_up_balance_request_fiat": "💵 <b>Envoyez le montant en <u>{currency_text}</u> ou \"<code>cancel</code>\".\n⚠️ Minimum : 5 {currency_text}</b>",
     "usdc_erc20_top_up": "USDC ERC-20",
     "usdt_erc20_top_up": "USDT ERC-20",
     "usdt_trc20_top_up": "USDT TRC-20",
@@ -289,6 +294,9 @@
     "notification_new_deposit": "💰 Votre solde a été rechargé avec succès de {fiat_amount:.2f} {currency_text}.\n💰 Votre bonus pour participer au système de parrainage est: {referral_bonus:.2f} {currency_text}\nID de paiement {payment_id}.",
     "referral_statistics_message": "<b>✨ Programme de Parrainage</b>\n\nInvitez des amis et gagnez du solde bonus dans le bot.\nLes bonus peuvent être utilisés pour acheter des produits numériques et physiques.\n\n<b>🔓 Accès au Parrainage</b>\nVos dépôts totaux: <b>{currency_sym}{user_total_deposits:.2f}</b>  \nRequis pour débloquer le parrainage: <b>{currency_sym}{min_referrer_total_deposit:.2f}</b>\n\nStatut:\n<b>{referral_access_status}</b>\n\n<b>🎁 Ce que votre ami reçoit</b>\n• <b>{referral_bonus_percent}%</b> de bonus sur chaque dépôt  \n• S'applique aux <b>{referral_bonus_deposit_limit}</b> premiers dépôts  \n• Plafond bonus maximum: <b>{referral_bonus_cap_percent}%</b> de ses dépôts  \n\n<b>💰 Ce que vous recevez en tant que parrain</b>\n• <b>{referrer_bonus_percent}%</b> de chaque dépôt parrainé  \n• S'applique aux <b>{referrer_bonus_deposit_limit}</b> premiers dépôts par filleul  \n• Plafond bonus maximum: <b>{referrer_bonus_cap_percent}%</b> par filleul  \n\n<b>Plafond bonus global:</b>  \nLes bonus totaux (vous + filleul) ne dépasseront jamais <b>{total_bonus_cap_percent}%</b> des dépôts du filleul\n\n<b>📊 Vos Statistiques de Parrainage</b>\n\n👥 Filleuls invités: <b>{referrals_count}</b>  \n🎁 Bonus gagnés en tant que filleul: <b>{currency_sym}{referral_bonus_earned:.2f}</b>  \n💰 Bonus gagnés en tant que parrain: <b>{currency_sym}{referrer_bonus_earned:.2f}</b>",
     "referral_code_section": "\n\n<b>🔗 Votre Lien de Parrainage</b>\nt.me/{bot_username}?start={referral_code}\nPartagez votre lien et grandissez ensemble 🚀",
-    "referral_button": "✨ Système de Parrainage"
+    "referral_button": "✨ Système de Parrainage",
+    "top_up_balance_deposit_msg": "💵 <b>Déposez sur l'adresse le montant souhaité en {crypto_name} pour recharger le solde du bot.</b>\n\nStatut du paiement: {status}\nValidité du paiement jusqu'au {payment_lifetime}.\n\n<b>Important</b>\n<i>Une adresse {crypto_name} unique est attribuée pour chaque dépôt\nLe rechargement s'effectue dans les 5 minutes suivant le transfert.\n\nAprès une actualisation réussie du solde, vous recevrez une notification du bot.</i>\n\n<b>Votre adresse {crypto_name}\n</b><code>{addr}</code>",
+    "top_up_balance_payment_msg": "💵 <b>Déposez sur l'adresse <code>{crypto_amount}</code> {crypto_name} pour recharger le solde du bot pour {fiat_amount} {currency_text}</b>\n\nStatut du paiement: {status}\nValidité du paiement jusqu'au {payment_lifetime}.\n\n<b>Important</b>\n<i>Une adresse {crypto_name} unique est attribuée pour chaque dépôt\nLe rechargement s'effectue dans les 5 minutes suivant le transfert.\n\nAprès une actualisation réussie du solde, vous recevrez une notification du bot.</i>\n\n<b>Votre adresse {crypto_name}\n</b><code>{addr}</code>",
+    "top_up_balance_request_fiat": "💵 <b>Veuillez envoyer le montant que vous souhaitez recharger en <u>{currency_text}</u>\n⚠️ Attention ! Dépôt minimum 5 {currency_text}</b>"
   }
 }
