@@ -1,5 +1,6 @@
 import logging
 import traceback
+from datetime import datetime, timezone
 from aiogram import types, Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -8,7 +9,6 @@ from aiogram.types import InlineKeyboardMarkup, BufferedInputFile, Message, Inpu
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-
 import config
 from callbacks import MyProfileCallback, ReviewManagementCallback
 from config import ADMIN_ID_LIST, TOKEN
@@ -87,13 +87,18 @@ class NotificationService:
         msg = get_text(user_dto.language, BotEntity.USER, "notification_payment_expired").format(
             payment_id=payment_dto.id
         )
-        edited_payment_message = get_text(user_dto.language, BotEntity.USER, "top_up_balance_msg").format(
+        template = f"top_up_balance_{payment_dto.paymentType.name.lower()}_msg"
+        timestamp_s = payment_dto.expireDatetime / 1000
+        dt = datetime.fromtimestamp(timestamp_s, tz=timezone.utc)
+        formatted = dt.strftime('%H:%M UTC on %B %d, %Y')
+        edited_payment_message = get_text(user_dto.language, BotEntity.USER, template).format(
             crypto_name=payment_dto.cryptoCurrency.name,
             addr="***",
             crypto_amount=payment_dto.cryptoAmount,
             fiat_amount=payment_dto.fiatAmount,
             currency_text=config.CURRENCY.get_localized_text(),
-            status=get_text(user_dto.language, BotEntity.USER, "status_expired")
+            status=get_text(user_dto.language, BotEntity.USER, "status_expired"),
+            payment_lifetime=formatted
         )
         await NotificationService.edit_caption(edited_payment_message, table_payment_dto.message_id,
                                                user_dto.telegram_id)

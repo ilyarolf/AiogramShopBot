@@ -44,7 +44,9 @@ async def my_profile(**kwargs):
 async def top_up_balance(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     callback_data: MyProfileCallback = kwargs.get("callback_data")
+    state: FSMContext = kwargs.get("state")
     language: Language = kwargs.get("language")
+    await state.set_state()
     msg_text, kb_builder = await UserService.get_top_up_buttons(callback_data, language)
     await callback.message.edit_caption(caption=msg_text, reply_markup=kb_builder.as_markup())
 
@@ -110,13 +112,13 @@ async def create_payment(**kwargs):
     callback: CallbackQuery = kwargs.get("callback")
     session: AsyncSession = kwargs.get("session")
     callback_data: MyProfileCallback = kwargs.get("callback_data")
+    state: FSMContext = kwargs.get("state")
     language: Language = kwargs.get("language")
-    msg = await callback.message.edit_caption(caption=get_text(language, BotEntity.USER, "loading"))
-    response = await PaymentService.create(callback_data.cryptocurrency, msg, session, language)
+    response, kb_builder = await PaymentService.create(callback, callback_data, state, session, language)
     if isinstance(response, str):
-        await msg.edit_caption(caption=response)
+        await callback.message.edit_caption(caption=response, reply_markup=kb_builder.as_markup())
     else:
-        await msg.edit_media(media=response)
+        await callback.message.edit_media(media=response, reply_markup=kb_builder.as_markup())
 
 
 async def edit_language(**kwargs):
@@ -141,6 +143,23 @@ async def receive_filter_message(message: Message, state: FSMContext, session: A
     await state.update_data(filter=message.html_text)
     media, kb_builder = await BuyService.get_purchased_item(None, state, session, language)
     await NotificationService.answer_media(message, media, kb_builder.as_markup())
+
+
+@my_profile_router.message(IsUserExistFilter(), F.text, StateFilter(UserStates.top_up_amount))
+async def receive_top_up_amount(message: Message,
+                                state: FSMContext,
+                                session: AsyncSession,
+                                language: Language):
+    media, kb_builder = await PaymentService.create(message,
+                                                    None,
+                                                    state,
+                                                    session,
+                                                    language)
+    state_data = await state.get_data()
+    await message.bot.edit_message_media(chat_id=state_data.get("chat_id"),
+                                         message_id=state_data.get("msg_id"),
+                                         media=media,
+                                         reply_markup=kb_builder.as_markup())
 
 
 @my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())

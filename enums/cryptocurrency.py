@@ -13,7 +13,7 @@ class Cryptocurrency(str, Enum):
     ETH = "ETH"
     SOL = "SOL"
     USDT_SOL = "USDT_SOL"
-    USDC_SOL = "USDT_SOL"
+    USDC_SOL = "USDC_SOL"
     USDT_ERC20 = "USDT_ERC20"
     USDC_ERC20 = "USDC_ERC20"
     USDT_BEP20 = "USDT_BEP20"
@@ -78,3 +78,9 @@ class Cryptocurrency(str, Enum):
                 return config.BNB_FORWARDING_ADDRESS
             case Cryptocurrency.SOL | Cryptocurrency.USDT_SOL | Cryptocurrency.USDC_SOL:
                 return config.SOL_FORWARDING_ADDRESS
+
+    @staticmethod
+    def get_stablecoins() -> list['Cryptocurrency']:
+        return [Cryptocurrency.USDT_SOL, Cryptocurrency.USDC_SOL,
+                Cryptocurrency.USDT_BEP20, Cryptocurrency.USDC_BEP20,
+                Cryptocurrency.USDT_ERC20, Cryptocurrency.USDC_ERC20]
