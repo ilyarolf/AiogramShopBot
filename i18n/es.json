@@ -196,7 +196,13 @@
     "delivered": "Entregado",
     "completed": "Completado",
     "refunded": "Reembolsado",
-    "referrer": "👤 Referidor"
+    "referrer": "👤 Referidor",
+    "usdt_sol_top_up": "USDT (Solana)",
+    "usdc_sol_top_up": "USDC (Solana)",
+    "usdt_erc20_top_up": "USDT ERC-20",
+    "usdc_erc20_top_up": "USDC ERC-20",
+    "usdt_bep20_top_up": "USDT BEP-20",
+    "usdc_bep20_top_up": "USDC BEP-20"
   },
   "user": {
     "all_categories": "🗂️ Todas las categorías",
@@ -233,7 +239,6 @@
     "subcategories": "📦 <b>Subcategorías:</b>",
     "top_up_balance_button": "➕ Recargar saldo",
     "top_up_balance_msg": "💵 <b>Envía la cantidad deseada en {crypto_name} a la dirección indicada para recargar el saldo del bot.</b>\n\nEstado del pago: {status}\n\n<b>Importante</b>\n<i>Se asigna una dirección única BTC/LTC/SOL/ETH para cada depósito.\nLa recarga se procesa en un plazo de 5 minutos después de la transferencia.\nRecibirás una notificación al completarse.</i>\n\n<b>Tu dirección {crypto_name}:\n</b><code>{addr}</code>",
-    "top_up_balance_request_fiat": "💵 <b>Envía la cantidad que deseas recargar en <u>{currency_text}</u> o \"<code>cancel</code>\".\n⚠️ Cantidad mínima: 5 {currency_text}</b>",
     "usdc_erc20_top_up": "USDC ERC-20",
     "usdt_erc20_top_up": "USDT ERC-20",
     "usdt_trc20_top_up": "USDT TRC-20",
@@ -289,6 +294,9 @@
     "notification_new_deposit": "💰 Tu saldo se ha recargado exitosamente con {fiat_amount:.2f} {currency_text}.\n💰 Tu bono por participar en el sistema de referidos es: {referral_bonus:.2f} {currency_text}\nID de pago {payment_id}.",
     "referral_statistics_message": "<b>✨ Programa de Referidos</b>\n\nInvita a amigos y gana saldo de bono dentro del bot.\nLos bonos pueden usarse para comprar productos digitales y físicos.\n\n<b>🔓 Acceso a Referidos</b>\nTus depósitos totales: <b>{currency_sym}{user_total_deposits:.2f}</b>  \nRequerido para desbloquear referidos: <b>{currency_sym}{min_referrer_total_deposit:.2f}</b>\n\nEstado:\n<b>{referral_access_status}</b>\n\n<b>🎁 Lo que tu amigo recibe</b>\n• <b>{referral_bonus_percent}%</b> de bono en cada depósito  \n• Se aplica a los primeros <b>{referral_bonus_deposit_limit}</b> depósitos  \n• Límite máximo de bono: <b>{referral_bonus_cap_percent}%</b> de sus depósitos  \n\n<b>💰 Lo que tú recibes como referidor</b>\n• <b>{referrer_bonus_percent}%</b> de cada depósito de referido  \n• Se aplica a los primeros <b>{referrer_bonus_deposit_limit}</b> depósitos por referido  \n• Límite máximo de bono: <b>{referrer_bonus_cap_percent}%</b> por referido  \n\n<b>Límite global de bono:</b>  \nLos bonos totales (tú + referido) nunca excederán <b>{total_bonus_cap_percent}%</b> de los depósitos del referido\n\n<b>📊 Tus Estadísticas de Referidos</b>\n\n👥 Referidos invitados: <b>{referrals_count}</b>  \n🎁 Bonos ganados como referido: <b>{currency_sym}{referral_bonus_earned:.2f}</b>  \n💰 Bonos ganados como referidor: <b>{currency_sym}{referrer_bonus_earned:.2f}</b>",
     "referral_code_section": "\n\n<b>🔗 Tu Enlace de Referido</b>\nt.me/{bot_username}?start={referral_code}\nComparte tu enlace y crece junto con otros 🚀",
-    "referral_button": "✨ Sistema de Referidos"
+    "referral_button": "✨ Sistema de Referidos",
+    "top_up_balance_deposit_msg": "💵 <b>Deposite en la dirección la cantidad que desee en {crypto_name} para recargar el saldo del bot.</b>\n\nEstado del pago: {status}\nVigencia del pago hasta {payment_lifetime}.\n\n<b>Importante</b>\n<i>Se asigna una dirección única de {crypto_name} para cada depósito\nLa recarga se realiza en 5 minutos después de la transferencia.\n\nTras una actualización exitosa del saldo, recibirá una notificación del bot.</i>\n\n<b>Su dirección de {crypto_name}\n</b><code>{addr}</code>",
+    "top_up_balance_payment_msg": "💵 <b>Deposite en la dirección <code>{crypto_amount}</code> {crypto_name} para recargar el saldo del bot por {fiat_amount} {currency_text}</b>\n\nEstado del pago: {status}\nVigencia del pago hasta {payment_lifetime}.\n\n<b>Importante</b>\n<i>Se asigna una dirección única de {crypto_name} para cada depósito\nLa recarga se realiza en 5 minutos después de la transferencia.\n\nTras una actualización exitosa del saldo, recibirá una notificación del bot.</i>\n\n<b>Su dirección de {crypto_name}\n</b><code>{addr}</code>",
+    "top_up_balance_request_fiat": "💵 <b>Por favor, envíe la cantidad que desea recargar en <u>{currency_text}</u>\n⚠️ ¡Atención! Depósito mínimo 5 {currency_text}</b>"
   }
 }

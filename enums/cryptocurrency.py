@@ -12,19 +12,23 @@ class Cryptocurrency(str, Enum):
     LTC = "LTC"
     ETH = "ETH"
     SOL = "SOL"
+    USDT_SOL = "USDT_SOL"
+    USDC_SOL = "USDC_SOL"
+    USDT_ERC20 = "USDT_ERC20"
+    USDC_ERC20 = "USDC_ERC20"
+    USDT_BEP20 = "USDT_BEP20"
+    USDC_BEP20 = "USDC_BEP20"
 
     def get_decimals(self):
         match self:
-            case Cryptocurrency.BTC:
+            case Cryptocurrency.BTC | Cryptocurrency.LTC:
                 return 8
-            case Cryptocurrency.LTC:
-                return 8
-            case Cryptocurrency.ETH:
+            case Cryptocurrency.ETH | Cryptocurrency.BNB | Cryptocurrency.USDT_BEP20 | Cryptocurrency.USDC_BEP20:
                 return 18
             case Cryptocurrency.SOL:
                 return 9
-            case Cryptocurrency.BNB:
-                return 18
+            case _:
+                return 6
 
     def get_coingecko_name(self) -> str:
         match self:
@@ -38,6 +42,10 @@ class Cryptocurrency(str, Enum):
                 return "binancecoin"
             case Cryptocurrency.SOL:
                 return "solana"
+            case Cryptocurrency.USDT_SOL | Cryptocurrency.USDT_ERC20 | Cryptocurrency.USDT_BEP20:
+                return "tether"
+            case Cryptocurrency.USDC_SOL | Cryptocurrency.USDC_ERC20 | Cryptocurrency.USDC_BEP20:
+                return "usd-coin"
 
     def get_explorer_base_url(self) -> str:
         match self:
@@ -45,11 +53,11 @@ class Cryptocurrency(str, Enum):
                 return "https://mempool.space"
             case Cryptocurrency.LTC:
                 return "https://litecoinspace.org"
-            case Cryptocurrency.ETH:
+            case Cryptocurrency.ETH | Cryptocurrency.USDT_ERC20 | Cryptocurrency.USDC_ERC20:
                 return "https://etherscan.io"
-            case Cryptocurrency.BNB:
+            case Cryptocurrency.BNB | Cryptocurrency.USDT_BEP20 | Cryptocurrency.USDC_BEP20:
                 return "https://bscscan.com"
-            case Cryptocurrency.SOL:
+            case Cryptocurrency.SOL | Cryptocurrency.USDT_SOL | Cryptocurrency.USDC_SOL:
                 return "https://solscan.io"
 
     def __str__(self):
@@ -64,9 +72,15 @@ class Cryptocurrency(str, Enum):
                 return config.BTC_FORWARDING_ADDRESS
             case Cryptocurrency.LTC:
                 return config.LTC_FORWARDING_ADDRESS
-            case Cryptocurrency.ETH:
+            case Cryptocurrency.ETH | Cryptocurrency.USDT_ERC20 | Cryptocurrency.USDC_ERC20:
                 return config.ETH_FORWARDING_ADDRESS
-            case Cryptocurrency.BNB:
+            case Cryptocurrency.BNB | Cryptocurrency.USDT_BEP20 | Cryptocurrency.USDC_BEP20:
                 return config.BNB_FORWARDING_ADDRESS
-            case Cryptocurrency.SOL:
+            case Cryptocurrency.SOL | Cryptocurrency.USDT_SOL | Cryptocurrency.USDC_SOL:
                 return config.SOL_FORWARDING_ADDRESS
+
+    @staticmethod
+    def get_stablecoins() -> list['Cryptocurrency']:
+        return [Cryptocurrency.USDT_SOL, Cryptocurrency.USDC_SOL,
+                Cryptocurrency.USDT_BEP20, Cryptocurrency.USDC_BEP20,
+                Cryptocurrency.USDT_ERC20, Cryptocurrency.USDC_ERC20]

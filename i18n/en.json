@@ -196,7 +196,13 @@
     "delivered": "Delivered",
     "completed": "Completed",
     "refunded": "Refunded",
-    "referrer": "👤 Referrer"
+    "referrer": "👤 Referrer",
+    "usdt_sol_top_up": "USDT (Solana)",
+    "usdc_sol_top_up": "USDC (Solana)",
+    "usdt_erc20_top_up": "USDT ERC-20",
+    "usdc_erc20_top_up": "USDC ERC-20",
+    "usdt_bep20_top_up": "USDT BEP-20",
+    "usdc_bep20_top_up": "USDC BEP-20"
   },
   "user": {
     "all_categories": "🗂️ All categories",
@@ -232,8 +238,6 @@
     "subcategory_button": "📦 {subcategory_name}| Price: {currency_sym}{subcategory_price:.2f} | Qty: {available_quantity}",
     "subcategories": "📦 <b>Subcategories:</b>",
     "top_up_balance_button": "➕ Top Up Balance",
-    "top_up_balance_msg": "💵 <b>Deposit to the address the amount you want in {crypto_name} to top up the balance of bot.</b>\n\nPayment status: {status}\n\n<b>Important</b>\n<i>A unique BTC/LTC/SOL/ETH addresses is given for each deposit\nThe top up takes place within 5 minutes after the transfer.\n\nAfter a successful balance refresh, you will receive a notification from bot.</i>\n\n<b>Your {crypto_name} address\n</b><code>{addr}</code>",
-    "top_up_balance_request_fiat": "\uD83D\uDCB5 <b>Please send the amount you wish to top up balance in <u>{currency_text}</u> or \"<code>cancel</code>\".\n⚠\uFE0F Attention! Minimal deposit amount 5 {currency_text}</b>",
     "usdc_erc20_top_up": "USDC ERC-20",
     "usdt_erc20_top_up": "USDT ERC-20",
     "usdt_trc20_top_up": "USDT TRC-20",
@@ -289,6 +293,9 @@
     "notification_new_deposit": "💰 Your balance was successfully funded by {fiat_amount:.2f} {currency_text}.\n💰 Your bonus for participating in the referral system is: {referral_bonus:.2f} {currency_text}\nPayment ID {payment_id}.",
     "referral_statistics_message": "<b>✨ Referral Program</b>\n\nInvite friends and earn bonus balance inside the bot.\nBonuses can be used to purchase digital and physical products.\n\n<b>\uD83D\uDD13 Referral Access</b>\nYour total deposits: <b>{currency_sym}{user_total_deposits:.2f}</b>  \nRequired to unlock referrals: <b>{currency_sym}{min_referrer_total_deposit:.2f}</b>\n\nStatus:\n<b>{referral_access_status}</b>\n\n<b>\uD83C\uDF81 What your friend gets</b>\n• <b>{referral_bonus_percent}%</b> bonus on each deposit  \n• Applies to the first <b>{referral_bonus_deposit_limit}</b> deposits  \n• Maximum bonus cap: <b>{referral_bonus_cap_percent}%</b> of their deposits  \n\n<b>\uD83D\uDCB0 What you get as a referrer</b>\n• <b>{referrer_bonus_percent}%</b> from each referral deposit  \n• Applies to the first <b>{referrer_bonus_deposit_limit}</b> deposits per referral  \n• Maximum bonus cap: <b>{referrer_bonus_cap_percent}%</b> per referral  \n\n<b>Global bonus cap:</b>  \nTotal bonuses (you + referral) will never exceed <b>{total_bonus_cap_percent}%</b> of referral deposits\n\n<b>\uD83D\uDCCA Your Referral Stats</b>\n\n\uD83D\uDC65 Referrals invited: <b>{referrals_count}</b>  \n\uD83C\uDF81 Bonuses earned as referral: <b>{currency_sym}{referral_bonus_earned:.2f}</b>  \n\uD83D\uDCB0 Bonuses earned as referrer: <b>{currency_sym}{referrer_bonus_earned:.2f}</b>",
     "referral_code_section": "\n\n<b>\uD83D\uDD17 Your Referral Link</b>\nt.me/{bot_username}?start={referral_code}\nShare your link and grow together \uD83D\uDE80",
-    "referral_button": "✨ Referral System"
+    "referral_button": "✨ Referral System",
+    "top_up_balance_deposit_msg": "💵 <b>Deposit to the address the amount you want in {crypto_name} to top up the balance of bot.</b>\n\nPayment status: {status}\nPayment lifetime until {payment_lifetime}.\n\n<b>Important</b>\n<i>A unique {crypto_name} addresses is given for each deposit\nThe top up takes place within 5 minutes after the transfer.\n\nAfter a successful balance refresh, you will receive a notification from bot.</i>\n\n<b>Your {crypto_name} address\n</b><code>{addr}</code>",
+    "top_up_balance_payment_msg": "\uD83D\uDCB5 <b>Deposit to the address the <code>{crypto_amount}</code> {crypto_name} to top up the balance of bot for {fiat_amount} {currency_text}</b>\n\nPayment status: {status}\nPayment lifetime until {payment_lifetime}.\n\n<b>Important</b>\n<i>A unique {crypto_name} addresses is given for each deposit\nThe top up takes place within 5 minutes after the transfer.\n\nAfter a successful balance refresh, you will receive a notification from bot.</i>\n\n<b>Your {crypto_name} address\n</b><code>{addr}</code>",
+    "top_up_balance_request_fiat": "\uD83D\uDCB5 <b>Please send the amount you wish to top up balance in <u>{currency_text}</u>\n⚠\uFE0F Attention! Minimal deposit amount 5 {currency_text}</b>"
   }
 }
