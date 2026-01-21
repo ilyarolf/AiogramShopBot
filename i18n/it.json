@@ -196,7 +196,13 @@
     "delivered": "Consegnato",
     "completed": "Completato",
     "refunded": "Rimborsato",
-    "referrer": "👤 Referrer"
+    "referrer": "👤 Referrer",
+    "usdt_sol_top_up": "USDT (Solana)",
+    "usdc_sol_top_up": "USDC (Solana)",
+    "usdt_erc20_top_up": "USDT ERC-20",
+    "usdc_erc20_top_up": "USDC ERC-20",
+    "usdt_bep20_top_up": "USDT BEP-20",
+    "usdc_bep20_top_up": "USDC BEP-20"
   },
   "user": {
     "all_categories": "🗂️ Tutte le categorie",
@@ -233,7 +239,6 @@
     "subcategories": "📦 <b>Sottocategorie:</b>",
     "top_up_balance_button": "➕ Ricarica saldo",
     "top_up_balance_msg": "💵 <b>Invia l’importo desiderato in {crypto_name} all’indirizzo indicato per ricaricare il saldo.</b>\n\nStato pagamento: {status}\n\n<b>Importante</b>\n<i>Per ogni deposito viene generato un indirizzo unico BTC/LTC/SOL/ETH.\nL’accredito avviene in circa 5 minuti.\nRiceverai una notifica una volta completato.</i>\n\n<b>Il tuo indirizzo {crypto_name}:\n</b><code>{addr}</code>",
-    "top_up_balance_request_fiat": "💵 <b>Invia l’importo in <u>{currency_text}</u> oppure \"<code>cancel</code>\".\n⚠️ Minimo: 5 {currency_text}</b>",
     "usdc_erc20_top_up": "USDC ERC-20",
     "usdt_erc20_top_up": "USDT ERC-20",
     "usdt_trc20_top_up": "USDT TRC-20",
@@ -289,6 +294,9 @@
     "notification_new_deposit": "💰 Il tuo saldo è stato ricaricato con successo di {fiat_amount:.2f} {currency_text}.\n💰 Il tuo bonus per partecipare al sistema di referral è: {referral_bonus:.2f} {currency_text}\nID pagamento {payment_id}.",
     "referral_statistics_message": "<b>✨ Programma di Referral</b>\n\nInvita amici e guadagna saldo bonus nel bot.\nI bonus possono essere usati per acquistare prodotti digitali e fisici.\n\n<b>🔓 Accesso Referral</b>\nI tuoi depositi totali: <b>{currency_sym}{user_total_deposits:.2f}</b>  \nRichiesto per sbloccare referral: <b>{currency_sym}{min_referrer_total_deposit:.2f}</b>\n\nStato:\n<b>{referral_access_status}</b>\n\n<b>🎁 Cosa riceve il tuo amico</b>\n• <b>{referral_bonus_percent}%</b> di bonus su ogni deposito  \n• Si applica ai primi <b>{referral_bonus_deposit_limit}</b> depositi  \n• Limite massimo bonus: <b>{referral_bonus_cap_percent}%</b> dei suoi depositi  \n\n<b>💰 Cosa ricevi tu come referrer</b>\n• <b>{referrer_bonus_percent}%</b> da ogni deposito referral  \n• Si applica ai primi <b>{referrer_bonus_deposit_limit}</b> depositi per referral  \n• Limite massimo bonus: <b>{referrer_bonus_cap_percent}%</b> per referral  \n\n<b>Limite bonus globale:</b>  \nI bonus totali (tu + referral) non supereranno mai <b>{total_bonus_cap_percent}%</b> dei depositi del referral\n\n<b>📊 Le tue Statistiche di Referral</b>\n\n👥 Referral invitati: <b>{referrals_count}</b>  \n🎁 Bonus guadagnati come referral: <b>{currency_sym}{referral_bonus_earned:.2f}</b>  \n💰 Bonus guadagnati come referrer: <b>{currency_sym}{referrer_bonus_earned:.2f}</b>",
     "referral_code_section": "\n\n<b>🔗 Il tuo Link di Referral</b>\nt.me/{bot_username}?start={referral_code}\nCondividi il tuo link e cresci insieme 🚀",
-    "referral_button": "✨ Sistema di Referral"
+    "referral_button": "✨ Sistema di Referral",
+    "top_up_balance_deposit_msg": "💵 <b>Deposita all'indirizzo l'importo desiderato in {crypto_name} per ricaricare il saldo del bot.</b>\n\nStato pagamento: {status}\nPagamento valido fino a {payment_lifetime}.\n\n<b>Importante</b>\n<i>Viene assegnato un indirizzo {crypto_name} unico per ogni deposito\nLa ricarica avviene entro 5 minuti dal trasferimento.\n\nDopo un aggiornamento riuscito del saldo, riceverai una notifica dal bot.</i>\n\n<b>Il tuo indirizzo {crypto_name}\n</b><code>{addr}</code>",
+    "top_up_balance_payment_msg": "💵 <b>Deposita all'indirizzo <code>{crypto_amount}</code> {crypto_name} per ricaricare il saldo del bot per {fiat_amount} {currency_text}</b>\n\nStato pagamento: {status}\nPagamento valido fino a {payment_lifetime}.\n\n<b>Importante</b>\n<i>Viene assegnato un indirizzo {crypto_name} unico per ogni deposito\nLa ricarica avviene entro 5 minuti dal trasferimento.\n\nDopo un aggiornamento riuscito del saldo, riceverai una notifica dal bot.</i>\n\n<b>Il tuo indirizzo {crypto_name}\n</b><code>{addr}</code>",
+    "top_up_balance_request_fiat": "💵 <b>Per favore, invia l'importo che desideri ricaricare in <u>{currency_text}</u>\n⚠️ Attenzione! Deposito minimo 5 {currency_text}</b>"
   }
 }
