@@ -18,8 +18,10 @@
 [![Solana](https://img.shields.io/badge/Solana-9945FF?logo=solana&logoColor=fff)](https://github.com/solana-labs/solana)
 [![Ethereum](https://img.shields.io/badge/Ethereum-3C3C3D?logo=ethereum&logoColor=white)](https://github.com/ethereum)
 [![BinanceCoin](https://img.shields.io/badge/Binance-FCD535?logo=binance&logoColor=000)](https://github.com/binance)
+[![Tether](https://img.shields.io/badge/Tether-168363?&logo=tether&logoColor=white)](https://tether.to/)
+[![USD Coin](https://img.shields.io/badge/USD%20Coin-2775CA?&logo=usd-coin&logoColor=white)](https://www.usdc.com/)
 
-**AiogramShopBot is a software product based on Aiogram3, SQLAlchemy, and SQLAdmin that allows you to automate the sale of digital and physical goods in Telegram. One of the advantages of the bot is that AiogramShopBot implements the ability to replenish funds using Bitcoin, Litecoin, Solana, Ethereum, and Binance Coin, which allows you to sell goods worldwide.<br>
+**AiogramShopBot is a software product based on Aiogram3, SQLAlchemy, and SQLAdmin that allows you to automate the sale of digital and physical goods in Telegram. One of the advantages of the bot is that AiogramShopBot implements the ability to replenish funds using Bitcoin, Litecoin, Solana, Ethereum, Binance Coin and Stablecoins, which allows you to sell goods worldwide.<br>
 The bot implements the most popular features: a referral system, a review feature, a web admin panel for working with database objects, multiple i18n localization, and much more.**
 
 ---
