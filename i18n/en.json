@@ -53,7 +53,6 @@
     "restocking_message_header": "🆕 New Stock Alert! 🆕\n",
     "sales_statistics": "📊 <b>Sales statistics for the last {timedelta}.\n\uD83D\uDCB0 Total profit: {currency_sym}{total_profit:.2f}\n\uD83D\uDECD\uFE0F Items sold: {items_sold}\n\uD83D\uDCBC Total buys: {buys_count}</b>",
     "send_everyone": "📢 Send to Everyone",
-    "sending_result": "✅ <b>Message sent to {counter} out of {len} active users.\nTotal users:{users_count}</b>",
     "sending_started": "🚀 Sending started",
     "stock": "📦 Full Inventory Message",
     "statistics": "📊 Analytics & Reports ",
@@ -137,7 +136,10 @@
     "crypto_wallet": "\n\n<b>\uD83E\uDD16 Bot balances\n\n{wallet_content}</b>",
     "crypto_wallet_line": "⚖\uFE0F {crypto_name} Balance: <code>{crypto_balance:.8f}</code> {crypto_name}",
     "deposits_statistics_msg": "📊 <b>Deposit statistics for the last {timedelta}.\n\n\uD83D\uDCB8 Total deposits: {deposits_count}\n\n{deposits_content}\n\n\uD83D\uDCBC Total cryptocurrency deposits for the amount: {fiat_amount:.2f} {currency_text}</b>",
-    "deposits_statistics_line": "💰 Total {crypto_name} deposits for the amount: {crypto_amount:.8f} {crypto_name}"
+    "deposits_statistics_line": "💰 Total {crypto_name} deposits for the amount: {crypto_amount:.8f} {crypto_name}",
+    "sending_result": "✅ <b>Message sent to {counter} out of {len} active users.\n\uD83D\uDC64 Total users:{users_count}\nStatus: {status}</b>",
+    "in_progress": "🟡 In progress...",
+    "finished": "🟢 Finished."
   },
   "common": {
     "back_button": "⬅️ Back",
