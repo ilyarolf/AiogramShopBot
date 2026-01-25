@@ -182,9 +182,9 @@ class NotificationService:
             category = await CategoryRepository.get_by_id(item_example.category_id, session)
             subcategory = await SubcategoryRepository.get_by_id(item_example.subcategory_id, session)
             if user.telegram_username:
-                msg = get_text(Language.EN, BotEntity.ADMIN, "notification_purchase_with_tgid")
-            else:
                 msg = get_text(Language.EN, BotEntity.ADMIN, "notification_purchase_with_username")
+            else:
+                msg = get_text(Language.EN, BotEntity.ADMIN, "notification_purchase_with_tgid")
             cart_content.append(msg.format(
                 username=user.telegram_username,
                 telegram_id=user.telegram_id,

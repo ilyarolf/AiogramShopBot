@@ -28,18 +28,21 @@ class WalletService:
     async def get_withdraw_menu(language: Language) -> tuple[str, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
         wallet_balance = await CryptoApiWrapper.get_wallet_balance()
-        [kb_builder.button(
-            text=get_text(language, BotEntity.COMMON, f"{key.lower()}_top_up"),
-            callback_data=WalletCallback.create(1, Cryptocurrency(key))
-        ) for key in wallet_balance.keys()]
+        wallet_content = []
+        for cryptocurrency, amount in wallet_balance.items():
+            wallet_content.append(get_text(language, BotEntity.ADMIN, "crypto_wallet_line").format(
+                crypto_name=cryptocurrency.name.replace('_', " "),
+                crypto_balance=amount
+            ))
+            if amount > 0:
+                kb_builder.button(
+                    text=get_text(language, BotEntity.COMMON, f"{cryptocurrency.name.lower()}_top_up"),
+                    callback_data=WalletCallback.create(1, cryptocurrency)
+                )
         kb_builder.adjust(1)
         kb_builder.row(AdminConstants.back_to_main_button(language))
         msg_text = get_text(language, BotEntity.ADMIN, "crypto_wallet").format(
-            btc_balance=wallet_balance.get('BTC') or 0.0,
-            ltc_balance=wallet_balance.get('LTC') or 0.0,
-            sol_balance=wallet_balance.get('SOL') or 0.0,
-            eth_balance=wallet_balance.get('ETH') or 0.0,
-            bnb_balance=wallet_balance.get('BNB') or 0.0
+            wallet_content="\n".join(wallet_content)
         )
         if sum(wallet_balance.values()) > 0:
             msg_text += get_text(language, BotEntity.ADMIN, "choose_crypto_to_withdraw")
