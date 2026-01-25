@@ -199,40 +199,28 @@ class StatisticsService:
                 prices = await CryptoApiWrapper.get_crypto_prices()
                 chart = StatisticsService.build_statistics_chart(deposits, callback_data.timedelta, language, prices)
                 fiat_amount = 0.0
-                btc_amount = sum(
-                    [btc_deposit.amount if btc_deposit.network == Cryptocurrency.BTC else 0 for btc_deposit in
-                     deposits])
-                ltc_amount = sum(
-                    [ltc_deposit.amount if ltc_deposit.network == Cryptocurrency.LTC else 0 for ltc_deposit in
-                     deposits])
-                sol_amount = sum(
-                    [sol_deposit.amount if sol_deposit.network == Cryptocurrency.SOL else 0 for sol_deposit in
-                     deposits])
-                eth_amount = sum(
-                    [eth_deposit.amount if eth_deposit.network == Cryptocurrency.ETH else 0 for eth_deposit in
-                     deposits])
-                bnb_amount = sum(
-                    [bnb_deposit.amount if bnb_deposit.network == Cryptocurrency.BNB else 0 for bnb_deposit in
-                     deposits])
-                btc_amount = btc_amount / pow(10, Cryptocurrency.BTC.get_decimals())
-                ltc_amount = ltc_amount / pow(10, Cryptocurrency.LTC.get_decimals())
-                sol_amount = sol_amount / pow(10, Cryptocurrency.SOL.get_decimals())
-                eth_amount = eth_amount / pow(10, Cryptocurrency.ETH.get_decimals())
-                bnb_amount = bnb_amount / pow(10, Cryptocurrency.BNB.get_decimals())
-                btc_price = prices[Cryptocurrency.BTC.get_coingecko_name()][config.CURRENCY.value.lower()]
-                ltc_price = prices[Cryptocurrency.LTC.get_coingecko_name()][config.CURRENCY.value.lower()]
-                sol_price = prices[Cryptocurrency.SOL.get_coingecko_name()][config.CURRENCY.value.lower()]
-                eth_price = prices[Cryptocurrency.ETH.get_coingecko_name()][config.CURRENCY.value.lower()]
-                bnb_price = prices[Cryptocurrency.BNB.get_coingecko_name()][config.CURRENCY.value.lower()]
-                fiat_amount += ((btc_amount * btc_price) + (ltc_amount * ltc_price) + (sol_amount * sol_price)
-                                + (eth_amount * eth_price) + (bnb_amount * bnb_price))
+                crypto_amount_dict = {crypto: 0 for crypto in Cryptocurrency}
+                for deposit in deposits:
+                    crypto_price = prices[deposit.network.get_coingecko_name()][config.CURRENCY.value.lower()]
+                    crypto_friendly_amount = deposit.amount / pow(10, deposit.network.get_decimals())
+                    crypto_amount_dict[deposit.network] += crypto_friendly_amount
+                    fiat_amount += crypto_friendly_amount * crypto_price
+                fiat_amount = sum(crypto_amount_dict.values())
                 kb_builder.row(AdminConstants.back_to_main_button(language), callback_data.get_back_button(language))
+                deposits_content_list = []
+                for cryptocurrency, crypto_amount in crypto_amount_dict.items():
+                    deposits_content_list.append(get_text(language,
+                                                          BotEntity.ADMIN,
+                                                          "deposits_statistics_line").format(
+                        crypto_name=cryptocurrency.name.replace("_", " "),
+                        crypto_amount=crypto_amount
+                    ))
                 caption = get_text(language, BotEntity.ADMIN, "deposits_statistics_msg").format(
-                    timedelta=timedelta_localized, deposits_count=len(deposits),
-                    btc_amount=btc_amount, ltc_amount=ltc_amount,
-                    sol_amount=sol_amount, eth_amount=eth_amount,
-                    bnb_amount=bnb_amount,
-                    fiat_amount=fiat_amount, currency_text=config.CURRENCY.get_localized_text())
+                    timedelta=timedelta_localized,
+                    deposits_count=len(deposits),
+                    deposits_content="\n".join(deposits_content_list),
+                    fiat_amount=fiat_amount,
+                    currency_text=config.CURRENCY.get_localized_text())
                 media = InputMediaPhoto(
                     media=BufferedInputFile(file=chart,
                                             filename="chart.png"),

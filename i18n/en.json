@@ -33,7 +33,6 @@
     "crypto_withdraw": "👛 Wallet",
     "current_stock_header": "🗂️ Current Stock\n",
     "deposits_statistics": "📊 Deposits statistics",
-    "deposits_statistics_msg": "📊 <b>Deposit statistics for the last {timedelta}.\n\n\uD83D\uDCB8 Total deposits: {deposits_count}\n\n\uD83D\uDCB0 Total BTC deposits for the amount: {btc_amount} BTC\n\uD83D\uDCB0 Total LTC deposits for the amount: {ltc_amount} LTC\n\uD83D\uDCB0 Total SOL deposits for the amount: {sol_amount} SOL\n\uD83D\uDCB0 Total ETH deposits in amount: {eth_amount} ETH\n\uD83D\uDCB0 Total BNB deposits in amount: {bnb_amount} BNB\n\n\uD83D\uDCBC Total cryptocurrency deposits for the amount: {fiat_amount:.2f} {currency_text}</b>",
     "delete_entity": "🗑️ Delete {entity}",
     "delete_entity_confirmation": "❓ <b>Do you really want to delete the {entity} with name <u>{entity_name}</u>?</b>",
     "get_database_file": "💾 Get database file",
@@ -136,7 +135,9 @@
     "notification_new_deposit_id": "💰 New deposit by user with ID {telegram_id} for {currency_sym}{deposit_amount_fiat:.2f} with \uD83D\uDCB0 {value} {crypto_name}\n💰 Referral bonus: {currency_sym}{referral_bonus:.2f}\n💰 Referrer bonus: {currency_sym}{referrer_bonus:.2f}",
     "notification_new_deposit_username": "💰 New deposit by user with username @{username} for {currency_sym}{deposit_amount_fiat:.2f} with \uD83D\uDCB0 {value} {crypto_name}\n💰 Referral bonus: {currency_sym}{referral_bonus:.2f}\n💰 Referrer bonus: {currency_sym}{referrer_bonus:.2f}",
     "crypto_wallet": "\n\n<b>\uD83E\uDD16 Bot balances\n\n{wallet_content}</b>",
-    "crypto_wallet_line": "⚖\uFE0F {crypto_name} Balance: <code>{crypto_balance:.8f}</code> {crypto_name}"
+    "crypto_wallet_line": "⚖\uFE0F {crypto_name} Balance: <code>{crypto_balance:.8f}</code> {crypto_name}",
+    "deposits_statistics_msg": "📊 <b>Deposit statistics for the last {timedelta}.\n\n\uD83D\uDCB8 Total deposits: {deposits_count}\n\n{deposits_content}\n\n\uD83D\uDCBC Total cryptocurrency deposits for the amount: {fiat_amount:.2f} {currency_text}</b>",
+    "deposits_statistics_line": "💰 Total {crypto_name} deposits for the amount: {crypto_amount:.8f} {crypto_name}"
   },
   "common": {
     "back_button": "⬅️ Back",

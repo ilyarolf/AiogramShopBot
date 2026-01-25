@@ -20,7 +20,7 @@ class CryptoApiWrapper:
     async def get_crypto_prices() -> dict:
         url = f"https://api.coingecko.com/api/v3/simple/price"
         params = {
-            "ids": "bitcoin,litecoin,solana,ethereum,binancecoin",
+            "ids": "bitcoin,litecoin,solana,ethereum,binancecoin,tether,usd-coin",
             "vs_currencies": "usd,eur,gbp,jpy,cad"
         }
         return await CryptoApiWrapper.fetch_api_request(url, params)
