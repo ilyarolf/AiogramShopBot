@@ -20,13 +20,13 @@ class CryptoApiWrapper:
     async def get_crypto_prices() -> dict:
         url = f"https://api.coingecko.com/api/v3/simple/price"
         params = {
-            "ids": "bitcoin,litecoin,solana,ethereum,binancecoin",
+            "ids": "bitcoin,litecoin,solana,ethereum,binancecoin,tether,usd-coin",
             "vs_currencies": "usd,eur,gbp,jpy,cad"
         }
         return await CryptoApiWrapper.fetch_api_request(url, params)
 
     @staticmethod
-    async def get_wallet_balance() -> dict:
+    async def get_wallet_balance() -> dict[Cryptocurrency, float]:
         url = f"{config.KRYPTO_EXPRESS_API_URL}/wallet"
         headers = {
             "X-Api-Key": config.KRYPTO_EXPRESS_API_KEY
@@ -35,7 +35,7 @@ class CryptoApiWrapper:
             url,
             headers=headers
         )
-        return {k: v for k, v in response.items() if v > 0}
+        return {Cryptocurrency(k): v for k, v in response.items()}
 
     @staticmethod
     async def withdrawal(cryptocurrency: Cryptocurrency,

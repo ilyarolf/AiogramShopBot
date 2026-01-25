@@ -14,6 +14,7 @@ from enums.language import Language
 from handlers.admin.constants import AdminConstants
 from repositories.item import ItemRepository
 from repositories.user import UserRepository
+from services.notification import NotificationService
 from utils.utils import get_text
 
 
@@ -40,6 +41,15 @@ class AnnouncementService:
         active_users = await UserRepository.get_active(session)
         all_users_count = await UserRepository.get_all_count(session)
         counter = 0
+        message_template = get_text(language, BotEntity.ADMIN, "sending_result")
+        message = await callback.message.answer(
+            text=message_template.format(
+                counter=counter,
+                len=len(active_users),
+                users_count=all_users_count,
+                status=get_text(language, BotEntity.ADMIN, "in_progress")
+            )
+        )
         for user in active_users:
             try:
                 await callback.message.copy_to(user.telegram_id, reply_markup=None)
@@ -55,9 +65,25 @@ class AnnouncementService:
             except Exception as e:
                 logging.error(e)
             finally:
+                if counter % 5 == 0:
+                    msg = message_template.format(
+                        counter=counter,
+                        len=len(active_users),
+                        users_count=all_users_count,
+                        status=get_text(language, BotEntity.ADMIN, "in_progress")
+                    )
+                    await NotificationService.edit_message(message=msg,
+                                                           source_message_id=message.message_id,
+                                                           chat_id=message.chat.id)
                 if callback_data.announcement_type == AnnouncementType.RESTOCKING:
                     await ItemRepository.set_not_new(session)
                 await session_commit(session)
-        return get_text(language, BotEntity.ADMIN, "sending_result").format(counter=counter,
-                                                                            len=len(active_users),
-                                                                            users_count=all_users_count)
+        await NotificationService.edit_message(
+            message=message_template.format(
+                counter=counter,
+                len=len(active_users),
+                users_count=all_users_count,
+                status=get_text(language, BotEntity.ADMIN, "finished")
+            ),
+            source_message_id=message.message_id,
+            chat_id=message.chat.id)

@@ -1,10 +1,12 @@
+from aiogram import Bot
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, InputMediaPhoto, InputMediaVideo, InputMediaAnimation
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from callbacks import MediaManagementCallback, AdminMenuCallback
-from db import session_commit
+from db import session_commit, get_db_session
 from enums.bot_entity import BotEntity
 from enums.entity_type import EntityType
 from enums.keyboard_button import KeyboardButton
@@ -15,7 +17,7 @@ from repositories.button_media import ButtonMediaRepository
 from repositories.category import CategoryRepository
 from repositories.subcategory import SubcategoryRepository
 from services.notification import NotificationService
-from utils.utils import get_text
+from utils.utils import get_text, get_bot_photo_id
 
 
 class MediaService:
@@ -150,3 +152,21 @@ class MediaService:
         else:
             media = InputMediaAnimation(media=category_media_id, caption=caption)
         return media
+
+    @staticmethod
+    async def update_inaccessible_media(bot: Bot):
+        bot_photo_id = f"0{get_bot_photo_id()}"
+        async with get_db_session() as session:
+            unique_file_ids = await ButtonMediaRepository.get_all_file_ids(session)
+            inaccessible_media_list = []
+            for unique_id in unique_file_ids:
+                parsed_unique_id = unique_id
+                if parsed_unique_id[0] in ["0", "1", "2"]:
+                    parsed_unique_id = unique_id[1:]
+                try:
+                    await bot.get_file(parsed_unique_id)
+                except TelegramBadRequest as _:
+                    inaccessible_media_list.append(unique_id)
+            for media_id in inaccessible_media_list:
+                await ButtonMediaRepository.update_media_id(media_id, bot_photo_id, session)
+            await session_commit(session)

@@ -59,12 +59,8 @@ async def send_confirmation(**kwargs):
     callback_data: AnnouncementCallback = kwargs.get("callback_data")
     session: AsyncSession = kwargs.get("session")
     language: Language = kwargs.get("language")
-    msg = await AnnouncementService.send_announcement(callback, callback_data, session, language)
-    if callback.message.caption:
-        await callback.message.delete()
-        await callback.message.answer(text=msg)
-    elif callback.message.text:
-        await callback.message.edit_text(text=msg)
+    await AnnouncementService.send_announcement(callback, callback_data, session, language)
+    await callback.message.delete()
 
 
 @announcement_router.callback_query(AdminIdFilter(), AnnouncementCallback.filter())
