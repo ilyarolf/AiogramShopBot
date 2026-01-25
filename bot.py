@@ -34,6 +34,7 @@ from models.subcategory import SubcategoryAdmin
 from models.user import UserAdmin
 from processing.processing import processing_router
 from repositories.button_media import ButtonMediaRepository
+from services.media import MediaService
 from services.notification import NotificationService
 from services.wallet import WalletService
 from utils.utils import validate_i18n
@@ -91,16 +92,20 @@ async def on_startup():
     if photos.total_count == 0:
         photo_id_list = []
         for admin_id in config.ADMIN_ID_LIST:
-            msg = await bot.send_photo(chat_id=admin_id,
-                                       photo=URLInputFile(url="https://img.freepik.com/premium-vector/no-photo-available-vector-icon-default-image-symbol-picture-coming-soon-web-site-mobile-app_87543-18055.jpg",
-                                                          filename="no_image.png"))
-            bot_photo_id = msg.photo[-1].file_id
-            photo_id_list.append(bot_photo_id)
+            try:
+                msg = await bot.send_photo(chat_id=admin_id,
+                                           photo=URLInputFile(url="https://img.freepik.com/premium-vector/no-photo-available-vector-icon-default-image-symbol-picture-coming-soon-web-site-mobile-app_87543-18055.jpg",
+                                                              filename="no_image.png"))
+                bot_photo_id = msg.photo[-1].file_id
+                photo_id_list.append(bot_photo_id)
+            except Exception as _:
+                pass
         bot_photo_id = photo_id_list[0]
     else:
         bot_photo_id = photos.photos[0][-1].file_id
     with open("static/no_image.jpeg", "w") as f:
         f.write(bot_photo_id)
+    await MediaService.update_inaccessible_media(bot)
     validate_i18n()
     await ButtonMediaRepository.init_buttons_media()
     if config.CRYPTO_FORWARDING_MODE:
