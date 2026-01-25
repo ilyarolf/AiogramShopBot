@@ -92,7 +92,7 @@ async def on_startup():
         photo_id_list = []
         for admin_id in config.ADMIN_ID_LIST:
             msg = await bot.send_photo(chat_id=admin_id,
-                                       photo=URLInputFile(url="https://i.imgur.com/CxWRPwY.png",
+                                       photo=URLInputFile(url="https://img.freepik.com/premium-vector/no-photo-available-vector-icon-default-image-symbol-picture-coming-soon-web-site-mobile-app_87543-18055.jpg",
                                                           filename="no_image.png"))
             bot_photo_id = msg.photo[-1].file_id
             photo_id_list.append(bot_photo_id)
