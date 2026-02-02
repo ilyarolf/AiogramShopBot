@@ -13,6 +13,7 @@ import config
 from callbacks import MyProfileCallback, ReviewManagementCallback
 from config import ADMIN_ID_LIST, TOKEN
 from enums.bot_entity import BotEntity
+from enums.cryptocurrency import Cryptocurrency
 from enums.language import Language
 from enums.user_role import UserRole
 from models.buy import RefundDTO, BuyDTO
@@ -133,13 +134,18 @@ class NotificationService:
             admin_kb_markup = admin_kb_markup.as_markup()
             await NotificationService.send_to_user(referrer_notification_msg,
                                                    referral_bonus_dto.referrer_user_dto.telegram_id)
-        edited_payment_message = get_text(user_dto.language, BotEntity.USER, "top_up_balance_msg").format(
+        msg_template = "top_up_balance_payment_msg" if payment_dto.cryptoCurrency in Cryptocurrency.get_stablecoins() else "top_up_balance_deposit_msg"
+        timestamp_s = payment_dto.expireDatetime / 1000
+        dt = datetime.fromtimestamp(timestamp_s, tz=timezone.utc)
+        formatted = dt.strftime('%H:%M UTC on %B %d, %Y')
+        edited_payment_message = get_text(user_dto.language, BotEntity.USER, msg_template).format(
             crypto_name=payment_dto.cryptoCurrency.name,
             addr="***",
             crypto_amount=payment_dto.cryptoAmount,
             fiat_amount=payment_dto.fiatAmount,
             currency_text=currency_text,
-            status=get_text(user_dto.language, BotEntity.USER, "status_paid")
+            status=get_text(user_dto.language, BotEntity.USER, "status_paid"),
+            payment_lifetime=formatted
         )
         await NotificationService.edit_caption(edited_payment_message, table_payment_dto.message_id,
                                                user_dto.telegram_id)
