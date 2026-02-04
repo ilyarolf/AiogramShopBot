@@ -11,8 +11,6 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import table, column
 
-from enums.buy_status import BuyStatus
-from enums.item_type import ItemType
 
 # revision identifiers, used by Alembic.
 revision: str = 'd14008036574'
@@ -22,6 +20,8 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    from enums.buy_status import BuyStatus
+    from enums.item_type import ItemType
     op.execute("PRAGMA foreign_keys=0;")
 
     item_type_enum = sa.Enum(ItemType)
