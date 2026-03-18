@@ -9,9 +9,18 @@ class Language(str, Enum):
     ZH = "zh"
 
     @staticmethod
-    def from_locale(locale: str) -> 'Language':
+    def from_locale(locale: str | None) -> 'Language':
+        if not locale:
+            return Language.EN
+
+        normalized_locale = locale.lower().replace("_", "-")
+        primary_language = normalized_locale.split("-", 1)[0]
+
+        if primary_language == Language.ZH.value:
+            return Language.ZH
+
         try:
-            return Language(locale.lower())
+            return Language(primary_language)
         except ValueError:
             return Language.EN
 
