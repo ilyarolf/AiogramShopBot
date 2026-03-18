@@ -1,6 +1,5 @@
 import io
 import re
-from datetime import datetime, timezone
 import qrcode
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, InputMediaPhoto, BufferedInputFile, CallbackQuery
@@ -19,7 +18,7 @@ from handlers.user.constants import UserStates
 from models.payment import ProcessingPaymentDTO
 from repositories.payment import PaymentRepository
 from repositories.user import UserRepository
-from utils.utils import get_text, get_bot_photo_id
+from utils.utils import get_text, get_bot_photo_id, format_localized_datetime
 
 
 class PaymentService:
@@ -113,9 +112,11 @@ class PaymentService:
                     payment_dto = await PaymentService.__create_invoice(payment_dto)
                     await PaymentRepository.create(payment_dto.id, user.id, message.message_id, session)
                     await session_commit(session)
-                    timestamp_s = payment_dto.expireDatetime / 1000
-                    dt = datetime.fromtimestamp(timestamp_s, tz=timezone.utc)
-                    formatted = dt.strftime('%H:%M UTC on %B %d, %Y')
+                    formatted = format_localized_datetime(
+                        datetime.fromtimestamp(payment_dto.expireDatetime / 1000, tz=timezone.utc),
+                        language,
+                        include_utc=True
+                    )
                     caption = get_text(language, BotEntity.USER, "top_up_balance_payment_msg").format(
                         crypto_name=payment_dto.cryptoCurrency.name,
                         addr=payment_dto.address,
@@ -141,9 +142,11 @@ class PaymentService:
             payment_dto = await PaymentService.__create_invoice(payment_dto)
             await PaymentRepository.create(payment_dto.id, user.id, message.message_id, session)
             await session_commit(session)
-            timestamp_s = payment_dto.expireDatetime / 1000
-            dt = datetime.fromtimestamp(timestamp_s, tz=timezone.utc)
-            formatted = dt.strftime('%H:%M UTC on %B %d, %Y')
+            formatted = format_localized_datetime(
+                datetime.fromtimestamp(payment_dto.expireDatetime / 1000, tz=timezone.utc),
+                language,
+                include_utc=True
+            )
             caption = get_text(language, BotEntity.USER, "top_up_balance_deposit_msg").format(
                 crypto_name=payment_dto.cryptoCurrency.name,
                 addr=payment_dto.address,

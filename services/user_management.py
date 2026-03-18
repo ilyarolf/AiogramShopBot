@@ -207,8 +207,7 @@ class UserManagementService:
                 total_purchases_qty=total_purchases_qty,
                 currency_sym=config.CURRENCY.get_localized_symbol(),
                 total_spent_amount=total_spent_amount,
-                balance=user.top_up_amount - user.consume_records,
-                registered_at=user.registered_at.strftime("%m/%d/%Y, %I:%M %p")
+                balance=user.top_up_amount - user.consume_records
             )
         await state.set_state()
         kb_builder.button(

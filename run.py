@@ -87,16 +87,20 @@ async def support(message: Message, session: AsyncSession, language: Language):
 
 @main_router.error(F.update.message.as_("message"))
 async def error_handler(event: ErrorEvent, message: Message):
-    await message.answer("Oops, something went wrong!")
+    language = Language.from_locale(message.from_user.language_code if message.from_user else None)
+    await message.answer(get_text(language, BotEntity.COMMON, "unexpected_error"))
     traceback_str = traceback.format_exc()
-    admin_notification = (
-        f"Critical error caused by {event.exception}\n\n"
-        f"Stack trace:\n{traceback_str}"
-    )
-    if len(admin_notification) > 4096:
-        byte_array = bytearray(admin_notification, 'utf-8')
-        admin_notification = BufferedInputFile(byte_array, "exception.txt")
-    await NotificationService.send_to_admins(admin_notification, None)
+    def admin_message_factory(admin_language: Language) -> str | BufferedInputFile:
+        admin_notification = get_text(admin_language, BotEntity.COMMON, "critical_error_with_traceback").format(
+            exception=event.exception,
+            traceback_str=traceback_str
+        )
+        if len(admin_notification) > 4096:
+            byte_array = bytearray(admin_notification, 'utf-8')
+            return BufferedInputFile(byte_array, "exception.txt")
+        return admin_notification
+
+    await NotificationService.send_to_admins_localized(admin_message_factory, None)
 
 
 throttling_middleware = ThrottlingMiddleware(redis)

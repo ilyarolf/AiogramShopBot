@@ -17,7 +17,7 @@ from handlers.common.common import add_pagination_buttons
 from models.coupon import CouponDTO
 from repositories.coupon import CouponRepository
 from services.notification import NotificationService
-from utils.utils import get_text
+from utils.utils import get_text, format_localized_datetime
 
 
 class CouponManagementService:
@@ -198,7 +198,7 @@ class CouponManagementService:
             number_of_uses=callback_data.number_of_uses.get_localized(language),
             coupon_value=coupon_value,
             symbol=config.CURRENCY.get_localized_symbol() if callback_data.coupon_type == CouponType.FIXED else "%",
-            use_before=coupon_dto.expire_datetime.strftime("%m/%d/%Y, %I:%M %p"),
+            use_before=format_localized_datetime(coupon_dto.expire_datetime, language),
             code=coupon_dto.code
         ), kb_builder
 
@@ -268,7 +268,7 @@ class CouponManagementService:
             number_of_uses=number_of_uses,
             coupon_value=coupon_dto.value,
             symbol=config.CURRENCY.get_localized_symbol() if coupon_dto.type == CouponType.FIXED else "%",
-            use_before=coupon_dto.expire_datetime.strftime("%m/%d/%Y, %I:%M %p"),
+            use_before=format_localized_datetime(coupon_dto.expire_datetime, language),
             code=coupon_dto.code,
             usage_count=coupon_dto.usage_count
         ), kb_builder

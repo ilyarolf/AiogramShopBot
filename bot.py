@@ -17,7 +17,9 @@ from admin import authentication_backend
 from db import create_db_and_tables, engine
 import uvicorn
 from fastapi.responses import JSONResponse
+from enums.bot_entity import BotEntity
 from enums.cryptocurrency import Cryptocurrency
+from enums.language import Language
 from models.buy import BuyAdmin
 from models.buyItem import BuyItemAdmin
 from models.cart import CartAdmin
@@ -37,7 +39,7 @@ from repositories.button_media import ButtonMediaRepository
 from services.media import MediaService
 from services.notification import NotificationService
 from services.wallet import WalletService
-from utils.utils import validate_i18n
+from utils.utils import validate_i18n, get_text
 
 redis = Redis(host=config.REDIS_HOST, password=config.REDIS_PASSWORD)
 bot = Bot(config.TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
@@ -137,14 +139,17 @@ async def on_shutdown():
 @app.exception_handler(Exception)
 async def exception_handler(request: Request, exc: Exception):
     traceback_str = traceback.format_exc()
-    admin_notification = (
-        f"Critical error caused by {exc}\n\n"
-        f"Stack trace:\n{traceback_str}"
-    )
-    if len(admin_notification) > 4096:
-        byte_array = bytearray(admin_notification, 'utf-8')
-        admin_notification = BufferedInputFile(byte_array, "exception.txt")
-    await NotificationService.send_to_admins(admin_notification, None)
+    def admin_message_factory(language: Language) -> str | BufferedInputFile:
+        admin_notification = get_text(language, BotEntity.COMMON, "critical_error_with_traceback").format(
+            exception=exc,
+            traceback_str=traceback_str
+        )
+        if len(admin_notification) > 4096:
+            byte_array = bytearray(admin_notification, 'utf-8')
+            return BufferedInputFile(byte_array, "exception.txt")
+        return admin_notification
+
+    await NotificationService.send_to_admins_localized(admin_message_factory, None)
     return JSONResponse(
         status_code=500,
         content={"message": f"An error occurred: {str(exc)}"},

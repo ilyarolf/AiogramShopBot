@@ -26,7 +26,7 @@ from repositories.subcategory import SubcategoryRepository
 from repositories.user import UserRepository
 from services.message import MessageService
 from services.notification import NotificationService
-from utils.utils import get_text, get_bot_photo_id, remove_html_tags
+from utils.utils import get_text, get_bot_photo_id, remove_html_tags, format_localized_datetime
 
 
 class BuyService:
@@ -64,7 +64,7 @@ class BuyService:
         purchased_items_msg = MessageService.create_message_with_bought_items(items, language)
         category = await CategoryRepository.get_by_id(items[0].category_id, session)
         subcategory = await SubcategoryRepository.get_by_id(items[0].subcategory_id, session)
-        us_datetime_12h = buy.buy_datetime.strftime("%m/%d/%Y, %I:%M %p")
+        localized_buy_datetime = format_localized_datetime(buy.buy_datetime, language)
         msg_template = get_text(language, BotEntity.USER, "purchase_details")
         content_list = []
         content_list.append(msg_template.format(
@@ -74,7 +74,7 @@ class BuyService:
             total_fiat_price=items[0].price * len(items),
             fiat_price=items[0].price,
             qty=len(items),
-            purchase_datetime=us_datetime_12h
+            purchase_datetime=localized_buy_datetime
         ))
         has_physical = any(item.item_type == ItemType.PHYSICAL for item in items)
         if has_physical is False:
@@ -103,7 +103,7 @@ class BuyService:
                 total_fiat_price=items[0].price * len(items),
                 fiat_price=items[0].price,
                 qty=len(items),
-                purchase_datetime=us_datetime_12h,
+                purchase_datetime=localized_buy_datetime,
                 purchased_items=get_text(language, BotEntity.USER, "attached")
             )
             purchased_items_msg = remove_html_tags(purchased_items_msg)
@@ -169,7 +169,7 @@ class BuyService:
         sym = config.CURRENCY.get_localized_symbol()
         content_list.append(get_text(language, BotEntity.USER, "purchase_history_msg_base").format(
             buy_id=buy_dto.id,
-            buy_datetime=buy_dto.buy_datetime.strftime("%m/%d/%Y, %I:%M %p"),
+            buy_datetime=format_localized_datetime(buy_dto.buy_datetime, language),
             currency_sym=sym,
             fiat_amount=buy_dto.total_price,
             discount_amount=buy_dto.discount,

@@ -47,6 +47,16 @@ def get_text(language: Language, entity: BotEntity, key: str) -> str:
         return get_text(Language.EN, entity, key)
 
 
+def format_localized_datetime(dt: datetime.datetime, language: Language, include_utc: bool = False) -> str:
+    template_key = "utc_datetime" if include_utc else "datetime"
+    return get_text(language, BotEntity.COMMON, template_key).format(
+        hour=dt.strftime("%H:%M"),
+        month=get_text(language, BotEntity.COMMON, f"month_{dt.month}"),
+        day=dt.day,
+        year=dt.year
+    )
+
+
 def remove_html_tags(text: str):
     clean = re.compile('<.*?>')
     return re.sub(clean, '', text)
