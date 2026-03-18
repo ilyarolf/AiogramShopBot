@@ -22,6 +22,22 @@ from utils.utils import get_text
 
 class CouponManagementService:
     @staticmethod
+    def _get_coupon_value_request_text(
+            language: Language,
+            coupon_type: CouponType,
+            number_of_uses: CouponNumberOfUses) -> str:
+        request_key = (
+            "request_coupon_value_percentage"
+            if coupon_type == CouponType.PERCENTAGE
+            else "request_coupon_value_fixed"
+        )
+        return get_text(language, BotEntity.ADMIN, request_key).format(
+            coupon_type=coupon_type.get_localized(language),
+            number_of_uses=number_of_uses.get_localized(language),
+            currency_text=config.CURRENCY.get_localized_text()
+        )
+
+    @staticmethod
     async def get_coupon_management_menu(language: Language) -> tuple[str, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(
@@ -93,13 +109,10 @@ class CouponManagementService:
             text=get_text(language, BotEntity.COMMON, "cancel"),
             callback_data=CouponManagementCallback.create(0)
         )
-        return get_text(
+        return CouponManagementService._get_coupon_value_request_text(
             language,
-            BotEntity.ADMIN,
-            "request_coupon_value").format(
-            coupon_type=callback_data.coupon_type.get_localized(language),
-            number_of_uses=callback_data.number_of_uses.get_localized(language),
-            currency_text=config.CURRENCY.get_localized_text()
+            callback_data.coupon_type,
+            callback_data.number_of_uses
         ), kb_builder
 
     @staticmethod
@@ -127,14 +140,10 @@ class CouponManagementService:
                 kb_builder.row(cancel_button)
             except Exception as e:
                 kb_builder.row(cancel_button)
-                msg = get_text(language,
-                               BotEntity.ADMIN,
-                               "request_coupon_value").format(
-                    coupon_type=get_text(language, BotEntity.ADMIN,
-                                         f"{coupon_type.value.lower()}_coupon"),
-                    number_of_uses=get_text(language, BotEntity.ADMIN,
-                                            f"{number_of_uses.value.lower()}_usage"),
-                    currency_text=config.CURRENCY.get_localized_text()
+                msg = CouponManagementService._get_coupon_value_request_text(
+                    language,
+                    coupon_type,
+                    number_of_uses
                 )
         else:
             await state.update_data(coupon_name=message.html_text)
