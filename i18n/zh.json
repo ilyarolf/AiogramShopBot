@@ -195,6 +195,7 @@
     "coupon": "🎟️ 我有优惠券",
     "banned": "<b>您的账户已被封禁。</b>",
     "critical_error_with_traceback": "严重错误: {exception}\n\n堆栈跟踪:\n{traceback_str}",
+    "bot_is_working": "Bot 运行正常",
     "digital": "💾 数字商品",
     "physical": "🏷️ 实体商品",
     "review_single": "<b>已验证购买</b>\n⚙️ 商品类型: <code>{item_type}</code>\n🗃️ 分类: <code>{category_name}</code>\n📦 子分类: <code>{subcategory_name}</code>\n💰 支付价格: <code>{currency_sym}{price:.2f}</code>\n评分: {rating_stars}\n客户评价: {review_text}",

@@ -16,8 +16,12 @@ from aiogram.webhook.aiohttp_server import (
     TokenBasedRequestHandler,
     setup_application,
 )
-from db import create_db_and_tables
+from db import create_db_and_tables, get_db_session
+from enums.bot_entity import BotEntity
+from enums.language import Language
+from repositories.user import UserRepository
 from utils.custom_filters import AdminIdFilter
+from utils.utils import get_text
 
 main_router_multibot = Router()
 
@@ -55,11 +59,14 @@ async def command_add_bot(message: Message, command: CommandObject, bot: Bot) ->
 async def on_startup(dispatcher: Dispatcher, bot: Bot):
     await bot.set_webhook(f"{BASE_URL}{MAIN_BOT_PATH}")
     await create_db_and_tables()
-    for admin in config.ADMIN_ID_LIST:
-        try:
-            await bot.send_message(admin, 'Bot is working')
-        except Exception as e:
-            logging.warning(e)
+    async with get_db_session() as session:
+        for admin in config.ADMIN_ID_LIST:
+            try:
+                admin_dto = await UserRepository.get_by_tgid(admin, session)
+                admin_language = admin_dto.language if admin_dto and admin_dto.language else Language.EN
+                await bot.send_message(admin, get_text(admin_language, BotEntity.COMMON, "bot_is_working"))
+            except Exception as e:
+                logging.warning(e)
 
 
 def main(main_router):

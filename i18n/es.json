@@ -195,6 +195,7 @@
     "coupon": "🎟️ Tengo un cupón",
     "banned": "<b>Tu cuenta ha sido baneada.</b>",
     "critical_error_with_traceback": "Error critico causado por {exception}\n\nTraza de pila:\n{traceback_str}",
+    "bot_is_working": "El bot esta funcionando",
     "digital": "💾 Digital",
     "physical": "🏷️ Físico",
     "review_single": "<b>Compra verificada</b>\n⚙️ Tipo de artículo: <code>{item_type}</code>\n🗃️ Categoría: <code>{category_name}</code>\n📦 Subcategoría: <code>{subcategory_name}</code>\n💰 Precio pagado: <code>{currency_sym}{price:.2f}</code>\nCalificación: {rating_stars}\nReseña del cliente: {review_text}",

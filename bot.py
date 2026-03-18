@@ -14,7 +14,7 @@ from aiogram.enums import ParseMode
 from fastapi import FastAPI, Request, status, HTTPException
 
 from admin import authentication_backend
-from db import create_db_and_tables, engine
+from db import create_db_and_tables, engine, get_db_session
 import uvicorn
 from fastapi.responses import JSONResponse
 from enums.bot_entity import BotEntity
@@ -36,6 +36,7 @@ from models.subcategory import SubcategoryAdmin
 from models.user import UserAdmin
 from processing.processing import processing_router
 from repositories.button_media import ButtonMediaRepository
+from repositories.user import UserRepository
 from services.media import MediaService
 from services.notification import NotificationService
 from services.wallet import WalletService
@@ -121,11 +122,14 @@ async def on_startup():
                     f"Your withdrawal address for {cryptocurrency.name} cryptocurrency is not valid!"
                 )
                 sys.exit()
-    for admin in config.ADMIN_ID_LIST:
-        try:
-            await bot.send_message(admin, 'Bot is working')
-        except Exception as e:
-            logging.warning(e)
+    async with get_db_session() as session:
+        for admin in config.ADMIN_ID_LIST:
+            try:
+                admin_dto = await UserRepository.get_by_tgid(admin, session)
+                admin_language = admin_dto.language if admin_dto and admin_dto.language else Language.EN
+                await bot.send_message(admin, get_text(admin_language, BotEntity.COMMON, "bot_is_working"))
+            except Exception as e:
+                logging.warning(e)
 
 
 @app.on_event("shutdown")

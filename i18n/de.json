@@ -195,6 +195,7 @@
     "coupon": "🎟️ Ich habe einen Gutschein",
     "banned": "<b>Ihr Konto wurde gesperrt.</b>",
     "critical_error_with_traceback": "Kritischer Fehler durch {exception}\n\nStacktrace:\n{traceback_str}",
+    "bot_is_working": "Der Bot laeuft",
     "digital": "💾 Digital",
     "physical": "🏷️ Physisch",
     "review_single": "<b>Verifizierter Kauf</b>\n⚙️ Artikeltyp: <code>{item_type}</code>\n🗃️ Kategorie: <code>{category_name}</code>\n📦 Unterkategorie: <code>{subcategory_name}</code>\n💰 Bezahlter Preis: <code>{currency_sym}{price:.2f}</code>\nBewertung: {rating_stars}\nKundenbewertung: {review_text}",
