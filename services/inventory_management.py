@@ -23,6 +23,14 @@ from utils.utils import get_text
 class InventoryManagementService:
 
     @staticmethod
+    def _get_item_type_prompt(language: Language, is_invalid: bool = False) -> str:
+        key = "add_items_item_type_invalid" if is_invalid else "add_items_item_type"
+        return get_text(language, BotEntity.ADMIN, key).format(
+            physical_item_type=ItemType.PHYSICAL.get_localized(language),
+            digital_item_type=ItemType.DIGITAL.get_localized(language),
+        )
+
+    @staticmethod
     async def get_inventory_management_menu(language: Language) -> tuple[str, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(text=get_text(language, BotEntity.ADMIN, "add_items"),
@@ -69,7 +77,7 @@ class InventoryManagementService:
                 return get_text(language, BotEntity.ADMIN, "add_items_txt_msg"), kb_markup
             case AddType.MENU:
                 await state.set_state(InventoryManagementStates.item_type)
-                return get_text(language, BotEntity.ADMIN, "add_items_item_type"), kb_markup
+                return InventoryManagementService._get_item_type_prompt(language), kb_markup
 
     @staticmethod
     async def delete_confirmation(callback_data: InventoryManagementCallback,
@@ -130,9 +138,13 @@ class InventoryManagementService:
         cancel_button = InlineKeyboardButton(text=get_text(language, BotEntity.COMMON, "cancel"),
                                              callback_data=InventoryManagementCallback.create(1).pack())
         if current_state == InventoryManagementStates.item_type:
-            await state.update_data(item_type=message.html_text)
-            await state.set_state(InventoryManagementStates.category)
-            msg = get_text(language, BotEntity.ADMIN, "add_items_category")
+            try:
+                item_type = ItemType.from_input(message.html_text, language)
+                await state.update_data(item_type=item_type.value)
+                await state.set_state(InventoryManagementStates.category)
+                msg = get_text(language, BotEntity.ADMIN, "add_items_category")
+            except ValueError:
+                msg = InventoryManagementService._get_item_type_prompt(language, is_invalid=True)
         elif current_state == InventoryManagementStates.category:
             await state.update_data(category_name=message.html_text)
             await state.set_state(InventoryManagementStates.subcategory)
@@ -144,14 +156,14 @@ class InventoryManagementService:
         elif current_state == InventoryManagementStates.description:
             await state.update_data(description=message.html_text)
             await state.set_state(InventoryManagementStates.private_data)
-            if ItemType(state_data['item_type'].upper()) == ItemType.PHYSICAL:
+            if ItemType.from_input(state_data['item_type'], language) == ItemType.PHYSICAL:
                 msg = get_text(language, BotEntity.ADMIN, "add_items_private_data_physical")
             else:
                 msg = get_text(language, BotEntity.ADMIN, "add_items_private_data")
         elif current_state == InventoryManagementStates.private_data:
             success_msg = get_text(language, BotEntity.ADMIN, "add_items_price").format(
                     currency_text=config.CURRENCY.get_localized_text())
-            if ItemType(state_data['item_type'].upper()) == ItemType.PHYSICAL:
+            if ItemType.from_input(state_data['item_type'], language) == ItemType.PHYSICAL:
                 if message.html_text.isdecimal():
                     await state.update_data(items_qty=int(message.html_text))
                     await state.set_state(InventoryManagementStates.price)
@@ -168,7 +180,7 @@ class InventoryManagementService:
                 assert (price > 0)
                 await state.update_data(price=message.html_text)
                 state_data = await state.get_data()
-                item_type = ItemType(state_data['item_type'].upper())
+                item_type = ItemType.from_input(state_data['item_type'], language)
                 category = await CategoryRepository.get_or_create(state_data['category_name'], session)
                 subcategory = await SubcategoryRepository.get_or_create(state_data['subcategory_name'], session)
                 if item_type == ItemType.PHYSICAL:
