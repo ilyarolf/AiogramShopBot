@@ -24,10 +24,37 @@ from repositories.user import UserRepository
 from utils.utils import get_text
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from matplotlib import font_manager
 from io import BytesIO
 
 
 class StatisticsService:
+    @staticmethod
+    def _configure_chart_font() -> None:
+        available_fonts = {font.name for font in font_manager.fontManager.ttflist}
+        preferred_fonts = [
+            "PingFang SC",
+            "Hiragino Sans GB",
+            "Songti SC",
+            "STHeiti",
+            "Arial Unicode MS",
+            "Noto Sans CJK SC",
+            "Microsoft YaHei",
+            "SimHei",
+            "WenQuanYi Zen Hei",
+        ]
+
+        for font_name in preferred_fonts:
+            if font_name in available_fonts:
+                plt.rcParams["font.family"] = "sans-serif"
+                plt.rcParams["font.sans-serif"] = [
+                    font_name,
+                    *plt.rcParams.get("font.sans-serif", []),
+                ]
+                break
+
+        plt.rcParams["axes.unicode_minus"] = False
+
     @staticmethod
     async def get_statistics_menu(language: Language) -> tuple[str, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
@@ -64,6 +91,7 @@ class StatisticsService:
     def build_statistics_chart(objects: list[UserDTO | BuyDTO | DepositDTO],
                                time_delta: StatisticsTimeDelta,
                                language: Language, crypto_price: dict | None = None) -> bytes:
+        StatisticsService._configure_chart_font()
         start, end = time_delta.get_time_range()[0], datetime.now()
         day_count = (end.date() - start.date()).days + 1
         dates = [start.date() + timedelta(days=i) for i in range(day_count)]
