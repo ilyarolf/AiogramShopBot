@@ -66,9 +66,9 @@ class UserService:
                           callback_data=MyProfileCallback.create(level=1))
         kb_builder.button(text=get_text(language, BotEntity.USER, "purchase_history_button"),
                           callback_data=MyProfileCallback.create(level=3))
-        kb_builder.button(text=get_text(Language.EN, BotEntity.USER, "referral_button"),
+        kb_builder.button(text=get_text(language, BotEntity.USER, "referral_button"),
                           callback_data=MyProfileCallback.create(level=7))
-        kb_builder.button(text=get_text(Language.EN, BotEntity.USER, "language"),
+        kb_builder.button(text=get_text(language, BotEntity.USER, "language"),
                           callback_data=MyProfileCallback.create(level=6))
         kb_builder.adjust(2)
         user = await UserRepository.get_by_tgid(telegram_id, session)
