@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 from sqladmin import ModelView
-from sqlalchemy import Integer, Column, ForeignKey, BigInteger, DateTime, func, CheckConstraint, Enum, Float
+from sqlalchemy import Integer, Column, ForeignKey, DateTime, func, CheckConstraint, Enum, Float, Numeric
 from sqlalchemy.orm import relationship
 
 import config
@@ -19,7 +19,7 @@ class Deposit(Base):
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     user = relationship("User", back_populates="deposits")
     network = Column(Enum(Cryptocurrency), nullable=False)
-    amount = Column(BigInteger, nullable=False)
+    amount = Column(Numeric(precision=78, scale=0), nullable=False)
     deposit_datetime = Column(DateTime(timezone=True), default=func.now())
     fiat_amount = Column(Float, nullable=False)
 
