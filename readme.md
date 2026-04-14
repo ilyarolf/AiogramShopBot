@@ -116,6 +116,13 @@ More Telegram bot GIF demos, admin flow examples, and screenshots are available 
 - [SQLAdmin panel](docs.md#sqladmin-web-admin-panel)
 - [Multibot mode](docs.md#multibot-experimental)
 
+## 🌍 Community
+
+- [Contributing guide](CONTRIBUTING.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
+- [Security policy](SECURITY.md)
+- [Support](SUPPORT.md)
+
 ## 🎯 Use Cases
 
 - Telegram shop bot for digital products
@@ -141,6 +148,10 @@ More Telegram bot GIF demos, admin flow examples, and screenshots are available 
 - TON: `UQD0QetwXoYTsmbZWVbE_z_JUFh54RVVRUxCbCHQkLsl3Hfn`
 - USDT ERC20: `0xB49D720DE2630fA4C813d5B4c025706E25cF74fe`
 - USDT BEP20: `0xB49D720DE2630fA4C813d5B4c025706E25cF74fe`
+
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ilyarolf/AiogramShopBot&type=Date)](https://star-history.com/#ilyarolf/AiogramShopBot&Date)
 
 ## 📄 License
 
