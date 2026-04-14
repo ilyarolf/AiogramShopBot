@@ -2,7 +2,6 @@ aiogram==3.14.0
 alembic==1.14.0
 asyncpg==0.31.0
 fastapi==0.115.12
-httpx==0.28.1
 kryptoexpress-sdk==0.1.1
 matplotlib==3.10.7
 passlib==1.7.4

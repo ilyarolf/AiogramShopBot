@@ -1,4 +1,3 @@
-import httpx
 import config
 from kryptoexpress import AsyncKryptoExpressClient, verify_callback_signature
 from kryptoexpress.models import FiatCurrency as KryptoExpressFiatCurrency
@@ -25,30 +24,10 @@ class CryptoApiWrapper:
         return KryptoExpressFiatCurrency(currency.value)
 
     @staticmethod
-    async def _convert_fiat_amount(amount: float,
-                                   from_currency: KryptoExpressFiatCurrency,
-                                   to_currency: KryptoExpressFiatCurrency) -> float:
-        if from_currency == to_currency:
-            return amount
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(
-                "https://api.frankfurter.app/latest",
-                params={
-                    "amount": amount,
-                    "from": from_currency.value,
-                    "to": to_currency.value,
-                },
-            )
-            response.raise_for_status()
-            payload = response.json()
-            return payload["rates"][to_currency.value]
-
-    @staticmethod
     def _build_client() -> AsyncKryptoExpressClient:
         return AsyncKryptoExpressClient(
             api_key=config.KRYPTO_EXPRESS_API_KEY,
             base_url=config.KRYPTO_EXPRESS_API_URL,
-            async_fiat_converter=CryptoApiWrapper._convert_fiat_amount,
         )
 
     @staticmethod
