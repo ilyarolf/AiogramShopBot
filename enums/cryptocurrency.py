@@ -84,7 +84,7 @@ class Cryptocurrency(str, Enum):
             case Cryptocurrency.SOL | Cryptocurrency.USDT_SOL | Cryptocurrency.USDC_SOL:
                 return config.SOL_FORWARDING_ADDRESS
             case Cryptocurrency.DOGE:
-                return None
+                return config.DOGE_FORWARDING_ADDRESS
 
     @staticmethod
     def get_stablecoins() -> list['Cryptocurrency']:
