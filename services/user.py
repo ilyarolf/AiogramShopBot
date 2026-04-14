@@ -86,7 +86,7 @@ class UserService:
     async def get_top_up_buttons(callback_data: MyProfileCallback,
                                  language: Language) -> tuple[str, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
-        for cryptocurrency in Cryptocurrency:
+        for cryptocurrency in Cryptocurrency.get_visible():
             kb_builder.button(
                 text=cryptocurrency.get_localized(language),
                 callback_data=MyProfileCallback.create(level=callback_data.level + 1,

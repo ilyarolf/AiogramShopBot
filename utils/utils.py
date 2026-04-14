@@ -14,6 +14,7 @@ from pyngrok import ngrok
 import config
 from enums.bot_entity import BotEntity
 from enums.language import Language
+from utils.localizator import Localizator
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
@@ -40,11 +41,12 @@ def start_ngrok():
 
 def get_text(language: Language, entity: BotEntity, key: str) -> str:
     try:
-        with open(f"./i18n/{language.value}.json", "r", encoding="UTF-8") as f:
-            return json.loads(f.read())[entity.name.lower()][key]
+        return Localizator.get_text(language, entity, key)
     except Exception as e:
         logging.error(e)
-        return get_text(Language.EN, entity, key)
+        if language == Language.EN:
+            raise
+        return Localizator.get_text(Language.EN, entity, key)
 
 
 def remove_html_tags(text: str):

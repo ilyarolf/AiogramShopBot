@@ -1,26 +1,18 @@
 ## Summary
 
-Describe the change in 1-3 sentences.
+Describe what changed and why.
 
-## Why this change?
-
-Explain the problem this PR solves.
-
-## What changed?
+## Changes
 
 - 
-- 
-- 
 
-## Testing
+## Verification
 
-Describe how this was tested.
-
-## Documentation
-
-- [ ] Documentation updated if needed
-- [ ] Screenshots added if UI/admin flow changed
+- [ ] I ran relevant tests
+- [ ] I updated docs if needed
+- [ ] I kept the change focused
+- [ ] I checked affected bot/admin/payment flows
 
 ## Notes
 
-Anything reviewers should pay attention to.
+Anything reviewers should pay special attention to:

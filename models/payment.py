@@ -39,7 +39,7 @@ class ProcessingPaymentDTO(BaseModel):
     isWithdrawn: bool | None = None
     hash: str | None = None
     callbackUrl: str = f'{config.WEBHOOK_URL}cryptoprocessing/event'
-    callbackSecret: str | None = config.KRYPTO_EXPRESS_API_SECRET if len(config.KRYPTO_EXPRESS_API_SECRET) > 0 else None
+    callbackSecret: str | None = config.KRYPTO_EXPRESS_API_SECRET if config.KRYPTO_EXPRESS_API_SECRET else None
 
 
 class TablePaymentDTO(BaseModel):

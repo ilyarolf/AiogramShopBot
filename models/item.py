@@ -44,6 +44,15 @@ class ItemDTO(BaseModel):
     description: str | None = None
 
 
+class ItemAvailabilityDTO(BaseModel):
+    item_type: ItemType
+    category_id: int
+    subcategory_id: int
+    price: float
+    description: str
+    available_qty: int
+
+
 class ItemAdmin(ModelView, model=Item):
     column_exclude_list = [Item.category_id, Item.subcategory_id]
     column_formatters = {Item.private_data: lambda m, a: f"{m.private_data[:20]}..." if m.private_data else "",

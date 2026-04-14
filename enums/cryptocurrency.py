@@ -9,6 +9,7 @@ from utils.utils import get_text
 class Cryptocurrency(str, Enum):
     BNB = "BNB"
     BTC = "BTC"
+    DOGE = "DOGE"
     LTC = "LTC"
     ETH = "ETH"
     SOL = "SOL"
@@ -21,7 +22,7 @@ class Cryptocurrency(str, Enum):
 
     def get_decimals(self):
         match self:
-            case Cryptocurrency.BTC | Cryptocurrency.LTC:
+            case Cryptocurrency.BTC | Cryptocurrency.LTC | Cryptocurrency.DOGE:
                 return 8
             case Cryptocurrency.ETH | Cryptocurrency.BNB | Cryptocurrency.USDT_BEP20 | Cryptocurrency.USDC_BEP20:
                 return 18
@@ -36,6 +37,8 @@ class Cryptocurrency(str, Enum):
                 return "bitcoin"
             case Cryptocurrency.LTC:
                 return "litecoin"
+            case Cryptocurrency.DOGE:
+                return "dogecoin"
             case Cryptocurrency.ETH:
                 return "ethereum"
             case Cryptocurrency.BNB:
@@ -53,6 +56,8 @@ class Cryptocurrency(str, Enum):
                 return "https://mempool.space"
             case Cryptocurrency.LTC:
                 return "https://litecoinspace.org"
+            case Cryptocurrency.DOGE:
+                return "https://dogechain.info"
             case Cryptocurrency.ETH | Cryptocurrency.USDT_ERC20 | Cryptocurrency.USDC_ERC20:
                 return "https://etherscan.io"
             case Cryptocurrency.BNB | Cryptocurrency.USDT_BEP20 | Cryptocurrency.USDC_BEP20:
@@ -78,9 +83,19 @@ class Cryptocurrency(str, Enum):
                 return config.BNB_FORWARDING_ADDRESS
             case Cryptocurrency.SOL | Cryptocurrency.USDT_SOL | Cryptocurrency.USDC_SOL:
                 return config.SOL_FORWARDING_ADDRESS
+            case Cryptocurrency.DOGE:
+                return None
 
     @staticmethod
     def get_stablecoins() -> list['Cryptocurrency']:
         return [Cryptocurrency.USDT_SOL, Cryptocurrency.USDC_SOL,
                 Cryptocurrency.USDT_BEP20, Cryptocurrency.USDC_BEP20,
                 Cryptocurrency.USDT_ERC20, Cryptocurrency.USDC_ERC20]
+
+    @staticmethod
+    def get_hidden() -> set['Cryptocurrency']:
+        return set()
+
+    @staticmethod
+    def get_visible() -> list['Cryptocurrency']:
+        return [cryptocurrency for cryptocurrency in Cryptocurrency if cryptocurrency not in Cryptocurrency.get_hidden()]

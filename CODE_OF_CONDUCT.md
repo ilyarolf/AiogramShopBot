@@ -1,35 +1,33 @@
 # Code of Conduct
 
-## Our standard
+## Our Pledge
 
-We want this project to be welcoming, constructive, and respectful.
+We want AiogramShopBot to be a welcoming, respectful, and useful open source project for everyone.
+Contributors, maintainers, and community members are expected to act professionally and constructively in all project spaces.
 
-Examples of positive behavior include:
+## Expected Behavior
 
-- being respectful in discussions
-- giving actionable and specific feedback
-- assuming good intent
-- focusing on the project and the technical topic
-- being open to different ideas and levels of experience
+- Be respectful and patient.
+- Assume good intent and communicate clearly.
+- Focus on technical feedback, not personal attacks.
+- Welcome different levels of experience.
+- Help keep discussions actionable and on topic.
 
-Examples of unacceptable behavior include:
+## Unacceptable Behavior
 
-- harassment or personal attacks
-- insulting or dismissive language
-- hostile, discriminatory, or abusive behavior
-- deliberate disruption of discussions or reviews
-- publishing private information without permission
+- Harassment, intimidation, or discrimination of any kind.
+- Insults, trolling, or sustained hostile behavior.
+- Publishing private information without permission.
+- Spam, deliberate disruption, or bad-faith reporting.
 
 ## Enforcement
 
-Project maintainers may remove, edit, or reject comments, issues, pull requests, or other contributions that violate these standards.
+Project maintainers may remove, edit, or reject comments, issues, pull requests, and other contributions that violate this Code of Conduct.
 
 ## Reporting
 
-If you experience or witness unacceptable behavior, contact the maintainer:
+If you experience or witness unacceptable behavior, report it privately:
 
 - Telegram: [@ilyarolf_dev](https://t.me/ilyarolf_dev)
 
-## Scope
-
-This Code of Conduct applies to issues, pull requests, discussions, and other community spaces related to this repository.
+All reports will be reviewed reasonably and handled with discretion.

@@ -36,9 +36,23 @@ class ItemService:
             items = await ItemRepository.get_new(session)
             header = get_text(language, BotEntity.ADMIN, "restocking_message_header")
         filtered_items = {}
+        category_map = {
+            category.id: category
+            for category in await CategoryRepository.get_by_ids(
+                [item.category_id for item in items],
+                session
+            )
+        }
+        subcategory_map = {
+            subcategory.id: subcategory
+            for subcategory in await SubcategoryRepository.get_by_ids(
+                [item.subcategory_id for item in items],
+                session
+            )
+        }
         for item in items:
-            category = await CategoryRepository.get_by_id(item.category_id, session)
-            subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
+            category = category_map[item.category_id]
+            subcategory = subcategory_map[item.subcategory_id]
             if category.name not in filtered_items:
                 filtered_items[category.name] = {}
             if subcategory.name not in filtered_items[category.name]:

@@ -102,7 +102,7 @@ class CategoryRepository:
                 categories.scalars().all()]
 
     @staticmethod
-    async def get_or_create(category_name: str, session: Session | AsyncSession):
+    async def get_or_create(category_name: str, session: Session | AsyncSession) -> CategoryDTO:
         stmt = select(Category).where(Category.name == category_name)
         category = await session_execute(stmt, session)
         category = category.scalar()
@@ -111,9 +111,16 @@ class CategoryRepository:
             new_category_obj = Category(name=category_name, media_id=f"0{bot_photo_id}")
             session.add(new_category_obj)
             await session_flush(session)
-            return new_category_obj
-        else:
-            return category
+            category = new_category_obj
+        return CategoryDTO.model_validate(category, from_attributes=True)
+
+    @staticmethod
+    async def get_by_ids(category_ids: list[int], session: Session | AsyncSession) -> list[CategoryDTO]:
+        if not category_ids:
+            return []
+        stmt = select(Category).where(Category.id.in_(category_ids))
+        categories = await session_execute(stmt, session)
+        return [CategoryDTO.model_validate(category, from_attributes=True) for category in categories.scalars().all()]
 
     @staticmethod
     async def update(category_dto: CategoryDTO, session: AsyncSession):

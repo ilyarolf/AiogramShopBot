@@ -37,6 +37,14 @@ class BuyItemRepository:
         return [BuyItemDTO.model_validate(buy_item, from_attributes=True) for buy_item in buy_items.scalars().all()]
 
     @staticmethod
+    async def get_all_by_buy_ids(buy_ids: list[int], session: Session | AsyncSession) -> list[BuyItemDTO]:
+        if not buy_ids:
+            return []
+        stmt = select(BuyItem).where(BuyItem.buy_id.in_(buy_ids))
+        buy_items = await session_execute(stmt, session)
+        return [BuyItemDTO.model_validate(buy_item, from_attributes=True) for buy_item in buy_items.scalars().all()]
+
+    @staticmethod
     async def get_paginated_by_buy_id(sort_pairs: dict[str, int],
                                       filters: list[str],
                                       buy_id: int,
