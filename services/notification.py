@@ -22,6 +22,7 @@ from models.referral import ReferralBonusDTO
 from models.review import ReviewDTO
 from models.user import UserDTO
 from models.withdrawal import WithdrawalDTO
+from services.multibot import MultibotService
 from repositories.buyItem import BuyItemRepository
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
@@ -55,6 +56,9 @@ class NotificationService:
 
     @staticmethod
     async def send_to_user(message: str, telegram_id: int, reply_markup: types.InlineKeyboardMarkup | None = None):
+        if config.MULTIBOT:
+            await MultibotService.send_message_to_user(message, telegram_id, reply_markup=reply_markup)
+            return
         bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
         try:
             await bot.send_message(telegram_id, message, reply_markup=reply_markup)
@@ -182,11 +186,29 @@ class NotificationService:
         admin_kb_builder.adjust(1)
         cart_content = []
         buyItem_list = await BuyItemRepository.get_all_by_buy_id(buy.id, session)
+        item_map = await ItemRepository.get_by_id_map(
+            [buy_item.item_ids[0] for buy_item in buyItem_list if buy_item.item_ids],
+            session
+        )
+        category_map = {
+            category.id: category
+            for category in await CategoryRepository.get_by_ids(
+                [item.category_id for item in item_map.values()],
+                session
+            )
+        }
+        subcategory_map = {
+            subcategory.id: subcategory
+            for subcategory in await SubcategoryRepository.get_by_ids(
+                [item.subcategory_id for item in item_map.values()],
+                session
+            )
+        }
         currency_sym = config.CURRENCY.get_localized_symbol()
         for buyItem in buyItem_list:
-            item_example = await ItemRepository.get_by_id(buyItem.item_ids[0], session)
-            category = await CategoryRepository.get_by_id(item_example.category_id, session)
-            subcategory = await SubcategoryRepository.get_by_id(item_example.subcategory_id, session)
+            item_example = item_map[buyItem.item_ids[0]]
+            category = category_map[item_example.category_id]
+            subcategory = subcategory_map[item_example.subcategory_id]
             if user.telegram_username:
                 msg = get_text(Language.EN, BotEntity.ADMIN, "notification_purchase_with_username")
             else:
@@ -266,8 +288,13 @@ class NotificationService:
     async def new_review_published(review_dto: ReviewDTO, session: AsyncSession):
         kb_builder = InlineKeyboardBuilder()
         buyItem_dto = await BuyItemRepository.get_by_id(review_dto.buyItem_id, session)
-        item_dto = await ItemRepository.get_by_id(buyItem_dto.item_ids[0], session)
-        subcategory_dto = await SubcategoryRepository.get_by_id(item_dto.subcategory_id, session)
+        item_map = await ItemRepository.get_by_id_map([buyItem_dto.item_ids[0]], session)
+        item_dto = item_map[buyItem_dto.item_ids[0]]
+        subcategory_map = {
+            subcategory.id: subcategory
+            for subcategory in await SubcategoryRepository.get_by_ids([item_dto.subcategory_id], session)
+        }
+        subcategory_dto = subcategory_map[item_dto.subcategory_id]
         kb_builder.button(
             text=get_text(Language.EN, BotEntity.USER, "review").format(
                 subcategory_name=subcategory_dto.name

@@ -116,8 +116,11 @@ class UserRepository:
     @staticmethod
     async def get_by_referrer_code(referrer_code: str, session: AsyncSession) -> UserDTO | None:
         stmt = select(User).where(User.referral_code == referrer_code)
-        user_dto = await session_execute(stmt, session)
-        return user_dto.scalar_one_or_none()
+        user = await session_execute(stmt, session)
+        user = user.scalar_one_or_none()
+        if user is None:
+            return None
+        return UserDTO.model_validate(user, from_attributes=True)
 
     @staticmethod
     async def get_referrals_qty_by_referrer_id(referrer_id: int, session: AsyncSession) -> int:

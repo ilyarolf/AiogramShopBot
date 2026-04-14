@@ -33,8 +33,9 @@ async def send_everyone(**kwargs):
 @announcement_router.message(AdminIdFilter(), StateFilter(AnnouncementStates.announcement_msg))
 async def receive_admin_message(message: Message, state: FSMContext, language: Language):
     await state.clear()
-    if message.text and message.text.lower() == "cancel":
-        await message.answer(text=get_text(language, BotEntity.ADMIN, "cancelled"))
+    cancel_text = get_text(language, BotEntity.COMMON, "cancel")
+    if message.text and message.text.casefold() == cancel_text.casefold():
+        await message.answer(text=get_text(language, BotEntity.COMMON, "cancelled"))
     else:
         kb_builder = AnnouncementsConstants.get_confirmation_builder(AnnouncementType.FROM_RECEIVING_MESSAGE,
                                                                      language)

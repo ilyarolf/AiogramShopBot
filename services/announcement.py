@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+import config
 from aiogram.exceptions import TelegramForbiddenError
 from aiogram.types import CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -15,6 +16,7 @@ from handlers.admin.constants import AdminConstants
 from repositories.item import ItemRepository
 from repositories.user import UserRepository
 from services.notification import NotificationService
+from services.multibot import MultibotService
 from utils.utils import get_text
 
 
@@ -52,9 +54,20 @@ class AnnouncementService:
         )
         for user in active_users:
             try:
-                await callback.message.copy_to(user.telegram_id, reply_markup=None)
-                counter += 1
-                await asyncio.sleep(1.5)
+                if config.MULTIBOT:
+                    sent_count, had_only_forbidden_errors = await MultibotService.copy_message_to_user(
+                        from_chat_id=callback.message.chat.id,
+                        message_id=callback.message.message_id,
+                        telegram_id=user.telegram_id
+                    )
+                    counter += sent_count
+                    if sent_count == 0 and had_only_forbidden_errors:
+                        user.can_receive_messages = False
+                        await UserRepository.update(user, session)
+                else:
+                    await callback.message.copy_to(user.telegram_id, reply_markup=None)
+                    counter += 1
+                    await asyncio.sleep(1.5)
             except TelegramForbiddenError as e:
                 logging.error(f"TelegramForbiddenError: {e.message}")
                 if "user is deactivated" in e.message.lower():

@@ -128,10 +128,19 @@ class BuyService:
                                                                        buy_dto.id,
                                                                        callback_data.page,
                                                                        session)
+        first_item_ids = [buy_item.item_ids[0] for buy_item in buyItem_list if buy_item.item_ids]
+        item_map = await ItemRepository.get_by_id_map(first_item_ids, session)
+        subcategory_map = {
+            subcategory.id: subcategory
+            for subcategory in await SubcategoryRepository.get_by_ids(
+                [item.subcategory_id for item in item_map.values()],
+                session
+            )
+        }
         kb_builder = InlineKeyboardBuilder()
         for buyItem in buyItem_list:
-            item_dto = await ItemRepository.get_by_id(buyItem.item_ids[0], session)
-            subcategory_dto = await SubcategoryRepository.get_by_id(item_dto.subcategory_id, session)
+            item_dto = item_map[buyItem.item_ids[0]]
+            subcategory_dto = subcategory_map[item_dto.subcategory_id]
             kb_builder.button(
                 text=get_text(language, BotEntity.USER, "purchase_history_single_button").format(
                     subcategory_name=subcategory_dto.name,
@@ -178,7 +187,7 @@ class BuyService:
         if buy_dto.shipping_address:
             shipping_option = await ShippingOptionRepository.get_by_id(buy_dto.shipping_option_id, session)
             content_list.append(get_text(language, BotEntity.USER, "purchase_history_msg_physical").format(
-                track_number=buy_dto.track_number or "null",
+                track_number=buy_dto.track_number or "-",
                 shipping_address=buy_dto.shipping_address,
                 currency_sym=sym,
                 shipping_option=shipping_option.name

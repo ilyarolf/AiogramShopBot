@@ -38,6 +38,10 @@ from utils.utils import get_bot_photo_id
 
 
 class CartService:
+    @staticmethod
+    async def _get_cart_availability_map(cart_items: list[CartItemDTO],
+                                         session: AsyncSession | Session):
+        return await ItemRepository.get_availability_by_cart_items(cart_items, session)
 
     @staticmethod
     async def add_to_cart(callback: CallbackQuery,
@@ -89,29 +93,34 @@ class CartService:
         if callback_data is None:
             callback_data = CartCallback.create(0)
         cart_items = await CartItemRepository.get_by_user_id(user.id, callback_data.page, session)
+        availability_map = await CartService._get_cart_availability_map(cart_items, session)
         filtered_cart_items = []
         kb_builder = InlineKeyboardBuilder()
         for cart_item in cart_items:
-            is_available = await ItemRepository.get_available_qty(cart_item.item_type,
-                                                                  cart_item.category_id,
-                                                                  cart_item.subcategory_id,
-                                                                  session) > 0
+            availability = availability_map.get(
+                (cart_item.item_type, cart_item.category_id, cart_item.subcategory_id)
+            )
+            is_available = availability is not None and availability.available_qty > 0
             if is_available:
                 filtered_cart_items.append(cart_item)
             else:
                 await CartItemRepository.remove_from_cart(cart_item.id, session)
         await session_commit(session)
+        subcategory_map = {
+            subcategory.id: subcategory
+            for subcategory in await SubcategoryRepository.get_by_ids(
+                [cart_item.subcategory_id for cart_item in filtered_cart_items],
+                session
+            )
+        }
         for cart_item in filtered_cart_items:
-            item = await ItemRepository.get_single(cart_item.item_type,
-                                                   cart_item.category_id,
-                                                   cart_item.subcategory_id,
-                                                   session)
-            subcategory = await SubcategoryRepository.get_by_id(cart_item.subcategory_id, session)
+            availability = availability_map[(cart_item.item_type, cart_item.category_id, cart_item.subcategory_id)]
+            subcategory = subcategory_map[cart_item.subcategory_id]
             kb_builder.button(
                 text=get_text(language, BotEntity.USER, "cart_item_button").format(
                     subcategory_name=subcategory.name,
                     qty=cart_item.quantity,
-                    total_price=cart_item.quantity * item.price,
+                    total_price=cart_item.quantity * availability.price,
                     currency_sym=config.CURRENCY.get_localized_symbol()
                 ),
                 callback_data=CartCallback.create(
@@ -183,6 +192,7 @@ class CartService:
                                   language: Language) -> tuple[str, InlineKeyboardBuilder]:
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
         cart_items = await CartItemRepository.get_all_by_user_id(user.id, session)
+        availability_map = await CartService._get_cart_availability_map(cart_items, session)
         cart_items_dict = {}
         for cart_item in cart_items:
             if cart_items_dict.get(cart_item.item_type) is None:
@@ -205,15 +215,19 @@ class CartService:
                 cart_total_price += shipping_option.price
             else:
                 shipping_option = None
+        subcategory_map = {
+            subcategory.id: subcategory
+            for subcategory in await SubcategoryRepository.get_by_ids(
+                [cart_item.subcategory_id for cart_item in cart_items],
+                session
+            )
+        }
         for item_type, cart_items in cart_items_dict.items():
             cart_content.append(item_type.get_localized(language))
             for cart_item in cart_items:
-                item = await ItemRepository.get_single(item_type=cart_item.item_type,
-                                                       category_id=cart_item.category_id,
-                                                       subcategory_id=cart_item.subcategory_id,
-                                                       session=session)
-                subcategory = await SubcategoryRepository.get_by_id(cart_item.subcategory_id, session)
-                line_item_total = item.price * cart_item.quantity
+                availability = availability_map[(cart_item.item_type, cart_item.category_id, cart_item.subcategory_id)]
+                subcategory = subcategory_map[cart_item.subcategory_id]
+                line_item_total = availability.price * cart_item.quantity
                 cart_content.append(
                     get_text(language, BotEntity.USER, "cart_item_button").format(
                         subcategory_name=subcategory.name,
@@ -290,6 +304,7 @@ class CartService:
                              language: Language) -> tuple[str, InlineKeyboardBuilder]:
         user = await UserRepository.get_by_tgid(callback.from_user.id, session)
         cart_items = await CartItemRepository.get_all_by_user_id(user.id, session)
+        availability_map = await CartService._get_cart_availability_map(cart_items, session)
         if callback_data.shipping_option_id:
             shipping_option = await ShippingOptionRepository.get_by_id(callback_data.shipping_option_id, session)
             cart_total_price = shipping_option.price
@@ -298,15 +313,12 @@ class CartService:
             cart_total_price = 0.0
         out_of_stock = []
         for cart_item in cart_items:
-            item = await ItemRepository.get_single(item_type=cart_item.item_type,
-                                                   category_id=cart_item.category_id,
-                                                   subcategory_id=cart_item.subcategory_id,
-                                                   session=session)
-            cart_total_price += item.price * cart_item.quantity
-            is_in_stock = await ItemRepository.get_available_qty(item_type=cart_item.item_type,
-                                                                 category_id=cart_item.category_id,
-                                                                 subcategory_id=cart_item.subcategory_id,
-                                                                 session=session) >= cart_item.quantity
+            availability = availability_map.get((cart_item.item_type, cart_item.category_id, cart_item.subcategory_id))
+            if availability is None:
+                out_of_stock.append(cart_item)
+                continue
+            cart_total_price += availability.price * cart_item.quantity
+            is_in_stock = availability.available_qty >= cart_item.quantity
             if is_in_stock is False:
                 out_of_stock.append(cart_item)
         total_discount_amount = 0
@@ -371,9 +383,15 @@ class CartService:
         elif len(out_of_stock) > 0:
             kb_builder.row(callback_data.get_back_button(language, 0))
             msg = get_text(language, BotEntity.USER, "out_of_stock")
+            subcategory_map = {
+                subcategory.id: subcategory
+                for subcategory in await SubcategoryRepository.get_by_ids(
+                    [item.subcategory_id for item in out_of_stock],
+                    session
+                )
+            }
             for item in out_of_stock:
-                subcategory = await SubcategoryRepository.get_by_id(item.subcategory_id, session)
-                msg += subcategory.name + "\n"
+                msg += f"{subcategory_map[item.subcategory_id].name}\n"
             return msg, kb_builder
 
     @staticmethod
@@ -381,10 +399,11 @@ class CartService:
                              session: AsyncSession,
                              language: Language):
         cart_item_dto = await CartItemRepository.get_by_primary_key(callback_data.cart_item_id, session)
-        available_qty = await ItemRepository.get_available_qty(cart_item_dto.item_type,
-                                                               cart_item_dto.category_id,
-                                                               cart_item_dto.subcategory_id,
-                                                               session)
+        availability_map = await CartService._get_cart_availability_map([cart_item_dto], session)
+        availability = availability_map.get(
+            (cart_item_dto.item_type, cart_item_dto.category_id, cart_item_dto.subcategory_id)
+        )
+        available_qty = availability.available_qty if availability else 0
         if callback_data.cart_action == CartAction.REMOVE_ALL or cart_item_dto.quantity == 0:
             return await CartService.delete_cart_item(callback_data, session, language)
         elif callback_data.cart_action in [CartAction.PLUS_ONE, CartAction.MINUS_ONE]:
@@ -399,10 +418,7 @@ class CartService:
             cart_item_dto.quantity = available_qty
             await CartItemRepository.update(cart_item_dto, session)
             await session_commit(session)
-        item_dto = await ItemRepository.get_single(cart_item_dto.item_type,
-                                                   cart_item_dto.category_id,
-                                                   cart_item_dto.subcategory_id,
-                                                   session)
+        item_dto = availability
         category = await CategoryRepository.get_by_id(cart_item_dto.category_id, session)
         subcategory = await SubcategoryRepository.get_by_id(cart_item_dto.subcategory_id, session)
         cart_actions = [CartAction.REMOVE_ALL, CartAction.MINUS_ONE, CartAction.PLUS_ONE, CartAction.MAX]
@@ -458,7 +474,7 @@ class CartService:
             kb_builder.button(
                 text=get_text(language, BotEntity.COMMON, "pagination_next"),
                 callback_data=CartCallback.create(level=2,
-                                                  shipping_option_id=state_data.get(""))
+                                                  shipping_option_id=state_data.get("shipping_option_id"))
             )
             if coupon_dto is None:
                 caption = get_text(language, BotEntity.USER, "coupon_not_found")

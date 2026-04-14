@@ -47,18 +47,7 @@ class PaymentService:
 
     @staticmethod
     async def __create_invoice(payment_dto: ProcessingPaymentDTO) -> ProcessingPaymentDTO:
-        headers = {
-            "X-Api-Key": config.KRYPTO_EXPRESS_API_KEY,
-            "Content-Type": "application/json"
-        }
-        payment_dto = await CryptoApiWrapper.fetch_api_request(
-            f"{config.KRYPTO_EXPRESS_API_URL}/payment",
-            method="POST",
-            data=payment_dto.model_dump_json(exclude_none=True),
-            headers=headers
-        )
-        payment_dto = ProcessingPaymentDTO.model_validate(payment_dto, from_attributes=True)
-        return payment_dto
+        return await CryptoApiWrapper.create_invoice(payment_dto)
 
     @staticmethod
     def __request_fiat_amount(kb_builder: InlineKeyboardBuilder, language: Language):

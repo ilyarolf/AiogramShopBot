@@ -153,7 +153,7 @@ class StatisticsService:
                 chart = state_data.get(f"chart_{callback_data.timedelta.name.lower()}")
                 if chart is None:
                     chart = StatisticsService.build_statistics_chart(users, callback_data.timedelta, language)
-                    await state.update_data(chart=chart.hex())
+                    await state.update_data(**{f"chart_{callback_data.timedelta.name.lower()}": chart.hex()})
                 else:
                     chart = bytes.fromhex(chart)
                 kb_builder.adjust(1)
@@ -178,11 +178,10 @@ class StatisticsService:
                 buys = await BuyRepository.get_by_timedelta(callback_data.timedelta, session)
                 chart = StatisticsService.build_statistics_chart(buys, callback_data.timedelta, language)
                 total_profit = 0.0
-                items_sold = 0
+                buy_items = await BuyItemRepository.get_all_by_buy_ids([buy.id for buy in buys], session)
                 for buy in buys:
                     total_profit += buy.total_price
-                    buyItem_list = await BuyItemRepository.get_all_by_buy_id(buy.id, session)
-                    items_sold += sum([len(buyItem.item_ids) for buyItem in buyItem_list])
+                items_sold = sum(len(buy_item.item_ids) for buy_item in buy_items)
                 kb_builder.row(AdminConstants.back_to_main_button(language), callback_data.get_back_button(language))
                 caption = get_text(language, BotEntity.ADMIN, "sales_statistics").format(
                     timedelta=timedelta_localized,
@@ -205,7 +204,6 @@ class StatisticsService:
                     crypto_friendly_amount = deposit.amount / pow(10, deposit.network.get_decimals())
                     crypto_amount_dict[deposit.network] += crypto_friendly_amount
                     fiat_amount += crypto_friendly_amount * crypto_price
-                fiat_amount = sum(crypto_amount_dict.values())
                 kb_builder.row(AdminConstants.back_to_main_button(language), callback_data.get_back_button(language))
                 deposits_content_list = []
                 for cryptocurrency, crypto_amount in crypto_amount_dict.items():
