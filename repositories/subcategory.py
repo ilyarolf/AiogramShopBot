@@ -141,3 +141,12 @@ class SubcategoryRepository:
                 .where(Subcategory.id == subcategory_dto.id)
                 .values(**subcategory_dto.model_dump()))
         await session_execute(stmt, session)
+
+    @staticmethod
+    async def get_by_ids(subcategory_ids: list[int], session: Session | AsyncSession) -> list[SubcategoryDTO]:
+        if not subcategory_ids:
+            return []
+        stmt = select(Subcategory).where(Subcategory.id.in_(subcategory_ids))
+        subcategories = await session_execute(stmt, session)
+        return [SubcategoryDTO.model_validate(subcategory, from_attributes=True)
+                for subcategory in subcategories.scalars().all()]

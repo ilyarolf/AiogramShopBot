@@ -17,7 +17,11 @@ from aiogram.webhook.aiohttp_server import (
     setup_application,
 )
 from db import create_db_and_tables
+from enums.bot_entity import BotEntity
+from enums.language import Language
+from services.multibot import MultibotService
 from utils.custom_filters import AdminIdFilter
+from utils.utils import get_text
 
 main_router_multibot = Router()
 
@@ -40,21 +44,34 @@ def is_bot_token(value: str) -> bool | Dict[str, Any]:
     return True
 
 
-@main_router_multibot.message(AdminIdFilter(), Command("add", magic=F.args.func(is_bot_token)))
+@main_router_multibot.message(AdminIdFilter(), Command("add"))
 async def command_add_bot(message: Message, command: CommandObject, bot: Bot) -> Any:
+    if not command.args or not is_bot_token(command.args):
+        return await message.answer(get_text(Language.EN, BotEntity.ADMIN, "multibot_invalid_token"))
+    if command.args == config.TOKEN:
+        return await message.answer(get_text(Language.EN, BotEntity.ADMIN, "multibot_main_token_not_allowed"))
+    if await MultibotService.has_token(command.args):
+        return await message.answer(get_text(Language.EN, BotEntity.ADMIN, "multibot_bot_already_added"))
+
     new_bot = Bot(token=command.args, session=bot.session)
     try:
         bot_user = await new_bot.get_me()
     except TelegramUnauthorizedError:
-        return message.answer("Invalid token")
+        return await message.answer(get_text(Language.EN, BotEntity.ADMIN, "multibot_invalid_token"))
     await new_bot.delete_webhook(drop_pending_updates=True)
     await new_bot.set_webhook(OTHER_BOTS_URL.format(bot_token=command.args))
-    return await message.answer(f"Bot @{bot_user.username} successful added")
+    await MultibotService.add_token(command.args)
+    return await message.answer(
+        get_text(Language.EN, BotEntity.ADMIN, "multibot_bot_added").format(
+            bot_username=bot_user.username
+        )
+    )
 
 
 async def on_startup(dispatcher: Dispatcher, bot: Bot):
     await bot.set_webhook(f"{BASE_URL}{MAIN_BOT_PATH}")
     await create_db_and_tables()
+    await MultibotService.restore_child_bot_webhooks(OTHER_BOTS_URL)
     for admin in config.ADMIN_ID_LIST:
         try:
             await bot.send_message(admin, 'Bot is working')

@@ -30,6 +30,8 @@ class WalletService:
         wallet_balance = await CryptoApiWrapper.get_wallet_balance()
         wallet_content = []
         for cryptocurrency, amount in wallet_balance.items():
+            if cryptocurrency in Cryptocurrency.get_hidden():
+                continue
             wallet_content.append(get_text(language, BotEntity.ADMIN, "crypto_wallet_line").format(
                 crypto_name=cryptocurrency.name.replace('_', " "),
                 crypto_balance=amount
@@ -44,7 +46,8 @@ class WalletService:
         msg_text = get_text(language, BotEntity.ADMIN, "crypto_wallet").format(
             wallet_content="\n".join(wallet_content)
         )
-        if sum(wallet_balance.values()) > 0:
+        if any(amount > 0 for cryptocurrency, amount in wallet_balance.items()
+               if cryptocurrency not in Cryptocurrency.get_hidden()):
             msg_text += get_text(language, BotEntity.ADMIN, "choose_crypto_to_withdraw")
         return msg_text, kb_builder
 
@@ -64,7 +67,8 @@ class WalletService:
                                    state: FSMContext,
                                    language: Language) -> tuple[str, InlineKeyboardBuilder]:
         kb_builder = InlineKeyboardBuilder()
-        if message.text and message.text.lower() == "cancel":
+        cancel_text = get_text(language, BotEntity.COMMON, "cancel")
+        if message.text and message.text.casefold() == cancel_text.casefold():
             await state.clear()
             return get_text(language, BotEntity.COMMON, "cancelled"), kb_builder
         to_address = message.text
@@ -127,6 +131,7 @@ class WalletService:
             Cryptocurrency.ETH: re.compile(r'^0x[a-fA-F0-9]{40}$'),
             Cryptocurrency.BNB: re.compile(r'^0x[a-fA-F0-9]{40}$'),
             Cryptocurrency.SOL: re.compile(r'^[1-9A-HJ-NP-Za-km-z]{32,44}$'),
+            Cryptocurrency.DOGE: re.compile(r'^[DA9][a-km-zA-HJ-NP-Z1-9]{25,34}$'),
             Cryptocurrency.USDT_SOL: re.compile(r'^[1-9A-HJ-NP-Za-km-z]{32,44}$'),
             Cryptocurrency.USDC_SOL: re.compile(r'^[1-9A-HJ-NP-Za-km-z]{32,44}$'),
             Cryptocurrency.USDT_ERC20: re.compile(r'^0x[a-fA-F0-9]{40}$'),

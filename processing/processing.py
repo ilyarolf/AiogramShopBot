@@ -1,8 +1,4 @@
 import datetime
-import hashlib
-import hmac
-import re
-
 from fastapi import APIRouter, Request, HTTPException
 
 import config
@@ -19,13 +15,7 @@ processing_router = APIRouter(prefix=f"{config.WEBHOOK_PATH}cryptoprocessing")
 
 
 def __security_check(x_signature_header: str | None, payload: bytes):
-    if x_signature_header is None:
-        return True
-    else:
-        secret_key = config.KRYPTO_EXPRESS_API_SECRET.encode("utf-8")
-        hmac_sha512 = hmac.new(secret_key, re.sub(rb'\s+', b'', payload), hashlib.sha512)
-        generated_signature = hmac_sha512.hexdigest()
-        return hmac.compare_digest(generated_signature, x_signature_header)
+    return CryptoApiWrapper.verify_callback_signature(x_signature_header, payload)
 
 
 @processing_router.post("/event")
