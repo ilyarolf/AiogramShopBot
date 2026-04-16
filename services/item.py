@@ -24,11 +24,54 @@ from utils.utils import get_text
 
 
 class ItemService:
+    ANNOUNCEMENT_MESSAGE_LIMIT = 4000
+
+    @staticmethod
+    def _wrap_announcement_chunk(content: str) -> str:
+        return f"<b>{content}</b>"
+
+    @staticmethod
+    def _split_category_into_blocks(header: str,
+                                    category_header: str,
+                                    subcategory_lines: list[str]) -> list[str]:
+        max_content_length = ItemService.ANNOUNCEMENT_MESSAGE_LIMIT - len("<b></b>")
+        category_blocks: list[str] = []
+        current_block = category_header
+        for line in subcategory_lines:
+            if len(header + current_block + line) <= max_content_length:
+                current_block += line
+                continue
+            if current_block != category_header:
+                category_blocks.append(current_block)
+                current_block = category_header + line
+            else:
+                category_blocks.append(current_block + line)
+                current_block = category_header
+        if current_block != category_header or not category_blocks:
+            category_blocks.append(current_block)
+        return category_blocks
+
+    @staticmethod
+    def _build_announcement_chunks(header: str, category_blocks: list[str]) -> list[str]:
+        max_content_length = ItemService.ANNOUNCEMENT_MESSAGE_LIMIT - len("<b></b>")
+        chunks: list[str] = []
+        current_content = header
+        for block in category_blocks:
+            if len(current_content + block) <= max_content_length:
+                current_content += block
+                continue
+            if current_content != header:
+                chunks.append(ItemService._wrap_announcement_chunk(current_content))
+            current_content = header + block
+        if current_content == header and chunks:
+            return chunks
+        chunks.append(ItemService._wrap_announcement_chunk(current_content))
+        return chunks
 
     @staticmethod
     async def create_announcement_message(announcement_type: AnnouncementType,
                                           session: AsyncSession,
-                                          language: Language):
+                                          language: Language) -> list[str]:
         if announcement_type == AnnouncementType.CURRENT_STOCK:
             items = await ItemRepository.get_in_stock(session)
             header = get_text(language, BotEntity.ADMIN, "current_stock_header")
@@ -58,18 +101,22 @@ class ItemService:
             if subcategory.name not in filtered_items[category.name]:
                 filtered_items[category.name][subcategory.name] = []
             filtered_items[category.name][subcategory.name].append(item)
-        message = header
+        category_blocks = []
         for category, subcategory_item_dict in filtered_items.items():
-            message += get_text(language, BotEntity.ADMIN, "restocking_message_category").format(
-                category=category)
+            category_header = get_text(language, BotEntity.ADMIN, "restocking_message_category").format(
+                category=category
+            )
+            subcategory_lines = []
             for subcategory, item in subcategory_item_dict.items():
-                message += get_text(language, BotEntity.USER, "subcategory_button").format(
+                subcategory_lines.append(get_text(language, BotEntity.USER, "subcategory_button").format(
                     subcategory_name=subcategory,
                     available_quantity=len(item),
                     subcategory_price=item[0].price,
-                    currency_sym=config.CURRENCY.get_localized_symbol()) + "\n"
-        message = f"<b>{message}</b>"
-        return message
+                    currency_sym=config.CURRENCY.get_localized_symbol()) + "\n")
+            category_blocks.extend(
+                ItemService._split_category_into_blocks(header, category_header, subcategory_lines)
+            )
+        return ItemService._build_announcement_chunks(header, category_blocks)
 
     @staticmethod
     async def parse_items_json(path_to_file: str, session: AsyncSession | Session):

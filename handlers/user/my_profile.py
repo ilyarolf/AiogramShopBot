@@ -156,10 +156,13 @@ async def receive_top_up_amount(message: Message,
                                                     session,
                                                     language)
     state_data = await state.get_data()
-    await message.bot.edit_message_media(chat_id=state_data.get("chat_id"),
-                                         message_id=state_data.get("msg_id"),
-                                         media=media,
-                                         reply_markup=kb_builder.as_markup())
+    if state_data.get("chat_id") and state_data.get("msg_id"):
+        await message.bot.edit_message_media(chat_id=state_data.get("chat_id"),
+                                             message_id=state_data.get("msg_id"),
+                                             media=media,
+                                             reply_markup=kb_builder.as_markup())
+    else:
+        await NotificationService.answer_media(message, media, kb_builder.as_markup())
 
 
 @my_profile_router.callback_query(MyProfileCallback.filter(), IsUserExistFilter())

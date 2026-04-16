@@ -4,8 +4,6 @@ from typing import Any, Dict
 from aiohttp import web
 import config
 from aiogram import Bot, Dispatcher, F, Router
-from aiogram.client.session.aiohttp import AiohttpSession
-from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramUnauthorizedError
 from aiogram.filters import Command, CommandObject
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -21,6 +19,7 @@ from enums.bot_entity import BotEntity
 from enums.language import Language
 from services.multibot import MultibotService
 from utils.custom_filters import AdminIdFilter
+from utils.telegram import create_bot, create_telegram_session
 from utils.utils import get_text
 
 main_router_multibot = Router()
@@ -81,9 +80,9 @@ async def on_startup(dispatcher: Dispatcher, bot: Bot):
 
 def main(main_router):
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-    session = AiohttpSession()
-    bot_settings = {"session": session, "parse_mode": ParseMode.HTML}
-    bot = Bot(token=MAIN_BOT_TOKEN, **bot_settings)
+    session = create_telegram_session()
+    bot_settings = {"session": session}
+    bot = create_bot(MAIN_BOT_TOKEN, session=session)
     storage = MemoryStorage()
 
     main_dispatcher = Dispatcher(storage=storage)

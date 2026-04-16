@@ -34,6 +34,7 @@ validate_ltc() { echo "$1" | grep -Eq '^ltc1[a-zA-HJ-NP-Z0-9]{26,}$'; }
 validate_eth() { echo "$1" | grep -Eq '^0x[a-fA-F0-9]{40}$'; }
 validate_bnb() { echo "$1" | grep -Eq '^0x[a-fA-F0-9]{40}$'; }
 validate_sol() { echo "$1" | grep -Eq '^[1-9A-HJ-NP-Za-km-z]{32,44}$'; }
+validate_doge() { echo "$1" | grep -Eq '^(D|A|9)[a-km-zA-HJ-NP-Z1-9]{25,34}$'; }
 
 read_crypto_address() {
   COIN="$1"
@@ -159,6 +160,9 @@ echo "👉 https://kryptoexpress.pro/profile"
 printf "KRYPTO_EXPRESS_API_KEY: "
 read KRYPTO_EXPRESS_API_KEY
 
+printf "TELEGRAM_PROXY_URL (optional, e.g. socks5://host:port): "
+read TELEGRAM_PROXY_URL
+
 printf "Enable CRYPTO_FORWARDING_MODE? (true/false): "
 read CRYPTO_MODE
 
@@ -168,12 +172,14 @@ if [ "$CRYPTO_MODE" = "true" ]; then
   ETH_ADDR=$(read_crypto_address ETH validate_eth)
   SOL_ADDR=$(read_crypto_address SOL validate_sol)
   BNB_ADDR=$(read_crypto_address BNB validate_bnb)
+  DOGE_ADDR=$(read_crypto_address DOGE validate_doge)
 else
   BTC_ADDR=""
   LTC_ADDR=""
   ETH_ADDR=""
   SOL_ADDR=""
   BNB_ADDR=""
+  DOGE_ADDR=""
 fi
 
 # -------------------------
@@ -203,6 +209,7 @@ POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
 DB_PORT="5432"
 DB_HOST="postgres"
 POSTGRES_DB="aiogram-shop-bot"
+NGROK_TOKEN=""
 PAGE_ENTRIES="8"
 MULTIBOT="false"
 CURRENCY="$CURRENCY"
@@ -213,12 +220,22 @@ KRYPTO_EXPRESS_API_URL="https://kryptoexpress.pro/api"
 KRYPTO_EXPRESS_API_SECRET="$KRYPTO_EXPRESS_API_SECRET"
 REDIS_PASSWORD="$REDIS_PASSWORD"
 REDIS_HOST="redis"
+TELEGRAM_PROXY_URL="$TELEGRAM_PROXY_URL"
 CRYPTO_FORWARDING_MODE="$CRYPTO_MODE"
 BTC_FORWARDING_ADDRESS="$BTC_ADDR"
 LTC_FORWARDING_ADDRESS="$LTC_ADDR"
 ETH_FORWARDING_ADDRESS="$ETH_ADDR"
 SOL_FORWARDING_ADDRESS="$SOL_ADDR"
 BNB_FORWARDING_ADDRESS="$BNB_ADDR"
+DOGE_FORWARDING_ADDRESS="$DOGE_ADDR"
+MIN_REFERRER_TOTAL_DEPOSIT="500"
+REFERRAL_BONUS_PERCENT="5"
+REFERRAL_BONUS_DEPOSIT_LIMIT="3"
+REFERRER_BONUS_PERCENT="3"
+REFERRER_BONUS_DEPOSIT_LIMIT="5"
+REFERRAL_BONUS_CAP_PERCENT="7"
+REFERRER_BONUS_CAP_PERCENT="7"
+TOTAL_BONUS_CAP_PERCENT="12"
 SQLADMIN_RAW_PASSWORD="$SQLADMIN_RAW_PASSWORD"
 JWT_EXPIRE_MINUTES="30"
 JWT_ALGORITHM="HS256"

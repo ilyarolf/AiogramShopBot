@@ -1,5 +1,6 @@
 import io
 import re
+from decimal import Decimal, InvalidOperation
 from datetime import datetime, timezone
 import qrcode
 from aiogram.fsm.context import FSMContext
@@ -50,17 +51,33 @@ class PaymentService:
         return await CryptoApiWrapper.create_invoice(payment_dto)
 
     @staticmethod
-    def __request_fiat_amount(kb_builder: InlineKeyboardBuilder, language: Language):
+    def __request_fiat_amount(kb_builder: InlineKeyboardBuilder, language: Language, error_text: str | None = None):
         kb_builder.button(
             text=get_text(language, BotEntity.COMMON, "back_button"),
             callback_data=MyProfileCallback.create(level=1)
         )
         bot_photo_id = get_bot_photo_id()
-        caption = get_text(language, BotEntity.USER, "top_up_balance_request_fiat").format(
+        request_caption = get_text(language, BotEntity.USER, "top_up_balance_request_fiat").format(
             currency_text=config.CURRENCY.get_localized_text()
         )
+        caption = request_caption if error_text is None else f"{error_text}\n\n{request_caption}"
         media = InputMediaPhoto(media=bot_photo_id, caption=caption)
         return media, kb_builder
+
+    @staticmethod
+    def _parse_fiat_amount(raw_amount: str | None) -> Decimal | None:
+        if raw_amount is None:
+            return None
+        normalized_amount = raw_amount.strip()
+        if not PaymentService.AMOUNT_RE.fullmatch(normalized_amount):
+            return None
+        try:
+            parsed_amount = Decimal(normalized_amount)
+        except InvalidOperation:
+            return None
+        if parsed_amount < Decimal("5") or parsed_amount >= Decimal("1000000"):
+            return None
+        return parsed_amount
 
     @staticmethod
     async def create(callback: CallbackQuery | Message,
@@ -72,11 +89,21 @@ class PaymentService:
         unexpired_payments_count = await PaymentRepository.get_unexpired_unpaid_payments(user.id, session)
         state_data = await state.get_data()
         current_state = await state.get_state()
+        kb_builder = InlineKeyboardBuilder()
         if callback_data is None:
-            cryptocurrency = Cryptocurrency(state_data.get('cryptocurrency'))
+            stored_cryptocurrency = state_data.get('cryptocurrency')
+            if stored_cryptocurrency is None:
+                await state.set_state(UserStates.top_up_amount)
+                return PaymentService.__request_fiat_amount(
+                    kb_builder,
+                    language,
+                    get_text(language, BotEntity.USER, "top_up_balance_invalid_fiat_amount").format(
+                        currency_text=config.CURRENCY.get_localized_text()
+                    )
+                )
+            cryptocurrency = Cryptocurrency(stored_cryptocurrency)
         else:
             cryptocurrency = callback_data.cryptocurrency
-        kb_builder = InlineKeyboardBuilder()
         if unexpired_payments_count >= 15:
             kb_builder.row(callback_data.get_back_button(language))
             return get_text(language, BotEntity.USER, "too_many_payment_request"), kb_builder
@@ -86,40 +113,41 @@ class PaymentService:
             return PaymentService.__request_fiat_amount(kb_builder, language)
         elif cryptocurrency in Cryptocurrency.get_stablecoins() and current_state == UserStates.top_up_amount:
             message: Message = callback
-            fiat_amount = message.html_text
-            if PaymentService.AMOUNT_RE.fullmatch(fiat_amount):
-                fiat_amount = float(fiat_amount)
-                if 5 <= fiat_amount < 1_000_000:
-                    await state.set_state()
-                    payment_dto = ProcessingPaymentDTO(
-                        paymentType=PaymentType.PAYMENT,
-                        fiatCurrency=config.CURRENCY,
-                        cryptoCurrency=cryptocurrency,
-                        fiatAmount=fiat_amount
+            fiat_amount = PaymentService._parse_fiat_amount(message.text or message.html_text)
+            if fiat_amount is None:
+                return PaymentService.__request_fiat_amount(
+                    kb_builder,
+                    language,
+                    get_text(language, BotEntity.USER, "top_up_balance_invalid_fiat_amount").format(
+                        currency_text=config.CURRENCY.get_localized_text()
                     )
-                    message = await message.answer(text=get_text(language, BotEntity.USER, "loading"))
-                    await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
-                    payment_dto = await PaymentService.__create_invoice(payment_dto)
-                    await PaymentRepository.create(payment_dto.id, user.id, message.message_id, session)
-                    await session_commit(session)
-                    timestamp_s = payment_dto.expireDatetime / 1000
-                    dt = datetime.fromtimestamp(timestamp_s, tz=timezone.utc)
-                    formatted = dt.strftime('%H:%M UTC on %B %d, %Y')
-                    caption = get_text(language, BotEntity.USER, "top_up_balance_payment_msg").format(
-                        crypto_name=payment_dto.cryptoCurrency.name,
-                        addr=payment_dto.address,
-                        crypto_amount=payment_dto.cryptoAmount,
-                        fiat_amount=payment_dto.fiatAmount,
-                        currency_text=config.CURRENCY.get_localized_text(),
-                        status=get_text(language, BotEntity.USER, "status_pending"),
-                        payment_lifetime=formatted
-                    )
-                    qr_code_file = PaymentService.__create_qr_code(payment_dto)
-                    return InputMediaPhoto(media=qr_code_file, caption=caption), kb_builder
-                else:
-                    return PaymentService.__request_fiat_amount(kb_builder, language)
-            else:
-                return PaymentService.__request_fiat_amount(kb_builder, language)
+                )
+            await state.set_state()
+            payment_dto = ProcessingPaymentDTO(
+                paymentType=PaymentType.PAYMENT,
+                fiatCurrency=config.CURRENCY,
+                cryptoCurrency=cryptocurrency,
+                fiatAmount=float(fiat_amount)
+            )
+            message = await message.answer(text=get_text(language, BotEntity.USER, "loading"))
+            await state.update_data(msg_id=message.message_id, chat_id=message.chat.id)
+            payment_dto = await PaymentService.__create_invoice(payment_dto)
+            await PaymentRepository.create(payment_dto.id, user.id, message.message_id, session)
+            await session_commit(session)
+            timestamp_s = payment_dto.expireDatetime / 1000
+            dt = datetime.fromtimestamp(timestamp_s, tz=timezone.utc)
+            formatted = dt.strftime('%H:%M UTC on %B %d, %Y')
+            caption = get_text(language, BotEntity.USER, "top_up_balance_payment_msg").format(
+                crypto_name=payment_dto.cryptoCurrency.name,
+                addr=payment_dto.address,
+                crypto_amount=payment_dto.cryptoAmount,
+                fiat_amount=payment_dto.fiatAmount,
+                currency_text=config.CURRENCY.get_localized_text(),
+                status=get_text(language, BotEntity.USER, "status_pending"),
+                payment_lifetime=formatted
+            )
+            qr_code_file = PaymentService.__create_qr_code(payment_dto)
+            return InputMediaPhoto(media=qr_code_file, caption=caption), kb_builder
         else:
             message = await callback.message.edit_caption(caption=get_text(language, BotEntity.USER, "loading"))
             payment_dto = ProcessingPaymentDTO(
