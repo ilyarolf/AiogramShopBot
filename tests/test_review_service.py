@@ -51,6 +51,7 @@ async def test_review_confirmation_uses_subcategory_id(monkeypatch):
     monkeypatch.setattr("services.review.ItemRepository.get_by_id", _fake_get_item)
     monkeypatch.setattr("services.review.CategoryRepository.get_by_id", _fake_get_category)
     monkeypatch.setattr("services.review.SubcategoryRepository.get_by_id", _fake_get_subcategory)
+    monkeypatch.setattr("services.review.get_bot_photo_id", lambda: "bot-photo-id")
 
     await ReviewService.review_confirmation(callback_data, _State({"review_text": "ok"}), session=None, language=Language.EN)
 
@@ -71,6 +72,7 @@ async def test_create_review_checks_duplicate_by_buy_item_id(monkeypatch):
 
     monkeypatch.setattr("services.review.ReviewRepository.get_by_buy_item_id", _fake_get_by_buy_item_id)
     monkeypatch.setattr("services.review.NotificationService.new_review_published", _fake_new_review_published)
+    monkeypatch.setattr("services.review.get_bot_photo_id", lambda: "bot-photo-id")
 
     media, _ = await ReviewService.create_review(
         callback_data,

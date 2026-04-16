@@ -103,6 +103,7 @@ async def test_stablecoin_invalid_amount_returns_localized_retry_screen(monkeypa
 
     monkeypatch.setattr("services.payment.UserRepository.get_by_tgid", _fake_get_by_tgid)
     monkeypatch.setattr("services.payment.PaymentRepository.get_unexpired_unpaid_payments", _fake_unexpired)
+    monkeypatch.setattr("services.payment.get_bot_photo_id", lambda: "bot-photo-id")
 
     media, _ = await PaymentService.create(message, None, state, session=None, language=Language.EN)
 
