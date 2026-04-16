@@ -6,7 +6,7 @@ from enums.currency import Currency
 from enums.runtime_environment import RuntimeEnvironment
 from utils.utils import get_sslipio_external_url, start_ngrok, hash_password
 
-load_dotenv(".env")
+load_dotenv(".env.bot.dev")
 RUNTIME_ENVIRONMENT = RuntimeEnvironment(os.environ.get("RUNTIME_ENVIRONMENT"))
 if RUNTIME_ENVIRONMENT == RuntimeEnvironment.DEV:
     WEBHOOK_HOST = start_ngrok()
@@ -35,6 +35,7 @@ KRYPTO_EXPRESS_API_SECRET = os.environ.get("KRYPTO_EXPRESS_API_SECRET")
 WEBHOOK_SECRET_TOKEN = os.environ.get("WEBHOOK_SECRET_TOKEN")
 REDIS_HOST = os.environ.get("REDIS_HOST", "redis")
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
+TELEGRAM_PROXY_URL = os.environ.get("TELEGRAM_PROXY_URL")
 # VARIABLES FOR CRYPTO FORWARDING
 CRYPTO_FORWARDING_MODE = os.environ.get("CRYPTO_FORWARDING_MODE", False) == 'true'
 BTC_FORWARDING_ADDRESS = os.environ.get("BTC_FORWARDING_ADDRESS")

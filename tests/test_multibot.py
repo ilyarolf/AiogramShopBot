@@ -97,6 +97,7 @@ class _FakeMessage:
 class _FakeCallback:
     def __init__(self):
         self.message = _FakeMessage()
+        self.bot = _FakeBot("main-token")
 
 
 @pytest.mark.asyncio
@@ -261,7 +262,10 @@ async def test_announcement_service_counts_multibot_successes(monkeypatch):
     async def _fake_get_all_count(session):
         return 1
 
-    async def _fake_copy_message(from_chat_id, message_id, telegram_id):
+    async def _fake_create_announcement_message(announcement_type, session, language):
+        return ["chunk-1", "chunk-2"]
+
+    async def _fake_send_message_to_user_verbose(text, telegram_id, reply_markup=None, redis_client=None):
         return 2, False
 
     async def _fake_edit_message(message, source_message_id, chat_id):
@@ -272,7 +276,9 @@ async def test_announcement_service_counts_multibot_successes(monkeypatch):
 
     monkeypatch.setattr("services.announcement.UserRepository.get_active", _fake_get_active)
     monkeypatch.setattr("services.announcement.UserRepository.get_all_count", _fake_get_all_count)
-    monkeypatch.setattr("services.announcement.MultibotService.copy_message_to_user", _fake_copy_message)
+    monkeypatch.setattr("services.announcement.ItemService.create_announcement_message", _fake_create_announcement_message)
+    monkeypatch.setattr("services.announcement.MultibotService.send_message_to_user_verbose",
+                        _fake_send_message_to_user_verbose)
     monkeypatch.setattr("services.announcement.NotificationService.edit_message", _fake_edit_message)
     monkeypatch.setattr("services.announcement.session_commit", _fake_session_commit)
 
@@ -283,7 +289,7 @@ async def test_announcement_service_counts_multibot_successes(monkeypatch):
         Language.EN
     )
 
-    assert any("2" in message for message in updates)
+    assert any("1" in message for message in updates)
 
 
 @pytest.mark.asyncio
@@ -300,7 +306,10 @@ async def test_announcement_service_marks_user_inactive_when_all_multibot_attemp
     async def _fake_get_all_count(session):
         return 1
 
-    async def _fake_copy_message(from_chat_id, message_id, telegram_id):
+    async def _fake_create_announcement_message(announcement_type, session, language):
+        return ["chunk-1", "chunk-2"]
+
+    async def _fake_send_message_to_user_verbose(text, telegram_id, reply_markup=None, redis_client=None):
         return 0, True
 
     async def _fake_update(user_dto, session):
@@ -314,7 +323,9 @@ async def test_announcement_service_marks_user_inactive_when_all_multibot_attemp
 
     monkeypatch.setattr("services.announcement.UserRepository.get_active", _fake_get_active)
     monkeypatch.setattr("services.announcement.UserRepository.get_all_count", _fake_get_all_count)
-    monkeypatch.setattr("services.announcement.MultibotService.copy_message_to_user", _fake_copy_message)
+    monkeypatch.setattr("services.announcement.ItemService.create_announcement_message", _fake_create_announcement_message)
+    monkeypatch.setattr("services.announcement.MultibotService.send_message_to_user_verbose",
+                        _fake_send_message_to_user_verbose)
     monkeypatch.setattr("services.announcement.UserRepository.update", _fake_update)
     monkeypatch.setattr("services.announcement.NotificationService.edit_message", _fake_edit_message)
     monkeypatch.setattr("services.announcement.session_commit", _fake_session_commit)
@@ -328,6 +339,54 @@ async def test_announcement_service_marks_user_inactive_when_all_multibot_attemp
 
     assert updated_users
     assert updated_users[0].can_receive_messages is False
+
+
+@pytest.mark.asyncio
+async def test_announcement_service_marks_restocking_not_new_once(monkeypatch):
+    callback = _FakeCallback()
+    set_not_new_calls = []
+    user = UserDTO(telegram_id=777, can_receive_messages=True)
+
+    monkeypatch.setattr("config.MULTIBOT", True)
+
+    async def _fake_get_active(session):
+        return [user, user]
+
+    async def _fake_get_all_count(session):
+        return 2
+
+    async def _fake_create_announcement_message(announcement_type, session, language):
+        return ["chunk-1"]
+
+    async def _fake_send_message_to_user_verbose(text, telegram_id, reply_markup=None, redis_client=None):
+        return 1, False
+
+    async def _fake_set_not_new(session):
+        set_not_new_calls.append(True)
+
+    async def _fake_edit_message(message, source_message_id, chat_id):
+        return None
+
+    async def _fake_session_commit(session):
+        return None
+
+    monkeypatch.setattr("services.announcement.UserRepository.get_active", _fake_get_active)
+    monkeypatch.setattr("services.announcement.UserRepository.get_all_count", _fake_get_all_count)
+    monkeypatch.setattr("services.announcement.ItemService.create_announcement_message", _fake_create_announcement_message)
+    monkeypatch.setattr("services.announcement.MultibotService.send_message_to_user_verbose",
+                        _fake_send_message_to_user_verbose)
+    monkeypatch.setattr("services.announcement.ItemRepository.set_not_new", _fake_set_not_new)
+    monkeypatch.setattr("services.announcement.NotificationService.edit_message", _fake_edit_message)
+    monkeypatch.setattr("services.announcement.session_commit", _fake_session_commit)
+
+    await AnnouncementService.send_announcement(
+        callback,
+        SimpleNamespace(announcement_type=AnnouncementType.RESTOCKING),
+        object(),
+        Language.EN
+    )
+
+    assert len(set_not_new_calls) == 1
 
 
 @pytest.mark.asyncio

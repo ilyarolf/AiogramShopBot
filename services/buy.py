@@ -152,10 +152,7 @@ class BuyService:
             )
         if callback_data.user_role == UserRole.ADMIN:
             user = await UserRepository.get_user_entity(buy_dto.buyer_id, session)
-            kb_builder.button(
-                text=get_text(language, BotEntity.COMMON, "user"),
-                url=f"tg://user?id={user.telegram_id}"
-            )
+            await NotificationService.add_user_button(kb_builder, user, get_text(language, BotEntity.COMMON, "user"))
             if buy_dto.shipping_address and buy_dto.track_number is None:
                 kb_builder.button(
                     text=get_text(language, BotEntity.ADMIN, "update_track_number"),
