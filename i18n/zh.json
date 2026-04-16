@@ -304,7 +304,8 @@
     "referral_code_section": "\n\n<b>🔗 您的邀请链接</b>\nt.me/{bot_username}?start={referral_code}\n分享您的链接，共同成长 🚀",
     "referral_button": "✨ 邀请系统",
     "top_up_balance_deposit_msg": "💵 <b>请向地址存入您想要的 {crypto_name} 金额，为机器人账户充值。</b>\n\n支付状态: {status}\n支付有效期至 {payment_lifetime}。\n\n<b>重要</b>\n<i>每次存款都会分配一个唯一的 {crypto_name} 地址\n转账后5分钟内完成充值。\n\n余额成功刷新后，您将收到机器人的通知。</i>\n\n<b>您的 {crypto_name} 地址\n</b><code>{addr}</code>",
-    "top_up_balance_payment_msg": "💵 <b>请向地址存入 <code>{crypto_amount}</code> {crypto_name}，为机器人账户充值 {fiat_amount} {currency_text}</b>\n\n支付状态: {status}\n支付有效期至 {payment_lifetime}。\n\n<b>重要</b>\n<i>每次存款都会分配一个唯一的 {crypto_name} 地址\n转账后5分钟内完成充值。\n\n余额成功刷新后，您将收到机器人的通知。</i>\n\n<b>您的 {crypto_name} 地址\n</b><code>{addr}</code>",
-    "top_up_balance_request_fiat": "💵 <b>请输入您希望充值的 <u>{currency_text}</u> 金额\n⚠️ 注意！最低存款金额为 5 {currency_text}</b>"
+    "top_up_balance_payment_msg": "💵 <b>请准确发送 <code>{crypto_amount}</code> {crypto_name}</b>\n\n⚠️ <b>不要少发。</b>\n⚠️ <b>不要多发。</b>\n⚠️ <b>仅接受准确金额。</b>\n\n❌ 不允许少付。\n❌ 不允许多付。\n❗ 如果您发送的金额不是 <code>{crypto_amount}</code> {crypto_name}，您的资金将会<b>永久丢失</b>，并且<b>无法找回</b>。\n\n支付状态: {status}\n⏳ 有效期至: {payment_lifetime}\n\n<b>充值地址：</b>\n<code>{addr}</code>\n\nℹ️ 这是仅为本次支付创建的唯一 {crypto_name} 地址。\n✅ 交易到账后 5 分钟内会为您充值余额。",
+    "top_up_balance_request_fiat": "💵 <b>请输入您希望充值的 <u>{currency_text}</u> 金额\n⚠️ 注意！最低存款金额为 5 {currency_text}</b>",
+    "top_up_balance_invalid_fiat_amount": "⚠️ <b>金额无效。</b>\n请输入一个正数金额，范围从 <code>5</code> 到小于 <code>1000000</code> {currency_text}，最多保留 2 位小数。"
   }
 }

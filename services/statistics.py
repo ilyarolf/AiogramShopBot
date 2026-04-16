@@ -21,6 +21,7 @@ from repositories.buy import BuyRepository
 from repositories.buyItem import BuyItemRepository
 from repositories.deposit import DepositRepository
 from repositories.user import UserRepository
+from services.notification import NotificationService
 from utils.utils import get_text
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -146,9 +147,13 @@ class StatisticsService:
                                                                                   callback_data.page,
                                                                                   session)
                 users_qty = await UserRepository.get_qty_by_timedelta(callback_data.timedelta, session)
-                [kb_builder.button(text=user.telegram_username, url=f'tg://user?id={user.telegram_id}') for user in
-                 users_paginated
-                 if user.telegram_username]
+                for user in users_paginated:
+                    if user.telegram_username or user.telegram_id:
+                        await NotificationService.add_user_button(
+                            kb_builder,
+                            user,
+                            text=f"@{user.telegram_username}" if user.telegram_username else str(user.telegram_id)
+                        )
                 state_data = await state.get_data()
                 chart = state_data.get(f"chart_{callback_data.timedelta.name.lower()}")
                 if chart is None:

@@ -2,12 +2,11 @@ import asyncio
 import logging
 
 from aiogram import Bot
-from aiogram.client.default import DefaultBotProperties
-from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramForbiddenError, TelegramUnauthorizedError
 from redis.asyncio import Redis
 
 import config
+from utils.telegram import create_bot
 
 
 class MultibotService:
@@ -31,7 +30,7 @@ class MultibotService:
 
     @staticmethod
     def build_bot(token: str) -> Bot:
-        return Bot(token=token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+        return create_bot(token)
 
     @staticmethod
     async def get_child_tokens(redis_client: Redis | None = None) -> list[str]:
@@ -100,26 +99,45 @@ class MultibotService:
                 await bot.session.close()
 
     @staticmethod
-    async def send_message_to_user(text: str,
-                                   telegram_id: int,
-                                   reply_markup=None,
-                                   redis_client: Redis | None = None) -> int:
+    async def send_message_to_user_verbose(text: str,
+                                           telegram_id: int,
+                                           reply_markup=None,
+                                           redis_client: Redis | None = None) -> tuple[int, bool]:
         success_count = 0
+        had_only_forbidden_errors = True
         tokens = await MultibotService.get_all_tokens_with_main(redis_client)
         for index, token in enumerate(tokens):
             bot = MultibotService.build_bot(token)
             try:
                 await bot.send_message(telegram_id, text, reply_markup=reply_markup)
                 success_count += 1
+                had_only_forbidden_errors = False
+            except TelegramForbiddenError as exception:
+                logging.error(f"TelegramForbiddenError: {exception.message}")
             except TelegramUnauthorizedError:
                 logging.warning("Removing unauthorized child bot token during send_message_to_user")
                 await MultibotService.remove_token(token, redis_client)
+                had_only_forbidden_errors = False
             except Exception as exception:
                 logging.error(exception)
+                had_only_forbidden_errors = False
             finally:
                 await bot.session.close()
             if index < len(tokens) - 1:
                 await asyncio.sleep(MultibotService.SEND_DELAY_SECONDS)
+        return success_count, had_only_forbidden_errors
+
+    @staticmethod
+    async def send_message_to_user(text: str,
+                                   telegram_id: int,
+                                   reply_markup=None,
+                                   redis_client: Redis | None = None) -> int:
+        success_count, _ = await MultibotService.send_message_to_user_verbose(
+            text=text,
+            telegram_id=telegram_id,
+            reply_markup=reply_markup,
+            redis_client=redis_client
+        )
         return success_count
 
     @staticmethod

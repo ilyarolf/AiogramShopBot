@@ -197,7 +197,7 @@ class ReviewService:
         buyItem_dto = await BuyItemRepository.get_by_id(callback_data.buyItem_id, session)
         item_dto = await ItemRepository.get_by_id(buyItem_dto.item_ids[0], session)
         category = await CategoryRepository.get_by_id(item_dto.category_id, session)
-        subcategory = await SubcategoryRepository.get_by_id(item_dto.category_id, session)
+        subcategory = await SubcategoryRepository.get_by_id(item_dto.subcategory_id, session)
         kb_builder = InlineKeyboardBuilder()
         kb_builder.button(
             text=get_text(language, BotEntity.COMMON, "confirm"),
@@ -232,7 +232,7 @@ class ReviewService:
                             language: Language) -> tuple[InputMediaPhoto, InlineKeyboardBuilder]:
         state_data = await state.get_data()
         await state.clear()
-        review_dto = await ReviewRepository.get_by_buy_item_id(callback_data.review_id, session)
+        review_dto = await ReviewRepository.get_by_buy_item_id(callback_data.buyItem_id, session)
         if review_dto is None:
             review_dto = ReviewDTO(
                 buyItem_id=callback_data.buyItem_id,
@@ -328,10 +328,7 @@ class ReviewService:
             )
             buy_dto = await BuyRepository.get_by_id(buyItem_dto.buy_id, session)
             user_dto = await UserRepository.get_user_entity(buy_dto.buyer_id, session)
-            kb_builder.button(
-                text=get_text(language, BotEntity.COMMON, "user"),
-                url=f"tg://user?id={user_dto.telegram_id}"
-            )
+            await NotificationService.add_user_button(kb_builder, user_dto, get_text(language, BotEntity.COMMON, "user"))
         kb_builder.adjust(1)
         back_button = InlineKeyboardButton(
             text=get_text(language, BotEntity.COMMON, "back_button"),

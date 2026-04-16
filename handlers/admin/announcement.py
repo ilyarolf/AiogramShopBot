@@ -51,8 +51,10 @@ async def send_generated_msg(**kwargs):
     language: Language = kwargs.get("language")
     kb_builder = AnnouncementsConstants.get_confirmation_builder(callback_data.announcement_type,
                                                                  language)
-    msg = await ItemService.create_announcement_message(callback_data.announcement_type, session, language)
-    await callback.message.answer(text=msg, reply_markup=kb_builder.as_markup())
+    messages = await ItemService.create_announcement_message(callback_data.announcement_type, session, language)
+    for index, message_text in enumerate(messages):
+        reply_markup = kb_builder.as_markup() if index == 0 else None
+        await callback.message.answer(text=message_text, reply_markup=reply_markup)
 
 
 async def send_confirmation(**kwargs):

@@ -195,10 +195,7 @@ class UserManagementService:
                                                             operation=UserManagementOperation.BAN,
                                                             user_id=user.id)
             )
-            kb_builder.button(
-                text=get_text(language, BotEntity.COMMON, "user"),
-                url=f"tg://user?id={user.telegram_id}"
-            )
+            await NotificationService.add_user_button(kb_builder, user, get_text(language, BotEntity.COMMON, "user"))
             total_purchases_qty = await BuyRepository.get_qty_by_buyer_id(user.id, session)
             total_spent_amount = await BuyRepository.get_spent_amount(user.id, session)
             msg = get_text(language, BotEntity.ADMIN, "user_info").format(

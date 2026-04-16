@@ -2,10 +2,9 @@ import logging
 import traceback
 from datetime import datetime, timezone
 from aiogram import types, Bot
-from aiogram.client.default import DefaultBotProperties
-from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import InlineKeyboardMarkup, BufferedInputFile, Message, InputMediaPhoto, InputMediaVideo, \
-    InputMediaAnimation
+    InputMediaAnimation, InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -23,6 +22,7 @@ from models.review import ReviewDTO
 from models.user import UserDTO
 from models.withdrawal import WithdrawalDTO
 from services.multibot import MultibotService
+from utils.telegram import create_bot
 from repositories.buyItem import BuyItemRepository
 from repositories.category import CategoryRepository
 from repositories.item import ItemRepository
@@ -31,25 +31,111 @@ from utils.utils import get_text
 
 
 class NotificationService:
+    PRIVACY_RESTRICTED_PATTERN = "BUTTON_USER_PRIVACY_RESTRICTED"
+    TG_USER_URL_PREFIX = "tg://user?id="
 
     @staticmethod
-    async def make_user_button(user_dto: UserDTO) -> InlineKeyboardMarkup:
-        kb_builder = InlineKeyboardBuilder()
+    def get_username_link(user_dto: UserDTO) -> str | None:
+        if user_dto.telegram_username:
+            return f"https://t.me/{user_dto.telegram_username}"
+        return None
+
+    @staticmethod
+    async def get_preferred_user_link(user_dto: UserDTO) -> str | None:
+        if user_dto.telegram_id is None:
+            return NotificationService.get_username_link(user_dto)
+        bot = create_bot(TOKEN)
+        try:
+            chat = await bot.get_chat(user_dto.telegram_id)
+            if chat.has_private_forwards is not True:
+                return f"{NotificationService.TG_USER_URL_PREFIX}{user_dto.telegram_id}"
+        except Exception as exception:
+            logging.warning(
+                "Could not inspect chat privacy settings for telegram_id=%s: %s",
+                user_dto.telegram_id,
+                exception
+            )
+        finally:
+            await bot.session.close()
+        return NotificationService.get_username_link(user_dto)
+
+    @staticmethod
+    async def add_user_button(kb_builder: InlineKeyboardBuilder, user_dto: UserDTO, text: str | None = None) -> bool:
+        user_link = await NotificationService.get_preferred_user_link(user_dto)
+        if user_link is None:
+            return False
         kb_builder.button(
-            text=get_text(Language.EN, BotEntity.COMMON, "user"),
-            url=f"tg://user?id={user_dto.telegram_id}"
+            text=text or get_text(Language.EN, BotEntity.COMMON, "user"),
+            url=user_link
         )
-        return kb_builder.as_markup()
+        return True
+
+    @staticmethod
+    def _is_privacy_restricted_error(exception: Exception) -> bool:
+        return isinstance(exception, TelegramBadRequest) and NotificationService.PRIVACY_RESTRICTED_PATTERN in str(
+            exception
+        )
+
+    @staticmethod
+    def _strip_privacy_restricted_buttons(
+            reply_markup: InlineKeyboardMarkup | None
+    ) -> InlineKeyboardMarkup | None:
+        if reply_markup is None:
+            return None
+        filtered_rows: list[list[InlineKeyboardButton]] = []
+        for row in reply_markup.inline_keyboard:
+            filtered_row = []
+            for button in row:
+                if button.url and button.url.startswith(NotificationService.TG_USER_URL_PREFIX):
+                    continue
+                filtered_row.append(button)
+            if filtered_row:
+                filtered_rows.append(filtered_row)
+        if not filtered_rows:
+            return None
+        return InlineKeyboardMarkup(inline_keyboard=filtered_rows)
+
+    @staticmethod
+    async def _execute_with_privacy_fallback(operation_name: str,
+                                             execute,
+                                             reply_markup: InlineKeyboardMarkup | None,
+                                             chat_id: int | None = None):
+        try:
+            return await execute(reply_markup)
+        except Exception as exception:
+            if not NotificationService._is_privacy_restricted_error(exception):
+                raise
+            sanitized_markup = NotificationService._strip_privacy_restricted_buttons(reply_markup)
+            logging.warning(
+                "Privacy-restricted markup fallback triggered during %s for chat_id=%s",
+                operation_name,
+                chat_id
+            )
+            return await execute(sanitized_markup)
+
+    @staticmethod
+    async def make_user_button(user_dto: UserDTO) -> InlineKeyboardMarkup | None:
+        kb_builder = InlineKeyboardBuilder()
+        await NotificationService.add_user_button(kb_builder, user_dto)
+        return kb_builder.as_markup() if list(kb_builder.buttons) else None
 
     @staticmethod
     async def send_to_admins(message: str | BufferedInputFile, reply_markup: types.InlineKeyboardMarkup | None):
-        bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+        bot = create_bot(TOKEN)
         for admin_id in ADMIN_ID_LIST:
             try:
                 if isinstance(message, str):
-                    await bot.send_message(admin_id, f"<b>{message}</b>", reply_markup=reply_markup)
+                    async def _send(current_markup):
+                        return await bot.send_message(admin_id, f"<b>{message}</b>", reply_markup=current_markup)
                 else:
-                    await bot.send_document(admin_id, message, reply_markup=reply_markup)
+                    async def _send(current_markup):
+                        return await bot.send_document(admin_id, message, reply_markup=current_markup)
+                await NotificationService._execute_with_privacy_fallback(
+                    operation_name="send_to_admins",
+                    execute=_send,
+                    reply_markup=reply_markup,
+                    chat_id=admin_id
+                )
             except Exception as e:
                 logging.error(e)
         await bot.session.close()
@@ -59,7 +145,7 @@ class NotificationService:
         if config.MULTIBOT:
             await MultibotService.send_message_to_user(message, telegram_id, reply_markup=reply_markup)
             return
-        bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+        bot = create_bot(TOKEN)
         try:
             await bot.send_message(telegram_id, message, reply_markup=reply_markup)
         except Exception as e:
@@ -69,7 +155,7 @@ class NotificationService:
 
     @staticmethod
     async def edit_message(message: str, source_message_id: int, chat_id: int):
-        bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+        bot = create_bot(TOKEN)
         try:
             await bot.edit_message_text(text=message, chat_id=chat_id, message_id=source_message_id)
         except Exception as e:
@@ -79,7 +165,7 @@ class NotificationService:
 
     @staticmethod
     async def edit_caption(caption: str, source_message_id: int, chat_id: int):
-        bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+        bot = create_bot(TOKEN)
         try:
             await bot.edit_message_caption(caption=caption, chat_id=chat_id, message_id=source_message_id)
         except Exception as e:
@@ -129,13 +215,16 @@ class NotificationService:
                 currency_sym=currency_sym,
                 referrer_bonus=referral_bonus_dto.applied_referrer_bonus
             )
-            admin_kb_markup = InlineKeyboardBuilder().from_markup(admin_kb_markup)
-            admin_kb_markup.button(
-                text=get_text(Language.EN, BotEntity.COMMON, "referrer"),
-                url=f"tg://user?id={referral_bonus_dto.referrer_user_dto.telegram_id}"
+            admin_kb_builder = InlineKeyboardBuilder()
+            if admin_kb_markup:
+                admin_kb_builder = InlineKeyboardBuilder().from_markup(admin_kb_markup)
+            await NotificationService.add_user_button(
+                admin_kb_builder,
+                referral_bonus_dto.referrer_user_dto,
+                text=get_text(Language.EN, BotEntity.COMMON, "referrer")
             )
-            admin_kb_markup.adjust(1)
-            admin_kb_markup = admin_kb_markup.as_markup()
+            admin_kb_builder.adjust(1)
+            admin_kb_markup = admin_kb_builder.as_markup() if list(admin_kb_builder.buttons) else None
             await NotificationService.send_to_user(referrer_notification_msg,
                                                    referral_bonus_dto.referrer_user_dto.telegram_id)
         msg_template = "top_up_balance_payment_msg" if payment_dto.cryptoCurrency in Cryptocurrency.get_stablecoins() else "top_up_balance_deposit_msg"
@@ -171,8 +260,10 @@ class NotificationService:
 
     @staticmethod
     async def new_buy(buy: BuyDTO, user: UserDTO, session: AsyncSession | Session):
-        admin_kb_builder = await NotificationService.make_user_button(user)
-        admin_kb_builder = InlineKeyboardBuilder.from_markup(admin_kb_builder)
+        admin_kb_markup = await NotificationService.make_user_button(user)
+        admin_kb_builder = InlineKeyboardBuilder()
+        if admin_kb_markup:
+            admin_kb_builder = InlineKeyboardBuilder.from_markup(admin_kb_markup)
         admin_kb_builder.button(
             text=get_text(Language.EN, BotEntity.USER, "purchase_history_item").format(
                 buy_id=buy.id,
@@ -261,18 +352,26 @@ class NotificationService:
                            media: InputMediaPhoto | InputMediaVideo | InputMediaAnimation,
                            reply_markup: InlineKeyboardMarkup | None = None) -> Message:
         if isinstance(media, InputMediaPhoto):
-            message = await message.answer_photo(photo=media.media,
-                                                 caption=media.caption,
-                                                 reply_markup=reply_markup)
+            async def _answer(current_markup):
+                return await message.answer_photo(photo=media.media,
+                                                  caption=media.caption,
+                                                  reply_markup=current_markup)
         elif isinstance(media, InputMediaVideo):
-            message = await message.answer_video(video=media.media,
-                                                 caption=media.caption,
-                                                 reply_markup=reply_markup)
+            async def _answer(current_markup):
+                return await message.answer_video(video=media.media,
+                                                  caption=media.caption,
+                                                  reply_markup=current_markup)
         else:
-            message = await message.answer_animation(animation=media.media,
-                                                     caption=media.caption,
-                                                     reply_markup=reply_markup)
-        return message
+            async def _answer(current_markup):
+                return await message.answer_animation(animation=media.media,
+                                                      caption=media.caption,
+                                                      reply_markup=current_markup)
+        return await NotificationService._execute_with_privacy_fallback(
+            operation_name="answer_media",
+            execute=_answer,
+            reply_markup=reply_markup,
+            chat_id=message.chat.id
+        )
 
     @staticmethod
     async def withdrawal(withdraw_dto: WithdrawalDTO):

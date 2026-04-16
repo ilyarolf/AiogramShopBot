@@ -32,12 +32,14 @@ def _build_config_module() -> ModuleType:
     config.CRYPTO_FORWARDING_MODE = False
     config.BTC_FORWARDING_ADDRESS = "btc-forward"
     config.LTC_FORWARDING_ADDRESS = "ltc-forward"
+    config.DOGE_FORWARDING_ADDRESS = "doge-forward"
     config.ETH_FORWARDING_ADDRESS = "eth-forward"
     config.SOL_FORWARDING_ADDRESS = "sol-forward"
     config.BNB_FORWARDING_ADDRESS = "bnb-forward"
     config.ADMIN_ID_LIST = [1]
     config.TOKEN = "token"
     config.MULTIBOT = False
+    config.TELEGRAM_PROXY_URL = None
     config.REDIS_HOST = "localhost"
     config.REDIS_PASSWORD = "password"
     config.CURRENCY = currency

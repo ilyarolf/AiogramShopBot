@@ -125,6 +125,8 @@ class WalletService:
 
     @staticmethod
     def validate_withdrawal_address(address: str, cryptocurrency: Cryptocurrency) -> bool:
+        if not address:
+            return False
         address_regex = {
             Cryptocurrency.BTC: re.compile(r'^bc1[a-zA-HJ-NP-Z0-9]{25,39}$'),
             Cryptocurrency.LTC: re.compile(r'^ltc1[a-zA-HJ-NP-Z0-9]{26,}$'),
