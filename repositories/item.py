@@ -58,10 +58,11 @@ class ItemRepository:
         return {item.id: item for item in items if item.id is not None}
 
     @staticmethod
-    async def get_purchased_items(category_id: int, subcategory_id: int, quantity: int,
+    async def get_purchased_items(item_type: ItemType, category_id: int, subcategory_id: int, quantity: int,
                                   session: Session | AsyncSession) -> list[ItemDTO]:
         stmt = (select(Item)
-                .where(Item.category_id == category_id,
+                .where(Item.item_type == item_type,
+                       Item.category_id == category_id,
                        Item.subcategory_id == subcategory_id,
                        Item.is_sold == False)
                 .limit(quantity)

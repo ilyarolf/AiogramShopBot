@@ -350,7 +350,8 @@ class CartService:
                              status=BuyStatus.PAID if shipping_option else BuyStatus.COMPLETED)
             buy_dto = await BuyRepository.create(buy_dto, session)
             for cart_item in cart_items:
-                purchased_items = await ItemRepository.get_purchased_items(cart_item.category_id,
+                purchased_items = await ItemRepository.get_purchased_items(cart_item.item_type,
+                                                                           cart_item.category_id,
                                                                            cart_item.subcategory_id, cart_item.quantity,
                                                                            session)
                 item_ids = [item.id for item in purchased_items]
