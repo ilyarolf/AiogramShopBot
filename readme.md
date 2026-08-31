@@ -151,7 +151,14 @@ More Telegram bot GIF demos, admin flow examples, and screenshots are available 
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=ilyarolf/AiogramShopBot&type=Date)](https://star-history.com/#ilyarolf/AiogramShopBot&Date)
+<a href="https://www.star-history.com/?type=date&repos=ilyarolf%2FAiogramShopBot">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=ilyarolf/AiogramShopBot&type=date&theme=dark&legend=top-left&sealed_token=pbKbpm2_oq5Q5jYCMb2wjqRDjC7XPo2NlHUvUa30rQTnIBrQP3MFFWNOvQ5rdbX8R5iODu7-_eLVER1wLvk940VDyqYd057DwiVmHC3g1oBvdZHnoi3rsElANV3UXSYgpsE8QHXiRvzuZb_k5yet8L-qXF53SiTdfv5zI1lgfKnMY-K-fb5Uw24dKPXO" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=ilyarolf/AiogramShopBot&type=date&legend=top-left&sealed_token=pbKbpm2_oq5Q5jYCMb2wjqRDjC7XPo2NlHUvUa30rQTnIBrQP3MFFWNOvQ5rdbX8R5iODu7-_eLVER1wLvk940VDyqYd057DwiVmHC3g1oBvdZHnoi3rsElANV3UXSYgpsE8QHXiRvzuZb_k5yet8L-qXF53SiTdfv5zI1lgfKnMY-K-fb5Uw24dKPXO" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=ilyarolf/AiogramShopBot&type=date&legend=top-left&sealed_token=pbKbpm2_oq5Q5jYCMb2wjqRDjC7XPo2NlHUvUa30rQTnIBrQP3MFFWNOvQ5rdbX8R5iODu7-_eLVER1wLvk940VDyqYd057DwiVmHC3g1oBvdZHnoi3rsElANV3UXSYgpsE8QHXiRvzuZb_k5yet8L-qXF53SiTdfv5zI1lgfKnMY-K-fb5Uw24dKPXO" />
+ </picture>
+</a>
+
 
 ## 📄 License
 
